@@ -1,0 +1,91 @@
+---
+title: Running the Server
+inMenu: true
+---
+
+h2. Running the Server
+
+The server comes with a @thingfishd@ command line program which can be started in the usual fashion:
+
+{example: {
+  filename: examples/starting-the-server.sh,
+  language: shell,
+  testable: true,
+  caption: Starting the server
+  }}
+
+The server is configured via a single YAML file, which will look something like this:
+
+{example: {filename: examples/etc/thingfish.conf, 
+	escapeHTML: false,
+	processOutput: false,
+	language: yaml,
+	hint: debug,
+	testable: true,
+	caption: Example YAML config file
+	 }}
+
+
+h3. Configuration File
+
+The meaning of the config values are as follows:
+
+<dl class="kvlist">
+	<dt>port</dt>
+	<dd class="description">The port the daemon should listen on.</dd>
+	
+	<dt>ip</dt>
+	<dd class="description">The ip the daemon should bind to.</dd>
+	<dd class="default">Defaults to <code>127.0.0.1</code></dd>
+
+	<dt>defaulthandler</dt>
+	<dd class="description">This subsection contains configuration values for the 
+		top-level handler object of the daemon.</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>html_index</dt>
+			<dd class="description">This contains the name of the file to serve by 
+				default for requests to the <code>/</code> URI when no content-type 
+				is specified.</dd>
+			<dd class="default">Defaults to <code>index.html</code></dd>
+			
+			<dt>resource_dir</dt>
+			<dd class="description">The directory to search for static resources 
+				relative to the , including the <code>html_index</code> file.</dd>
+			<dd class="default">Defaults to a directory called 
+				<code>thingfish/default</code> under Ruby's shared datadir </dd>
+		</dl>
+	</dd>
+	
+	<dt>logging</dt>
+	<dd class="description">This section contains the configuration for the logging 
+		subsystem.</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>level</dt>
+			<dd class="description">The level of message that should be logged.</dd>
+			<dd class="valid-values">Valid values (in increasing order of severity) 
+				are:
+				<ul>
+					<li><code>debug</code></li>
+					<li><code>info</code></li>
+					<li><code>warn</code></li>
+					<li><code>error</code></li>
+					<li><code>fatal</code></li>
+				</ul>
+			</dd>
+			<dd class="default">Defaults to: <code>warn</code></dd>
+			
+			<dt>logfile</dt>
+			<dd class="description">The file or filehandle that logging messages
+				should be written to.</dd>
+			<dd class="valid-values">May be either one of the special 
+				values <code>stderr</code> or <code>stdout</code>, which correspond 
+				to the STDERR and STDOUT file descriptors, or a path to a logfile.
+				If the path is not absolute, it is relative to  </dd>
+			<dd class="default">Defaults to: <code>stderr</code></dd>
+		</dl>
+	</dd>
+</dl>
+
+

@@ -1,0 +1,82 @@
+= Thingfish::FilesystemFileStore
+
+A disk filesystem-based ThingFish FileStore plugin.
+
+This FileStore stores resources on disk in a hierarchy of hashed directories. It uses
+NFS-safe locking for writes, and should be threadsafe.
+
+== Configuration
+
+To run this handler in your ThingFish, set the 'name' value in your config file's 'filestore' section to 'filesystem'.
+
+  filestore:
+    name: filesystem
+    root: /tmp/thingstore
+
+=== Config Keys
+
+[+root+]
+  The directory in which to create the hashed directory structure and store uploaded
+  resources.
+[+hashdepth+]
+  The number of subdirectories to use. Can be set to 1, 2, 4, or 8. Defaults to 4.
+[+bufsize+]
+  The size of the buffer to use when reading incoming data (in bytes). Defaults to
+  8192 (8k).
+[+spooldir+]
+  The directory to use when spooling uploaded files (relative to the +root+). 
+  Defaults to 'spool'.
+[+lock+]
+  The configuration for the locking system:
+  [+retries+]
+    How many times to retry the lock if it can't be acquired.
+  [+sleep_inc+]
+    The number of seconds to increment each sleep cycle from min_sleep to max_sleep.
+  [+min_sleep+]
+	The shortest amount of time to sleep when waiting for a lock.
+  [+max_sleep+]
+	The longest amount of time to sleep when waiting for a lock.
+  [+max_age+]
+	Locks older than +max_age+ will be deleted (stolen).
+  [+suspend+]
+	If a lock is stolen from someone else, wait +suspend+ seconds to give them a 
+	chance to realize it.
+  [+refresh+]
+	Number of seconds between updates to the lockfile by the background thread.
+  [+timeout+]
+	Maximum number of seconds to wait for the lock.
+  [+poll_retries+]
+	Number of times to poll for the lock on each retry.
+  [+poll_max_sleep+]
+	The maximum amount of time to wait between each poll for the lock, in seconds.
+  [+dont_clean+]
+	If this is set to +true+, don't clean up after lockfiles at exit.
+  [+dont_sweep+]
+	If set to +true+, don't attempt to find and remove any old temp files created
+	by processes of this host which are no longer alive.
+  [+debug+]
+	If set to +true+, print trace execution progress on stdout.
+	
+	
+=== Resources
+
+This handler uses a template for its status output, which installed by default in the 
+'thingfish/statushandler' directory under your Ruby's datadir. If you wish to 
+customize the output you can modify that file, or override the resource directory 
+or the template name in the handler's options.
+
+
+== Authors
+
+* Michael Granger <mgranger@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

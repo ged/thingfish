@@ -1,0 +1,49 @@
+---
+title: Similar Systems
+directoryName: Introduction
+inMenu: true
+---
+
+h2. Similar Systems
+
+We considered several other systems which provide network data storage before we
+decided to write ThingFish. Both Amazon's S3 and Danga's MogileFS provide the ability
+to store and retrieve chunks of data through a network interface, but given our
+specific needs, we found both systems to be of limited usefulness.
+
+
+h3. "Amazon S3":http://aws.amazon.com/s3
+
+Amazon's Simple Storage Service is probably the closest thing we've found to what we need, but there are some limitations which it imposes which we couldn't live with:
+
+<dl>
+  	<dt>Metadata restrictions</dt>
+  	<dd>We can't anticipate everything that we'd want to store as metadata, but we
+    predict that it will be nearly as important as the file data itself. We want to
+    store relations between files, summaries, ACLs, and other information which will
+    easily not only exceed S3's current 2k limitation, but also require a rich set of
+    operations independent of file data. S3's metadata is intimately coupled with the
+    files themselves, and there is no facility for interacting with the metadata
+    separately.</dd>
+
+  	<dt>Not hosted locally</dt>
+	<dd>
+		<ul>
+	   		<li>Trade secret issues</li>
+	   		<li>Network response time</li>
+		</ul>
+	</dd>
+
+ 	<dt>Authentication</dt>
+	<dd>No tie-ins to local authentication mechanisms (ldap)</dd>
+</dl>
+
+
+h3. "MogileFS":http://www.danga.com/mogilefs/
+
+Motivation was cheap disk, not easy access
+
+ - Proprietary client API 
+ - Database dependency
+ - Needless complexity
+

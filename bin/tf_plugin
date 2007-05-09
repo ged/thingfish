@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+# 
+# tf_plugin -- generate a new plugin
+# 
+# == Synopsis
+# 
+#   $ tf_plugin [OPTIONS] TYPE NAME
+# 
+# === Options
+# 
+# 
+
+require 'pathname'
+require 'optparse'
+require 'ostruct'
+require 'erb'
+require 'etc'
+
+
+class PluginGenerator
+	
+	### Return a struct which contains the default config values, appropriate
+	### for passing as the first argument to #main
+	def self::default_config
+		options = OpenStruct.new
+
+		options.debugging = false
+		options.author = Etc.getpwuid( Process.euid ).gecos rescue "J Random Hacker"
+		
+		return options
+	end
+	
+	
+	### Create a new PluginGenerator object, configured with the given +options+ 
+	### struct.
+	def initialize( options )
+		@options = options
+	end
+	
+
+	######
+	public
+	######
+
+	### Run the generator
+	def run( *args )
+		valid_types = self.find_valid_types
+	end
+	
+	
+end
+
+
+### If running directly, handle parsing command-line arguments, etc.
+if __FILE__ == $0
+	$deferr.sync = $defout.sync = true
+	
+	begin
+		program = Pathname.new( $0 ).expand_path
+		options = PluginGenerator.default_config
+		
+		oparser = ARGV.options do |opts|
+
+			opts.banner = "Usage: #{program.basename} [OPTIONS] [CSVFILE]"
+			opts.separator ""
+			
+			opts.on( '--author=AUTHORNAME', '-a=AUTHORNAME', String, 
+			         "Use AUTHORNAME in the plugin files instead of '#{options.author}'") do |str|
+				options.author = str
+			end
+
+			opts.separator ""
+
+			opts.on( '--debug', '-D', TrueClass, "Turn debugging on." ) do
+				options.debugging = true
+			end
+			
+			opts.on( '--help', '-h', TrueClass, "Display this text." ) do
+				$deferr.puts( opts )
+				exit!( 0 )
+			end
+			
+		end
+		args = oparser.parse!
+		
+		PluginGenerator.new( options ).run( *args )
+		
+	rescue => err
+		$deferr.puts "ERROR: #{err.message}"
+		$deferr.puts "  " + err.backtrace.join("\n  ")
+	end
+end
+

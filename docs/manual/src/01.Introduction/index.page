@@ -1,0 +1,11 @@
+---
+title: Index
+directoryName: Introduction
+---
+
+h2. Introduction
+
+In this chapter, we'll introduce the fish in question, explain what to look for depending on what hat you're wearing, and sketch a few diagrams on the virtual whiteboard to give you a better idea of what all the parts of the system do.
+
+{menu: {menuStyle: vertical, options: {maxLevels: 2, startLevel: 2}}}
+

@@ -1,0 +1,21 @@
+---
+title: Writing Handlers
+inMenu: true
+---
+
+h2. Writing a ThingFish Handler
+
+<notextile>
+{example: {
+	filename: examples/minimal-handler.rb, 
+	escapeHTML: false,
+	processOutput: false,
+	language: ruby,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: A minimal handler
+	}}
+</notextile>
+	

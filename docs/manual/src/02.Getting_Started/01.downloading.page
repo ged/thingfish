@@ -1,0 +1,21 @@
+---
+title: Downloading
+inMenu: true
+directoryName: Getting Started
+---
+
+h2. Downloading
+
+h3. Releases
+
+Releases can be downloaded either via RubyGems or from:
+ 
+* "http://opensource.laika.com/thingfish":http://opensource.laika.com/thingfish
+
+h3. Development Sources
+
+If you wish to help with development or just check out the development sources, you can do so using Subversion:
+
+* "svn://opensource.laika.com/thingfish/trunk":svn://opensource.laika.com/thingfish/trunk
+
+

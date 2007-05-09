@@ -1,0 +1,8 @@
+---
+title: Index
+directoryName: Getting Started
+---
+
+h2. Getting Started
+
+{menu: {menuStyle: vertical, options: {maxLevels: 2, startLevel: 2}}}

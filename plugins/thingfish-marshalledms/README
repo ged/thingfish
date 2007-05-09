@@ -1,0 +1,34 @@
+== Thingfish::MarshalledMetaStore
+
+This is a simple metastore plugin for ThingFish which saves metadata to a single 
+serialized hash on disk.
+
+== Configuration
+
+ plugins:
+	metastore:
+	  name: marshalled
+	  root: /tmp/thingfish/metastore
+
+=== Config Keys ===
+
+[name]::
+  Set to 'marshalled' to use this plugin.
+[root]::
+  The directory to store the marshalled metadata in.
+
+== Authors
+
+* Michael Granger <mgranger@laika.com>
+* Mahlon E. Smith <mahlon@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

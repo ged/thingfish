@@ -1,0 +1,10 @@
+= ThingFish
+
+ThingFish is a highly-accessible network store for cataloging large files and their
+associated metadata.
+
+== Dependencies
+
+ * Ruby 1.8.5 or greater
+ * Mongrel
+ * UUIDTools

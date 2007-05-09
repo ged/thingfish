@@ -1,0 +1,319 @@
+#!/usr/bin/ruby
+#
+# A collection of mixins shared between ThingFish classes
+#
+# == Synopsis
+#
+#   require 'thingfish/mixins'
+#
+#   # Loggable
+#   class MyClass
+#       include ThingFish::Loggable
+#
+#       def foo
+#           self.log.debug "something"
+#       end
+#   end
+#
+#   # StaticResources
+#   class MyHandler < ThingFish::Handler
+#       include ThingFish::StaticResources
+#   
+#       static_resource_dir "static"
+#
+#       # ...
+#   end
+#
+#   # AbstractClass
+#   class MyBaseClass
+#       include ThingFish::AbstractClass
+#   
+#       # Define a method that will raise a NotImplementedError if called
+#       virtual :api_method
+#   end
+#
+#   # NumericConstantMethods
+#   class Numeric
+#       include ThingFish::NumericConstantMethods
+#   end
+#
+# == Description
+#
+# This module includes a collectin of mixins used in ThingFish classes. It currently
+# contains:
+#
+# === ThingFish::Loggable
+#
+# Adds a #log method to the including class which can be used to access the global
+# logging facility.
+#
+# === ThingFish::StaticResources
+#
+# Adds the ability to a ThingFish::Handler to serve static content from its resources
+# directory.
+#
+# === ThingFish::AbstractClass
+# 
+# Hides your class's ::new method and adds a method generator called 'virtual' for
+# defining API methods. If subclasses of your class don't provide implementations of
+# "virtual" methods, NotImplementedErrors will be raised if they are called.
+#
+#
+# == Version
+#
+#  $Id$
+#
+# == Authors
+#
+# * Michael Granger <mgranger@laika.com>
+# * Mahlon E. Smith <mahlon@laika.com>
+#
+#:include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the 'docs' directory for licensing details.
+#
+
+require 'thingfish'
+require 'mongrel/handlers'
+
+module ThingFish # :nodoc:
+
+	### Add logging to a ThingFish class
+	module Loggable
+
+		#########
+		protected
+		#########
+
+		### Return the global logger.
+		def log
+			ThingFish.logger
+		end
+
+	end # module Loggable
+
+
+	### Add the ability to servce static content from a ThingFish::Handler's resource
+	### directory
+	module StaticResources
+		
+		### Inclusion callback -- add class methods to the including module.
+		def self::included( mod )
+			mod.extend( ClassMethods )
+			super
+		end
+		
+		### Methods installed in including classes
+		module ClassMethods
+			
+			### Set the directory which will be considered the root for all static 
+			### content requests.
+			def static_resources_dir( dir=nil )
+				if dir
+					@static_resources_dir = dir
+				end
+				return defined?( @static_resources_dir ) ? @static_resources_dir : "static"
+			end
+		end
+
+
+		### Hook the listener callback
+		def listener=( listener )
+			super
+			
+			basedir = self.resource_dir + self.class.static_resources_dir
+			self.log.debug "Serving static resources for %s from %s" % 
+				[self.class.name, basedir.to_s]
+			my_uris = self.find_handler_uris
+
+			handler = Mongrel::DirHandler.new( basedir.to_s, false )
+			my_uris.each do |uri|
+				self.log.debug "...registering fallback %s for a %s at %p" %
+				 	[ handler.class.name, self.class.name, uri ]
+				listener.register( uri, handler )
+			end
+		end
+		
+		
+	end # module StaticResources
+	
+	
+	### Adds abstract class helpers to a class.
+	module AbstractClass
+		
+		### Methods to be added to including classes
+		module ClassMethods
+			
+			### Define one or more "virtual" methods which will raise 
+			### NotImplementedErrors when called via a concrete subclass.
+			def virtual( *syms )
+				syms.each do |sym|
+					define_method( sym ) {
+						raise NotImplementedError,
+							"%p does not provide an implementation of #%s" %
+							[ self.class, sym ]
+					}
+				end
+			end
+			
+		
+			### Turn subclasses' new methods back to public.
+			def inherited( subclass )
+				subclass.module_eval { public_class_method :new }
+				super
+			end
+		
+		end # module ClassMethods
+
+		
+		extend ClassMethods
+		
+		### Inclusion callback
+		def self::included( mod )
+			super
+			mod.extend( ClassMethods )
+			mod.module_eval { private_class_method :new }
+		end
+
+		
+	end # module AbstractClass
+
+
+	### A collection of methods to add to Numeric for convenience (stolen from 
+	### ActiveSupport)
+	module NumericConstantMethods
+
+		### Time constants
+		module Time
+			
+			### Number of seconds (returns receiver unmodified)
+			def seconds
+				return self
+			end
+			alias_method :second, :seconds
+
+			### Returns number of seconds in <receiver> minutes
+			def minutes
+				return self * 60
+			end
+			alias_method :minute, :minutes  
+
+			### Returns the number of seconds in <receiver> hours
+			def hours
+				return self * 60.minutes
+			end
+			alias_method :hour, :hours
+
+			### Returns the number of seconds in <receiver> days
+			def days
+				return self * 24.hours
+			end
+			alias_method :day, :days
+
+			### Return the number of seconds in <receiver> weeks
+			def weeks
+				return self * 7.days
+			end
+			alias_method :week, :weeks
+
+			### Returns the number of seconds in <receiver> fortnights
+			def fortnights
+				return self * 2.weeks
+			end
+			alias_method :fortnight, :fortnights
+
+			### Returns the number of seconds in <receiver> months (approximate)
+			def months
+				return self * 30.days
+			end
+			alias_method :month, :months
+
+			### Returns the number of seconds in <receiver> years (approximate)
+			def years
+				return (self * 365.25.days).to_i
+			end
+			alias_method :year, :years
+
+
+			### Returns the Time <receiver> number of seconds before the 
+			### specified +time+. E.g., 2.hours.before( header.expiration )
+			def before( time )
+				return time - self
+			end
+			
+
+			### Returns the Time <receiver> number of seconds ago. (e.g., 
+			### expiration > 2.hours.ago )
+			def ago
+				return self.before( ::Time.now )
+			end
+
+
+			### Returns the Time <receiver> number of seconds after the given +time+.
+			### E.g., 10.minutes.after( header.expiration )
+			def after( time )
+				return time + self
+			end
+
+			# Reads best without arguments:  10.minutes.from_now
+			def from_now
+				return self.after( ::Time.now )
+			end
+		end # module Time
+		
+
+		### Byte constants
+		module Bytes
+			
+			### Number of bytes (returns receiver unmodified)
+			def bytes
+				return self
+			end
+			alias_method :byte, :bytes
+
+			### Returns the number of bytes in <receiver> kilobytes
+			def kilobytes
+				return self * 1024
+			end
+			alias_method :kilobyte, :kilobytes
+
+			### Return the number of bytes in <receiver> megabytes
+			def megabytes
+				return self * 1024.kilobytes
+			end
+			alias_method :megabyte, :megabytes
+
+			### Return the number of bytes in <receiver> gigabytes
+			def gigabytes
+				return self * 1024.megabytes 
+			end
+			alias_method :gigabyte, :gigabytes
+
+			### Return the number of bytes in <receiver> terabytes
+			def terabytes
+				return self * 1024.gigabytes
+			end
+			alias_method :terabyte, :terabytes
+
+			### Return the number of bytes in <receiver> petabytes
+			def petabytes
+				return self * 1024.terabytes
+			end
+			alias_method :petabyte, :petabytes
+
+			### Return the number of bytes in <receiver> exabytes
+			def exabytes
+				return self * 1024.petabytes
+			end
+			alias_method :exabyte, :exabytes
+
+		end # module Bytes
+	end # module NumericConstantMethods
+
+
+end # module ThingFish
+
+# vim: set nosta noet ts=4 sw=4:
+

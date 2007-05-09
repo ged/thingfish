@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+# 
+# thingfishd - a network accessable, searchable datastore
+# 
+# == Synopsis
+# 
+#   $ thingfishd 
+# 
+# == Version
+#
+#  $Id$
+# 
+# 
+
+require 'rbconfig'
+require 'pathname'
+require 'optparse'
+require 'ostruct'
+require 'thingfish/daemon'
+
+include Config
+
+### Defaults
+DEFAULT_CONFIGFILE = Pathname.new(CONFIG['sysconfdir']) + 'thingfish.conf'
+
+
+### Main logic
+def main( args )
+	opts = parse_args( args )
+	run( opts )
+end
+
+
+### Parse the command line arguments and return an options struct
+def parse_args( args )
+	progname = Pathname.new( __FILE__ )
+	opts = get_default_options()
+
+	oparser = OptionParser.new do |oparser|
+		oparser.accept( Pathname ) {|path| Pathname.new(path) }
+		
+		oparser.banner = "Usage: #{progname.basename}: OPTIONS"
+
+		oparser.separator ''
+		oparser.separator 'Daemon Options:'
+		
+		oparser.on( '--config-file=STRING', '-f STRING', Pathname, 
+			"Specify a config file to use. Default to:",
+			"  #{DEFAULT_CONFIGFILE}" ) do |cfg|
+			opts.configfile = cfg
+		end
+		
+		oparser.separator 'Other Options:'
+		
+		oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
+			$deferr.puts oparser
+			exit!
+        end
+
+		# Another typical switch to print the version.
+		oparser.on_tail( "--version", "Show ThingFish version" ) do
+			$deferr.puts ThingFish.version_string( true )
+			exit!
+		end
+	end
+	
+	oparser.parse!
+
+	return opts
+end
+
+
+### Get the options struct filled with defaults
+def get_default_options
+	options = OpenStruct.new
+	options.configfile = DEFAULT_CONFIGFILE
+	
+	return options
+end
+
+
+### Run the daemon -- Start an instance of the daemon, run until shutdown, 
+### and then return from the main thread.
+def run( options )
+	config   = ThingFish::Config.load( options.configfile )
+	instance = ThingFish::Daemon.new( config )
+
+	accepter = instance.run
+
+	Signal.trap( "INT" ) { instance.shutdown("Interrupted") }
+	Signal.trap( "TERM" ) { instance.shutdown("Terminated") }
+
+	accepter.join
+end
+
+
+if __FILE__ == $0
+	main( ARGV )
+end
+
+# vim: set nosta noet ts=4 sw=4:

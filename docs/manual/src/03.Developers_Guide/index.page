@@ -1,0 +1,15 @@
+---
+title: Index
+directoryName: Developer's Guide
+---
+
+h2. Developer's Guide
+
+{menu: {menuStyle: vertical, options: {maxLevels: 2, startLevel: 2}}}
+
+h3. Coming Soon!
+
+* Connecting to the Server
+* Using the Ruby Client Library
+* Using the Javascript Client Library
+* Writing a ThingFish Client Library

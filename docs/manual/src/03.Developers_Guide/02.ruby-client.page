@@ -1,0 +1,41 @@
+---
+title: Ruby Client Library
+inMenu: true
+---
+
+h2. Using the Ruby ThingFish Client Library
+
+Not sure about this yet, but perhaps it will look something like this:
+
+{example: {
+	filename: examples/clientapi.rb, 
+	language: ruby,
+	testable: true,
+	caption: A proposed client library API
+	}}
+	
+
+h3. Creating the Client
+
+The @ThingFish::Client@ class is the main interface to the ThingFish store. It can be used to upload, download, and query the server for resources. 
+
+The first step is to configure the client, which you can do by providing the connection parameters as either distinct values or a URL:
+
+{example: {
+	filename: examples/instantiating.rb,
+	language: ruby,
+	testable: true,
+	caption: Creating the client object
+  }}
+
+h3. Fetching Resources
+
+Once you have a configured client object, you can fetch resources from the server via their UUID:
+
+{example: {
+	filename: examples/fetching.rb,
+	caption: Fetching a resource by UUID,
+	language: ruby,
+	testable: true
+  }}
+

@@ -1,0 +1,19 @@
+---
+title: Connecting to the Server
+directoryName: Developer's Guide
+inMenu: true
+---
+
+h2. Connecting to the Server
+
+There are several options for connecting: you can use a client library if one has been written for your language, or you can use HTTP to talk to the server directly. 
+
+h3. The Basics
+
+To test out the particulars of your connection, you can connect to the daemon with a web browser by pointing it at the URL:
+
+  http://your-thingfish-server:3474/
+
+It will (by default) display a page describing the configuration of the server, including an overview of the API for connecting to it. Because the server is extensible and overridable using plugins, the particulars of your server might be different than the ones described here, but the basic upload/download REST API should remain consistent.
+
+

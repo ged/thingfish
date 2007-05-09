@@ -1,0 +1,34 @@
+== Thingfish::SQLite3MetaStore
+
+This is a metastore plugin for ThingFish which saves metadata to a SQLite backed
+file.
+
+== Configuration
+
+ plugins:
+	metastore:
+	  name: sqlite3
+	  root: /tmp/thingfish/metastore
+
+=== Config Keys ===
+
+[name]::
+  Set to 'sqlite3' to use this plugin.
+[root]::
+  The directory to store the database file in.
+
+== Authors
+
+* Michael Granger <mgranger@laika.com>
+* Mahlon E. Smith <mahlon@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

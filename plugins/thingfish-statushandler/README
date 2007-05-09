@@ -1,0 +1,48 @@
+== Thingfish::StatusHandler
+
+A handler plugin that displays server status and statistics about some of its URIs.
+
+== Configuration
+
+To run this handler in your ThingFish, add a 'status' section to the 'plugins' 
+section of your config file:
+
+  - status:
+      uris: /status
+      stats_uris: [/]
+      resource_dir:
+      template_name: index.rhtml
+
+=== Config Keys ===
+
+[uris]::
+  The URIs to register the handler at.
+[stats_uris]::
+  URIs which should have statistics gathered.
+[resource_dir]::
+  The directory which contains the statistics template.
+[template_name]::
+  The name of the template to use for the statistics view.
+
+=== Resources ===
+
+This handler uses a template for its status output, which installed by default in the 
+'thingfish/statushandler' directory under your Ruby's datadir. If you wish to 
+customize the output you can modify that file, or override the resource directory 
+or the template name in the handler's options.
+
+
+== Authors
+
+ * Michael Granger <mgranger@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

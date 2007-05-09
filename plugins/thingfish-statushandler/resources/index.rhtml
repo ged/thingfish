@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" version="-//W3C//DTD XHTML 1.1//EN" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+	<title>ThingFish Status</title>
+
+	<link rel="stylesheet" href="<%= request.params['REQUEST_URI'] %>/status.css" 
+	  type="text/css" media="screen" title="Main Stylesheet" charset="utf-8" />
+</head>
+<body>
+<div>
+
+	<h1>ThingFish Status</h1>
+	<p class="server-software">Server software: <%= ThingFish::Daemon::SERVER_SOFTWARE %></p>
+
+	<div id="listener-section">
+		<h2>Listener <%= listener.host %>: <%= listener.port %></h2>
+
+		<table id="listener-settings">
+			<caption>Settings</caption>
+			
+			<tbody>
+				<tr><th>timeout</th><td><%= listener.timeout %></td></tr>
+				<tr><th>workers max</th><td><%= listener.num_processors %></td></tr>
+			</tbody>
+		</table>
+
+	</div>
+
+	<div id="handlers-section">
+		<h2>Handler Map</h2>
+
+		<table id="handlers">
+			<thead><tr><th>URI</th><th>Handlers</th></tr></thead>
+			<tbody>
+			<% listener.classifier.handler_map.sort_by {|uri,h| uri }.each do |uri,handlers| %>
+			<% handlers = [handlers] if !handlers.is_a?(Array) %>
+			  <tr class="handler-map">
+				<th class="uri"><%= uri %></th>
+				<td class="handler-names"><%= handlers.collect {|h| h.class.name }.join( ', ' ) %></td>
+			  </tr>
+			<% if @filters.key?(uri) %>
+			  <tr class="handler-statistics">
+			  	<th>&nbsp;</th>
+				<td>
+					<table class="stats">
+					  <caption>Statistics</caption>
+					  <thead>
+						<tr>
+							<th>&nbsp;</th>
+							<th>sum</th>
+							<th>sumsq</th>
+							<th>n</th>
+							<th>mean</th>
+							<th>sd</th>
+							<th>min</th>
+							<th>max</th>
+						</tr>
+					  </thead>
+					  <tbody>
+					<% @filters[uri].each_stat do |stat| %>
+						<tr>
+							<th><%= stat.name %></th>
+							<td><%= "%0.2f" % stat.sum %></td>
+							<td><%= "%0.2f" % stat.sumsq %></td>
+							<td><%= "%0.2f" % stat.n %></td>
+							<td><%= "%0.2f" % stat.mean %></td>
+							<td><%= "%0.2f" % stat.sd %></td>
+							<td><%= "%0.2f" % stat.min %></td>
+							<td><%= "%0.2f" % stat.max %></td>
+						</tr>
+					<% end %>
+					  </tbody>
+					</table>
+				</td>
+			  </tr>
+			<% else %>
+			  <tr class="handler-statistics">
+			  	<th>&nbsp;</th>
+				<td>
+					<tt>(No stats filter attached)</tt>
+				</td>
+			  </tr>
+			<% end %>
+			<% end %>
+			</tbody>
+		</table>
+	</div>
+
+</div>
+</body>
+</html>

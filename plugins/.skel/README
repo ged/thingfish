@@ -1,0 +1,29 @@
+== Thingfish::<%= vars[:name] %>
+
+<%= vars[:description] %>
+
+== Configuration
+
+ (describe how to load your plugin from the thingfish config file)
+
+=== Config Keys ===
+
+[foo]::
+  An example 'foo' option.
+[bar]::
+  An example 'bar' option.
+
+== Authors
+
+ * <%= vars[:author] %>
+
+== License
+
+Copyright (c) <%= Time.now.year %> LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

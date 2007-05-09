@@ -474,7 +474,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		uuid_components = match.captures
 
-		self.log.debug 
 		time_low = uuid_components[0].to_i( 16 )
 		time_mid = uuid_components[1].to_i( 16 )
 		time_hi_and_version = uuid_components[2].to_i( 16 )

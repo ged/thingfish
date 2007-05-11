@@ -27,7 +27,6 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'rbconfig'
 require 'pathname'
 require 'pluginfactory'
 require 'mongrel/handlers'
@@ -40,7 +39,8 @@ require 'thingfish/daemon'
 class ThingFish::Handler
 	include PluginFactory,
 		Mongrel::HttpHandlerPlugin,
-		ThingFish::Loggable
+		ThingFish::Loggable,
+		ThingFish::ResourceLoader
 
 
 	# SVN Revision
@@ -82,28 +82,6 @@ class ThingFish::Handler
 	end
 	
 
-	### Return a Pathname object that points at the resource directory 
-	### for this handler
-	def resource_dir
-		
-		# If a resource dir hasn't been specified, figure out a reasonable default
-		# using Ruby's datadir
-		unless @resource_dir
-			datadir = Pathname.new( Config::CONFIG['datadir'] )
-			@resource_dir = datadir + 'thingfish' + self.plugin_name
-		end
-
-		return Pathname.new( @resource_dir )
-	end
-
-
-	### Return the normalized name of the plugin.
-	def plugin_name
-		return self.class.name.
-			sub( /ThingFish::/, '' ).
-			gsub( /\W+/, '-' ).
-			downcase
-	end
 
 
 	#########
@@ -123,21 +101,6 @@ class ThingFish::Handler
 		}
 	end
 	
-
-	### Read the content from the file 
-	def get_resource( path )
-		return self.get_resource_io( path ).read
-	end
-	
-	
-	### Return an IO object opened to the file specified by +path+ 
-	### relative to the plugin's resource directory.
-	def get_resource_io( path )
-		resdir = self.resource_dir
-		self.log.debug "Trying to open resource %p from %s" % [ path, resdir ]
-		( resdir + path ).open( File::RDONLY )
-	end
-
 
 	### Return the +uris+ this handler is registered to
 	def find_handler_uris

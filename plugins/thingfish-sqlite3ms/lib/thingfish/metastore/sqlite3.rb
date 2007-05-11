@@ -43,7 +43,8 @@ require 'thingfish/metastore'
 
 class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 
-	include ThingFish::Loggable
+	include ThingFish::Loggable,
+	        ThingFish::ResourceLoader
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -54,44 +55,6 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	# The default root directory
 	DEFAULT_ROOT = '/tmp/thingstore'
 
-	# SQLite table design for initializations
-	DB_BASE_SCHEMA = <<SQL
-PRAGMA default_cache_size = 7000;
-
-CREATE TABLE
-  'version' (
-  'created_at' VARCHAR(20) NOT NULL
-);
-
-CREATE TABLE
-  'resources' (
-  'id'   INTEGER PRIMARY KEY,
-  'uuid' CHAR(36) UNIQUE
-);
-
-CREATE TABLE
-  'metakey' (
-  'id'  INTEGER PRIMARY KEY,
-  'key' VARCHAR(255) UNIQUE
-);
-
-CREATE TABLE
-  'metaval' (
-  'r_id' INTEGER NOT NULL,
-  'm_id' INTEGER NOT NULL,
-  'val'  TEXT,
-  PRIMARY KEY ('r_id', 'm_id')
-);
-CREATE INDEX 'r_id_index' ON 'metaval' ('r_id');
-CREATE INDEX 'm_id_index' ON 'metaval' ('m_id');
-CREATE INDEX 'val_index'  ON 'metaval' ('val');
-
-CREATE TRIGGER 'metacleanup' DELETE ON 'resources'
-BEGIN
-  DELETE FROM metaval
-    WHERE r_id = OLD.id;
-END;
-SQL
 
 
 	#################################################################
@@ -110,8 +73,9 @@ SQL
 		@metadata = SQLite3::Database.new( @dbname )
 
 		if db_needs_init
+			schema = self.get_resource( 'base-schema.sql' )
 			self.log.info "Initializing a new sqlite3 backed metastore"
-			@metadata.execute_batch( DB_BASE_SCHEMA )
+			@metadata.execute_batch( schema )
 			@metadata.execute( 'INSERT INTO version VALUES ( :rev )',
 				SVNRev.scan(/(\d+)/).flatten.first || 0 )
 		end

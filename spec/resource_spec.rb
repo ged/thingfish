@@ -23,10 +23,6 @@ rescue LoadError
 end
 
 
-TEST_DATA = <<EOF
-Something.
-EOF
-
 #####################################################################
 ###	E X A M P L E S
 #####################################################################
@@ -34,10 +30,38 @@ EOF
 describe ThingFish::Resource do
 	include ThingFish::TestConstants
 
-	it "can be created from an IO" do
-		io = StringIO.new( TEST_DATA )
-		ThingFish::Resource.new( io )
+	before do
+		@io = StringIO.new( TEST_CONTENT )
 	end
+
+	it "can be created from an IO" do
+		resource = ThingFish::Resource.new( @io )
+		resource.data.should == TEST_CONTENT
+	end
+	
+	
+	it "can be created with metadata" do
+		resource = ThingFish::Resource.new( @io, :author => "Heidi Escariot" )
+		resource.metadata[:author].should == "Heidi Escariot"
+	end
+
+
+	it "can be created with data in a String" do
+		resource = ThingFish::Resource.new( TEST_CONTENT )
+		resource.data.should == TEST_CONTENT
+	end
+
+	it "allows metadata to be fetched via attribute reader methods" do
+		resource = ThingFish::Resource.new( @io, :format => 'text/html' )
+		resource.format.should == 'text/html'
+	end
+	
+	it "allows metadata to be set via attribute setter methods" do
+		resource = ThingFish::Resource.new( @io )
+		resource.format = 'text/html'
+		resource.format.should == 'text/html'
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

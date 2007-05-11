@@ -15,9 +15,11 @@
 #   # Create the entry then save it
 #   resource = ThingFish::Resource.new( File.open("mahlonblob.dxf") )
 #   resource.format = 'image/x-dxf'
-#   client.store( resource )
-#   
+#   resource = client.store( resource )
+#   # =>  #<ThingFish::Resource:0x142b3b8 UUID:fde68574-fd73-11db-a31e-6f1a83274382>
+#
 #   # Or do it all in one line
+#   client.store( File.open("woowoooo.wav"), :author => 'Bubb Rubb' )
 #   resource = client.store( File.open("mahlonblob.dxf"), :format => 'image/x-dxf' )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
 #   
@@ -112,7 +114,7 @@ require 'thingfish/resource'
 
 ### The thingfish client library
 class ThingFish::Client
-	include ThingFish::Constants, ThingFish::Loggable
+	include ThingFish::Constants::Patterns, ThingFish::Loggable
 
 	extend Forwardable
 
@@ -152,8 +154,6 @@ class ThingFish::Client
 			self.send( "#{meth}=", value )
 		end
 		self.password = pass if pass
-		
-		@http = nil
 	end
 
 
@@ -164,9 +164,6 @@ class ThingFish::Client
 	# The URI of the API endpoint
 	attr_reader :uri
 	
-	# The Net::HTTP object used to communicate with the ThingFish server
-	attr_accessor :http
-
 
 	# Delegate some methods to the URI
 	def_delegators :@uri,
@@ -193,7 +190,8 @@ class ThingFish::Client
 		request = Net::HTTP::Get.new( fetchuri.path )
 		request['Accept'] = '*/*'
 
-		response = send_request( fetchuri, request ) do |res|
+		response = send_request( request ) do |res|
+
 			# case res
 			# when Net::HTTPSuccess
 			# 	ThingFish::Resource.new_from_http_response( res )
@@ -207,31 +205,36 @@ class ThingFish::Client
 	end
 
 
-	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
-	### and write it to the specified +file+. If +file+ is nil, the content will be
-	### written to STDOUT instead.
-	def do_download( uri, uuid, file )
-		uri.path += uuid
-	
-		req = Net::HTTP::Get.new( uri.path )
-		req['Accept'] = '*/*'
+	### Store the given +resource+ (which can be a ThingFish::Resource, a String 
+	### containing resource data, or an IO from which resource data can be read) on
+	### the server. The optional +metadata+ hash can be used to set metadata values
+	### for the resource.
+	def store( resource, metadata={} )
+		# If the resource argument isn't already a ThingFish::Resource, make one
+		resource = ThingFish::Resource.new( resource, metadata ) unless
+			resource.is_a?( ThingFish::Resource )
 
-		# Send the request and read the body of the response into the filehandle
-		send_request( uri, req ) do |response|
-			bytes = 0
-			fh = get_writer_io( file )
-
-			response.read_body do |chunk|
-				bytes += chunk.size
-				fh.print( chunk )
-			end
-
-			fh.close
-			self.log.debug "Wrote %d bytes from %s." % [ bytes, uuid ]
+		# If it's an existing resource (i.e., has a UUID), update it
+		request = nil
+		if resource.uuid
+			request = Net::HTTP::Put.new( @uri.path + resource.uuid )
+		else
+			request = Net::HTTP::Post.new( @uri.path )
 		end
+
+		request.body_stream = resource.io
+		request['Content-Length'] = resource.extent if resource.extent
+		request['Content-Type'] = resource.format if resource.format
+		request['Content-Disposition'] = 'attachment;filename="%s"' %
+		 	[ resource.filename ] if resource.filename
+
+		response = self.send_request( request )
+		uuid = response['Location'].scan( UUID_REGEXP ).first
+		resource.uuid = uuid
+		resource.location = @uri + uuid
+		
+		return resource
 	end
-
-
 
 
 	#########
@@ -241,11 +244,11 @@ class ThingFish::Client
 	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
 	### object). The +limit+ specifies how many redirects will be followed before giving 
 	### up.
-	def send_request( uri, req, body=nil, limit=10, &block )
+	def send_request( req, limit=10, &block )
 		self.log.debug "Request: " + dump_request_object( req )
 		
 		response = Net::HTTP.start( uri.host, uri.port ) do |conn|
-			conn.request( req, body, &block )
+			conn.request( req, &block )
 		end
 	
 		self.log.debug "Response: " + dump_response_object( response )
@@ -275,6 +278,8 @@ class ThingFish::Client
 		
 		return buf
 	end
+
+
 
 end # class ThingFish::Client
 

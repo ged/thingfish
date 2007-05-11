@@ -35,10 +35,13 @@ require 'mongrel/stats'
 require 'mongrel/handlers'
 
 
+### Add an attribute reader +name+
 class Mongrel::Stats
 	attr_reader :name
 end
 
+### Add some attribute readers an an #each_stat method to the 
+### default Mongrel StatisticsFilter
 class Mongrel::StatisticsFilter
 	STATS = [
 	 	:processors,
@@ -64,7 +67,7 @@ end
 ### Output a quick inspection page
 class ThingFish::StatusHandler < ThingFish::Handler
 	include ThingFish::Loggable,
-	        ThingFish::StaticResources,
+	        ThingFish::StaticResourcesHandler,
 	        ThingFish::Constants
 
 

@@ -15,13 +15,27 @@
 #       end
 #   end
 #
-#   # StaticResources
+#   # StaticResourcesHandler
 #   class MyHandler < ThingFish::Handler
-#       include ThingFish::StaticResources
+#       include ThingFish::StaticResourcesHandler
 #   
 #       static_resource_dir "static"
 #
 #       # ...
+#   end
+#
+#   # ResourceLoader
+#   class MyMetastore < ThingFish::MetaStore
+#       include ThingFish::ResourceLoader
+#   
+#       def initialize( options )
+#           unless schema_installed?
+#               sql = get_resource( 'base_schema.sql' )
+#               install_schema( sql )
+#           end
+#           ...
+#       end
+#
 #   end
 #
 #   # AbstractClass
@@ -47,10 +61,15 @@
 # Adds a #log method to the including class which can be used to access the global
 # logging facility.
 #
-# === ThingFish::StaticResources
+# === ThingFish::StaticResourcesHandler
 #
 # Adds the ability to a ThingFish::Handler to serve static content from its resources
 # directory.
+#
+# === ThingFish::ResourceLoader
+#
+# Adds some methods that can be used to load content from files in a 
+# resources directory.
 #
 # === ThingFish::AbstractClass
 # 
@@ -75,6 +94,8 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
+require 'rbconfig'
+
 require 'thingfish'
 require 'mongrel/handlers'
 
@@ -97,7 +118,7 @@ module ThingFish # :nodoc:
 
 	### Add the ability to servce static content from a ThingFish::Handler's resource
 	### directory
-	module StaticResources
+	module StaticResourcesHandler
 		
 		### Inclusion callback -- add class methods to the including module.
 		def self::included( mod )
@@ -137,7 +158,76 @@ module ThingFish # :nodoc:
 		end
 		
 		
-	end # module StaticResources
+	end # module StaticResourcesHandler
+	
+	
+	### Adds some methods that can be used to load content from files in a 
+	### resources directory.
+	module ResourceLoader
+		include ThingFish::Loggable
+
+		### Set up the resource directory of the object
+		def initialize( *args )
+			@resource_dir = nil
+
+			# Try to find the resource directory argument in the first Hash
+			if options = args.find {|obj| obj.is_a?(Hash) }
+				@resource_dir = options['resource_dir'] || options[:resource_dir]
+			end
+
+			if self.class.superclass.instance_method(:initialize).arity.zero?
+				super()
+			else
+				super
+			end
+		end
+
+
+		### Return a Pathname object that points at the resource directory 
+		### for this handler
+		def resource_dir
+
+			# If a resource dir hasn't been specified, figure out a reasonable default
+			# using Ruby's datadir
+			unless @resource_dir
+				datadir = Pathname.new( ::Config::CONFIG['datadir'] )
+				@resource_dir = datadir + 'thingfish' + self.plugin_name
+			end
+
+			return Pathname.new( @resource_dir )
+		end
+
+
+		### Return the normalized name of the including class, which 
+		### determines what the resources directory is named.
+		def plugin_name
+			return self.class.name.
+				sub( /ThingFish::/, '' ).
+				gsub( /\W+/, '-' ).
+				downcase
+		end
+		
+
+		#########
+		protected
+		#########
+
+		### Read the content from the file 
+		def get_resource( path )
+			return self.get_resource_io( path ).read
+		end
+
+
+		### Return an IO object opened to the file specified by +path+ 
+		### relative to the plugin's resource directory.
+		def get_resource_io( path )
+			resdir = self.resource_dir or 
+				raise "No resource directory available"
+			self.log.debug "Trying to open resource %p from %s" % [ path, resdir ]
+			( resdir + path ).open( File::RDONLY )
+		end
+
+	end # module ResourceLoader
 	
 	
 	### Adds abstract class helpers to a class.

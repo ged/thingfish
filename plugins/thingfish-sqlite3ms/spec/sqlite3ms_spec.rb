@@ -37,8 +37,12 @@ describe "A SQLite3 MetaStore" do
 
 
 	before(:each) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 		@tmpdir = make_tempdir()
-	    @store = ThingFish::MetaStore.create( 'sqlite3', :root => @tmpdir.to_s )
+	    @store = ThingFish::MetaStore.create( 'sqlite3',
+			:root => @tmpdir.to_s,
+			:resource_dir => resdir
+		  )
 	end
 	
 	after(:each) do

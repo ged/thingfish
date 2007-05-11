@@ -4,7 +4,18 @@
 #
 # == Synopsis
 #
+#   require 'thingfish/daemon'
+#   require 'thingfish/config'
 #
+#   config = ThingFish::Config.load( "thingfish.conf" )
+#   server = ThingFish::Daemon.new( config )
+#   
+#   accepter = server.run  # => #<Thread:0x142317c sleep>
+#   
+#   Signal.trap( "INT" ) { server.shutdown("Interrupted") }
+#   Signal.trap( "TERM" ) { server.shutdown("Terminated") }
+# 
+#   accepter.join
 #
 # == Version
 #
@@ -42,10 +53,12 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	SVNId = %q$Id$
 	SVNRev = %q$Rev$
 
+	# Constants for HTTP headers
 	SERVER_VERSION = '0.0.1'
 	SERVER_SOFTWARE = "ThingFish/#{SERVER_VERSION}"
 	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
 
+	# Options for the default handler
 	DEFAULT_HANDLER_OPTIONS = {}
 
 

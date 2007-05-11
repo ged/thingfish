@@ -26,7 +26,7 @@ end
 include ThingFish::TestConstants
 
 class TestHandler < ThingFish::Handler
-	public :get_resource, :log_request
+	public :log_request
 end
 
 
@@ -42,21 +42,9 @@ end
 
 
 describe "An instance of a derivative class" do
-	before(:all) do
-		@tmpfile = Tempfile.new( 'test.txt', '.' )
-		@tmpfile.print( TEST_RESOURCE_CONTENT )
-		@tmpfile.close
-	end
 
-	after(:all) do
-		@tmpfile.delete
-	end
-	
-	
 	before(:each) do
-		@resdir = Pathname.new( @tmpfile.path ).dirname.expand_path
-
-	    @handler = ThingFish::Handler.create( 'test', 'resource_dir' => @resdir )
+	    @handler = ThingFish::Handler.create( 'test' )
 		@datadir = Config::CONFIG['datadir']
 	end
 
@@ -64,15 +52,6 @@ describe "An instance of a derivative class" do
 	### Specs
 	it "knows what its normalized name is" do
 		@handler.plugin_name.should == 'testhandler'
-	end
-
-	it "knows what its resources dir is" do
-		@handler.resource_dir.should == @resdir
-	end
-
-	it "is able to load stuff from its resources dir" do
-		tmpname = Pathname.new( @tmpfile.path ).basename
-	    @handler.get_resource( tmpname.to_s ).should == TEST_RESOURCE_CONTENT
 	end
 
 	it "is able to output a consistent request log message" do

@@ -13,7 +13,7 @@ require 'stringio'
 require 'spec/runner'
 require "thingfish/mixins"
 
-describe "A class which has mixed in Loggable" do
+describe ThingFish::Loggable, " (class)" do
 	before(:each) do
 		@logfile = StringIO.new('')
 		ThingFish.logger = Logger.new( @logfile )
@@ -42,10 +42,10 @@ describe "A class which has mixed in Loggable" do
 end
 
 
-describe "A handler class which has mixed in StaticResources" do
+describe ThingFish::StaticResourcesHandler, " which has been mixed into a class" do
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResources
+			include ThingFish::StaticResourcesHandler
 		end
 	end
 
@@ -59,10 +59,11 @@ describe "A handler class which has mixed in StaticResources" do
 	end
 end
 
-describe "A handler class which has mixed in StaticResources and set the static resources dir" do
+describe ThingFish::StaticResourcesHandler, 
+	" which has mixed into a handler class that has set the static resources dir" do
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResources
+			include ThingFish::StaticResourcesHandler
 			static_resources_dir "static-content"
 		end
 	end
@@ -73,10 +74,12 @@ describe "A handler class which has mixed in StaticResources and set the static 
 	end
 end
 
-describe "An instance of a handler class which has mixed in StaticResources" do
+describe ThingFish::StaticResourcesHandler, 
+	" which has been mixed into an instance of a handler class" do
+		
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResources
+			include ThingFish::StaticResourcesHandler
 			static_resources_dir "static-content"
 		end
 		@test_handler = @test_class.new
@@ -95,7 +98,49 @@ describe "An instance of a handler class which has mixed in StaticResources" do
 	end
 end
 
-describe "A class which has mixed in AbstractClass" do
+describe ThingFish::ResourceLoader do
+	it "adds a #get_resource method to including classes" do
+		klass = Class.new { include ThingFish::ResourceLoader }
+		obj = klass.new
+		obj.should respond_to( :get_resource )
+	end
+end
+
+describe "A class which has mixed in ThingFish::ResourceLoader" do
+	before(:all) do
+		@tmpfile = Tempfile.new( 'test.txt', '.' )
+		@tmpfile.print( TEST_RESOURCE_CONTENT )
+		@tmpfile.close
+		@tmpname = Pathname.new( @tmpfile.path ).basename
+		
+		@klass = Class.new {
+			include ThingFish::ResourceLoader
+			alias_method :get_mah_bucket, :get_resource
+			public :get_mah_bucket
+		}
+	end
+
+	after(:all) do
+		@tmpfile.delete
+	end
+
+	before(:each) do
+		ThingFish.logger.level = Logger::DEBUG
+		@resdir = Pathname.new( @tmpfile.path ).dirname.expand_path
+		@obj = @klass.new( :resource_dir => @resdir )
+	end
+	
+	it "should know what its resource directory is" do
+		@obj.resource_dir.should == @resdir
+	end
+
+	it "is able to load stuff from its resources dir" do
+	    @obj.get_mah_bucket( @tmpname ).should == TEST_RESOURCE_CONTENT
+	end
+
+end
+
+describe ThingFish::AbstractClass, " mixed into a class" do
 	before(:each) do
 		@test_class = Class.new do
 			include ThingFish::AbstractClass
@@ -103,7 +148,7 @@ describe "A class which has mixed in AbstractClass" do
 	end
 
 
-	it "won't have a public ::new method" do
+	it "will cause the including class to hide its ::new method" do
 		lambda {
 			@test_class.new
 		}.should raise_error( NoMethodError, /private/ )
@@ -112,8 +157,7 @@ describe "A class which has mixed in AbstractClass" do
 end
 
 
-describe "An instance of a class derived from one which has mixed in AbstractClass " +
-	"and defined virtual methods" do
+describe ThingFish::AbstractClass, " mixed into a superclass" do
 	before(:each) do
 		@base_class = Class.new do
 			include ThingFish::AbstractClass
@@ -133,7 +177,7 @@ describe "An instance of a class derived from one which has mixed in AbstractCla
 end
 
 
-describe Numeric, " after mixing in ThingFish::NumericConstantMethods" do
+describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 
 	SECONDS_IN_A_MINUTE    = 60
 	SECONDS_IN_AN_HOUR     = SECONDS_IN_A_MINUTE * 60

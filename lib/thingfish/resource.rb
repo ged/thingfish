@@ -59,7 +59,6 @@ require 'thingfish/mixins'
 class ThingFish::Resource
 	include ThingFish::Loggable
 	
-
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -67,10 +66,77 @@ class ThingFish::Resource
 	SVNId = %q$Id$
 
 
-	### Create a new ThingFish::Resource from the specified +datasource+. If the 
-	### optional +client+ argument is given (a ThingFish::Client object or similar), 
-	### use it to save the resource.
-	def initialize( datasource, client=nil, metadata={} )
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+	
+	### Create a new ThingFish::Resource from the specified +datasource+, which can 
+	### be either a String containing the data or an IO object from which the 
+	### resource can be read.
+	def initialize( datasource, metadata={} )
+		@client = nil
+		@data = nil
+		@location = nil
+
+		@io = normalize_io_obj( datasource )
+		@metadata = metadata
+	end
+
+
+	######
+	public
+	######
+
+	# Metadata hash
+	attr_reader :metadata
+
+	# The ThingFish::Client the resource is stored in (or will be stored in when it
+	# is saved)
+	attr_accessor :client
+
+	# The IO object containing the resource data
+	attr_accessor :io
+
+	# The URI where this resource is stored (if it has been stored)
+	attr_accessor :location
+	
+
+	### Read the data for the resource into a String and return it.
+	def data
+		@data ||= @io.read
+	end
+	
+	
+	#########
+	protected
+	#########
+
+	### Proxy method for calling methods that correspond to keys.
+	def method_missing( sym, val=nil, *args )
+		case sym.to_s
+		when /^(?:has_)(\w+)\?$/
+			propname = $1.to_sym
+			return @metadata.key?( propname )
+
+		when /^(\w+)=$/
+			propname = $1.to_sym
+			return @metadata[ propname ] = val
+			
+		else
+			return @metadata[ sym ]
+		end
+	end
+	
+
+
+	### Set the datasource for the object to +sourceobj+, which can be either an
+	### IO object (in which case it's used directly), or the resource data in a 
+	### String, in which case the datasource will be set to a StringIO containing
+	### the data.
+	def normalize_io_obj( sourceobj )
+		return sourceobj if sourceobj.respond_to?( :read )
+		@data = sourceobj
+		return StringIO.new( sourceobj )
 	end
 	
 

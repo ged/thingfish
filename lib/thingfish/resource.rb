@@ -54,6 +54,8 @@
 require 'thingfish'
 require 'thingfish/mixins'
 
+require 'tempfile'
+
 
 ### Resource wrapper class
 class ThingFish::Resource
@@ -66,6 +68,43 @@ class ThingFish::Resource
 	SVNId = %q$Id$
 
 
+	# The maximum number of bytes before the resource instance's data is
+	# written out to a tempfile
+	MAX_INMEMORY_BODY = 128.kilobytes
+	
+
+
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Create a new ThingFish::Resource object from the data in the specified
+	### +filename+. Any +metadata+ given will be also set in the resulting object.
+	def self::from_file( filename, metadata={} )
+		return new( File.open(filename, 'r'), metadata )
+	end
+	
+
+	### Create a new ThingFish::Resource object from the data in the specified
+	### +response+ (a Net::HTTPOK object). 
+	def self::from_http_response( response, metadata={} )
+		raise ArgumentError, "cannot create a resource from a '%d %s' response" %
+			[response.code, response.message] unless response.is_a?( Net::HTTPOK )
+
+		if response['Content-Length'] && response['Content-Length'].to_i > MAX_INMEMORY_BODY
+			io = Tempfile.open( 'thingfish-resource' )
+			response.read_body do |chunk|
+				io.write( chunk )
+			end
+			io.rewind
+			
+			new( io, metadata )
+		else
+			new( response.body, metadata )
+		end
+	end
+	
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -75,11 +114,15 @@ class ThingFish::Resource
 	### resource can be read.
 	def initialize( datasource, metadata={} )
 		@client = nil
-		@data = nil
 		@location = nil
+		@uuid = nil
+		@metadata = {}
 
 		@io = normalize_io_obj( datasource )
-		@metadata = metadata
+		
+		metadata.each do |key, val|
+			self.send( "#{key}=", val )
+		end
 	end
 
 
@@ -100,11 +143,40 @@ class ThingFish::Resource
 	# The URI where this resource is stored (if it has been stored)
 	attr_accessor :location
 	
+	# The resource's UUID (if it has one)
+	attr_accessor :uuid
+	
 
 	### Read the data for the resource into a String and return it.
 	def data
-		@data ||= @io.read
+		rval = @io.read
+		@io.rewind
+		return rval
 	end
+	
+	
+	### Write the data from the resource to the given +io+ object.
+	def export( io )
+		
+		buf = ''
+		while @io.read( 8192, buf )
+			until buf.empty?
+				bytes = io.write( buf )
+				buf.slice!( 0, bytes )
+			end
+		end
+		
+		@io.rewind
+	end
+	
+	
+	### Save the resource to the server using the resource's client. If no client is
+	### set for this resource, this method raises a RuntimeError.
+	def save
+		raise "no client set" unless @client
+		@client.store( self )
+	end
+	
 	
 	
 	#########
@@ -135,7 +207,6 @@ class ThingFish::Resource
 	### the data.
 	def normalize_io_obj( sourceobj )
 		return sourceobj if sourceobj.respond_to?( :read )
-		@data = sourceobj
 		return StringIO.new( sourceobj )
 	end
 	

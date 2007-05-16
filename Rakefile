@@ -26,13 +26,13 @@ require 'rake'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 require 'rake/gempackagetask'
+require 'misc/rake/svnhelpers'
 require 'pathname'
 
 
 ### Config constants
 PKG_NAME      = 'thingfish'
 PKG_VERSION   = ThingFish::VERSION
-PKG_BUILD     = ThingFish::SVNRev[ /\d+/ ] || 'unknown'
 PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
 
 RELEASE_NAME  = "REL #{PKG_VERSION}"
@@ -55,7 +55,7 @@ RELEASE_FILES = TEXT_FILES + LIB_FILES + SPEC_FILES
 
 
 ### Default task
-task :default  => [:spec, :verify, :package]
+task :default  => [:clean, :spec, :verify, :package]
 
 ### Task: clean
 desc "Clean pkg, coverage, and rdoc; remove .bak files"
@@ -80,11 +80,14 @@ end
 
 ### Task: gem
 gemspec = Gem::Specification.new do |gem|
+	pkg_build = extract_svn_rev( BASEDIR )
+	
 	gem.name    	= PKG_NAME
-	gem.version 	= PKG_VERSION + '.' + PKG_BUILD
+	gem.version 	= "%s.%d" % [ PKG_VERSION, pkg_build ]
 
 	gem.summary     = "ThingFish - A highly-accessable network datastore"
 	gem.description = <<-EOD
+	:TODO: Finish writing this description.
 	ThingFish is a highly-accessable network datastore. And it needs more description.
 	EOD
 
@@ -127,7 +130,7 @@ end
 
 ### Cruisecontrol task
 desc "Cruisecontrol build"
-task :cruise => [:coverage, :package] do |task|
+task :cruise => [:clean, :coverage, :package] do |task|
 	raise "Artifacts dir not set." if ARTIFACTS_DIR.to_s.empty?
 	artifact_dir = ARTIFACTS_DIR.cleanpath
 	artifact_dir.mkpath
@@ -201,14 +204,14 @@ end
 
 ### RSpec tasks
 begin
-	gem 'rspec', '>= 0.9.0'
+	gem 'rspec', '>= 0.9.4'
 	require 'spec/rake/spectask'
 
 	### Task: spec
 	Spec::Rake::SpecTask.new( :spec ) do |task|
 		task.spec_files = SPEC_FILES
 		task.libs.unshift( FileList['plugins/**/lib'] )
-		task.spec_opts = ['-c', '-f','s']
+		task.spec_opts = ['-c', '-f','s', '-b']
 	end
 	task :test => [:spec] do; end
 
@@ -259,7 +262,7 @@ end
 begin
 	gem 'rcov'
 	gem 'rspec', '>= 0.9.0'
-	require 'spec/rake/verifytask'
+	require 'misc/rake/verifytask'
 
 	### Task: coverage (via RCov)
 	desc "Build test coverage reports"

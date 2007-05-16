@@ -35,8 +35,9 @@ end
 #####################################################################
 
 describe "The daemon class" do
+	
+
 	before(:each) do
-		
 		@log = StringIO.new('')
 		ThingFish.logger = Logger.new( @log )
 	end

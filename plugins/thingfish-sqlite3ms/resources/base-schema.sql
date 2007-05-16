@@ -3,11 +3,7 @@
 -- $Id$
 -- 
 PRAGMA default_cache_size = 7000;
-
-CREATE TABLE
-  'version' (
-  'created_at' VARCHAR(20) NOT NULL
-);
+PRAGMA user_version = $Rev: 185 $; -- Transformed by the plugin before insertion
 
 CREATE TABLE
   'resources' (

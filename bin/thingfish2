@@ -121,7 +121,7 @@ class ThingFish::CommandLineClient
 		resource.export( fh )
 		fh.close
 
-		$deferr.puts "Wrote %d bytes from %s." % [ bytes, uuid ]
+		$deferr.puts "Fetched resource at %s." % [ uuid ]
 	end
 
 

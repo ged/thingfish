@@ -1,19 +1,21 @@
 
 require 'thingfish'
 require 'digest/md5'
+require 'net/http'
+require 'net/protocol'
 
 module ThingFish::TestConstants
 
-	TEST_CONTENT = <<EOF
-<html>
-<head>
-	<title>Test Index</title>
-</head>
-<body>
-	<h1>This is the test index content.</h1>
-</body>
-</html>
-EOF
+	TEST_CONTENT = <<-'EOF'.gsub(/^\s*/, '')
+	<html>
+	<head>
+		<title>Test Index</title>
+	</head>
+	<body>
+		<h1>This is the test index content.</h1>
+	</body>
+	</html>
+	EOF
 
 	TEST_SERVER    		  = 'thingfish.laika.com'
 	TEST_SERVER_URI		  = 'http://thingfish.laika.com:5000/'
@@ -32,5 +34,32 @@ EOF
 	TEST_CONTENT_TYPE	  = 'text/html'
 	HANDLER_TEST_UUID	  = UUID.parse( '1f770750-bb74-11db-afc1-97290f0c5beb' )
 
+	# Fixtured HTTP responses
+	TEST_OK_HTTP_RESPONSE = <<-'EOF'.gsub(/^\s*/, '')
+	HTTP/1.0 200 OK
+	Connection: close
+	Expires: Tue, 13 May 2008 23:19:49 GMT
+	Etag: "5f77bb4205ddd0482a834ab65a9cdbe4"
+	Content-Type: image/jpeg
+	Date: Mon, 14 May 2007 17:19:49 GMT
+	Server: ThingFish/0.0.1 (Rev: 185 )
+	Content-Length: 14620
+	EOF
+
+	### Return a Net::HTTPSuccess object with the contents set to the specified 
+	### +data+.
+	def with_fixtured_http_ok_response( data='' )
+		raw_response = TEST_OK_HTTP_RESPONSE + "\n" + data
+		io = Net::BufferedIO.new( StringIO.new(raw_response) )
+		response = Net::HTTPResponse.read_new( io )
+		response['Content-Length'] = data.length
+		response['Etag'] = %{"%s"} % Digest::MD5.hexdigest(data) if data
+
+		response.reading_body( io, true ) do
+			yield response if block_given?
+		end
+		return response
+	end
+	
 end
 

@@ -34,7 +34,8 @@ describe ThingFish::Client do
 	include ThingFish::Constants
 	
 	before(:each) do
-		@mock_response = mock( "response", :null_object => true )
+		@mock_response = mock( "response object", :null_object => true )
+		@mock_request = mock( "request object", :null_object => true )
 		@mock_conn = mock( "HTTP connection", :null_object => true )
 
 		Net::HTTP.stub!( :start ).and_yield( @mock_conn )
@@ -44,22 +45,46 @@ describe ThingFish::Client do
 
 
 	it "fetches a resource from the server by UUID via HTTP" do
-		@mock_response
-		@client.fetch( TEST_UUID ) do |res|
-			
-		end
+		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger.level = Logger::DEBUG
+
+		Net::HTTP::Get.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "GET" )
+
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+
+		Net::HTTPOK.stub!( :=== ).and_return( true )
+
+		@mock_response.should_receive( :is_a? ).with( Net::HTTPOK ).and_return( true )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+		@mock_response.should_receive( :message ).and_return( "OK" )
+		
+		rval = @client.fetch( TEST_UUID )
+		rval.should be_an_instance_of( ThingFish::Resource )
+		rval.uuid.should == TEST_UUID
+		rval.client.should == @client
 	end
-	
+
+
+	it "fetching a non-existant resource should return nil" do
+		Net::HTTP::Get.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "GET" )
+
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
+		@mock_response.should_receive( :message ).and_return( "NOT FOUND" )
+		
+		@client.fetch( TEST_UUID ).should be_nil
+	end
 	
 	
 	it "stores a resource by uploading it to the server" do
 		resource = ThingFish::Resource.new( TEST_CONTENT, :format => 'gel/pudding' )
-		mock_request = mock( "request object", :null_object => true )
 		
-		Net::HTTP::Post.should_receive( :new ).with( '/' ).and_return( mock_request )
-		mock_request.should_receive( :method ).and_return( "POST" )
+		Net::HTTP::Post.should_receive( :new ).with( '/' ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "POST" )
 
-		@mock_conn.should_receive( :request ).with( mock_request ).and_return( @mock_response )
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
 		@mock_response.should_receive( :code ).and_return( HTTP::CREATED )
 		@mock_response.should_receive( :[] ).with( 'Location' ).and_return( '/' + TEST_UUID )
 		
@@ -73,12 +98,10 @@ describe ThingFish::Client do
 		resource = ThingFish::Resource.new( TEST_CONTENT, :format => 'gel/pudding' )
 		resource.uuid = TEST_UUID
 
-		mock_request = mock( "request object", :null_object => true )
-		
-		Net::HTTP::Put.should_receive( :new ).with( "/#{TEST_UUID}" ).and_return( mock_request )
-		mock_request.should_receive( :method ).and_return( "PUT" )
+		Net::HTTP::Put.should_receive( :new ).with( "/#{TEST_UUID}" ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "PUT" )
 
-		@mock_conn.should_receive( :request ).with( mock_request ).and_return( @mock_response )
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
 		@mock_response.should_receive( :code ).and_return( HTTP::OK )
 		@mock_response.should_receive( :[] ).with( 'Location' ).and_return( '/' + TEST_UUID )
 		

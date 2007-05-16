@@ -149,14 +149,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
-	### Set the listener object
-	def listener=( listener )
-		@filestore = listener.filestore
-		@metastore = listener.metastore
-		super
-	end
-
-
 	#########
 	protected
 	#########

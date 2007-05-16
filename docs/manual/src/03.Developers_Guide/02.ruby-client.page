@@ -28,9 +28,25 @@ The first step is to configure the client, which you can do by providing the con
 	caption: Creating the client object
   }}
 
+h3. Storing Data
+
+Once you have a configured client object, you can store data on the server by passing
+either the data or a IO object open to the data to the @#store@ method of the client:
+
+{example: {
+	filename: examples/storing.rb,
+	language: ruby,
+	testable: true,
+	caption: Storing a PNG on the server
+}}
+
+The @#store@ method returns a @ThingFish::Resource@, which can then be used to query
+the object stored on the server for its UUID and any other metadata added to it.
+
+
 h3. Fetching Resources
 
-Once you have a configured client object, you can fetch resources from the server via their UUID:
+fetch resources from the server via their UUID:
 
 {example: {
 	filename: examples/fetching.rb,

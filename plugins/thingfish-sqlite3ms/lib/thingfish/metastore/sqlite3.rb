@@ -40,7 +40,27 @@ require 'thingfish'
 require 'thingfish/exceptions'
 require 'thingfish/metastore'
 
+### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been 
+### renamed)
+module SQLite3::Pragmas
+	def schema_version
+      get_int_pragma "schema_version"
+    end
 
+    def schema_version=( version )
+      set_int_pragma "schema_version", version
+    end
+
+    def user_version
+      get_int_pragma "user_version"
+    end
+
+    def user_version=( version )
+      set_int_pragma "user_version", version
+    end
+end
+
+### A metastore backend that stores metadata tuples in a SQLite3 database
 class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 
 	include ThingFish::Loggable,
@@ -55,6 +75,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	# The default root directory
 	DEFAULT_ROOT = '/tmp/thingstore'
 
+	# The name of the schema file under resources/
+	SCHEMA_RESOURCE_NAME = 'base-schema.sql'
 
 
 	#################################################################
@@ -68,17 +90,10 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 		@root = Pathname.new( options[:root] || DEFAULT_ROOT )
 		@root.mkpath
 		@dbname = @root + 'metadata.db'
+		@schema = nil
 
-		db_needs_init = ! File.exists?( @dbname )
 		@metadata = SQLite3::Database.new( @dbname )
-
-		if db_needs_init
-			schema = self.get_resource( 'base-schema.sql' )
-			self.log.info "Initializing a new sqlite3 backed metastore"
-			@metadata.execute_batch( schema )
-			@metadata.execute( 'INSERT INTO version VALUES ( :rev )',
-				SVNRev.scan(/(\d+)/).flatten.first || 0 )
-		end
+		self.init_db
 
 		# TODO:
 		# automatic schema updates
@@ -88,6 +103,29 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	######
 	public
 	######
+
+	# The sqlite3 database handle associated with the store
+	attr_accessor :metadata
+
+	# The name of the sqlite3 database that is backing the metastore
+	attr_reader :dbname
+	
+
+	### Returns +true+ if the metadata database needs to be created.
+	def db_needs_init?
+		return @metadata.user_version.zero?
+	end
+
+
+	### Returns +true+ if the metadata database's schema is a lower rev
+	### than the schema the receiver knows about.
+	def db_needs_update?
+		rev = self.schema_rev or return false
+		installed_rev = self.installed_schema_rev
+		
+		return rev > installed_rev ? true : false
+	end
+	
 
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
@@ -200,9 +238,65 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 		@metadata.execute( delete_sql, uuid )
 	end
 
+
+	### Return the schema that describes the database as a String, loading
+	### it from the plugin resources if necessary
+	def schema
+		unless @schema
+			@schema = self.get_resource( SCHEMA_RESOURCE_NAME )
+			self.log.debug "Schema loaded as: %p" % [@schema]
+			@schema.gsub!( /\$Rev(?:: (\d+))?\s*\$/ ) do |match|
+				$1 ? $1 : '0'
+			end
+			self.log.debug "After transformation of  the rev: %p" % [@schema]
+		end
+		
+		return @schema
+	end
+	
+	
+	### Extract the revision number from the schema resource and return it.
+	def schema_rev
+		if self.schema.match( /user_version\s*=\s*(\d+)/i )
+			return Integer( $1 )
+		else
+			return nil
+		end
+	end
+	
+	
+	### Returns the revision number of the schema that was installed for the 
+	### current db.
+	def installed_schema_rev
+		return @metadata.user_version
+	end
+	
+	
+	### Delete all resources from the database, but preserve the keys
+	def clear
+		@metadata.transaction( :exclusive ) do
+			@metadata.execute( "delete from resources" )
+		end
+	end
+	
+
 	#########
 	protected
 	#########
+
+	### Create the metadata database if it doesn't already exist
+	def init_db
+		return unless self.db_needs_init?
+		self.log.info "Initializing a new sqlite3 backed metastore"
+
+		# Load the schema and fix up the schema version
+		sql = self.schema or raise "No schema?!?"
+		self.log.debug "Creating database: %p" % [sql]
+
+		# Upload the schema
+		@metadata.execute_batch( sql )
+	end
+	
 
 	### Return the id of a given resource uuid, or if none exist,
 	### create a new row and return the id.

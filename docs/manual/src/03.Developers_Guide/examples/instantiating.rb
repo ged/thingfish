@@ -6,7 +6,7 @@ client = ThingFish::Client.new( 'thingfish.laika.com' )
 
 # -or-
 
-client = ThingFish::Client.new( 'https://thingfish.laika.com:3474/' )
+client = ThingFish::Client.new( 'http://thingfish.laika.com:3474/' )
 
 # -or-
 

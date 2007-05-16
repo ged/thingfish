@@ -35,19 +35,27 @@ describe "A SQLite3 MetaStore" do
 		return Pathname.new( Dir.tmpdir ) + dirname
 	end
 
+	before(:all) do
+		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger.level = Logger::DEBUG
 
-	before(:each) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 		@tmpdir = make_tempdir()
+		# $deferr.puts "Creating sqlite3 store: %p" % @tmpdir.to_s
 	    @store = ThingFish::MetaStore.create( 'sqlite3',
 			:root => @tmpdir.to_s,
 			:resource_dir => resdir
 		  )
 	end
-	
+
 	after(:each) do
+		@store.clear
+	end
+
+	after(:all) do
 		@tmpdir.rmtree
 	end
+
 
 	### Specs
 	it "can set and get a property belonging to a UUID" do
@@ -84,6 +92,32 @@ describe "A SQLite3 MetaStore" do
 		@store.has_property?( TEST_UUID, TEST_PROP ).should be_false
 		@store.has_property?( TEST_UUID, TEST_PROP2 ).should be_false
 	end
+	
+	it "can load the SQL schema it uses from its resource directory" do
+		@store.schema.should =~ /CREATE TABLE\s*'resources'/
+	end
+
+	it "knows what revision of the schema is installed" do
+		@store.installed_schema_rev.should be_a_kind_of( Integer )
+	end
+
+	it "knows what rev of the schema is in its resources dir" do
+		@store.schema_rev.should be_a_kind_of( Integer )
+	end
+	
+
+	it "knows when its schema is out of date" do
+		mock_db = mock( "db handle", :null_object => true )
+		@store.metadata = mock_db
+		
+		rev = @store.schema_rev
+		
+		mock_db.should_receive( :user_version ).
+			at_least(:once).
+			and_return( rev - 5 )
+		@store.db_needs_update?.should == true
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

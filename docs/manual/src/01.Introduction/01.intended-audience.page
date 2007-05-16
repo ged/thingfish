@@ -19,7 +19,7 @@ You will also want to refer to the <a href="{relocatable: ../05.Maintenance}">Ma
 
 h3. Web Developers
 
-If you're a web developer seeking to use an installed ThingFish server, the <a href="{relocatable: ../03.Developers_Guide}">Developer's Guide</a> is for you. You'll most likely want to skim the rest of introduction as well, as it describes several important concepts that will make using the service a bit more intuitive.
+If you're a web developer seeking to use an installed ThingFish server, the <a href="{relocatable: ../03.Developers_Guide}">Developer's Guide</a> is for you. You'll most likely want to skim the rest of the introduction as well, as it describes several important concepts that will make using the service a bit more intuitive.
 
 
 h3. Plugin Developers

@@ -13,6 +13,10 @@ require 'rake/tasklib'
 # drop below a certain threshold. It should be run after
 # running Spec::Rake::SpecTask.
 class VerifyTask < Rake::TaskLib
+	
+	COVERAGE_PERCENTAGE_PATTERN = 
+		%r{<tt class='coverage_code'>(\d+\.\d+)%</tt>}
+	
 	# Name of the task. Defaults to :verify_rcov
 	attr_accessor :name
 
@@ -43,7 +47,7 @@ class VerifyTask < Rake::TaskLib
 
 		task @name do
 			total_coverage = nil
-			if match = File.read( index_html ).match(/<tt>(\d+\.\d+)%<\/tt>&nbsp;<\/td>/)
+			if match = File.read( index_html ).match( COVERAGE_PERCENTAGE_PATTERN )
 				total_coverage = Float( match[1] )
 			else
 				raise "Couldn't find the coverage percentage in #{index_html}"

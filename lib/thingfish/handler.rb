@@ -82,6 +82,14 @@ class ThingFish::Handler
 	end
 	
 
+	### Set the handler's filestore and metastore object in the handler (callback 
+	### from the daemon when the handler is registered)
+	def listener=( listener )
+		@filestore = listener.filestore
+		@metastore = listener.metastore
+		super
+	end
+
 
 
 	#########

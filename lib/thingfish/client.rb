@@ -189,19 +189,27 @@ class ThingFish::Client
 
 		request = Net::HTTP::Get.new( fetchuri.path )
 		request['Accept'] = '*/*'
+		resource = nil
 
-		response = send_request( request ) do |res|
+		send_request( request ) do |response|
+			case response
+			when Net::HTTPOK
+				# :TODO: Set metadata for the resource from the response (multipart?)
+				self.log.debug "Creating a ThingFish::Resource from %p" % [response]
+				resource = ThingFish::Resource.from_http_response( response, :uuid => uuid )
+				resource.client = self
 
-			# case res
-			# when Net::HTTPSuccess
-			# 	ThingFish::Resource.new_from_http_response( res )
-			# else
-			# 	# TODO: Handle more cases
-			# 	res.error!
-			# end
+			# TODO: Handle redirect/auth/etc.
+			# when Net::HTTPRedirect
+			else
+				resource = nil
+			end
+			
+			response
 		end
 
-		return response
+		self.log.debug "Returning resource: %p" % [resource]
+		return resource
 	end
 
 

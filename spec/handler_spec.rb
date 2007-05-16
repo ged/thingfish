@@ -71,6 +71,15 @@ describe "An instance of a derivative class" do
 		logfile.rewind
 		logfile.read.should =~ %r{\S+: 127.0.0.1 POST /poon}
 	end
+	
+	it "gets references to the metastore and filestore from the listener callback" do
+		mock_listener = mock( "listener", :null_object => true )
+		mock_listener.should_receive( :filestore ).and_return( :filestore_obj )
+		mock_listener.should_receive( :metastore ).and_return( :metastore_obj )
+		
+		@handler.listener = mock_listener
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

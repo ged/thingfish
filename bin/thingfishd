@@ -39,7 +39,7 @@ def parse_args( args )
 	oparser = OptionParser.new do |oparser|
 		oparser.accept( Pathname ) {|path| Pathname.new(path) }
 		
-		oparser.banner = "Usage: #{progname.basename}: OPTIONS"
+		oparser.banner = "Usage: #{progname.basename} OPTIONS"
 
 		oparser.separator ''
 		oparser.separator 'Daemon Options:'

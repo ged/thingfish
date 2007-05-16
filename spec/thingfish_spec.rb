@@ -40,17 +40,6 @@ describe "The ThingFish module" do
 		ThingFish.logger.should be_a_kind_of( Logger )
 	end
 	
-	it "should log at WARN level by default" do
-		ThingFish.logger.level.should == Logger::WARN
-	end
-	
-	it "should log to STDERR by default" do
-		ThingFish.logger.
-			instance_variable_get( :@logdev ).
-			instance_variable_get( :@dev ).
-			should equal( $deferr )
-	end
-	
 	it "should know if its default logger is replaced" do
 		ThingFish.should be_using_default_logger
 		ThingFish.logger = Logger.new( $deferr )

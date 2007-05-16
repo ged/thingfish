@@ -10,7 +10,7 @@ client = ThingFish::Client.new 'thingfish.laika.com',
 
 # Upload a new resource
 resource = ThingFish::Resource.from_file( "rss.png" )
-resource.format 									# =>
+resource.format = 'image/png'
 client.store( resource )
 
 # Download a resource

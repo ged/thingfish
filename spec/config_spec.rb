@@ -32,7 +32,7 @@ end
 
 include ThingFish::Constants
 
-describe "A config object" do
+describe ThingFish::Config do
 	before(:each) do
 		@config = ThingFish::Config.new
 	end
@@ -195,7 +195,7 @@ end
 
 
 # With no source
-describe "A config created with no source" do
+describe ThingFish::Config, " created with no source" do
 	before(:each) do
 		@config = ThingFish::Config.new
 	end
@@ -248,7 +248,7 @@ mergekey: Yep.
 END
 
 # Created with source
-describe "A config created with source" do
+describe ThingFish::Config, " created with source" do
 	before(:each) do
 		@config = ThingFish::Config.new( TEST_CONFIG )
 	end
@@ -276,7 +276,7 @@ describe "A config created with source" do
 end
 
 
-describe "A config whose internal values have been changed since loaded" do
+describe ThingFish::Config, " whose internal values have been changed since loaded" do
 	before(:each) do
 		@config = ThingFish::Config.new( TEST_CONFIG )
 		@config.port = 11451
@@ -295,7 +295,7 @@ describe "A config whose internal values have been changed since loaded" do
 end
 
 
-describe "A config loaded from a file" do
+describe ThingFish::Config, " loaded from a file" do
 	before(:all) do
 		@tmpfile = Tempfile.new( 'test.conf', '.' )
 		@tmpfile.print( TEST_CONFIG )
@@ -327,7 +327,7 @@ describe "A config loaded from a file" do
 end
 
 
-describe "A config whose file changes after loading" do
+describe ThingFish::Config, " whose file changes after loading" do
 	before(:all) do
 		@tmpfile = Tempfile.new( 'test.conf', '.' )
 		@tmpfile.print( TEST_CONFIG )
@@ -362,7 +362,7 @@ describe "A config whose file changes after loading" do
 end
 
 
-describe "A config object created by merging two other configs" do
+describe ThingFish::Config, " created by merging two other configs" do
 	before(:each) do
 		@config1 = ThingFish::Config.new
 		@config2 = ThingFish::Config.new( TEST_CONFIG )
@@ -393,7 +393,7 @@ plugins:
 END
 
 # Created with bad source
-describe "A config created with an illegal handlers section" do
+describe ThingFish::Config, " created with an illegal handlers section" do
 	before(:each) do
 	    @config = ThingFish::Config.new( BAD_TEST_CONFIG )
 	end
@@ -439,7 +439,7 @@ plugins:
 END
 
 # Created with bad source
-describe "A config created without a filestore plugin section" do
+describe ThingFish::Config, " created without a filestore plugin section" do
 	before(:each) do
 	    @config = ThingFish::Config.new( NO_FILESTORE_PLUGIN_CONFIG )
 	end

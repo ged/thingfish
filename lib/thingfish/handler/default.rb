@@ -45,6 +45,7 @@ require 'mongrel'
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/handler'
+require 'thingfish/mixins'
 
 
 ### The default top-level handler for the thingfish daemon
@@ -52,7 +53,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
-		ThingFish::Loggable
+		ThingFish::Loggable,
+		ThingFish::StaticResourcesHandler
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -85,7 +87,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	  }ix
 
 
-
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -93,7 +94,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### Set up a new DefaultHandler
 	def initialize( options={} )
 		super( CONFIG_DEFAULTS.merge(options) )
-		
+
 		@filestore = nil
 		@metastore = nil
 	end
@@ -120,13 +121,12 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			uuid = parse_uuid( $1 )
 			self.handle_uuid_request( request, response, uuid )
 
-		# We don't care about anything else (currently)
+		# The default handler doesn't care about anything else
 		else
-			self.log.error "Unhandled request to %p" % uri
-			# TODO: plug in space for additional uri handlers
 			response.start( HTTP::NOT_FOUND ) do |headers, out|
 				out.write( "Resource not found" )
 			end
+			self.log.error "No handler mapping for %p, falling through to static" % uri
 		end
 		
 	rescue StandardError => err

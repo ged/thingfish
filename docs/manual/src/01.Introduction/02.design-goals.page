@@ -6,17 +6,26 @@ inMenu: true
 
 h2. Design Goals
 
-Before we wrote ThingFish, we were looking to address a need in several backend applications we were developing. We started out with several explicit goals in mind, and wanted to either buy or build something to meet those needs.
+Before we wrote ThingFish, we were looking to address a need in several backend
+applications we were developing. We started out with several explicit goals in mind,
+and wanted to either buy or build something to meet those needs.
 
 h3. Simplicity
 
-The system should be simple in its architecture, with few dependencies for basic usage. Fewer dependencies leads to easier administration, quicker deployment, and greater flexibility in testing.
+The system should be simple in its architecture, with few dependencies for basic
+usage. Fewer dependencies leads to easier administration, quicker deployment, and
+greater flexibility in testing.
 
 h3. Modularity
 
-Every aspect beyond the core featureset should be extensible. Adding functionality such as an authentication layer or custom filesystem storage should be possible with minimal effort.
+Every aspect beyond the core featureset should be extensible. Adding functionality
+such as an authentication layer or custom filesystem storage should be possible with
+minimal effort.
 
 h3. Language-Agnostic API
 
-Client access should require as little application specific knowledge as possible.
-We can't anticipate our future use cases for searching and fetching data, but will be initially using it from within a web browser (javascript) and command line (ruby, perl) at a minimum. Clients should be easy to write for any language that provides a TCP/IP socket implementation and an HTTP client library.
+Client access should require as little application specific knowledge as possible. We
+can't anticipate our future use cases for searching and fetching data, but will be
+initially using it from within a web browser (javascript) and command line (ruby,
+perl) at a minimum. Clients should be easy to write for any language that provides a
+TCP/IP socket implementation and an HTTP client library.

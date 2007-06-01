@@ -26,7 +26,7 @@ end
 
 include ThingFish::TestConstants
 
-describe "A MemoryFileStore" do
+describe ThingFish::MemoryFileStore do
 
 	before(:each) do
 	    @fs = ThingFish::FileStore.create( 'memory' )
@@ -69,9 +69,19 @@ describe "A MemoryFileStore" do
 		@fs.has_file?( TEST_UUID ).should be_false
 	end
 
+	it "knows what the size of any of its stored resources is" do
+		@fs.store( TEST_UUID, TEST_CONTENT )
+		@fs.size( TEST_UUID ).should == TEST_CONTENT.length
+	end
+	
+	it "returns nil when asked for the size of a resource it doesn't contain" do
+		@fs.size( TEST_UUID ).should be_nil
+	end
+	
+
 end
 
-describe "A MemoryFileStore with a maxsize of 2k" do
+describe ThingFish::MemoryFileStore, " with a maxsize of 2k" do
 	before(:each) do
 		@fs = ThingFish::FileStore.create( 'memory', :maxsize => 2_048 )
 	end

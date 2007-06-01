@@ -80,10 +80,10 @@ end
 
 ### Task: gem
 gemspec = Gem::Specification.new do |gem|
-	pkg_build = extract_svn_rev( BASEDIR )
+	pkg_build = extract_svn_rev( BASEDIR ) || 0
 	
 	gem.name    	= PKG_NAME
-	gem.version 	= "%s.%d" % [ PKG_VERSION, pkg_build ]
+	gem.version 	= "%s.%s" % [ PKG_VERSION, pkg_build ]
 
 	gem.summary     = "ThingFish - A highly-accessable network datastore"
 	gem.description = <<-EOD

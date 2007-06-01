@@ -83,9 +83,8 @@ class ExampleTag < Tags::DefaultTag
 		# Test it if it's testable
 		content = test_content( examplefile, language ) if testable
 
-		# Strip trailing blank and syntax-highlight
+		# Strip trailing blank lines and syntax-highlight
 		content = highlight( content.strip, language, tab_width, hint, line_numbers )
-
 		caption = %{<div class="caption">} + param('caption') + %{</div>} if param('caption')
 
 		return %{<div class="example">%s%s</div>} % [content, caption || '']
@@ -160,7 +159,7 @@ class ExampleTag < Tags::DefaultTag
 		options[:hint] = hint.to_sym if hint
 
 		scanner = CodeRay.scan( content, lang.to_sym )
-		scanner.html( options )
+		return scanner.html( options )
 	end
 
 end

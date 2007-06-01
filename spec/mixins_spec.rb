@@ -24,7 +24,7 @@ describe ThingFish::Loggable, " (class)" do
 			def log_test_message( level, msg )
 				self.log.send( level, msg )
 			end
-			
+		
 			def test_log_request( request )
 				self.log_request( request )
 			end
@@ -38,7 +38,7 @@ describe ThingFish::Loggable, " (class)" do
 		@logfile.rewind
 		@logfile.read.should =~ /debugging message/
 	end
-	
+
 end
 
 
@@ -76,7 +76,7 @@ end
 
 describe ThingFish::StaticResourcesHandler, 
 	" which has been mixed into an instance of a handler class" do
-		
+	
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
 			include ThingFish::StaticResourcesHandler
@@ -112,7 +112,7 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 		@tmpfile.print( TEST_RESOURCE_CONTENT )
 		@tmpfile.close
 		@tmpname = Pathname.new( @tmpfile.path ).basename
-		
+	
 		@klass = Class.new {
 			include ThingFish::ResourceLoader
 			alias_method :get_mah_bucket, :get_resource
@@ -129,7 +129,7 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 		@resdir = Pathname.new( @tmpfile.path ).dirname.expand_path
 		@obj = @klass.new( :resource_dir => @resdir )
 	end
-	
+
 	it "should know what its resource directory is" do
 		@obj.resource_dir.should == @resdir
 	end
@@ -140,31 +140,27 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 
 end
 
-describe ThingFish::AbstractClass, " mixed into a class" do
-	before(:each) do
-		@test_class = Class.new do
-			include ThingFish::AbstractClass
-		end
-	end
+# Workaround for RSpec's stupid overridden 'include' magic tricks
+class AbstractTestClass < ::Object
+	include ThingFish::AbstractClass
+	virtual :test_method
+end
+class AbstractTestSubclass < AbstractTestClass
+end
 
-
+describe "ThingFish::AbstractClass mixed into a class" do
 	it "will cause the including class to hide its ::new method" do
 		lambda {
-			@test_class.new
+			AbstractTestClass.new
 		}.should raise_error( NoMethodError, /private/ )
 	end
-	
+
 end
 
 
-describe ThingFish::AbstractClass, " mixed into a superclass" do
+describe "ThingFish::AbstractClass mixed into a superclass" do
 	before(:each) do
-		@base_class = Class.new do
-			include ThingFish::AbstractClass
-			virtual :test_method
-		end
-		@subclass = Class.new( @base_class )
-		@instance = @subclass.new
+		@instance = AbstractTestSubclass.new
 	end
 
 
@@ -173,7 +169,7 @@ describe ThingFish::AbstractClass, " mixed into a superclass" do
 			@instance.test_method
 		}.should raise_error( NotImplementedError, /does not provide an implementation of/ )
 	end
-	
+
 end
 
 
@@ -190,25 +186,25 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 	it "can calculate the number of seconds for various units of time" do
 		1.second.should == 1
 		14.seconds.should == 14
-		
+	
 		1.minute.should == SECONDS_IN_A_MINUTE
 		18.minutes.should == SECONDS_IN_A_MINUTE * 18
-		
+	
 		1.hour.should == SECONDS_IN_AN_HOUR
 		723.hours.should == SECONDS_IN_AN_HOUR * 723
-		
+	
 		1.day.should == SECONDS_IN_A_DAY
 		3.days.should == SECONDS_IN_A_DAY * 3
-		
+	
 		1.week.should == SECONDS_IN_A_WEEK
 		28.weeks.should == SECONDS_IN_A_WEEK * 28
-		
+	
 		1.fortnight.should == SECONDS_IN_A_FORTNIGHT
 		31.fortnights.should == SECONDS_IN_A_FORTNIGHT * 31
-		
+	
 		1.month.should == SECONDS_IN_A_MONTH
 		67.months.should == SECONDS_IN_A_MONTH * 67
-		
+	
 		1.year.should == SECONDS_IN_A_YEAR
 		13.years.should == SECONDS_IN_A_YEAR * 13
 	end
@@ -216,14 +212,14 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 
 	it "can calulate various time offsets" do
 		starttime = Time.now
-		
+	
 		1.second.after( starttime ).should == starttime + 1
 		18.seconds.from_now.should be_close( starttime + 18, 10 )
 
 		1.second.before( starttime ).should == starttime - 1
 		3.hours.ago.should be_close( starttime - 10800, 10 )
 	end
-	
+
 
 
 	BYTES_IN_A_KILOBYTE = 1024
@@ -232,29 +228,29 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 	BYTES_IN_A_TERABYTE = BYTES_IN_A_GIGABYTE * 1024
 	BYTES_IN_A_PETABYTE = BYTES_IN_A_TERABYTE * 1024
 	BYTES_IN_AN_EXABYTE = BYTES_IN_A_PETABYTE * 1024
-	
+
 	it "can calulate the number of bytes for various data sizes" do
 		1.byte.should == 1
 		4.bytes.should == 4
-		
+	
 		1.kilobyte.should == BYTES_IN_A_KILOBYTE
 		22.kilobytes.should == BYTES_IN_A_KILOBYTE * 22
 
 		1.megabyte.should == BYTES_IN_A_MEGABYTE
 		116.megabytes.should == BYTES_IN_A_MEGABYTE * 116
-		
+	
 		1.gigabyte.should == BYTES_IN_A_GIGABYTE
 		14.gigabytes.should == BYTES_IN_A_GIGABYTE * 14
-		
+	
 		1.terabyte.should == BYTES_IN_A_TERABYTE
 		88.terabytes.should == BYTES_IN_A_TERABYTE * 88
-		
+	
 		1.petabyte.should == BYTES_IN_A_PETABYTE
 		34.petabytes.should == BYTES_IN_A_PETABYTE * 34
-		
+	
 		1.exabyte.should == BYTES_IN_AN_EXABYTE
 		6.exabytes.should == BYTES_IN_AN_EXABYTE * 6
 	end
-	
 
 end
+

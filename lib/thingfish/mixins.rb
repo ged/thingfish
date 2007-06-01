@@ -263,8 +263,10 @@ module ThingFish # :nodoc:
 		### Inclusion callback
 		def self::included( mod )
 			super
-			mod.extend( ClassMethods )
-			mod.module_eval { private_class_method :new }
+			if mod.respond_to?( :new )
+				mod.extend( ClassMethods )
+				mod.module_eval { private_class_method :new }
+			end
 		end
 
 		

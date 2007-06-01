@@ -42,6 +42,8 @@ describe ThingFish::Resource do
 
 
 	before do
+		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger.level = Logger::DEBUG
 		@io = StringIO.new( TEST_CONTENT )
 	end
 
@@ -67,12 +69,37 @@ describe ThingFish::Resource do
 	
 	it "can be created from a Net::HTTPResponse" do
 		resource = nil
-		with_fixtured_http_ok_response( TEST_CONTENT ) do |response|
+		with_fixtured_http_get_response( TEST_CONTENT ) do |response|
 			resource = ThingFish::Resource.from_http_response( response )
 		end
 		resource.data.should == TEST_CONTENT
+		resource.extent.should == TEST_CONTENT.length
+		resource.format.should == 'image/jpeg'
 	end
 
+
+	it "can be created from a Net::HTTPResponse that doesn't have a body" do
+		resource = nil
+		with_fixtured_http_head_response do |response|
+			resource = ThingFish::Resource.from_http_response( response )
+		end
+		resource.data.should be_nil
+		resource.extent.should == 14620
+		resource.format.should == 'image/jpeg'
+	end
+
+
+	it "can extract its uuid from a CREATED response" do
+		mock_response = mock( "response object", :null_object => true )
+		mock_response.should_receive( :code ).and_return( HTTP::CREATED )
+		mock_response.should_receive( :[] ).with( 'Location' ).
+			and_return( '/' + TEST_UUID )
+		
+		resource = ThingFish::Resource.new( @io )
+		resource.set_attributes_from_http_response( mock_response )
+	end
+	
+	
 	it "should raise an error if created with a non-200 HTTPResponse" do
 		mock_response = mock( "404 http response", :null_object => true )
 		mock_response.should_receive( :is_a? ).with( Net::HTTPOK ).and_return( false )
@@ -106,6 +133,18 @@ describe ThingFish::Resource, " created manually" do
 		lambda { @resource.save }.should raise_error( RuntimeError, /no client set/ )
 	end
 	
+	it "auto-generates accessors for metadata values" do
+		rval = nil
+		lambda { @resource.extent = 1024 }.should_not raise_error()
+		lambda { rval = @resource.extent }.should_not raise_error()
+		rval.should == 1024
+		
+		lambda { rval = @resource.has_extent? }.should_not raise_error()
+		rval.should be_true
+		lambda { rval = @resource.has_pudding? }.should_not raise_error()
+		rval.should be_false # Awww... no pudding
+	end
+
 end
 
 describe ThingFish::Resource, " created via a server fetch" do

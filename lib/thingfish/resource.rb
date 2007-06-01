@@ -30,7 +30,7 @@
 #   resource = ThingFish::Resource.new( io, client )
 #   resource.save
 #   
-#   # Create it with metadata
+#   # Create it with metadata   #TODO#
 #   resource = ThingFish::Resource.new( io,
 #     :creator => 'Izzy P. Switchback',
 #     :description => 'VCard for Izzy P. Switchback' )
@@ -59,7 +59,9 @@ require 'tempfile'
 
 ### Resource wrapper class
 class ThingFish::Resource
-	include ThingFish::Loggable
+	include ThingFish::Loggable,
+	        ThingFish::Constants,
+	        ThingFish::Constants::Patterns
 	
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -91,17 +93,21 @@ class ThingFish::Resource
 		raise ArgumentError, "cannot create a resource from a '%d %s' response" %
 			[response.code, response.message] unless response.is_a?( Net::HTTPOK )
 
-		if response['Content-Length'] && response['Content-Length'].to_i > MAX_INMEMORY_BODY
+		resource = nil
+		if response['Content-Length'].to_i > MAX_INMEMORY_BODY
 			io = Tempfile.open( 'thingfish-resource' )
 			response.read_body do |chunk|
 				io.write( chunk )
 			end
 			io.rewind
 			
-			new( io, metadata )
+			resource = new( io, metadata )
 		else
-			new( response.body, metadata )
+			resource = new( response.body, metadata )
 		end
+		
+		resource.set_attributes_from_http_response( response )
+		return resource
 	end
 	
 
@@ -114,7 +120,6 @@ class ThingFish::Resource
 	### resource can be read.
 	def initialize( datasource, metadata={} )
 		@client = nil
-		@location = nil
 		@uuid = nil
 		@metadata = {}
 
@@ -140,17 +145,21 @@ class ThingFish::Resource
 	# The IO object containing the resource data
 	attr_accessor :io
 
-	# The URI where this resource is stored (if it has been stored)
-	attr_accessor :location
-	
 	# The resource's UUID (if it has one)
 	attr_accessor :uuid
-	
+
 
 	### Read the data for the resource into a String and return it.
 	def data
-		rval = @io.read
-		@io.rewind
+		rval = nil
+
+		if @io
+			rval = @io.read
+			@io.rewind
+		elsif @uuid && @client 
+			# :TODO: Demand-load the data
+		end
+		
 		return rval
 	end
 	
@@ -175,6 +184,31 @@ class ThingFish::Resource
 	def save
 		raise "no client set" unless @client
 		@client.store( self )
+	end
+	
+	
+	### Extract any attributes belonging to the resource from the given HTTP 
+	### +response+, e.g., Location, Content-Type, Content-Length, etc.
+	def set_attributes_from_http_response( response )
+		
+		case response.code.to_i
+
+		# CREATE 
+		when HTTP::CREATED
+			self.log.debug "Setting attributes from a CREATED response"
+			@uuid = response['Location'].scan( UUID_REGEXP ).first
+
+		# OK
+		when HTTP::OK
+			self.log.debug "Setting attributes from an OK response"
+			self.format   = response['Content-Type']
+			self.extent   = response['Content-Length'].to_i
+			self.checksum = response['ETag']
+
+		else
+			self.log.debug "Could not set attributes from a %s (%d)" % 
+				[response.class.name, response.code]
+		end
 	end
 	
 	
@@ -206,6 +240,7 @@ class ThingFish::Resource
 	### String, in which case the datasource will be set to a StringIO containing
 	### the data.
 	def normalize_io_obj( sourceobj )
+		return nil if sourceobj.nil? || (sourceobj.is_a?(String) && sourceobj.empty?)
 		return sourceobj if sourceobj.respond_to?( :read )
 		return StringIO.new( sourceobj )
 	end

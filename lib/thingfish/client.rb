@@ -18,12 +18,12 @@
 #   resource = client.store( resource )
 #   # =>  #<ThingFish::Resource:0x142b3b8 UUID:fde68574-fd73-11db-a31e-6f1a83274382>
 #
-#   # Or do it all in one line
+#   # Or do it all in one line   #TODO#
 #   client.store( File.open("woowoooo.wav"), :author => 'Bubb Rubb' )
 #   resource = client.store( File.open("mahlonblob.dxf"), :format => 'image/x-dxf' )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
 #   
-#   # Set some more metadata (method style):
+#   # Set some more metadata (method style):    #TODO#
 #   resource.owner = 'mahlon'
 #   resource.description = "3D model used to test the new All Open Source pipeline"
 #   # ...or hash style:
@@ -33,7 +33,7 @@
 #   # Now save the resource back to the server it was fetched from
 #   resource.save
 #
-#	# Discard changes in favor of server side data
+#	# Discard changes in favor of server side data    #TODO#
 #	resource.revert!
 #
 #
@@ -44,21 +44,14 @@
 #   resource = client.fetch( uuid )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
 #   
-#   # Fetch a GIF resource as a PNG if the server supports that transformation:
+#   # Use the data
+#   resource.data # => (DXF data)
+#
+#   # Fetch a GIF resource as a PNG if the server supports that transformation:  #TODO#
 #   resource = client.fetch( uuid, :accept => ['image/png'] )
 #
-#   # Fetch a TIFF resource as either a JPEG or a PNG, preferring the former:
+#   # Fetch a TIFF resource as either a JPEG or a PNG, preferring the former:  #TODO#
 #   resource = client.fetch( uuid, :accept => ['image/jpeg', 'image/png;q=0.5'] )
-#
-#   # Now load the resource's data from the server
-#   resource.load     # => true
-#
-#   # ...or just access it which will load it the first time it's needed
-#   resource.data     # => "(DXF data)"
-#
-#   # Fetch a resource object and load its data immediately instead of when it's
-#   # first used
-#   resource = client.fetch( uuid, :preload => true )
 #
 #   # Check to see if a UUID is a valid resource
 #   client.has?( uuid ) # => true
@@ -67,20 +60,14 @@
 #   ### Searching
 # 
 #   # ...or search for resources whose metadata match search criteria. Find
-#   # all DXF objects owned by Mahlon:
-#   resources = client.find( :format => 'image/x-dxf',
-#                            :owner => 'mahlon'  )
-#   # =>  [ #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>,
-#           #<ThingFish::Resource:0xade481 UUID:bb017a4e-fb92-49dc-8327-9c219d6c81ba> ]
+#   # all DXF objects owned by Mahlon:   #TODO#
+#   uuids = client.find( :format => 'image/x-dxf', :owner => 'mahlon'  )
+#   # =>  [ '7602813e-dc77-11db-837f-0017f2004c5e', ... ]
 #
 #
 #   ### Streaming data
 #
-#   # Fetch the data for the resource from the server and write it to a
-#   # file:
-#   resource.export_to_file( "mahlonthing.dxf" )
-#
-#	# Export to an IO object for buffered write
+#	# Export to an IO object for buffered write   #TODO#
 #	resource.export( socket )
 #   
 # == Version
@@ -148,6 +135,9 @@ class ThingFish::Client
 			@uri = URI.parse( "http://#{endpoint}:#{DEFAULT_PORT}/" )
 		end
 
+		# Normalize the URI's path
+		@uri.path = '/' if @uri.path.empty?
+
 		# Process the options hash if any
 		pass = options.delete('password') || options.delete( :password )
 		options.each do |meth, value|
@@ -184,16 +174,20 @@ class ThingFish::Client
 	#################################################################
 
 	### Look up and return the resource keyed by the given +uuid+.
-	def fetch( uuid )
+	def fetch( uuid, head=nil )
 		fetchuri = self.uri + uuid.to_s
 
-		request = Net::HTTP::Get.new( fetchuri.path )
+		request = head ?
+			Net::HTTP::Head.new( fetchuri.path ) :
+			Net::HTTP::Get.new(  fetchuri.path )
+			
 		request['Accept'] = '*/*'
 		resource = nil
 
 		send_request( request ) do |response|
 			case response
 			when Net::HTTPOK
+									
 				# :TODO: Set metadata for the resource from the response (multipart?)
 				self.log.debug "Creating a ThingFish::Resource from %p" % [response]
 				resource = ThingFish::Resource.from_http_response( response, :uuid => uuid )
@@ -213,16 +207,23 @@ class ThingFish::Client
 	end
 
 
+	### Check the validity of a uuid by doing a HEAD, and return
+	### a boolean.
+	def has?( uuid )
+		return self.fetch( uuid, true ) ? true : false
+	end
+	
+	
 	### Store the given +resource+ (which can be a ThingFish::Resource, a String 
 	### containing resource data, or an IO from which resource data can be read) on
 	### the server. The optional +metadata+ hash can be used to set metadata values
 	### for the resource.
 	def store( resource, metadata={} )
-		# If the resource argument isn't already a ThingFish::Resource, make one
 		resource = ThingFish::Resource.new( resource, metadata ) unless
 			resource.is_a?( ThingFish::Resource )
 
-		# If it's an existing resource (i.e., has a UUID), update it
+		# If it's an existing resource (i.e., has a UUID), update it, otherwise
+		# create it
 		request = nil
 		if resource.uuid
 			request = Net::HTTP::Put.new( @uri.path + resource.uuid )
@@ -231,16 +232,14 @@ class ThingFish::Client
 		end
 
 		request.body_stream = resource.io
-		request['Content-Length'] = resource.extent if resource.extent
-		request['Content-Type'] = resource.format if resource.format
+		request['Content-Length']      = resource.extent if resource.extent
+		request['Content-Type']        = resource.format if resource.format
 		request['Content-Disposition'] = 'attachment;filename="%s"' %
 		 	[ resource.filename ] if resource.filename
 
 		response = self.send_request( request )
-		uuid = response['Location'].scan( UUID_REGEXP ).first
-		resource.uuid = uuid
-		resource.location = @uri + uuid
-		
+		resource.set_attributes_from_http_response( response )
+
 		return resource
 	end
 

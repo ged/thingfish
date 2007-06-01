@@ -2,9 +2,12 @@
 # 
 # thingfish - a command-line interface to ThingFish servers
 # 
-# == Synopsis
+# == Usage
 # 
-#   $ thingfish upload FILE
+#   $ thingfish URL upload FILE
+#   $ thingfish URL check  UUID
+#   $ thingfish URL fetch  UUID FILE
+#   $ thingfish URL update UUID FILE
 # 
 # == Version
 #
@@ -99,16 +102,27 @@ class ThingFish::CommandLineClient
 	### with the content from the specified +file+. If +file+ is nil, the content will
 	### be read from STDIN instead.
 	def do_update( uri, uuid, file=nil )
-		resource = @client.fetch( uuid ) or
+		@client.has?( uuid ) or
 			raise "No such resource #{uuid}"
 
 		fh = get_reader_io( file )
-		resource.data = fh.read
+		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
 		resource.save
 
 		$deferr.puts "Updated #{uuid}"
 	end
 
+
+	### Verify that a resource with the specified +uuid+ exists on the ThingFish at 
+	### the given +uri+.
+	def do_check( uri, uuid )
+		if @client.has?( uuid )
+			$deferr.puts "%s has resource %s" % [ @client.uri, uuid ]
+		else
+			$deferr.puts "%s does NOT have resource %s" % [ @client.uri, uuid ]
+		end
+	end
+	
 
 	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
 	### and write it to the specified +file+. If +file+ is nil, the content will be

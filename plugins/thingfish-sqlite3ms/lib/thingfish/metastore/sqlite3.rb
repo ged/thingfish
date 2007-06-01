@@ -40,25 +40,27 @@ require 'thingfish'
 require 'thingfish/exceptions'
 require 'thingfish/metastore'
 
+
 ### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been 
 ### renamed)
 module SQLite3::Pragmas
 	def schema_version
-      get_int_pragma "schema_version"
-    end
+		get_int_pragma "schema_version"
+	end
 
-    def schema_version=( version )
-      set_int_pragma "schema_version", version
-    end
+	def schema_version=( version )
+		set_int_pragma "schema_version", version
+	end
 
-    def user_version
-      get_int_pragma "user_version"
-    end
+	def user_version
+		get_int_pragma "user_version"
+	end
 
-    def user_version=( version )
-      set_int_pragma "user_version", version
-    end
+	def user_version=( version )
+		set_int_pragma "user_version", version
+	end
 end
+
 
 ### A metastore backend that stores metadata tuples in a SQLite3 database
 class ThingFish::SQLite3MetaStore < ThingFish::MetaStore

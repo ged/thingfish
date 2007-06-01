@@ -78,6 +78,34 @@ describe ThingFish::Client do
 	end
 	
 	
+	it "returns true when asked if it has a uuid that corresponds to a resource it has" do
+		Net::HTTP::Head.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "HEAD" )
+
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+
+		Net::HTTPOK.stub!( :=== ).and_return( true )
+
+		@mock_response.should_receive( :is_a? ).with( Net::HTTPOK ).and_return( true )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+		@mock_response.should_receive( :message ).and_return( "OK" )
+		
+		@client.has?( TEST_UUID ).should be_true
+	end
+	
+	
+	it "returns false when asked if it has a uuid that corresponds to a resource it has not" do
+		Net::HTTP::Head.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
+		@mock_request.should_receive( :method ).and_return( "HEAD" )
+
+		@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
+		@mock_response.should_receive( :message ).and_return( "NOT FOUND" )
+
+		@client.has?( TEST_UUID ).should be_false
+	end
+	
+	
 	it "stores a resource by uploading it to the server" do
 		resource = ThingFish::Resource.new( TEST_CONTENT, :format => 'gel/pudding' )
 		
@@ -85,7 +113,7 @@ describe ThingFish::Client do
 		@mock_request.should_receive( :method ).and_return( "POST" )
 
 		@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
-		@mock_response.should_receive( :code ).and_return( HTTP::CREATED )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::CREATED )
 		@mock_response.should_receive( :[] ).with( 'Location' ).and_return( '/' + TEST_UUID )
 		
 		rval = @client.store( resource )
@@ -102,8 +130,7 @@ describe ThingFish::Client do
 		@mock_request.should_receive( :method ).and_return( "PUT" )
 
 		@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
-		@mock_response.should_receive( :code ).and_return( HTTP::OK )
-		@mock_response.should_receive( :[] ).with( 'Location' ).and_return( '/' + TEST_UUID )
+		@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
 		
 		rval = @client.store( resource )
 		rval.should be_an_instance_of( ThingFish::Resource )
@@ -111,71 +138,6 @@ describe ThingFish::Client do
 	end
 	
 
-	#   
-	#   # Or do it all in one line
-	#   resource = client.store( File.open("mahlonblob.dxf"), :format => 'image/x-dxf' )
-	#   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
-	#   
-	#   # Set some more metadata (method style):
-	#   resource.owner = 'mahlon'
-	#   resource.description = "3D model used to test the new All Open Source pipeline"
-	#   # ...or hash style:
-	#   resource[:keywords] = "3d, model, mahlon"
-	#   resource[:date_created] = Date.today
-	#
-	#   # Now save the resource back to the server it was fetched from
-	#   resource.save
-	#
-	#	# Discard changes in favor of server side data
-	#	resource.revert!
-	#
-	#
-	#   ### Fetching
-	#   
-	#   # Fetch a resource by UUID
-	#   uuid = '7602813e-dc77-11db-837f-0017f2004c5e'
-	#   resource = client.fetch( uuid )
-	#   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
-	#   
-	#   # Fetch a GIF resource as a PNG if the server supports that transformation:
-	#   resource = client.fetch( uuid, :accept => ['image/png'] )
-	#
-	#   # Fetch a TIFF resource as either a JPEG or a PNG, preferring the former:
-	#   resource = client.fetch( uuid, :accept => ['image/jpeg', 'image/png;q=0.5'] )
-	#
-	#   # Now load the resource's data from the server
-	#   resource.load     # => true
-	#
-	#   # ...or just access it which will load it the first time it's needed
-	#   resource.data     # => "(DXF data)"
-	#
-	#   # Fetch a resource object and load its data immediately instead of when it's
-	#   # first used
-	#   resource = client.fetch( uuid, :preload => true )
-	#
-	#   # Check to see if a UUID is a valid resource
-	#   client.has?( uuid ) # => true
-	#
-	#
-	#   ### Searching
-	# 
-	#   # ...or search for resources whose metadata match search criteria. Find
-	#   # all DXF objects owned by Mahlon:
-	#   resources = client.find( :format => 'image/x-dxf',
-	#                            :owner => 'mahlon'  )
-	#   # =>  [ #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>,
-	#           #<ThingFish::Resource:0xade481 UUID:bb017a4e-fb92-49dc-8327-9c219d6c81ba> ]
-	#
-	#
-	#   ### Streaming data
-	#
-	#   # Fetch the data for the resource from the server and write it to a
-	#   # file:
-	#   resource.export_to_file( "mahlonthing.dxf" )
-	#
-	#	# Export to an IO object for buffered write
-	#	resource.export( socket )
-	
 end
 
 
@@ -241,6 +203,18 @@ describe ThingFish::Client, " created with a uri string" do
 
 	it "uses the URI's port" do
 	    @client.port.should == @uri.port
+	end
+end
+
+
+describe ThingFish::Client, " created with a pathless uri" do
+	before( :each ) do
+		@uri = URI.parse( "http://thingfish.example.com:3474" )
+		@client = ThingFish::Client.new( "http://thingfish.example.com:3474" )
+	end
+
+	it "uses '/' as the path" do
+		@client.uri.path.should == '/'
 	end
 end
 

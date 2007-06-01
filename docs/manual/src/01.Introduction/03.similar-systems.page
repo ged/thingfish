@@ -14,7 +14,8 @@ specific needs, we found both systems to be of limited usefulness.
 
 h3. "Amazon S3":http://aws.amazon.com/s3
 
-Amazon's Simple Storage Service is probably the closest thing we've found to what we need, but there are some limitations which it imposes which we couldn't live with:
+Amazon's Simple Storage Service is probably the closest thing we've found to what we
+need, but there are some limitations which it imposes which we couldn't live with:
 
 <dl>
   	<dt>Metadata restrictions</dt>

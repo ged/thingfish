@@ -21,7 +21,9 @@ index.page:
 
 05.Maintenance/:
     orderInfo: 6
+    indexFile: index.page
 
 06.Troubleshooting-FAQs/:
     orderInfo: 7
+    indexFile: index.page
 

@@ -1,2 +1,1 @@
-$ su -
-# gem install -y thingfish
+$ sudo gem install -y thingfish

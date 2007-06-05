@@ -15,8 +15,8 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
-#
+# :include: LICENSE
+# 
 #---
 #
 # Please see the file LICENSE in the 'docs' directory for licensing details.

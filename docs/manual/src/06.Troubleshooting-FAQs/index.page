@@ -1,7 +1,10 @@
 ---
 title: Index
 directoryName: Troubleshooting/FAQs
+inMenu: true
 ---
 
-{menu: {menuStyle: vertical, options: {maxLevels: 2, startLevel: 2}}}
-
+Once we've been using this for a bit longer, and have had some problem reports,
+we'll be able to populate this section. In the meantime, any questions you have can
+be sent to 
+&lt;<a href="mailto:opensource&#064;laika&#046;com">opensource&#064;laika&#046;com</a>&gt;.

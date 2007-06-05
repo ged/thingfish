@@ -40,7 +40,10 @@ RELEASE_NAME  = "REL #{PKG_VERSION}"
 BASEDIR       = Pathname.new( __FILE__ ).dirname.expand_path
 LIBDIR        = BASEDIR + 'lib'
 DOCSDIR       = BASEDIR + 'docs'
+VARDIR        = BASEDIR + 'var'
+WWWDIR        = VARDIR  + 'www'
 MANUALDIR     = DOCSDIR + 'manual'
+STATICWWWDIR  = WWWDIR  + 'static'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 
 TEXT_FILES    = %w( Rakefile README LICENSE )
@@ -73,7 +76,7 @@ Rake::RDocTask.new do |rdoc|
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
 	rdoc.options += ['-w', '4', '-SHN', '-i', 'docs']
 
-	rdoc.rdoc_files.include TEXT_FILES
+	rdoc.rdoc_files.include 'README'
 	rdoc.rdoc_files.include LIB_FILES
 end
 
@@ -187,9 +190,16 @@ begin
 	gem 'coderay'
 	gem 'RedCloth'
 
-	Webgen::Rake::WebgenTask.new( :manual ) do |task|
+	Webgen::Rake::WebgenTask.new( :generate_manual ) do |task|
 		task.directory = MANUALDIR
 	end
+	
+	task :manual => [:generate_manual] do
+		outputdir = MANUALDIR + 'output'
+		targetdir = STATICWWWDIR + 'manual'
+		cp_r( outputdir, targetdir, :verbose => true )
+	end
+	
 rescue LoadError => err
 	task :no_webgen do
 		$deferr.puts "Documentation tasks not defined: %s" % [err.message]

@@ -77,7 +77,7 @@ describe ThingFish::DefaultHandler do
 
 		@request.should_receive( :params ).at_least(1).and_return( params )
 		@response.should_receive( :start ).with( HTTP::NOT_FOUND ).and_yield( @headers, @out )
-		@out.should_receive( :write ).with( :string )
+		@out.should_receive( :write ).with( an_instance_of(String) )
 
 		@handler.process( @request, @response )
 	end
@@ -220,7 +220,7 @@ describe ThingFish::DefaultHandler do
 		mockmetadata.should_receive( :checksum ).
 			at_least(:once).and_return( TEST_CHECKSUM )
 		mockheaders.should_receive( :[]= ).with( 'ETag', etag )
-		mockheaders.should_receive( :[]= ).with( 'Expires', :string )
+		mockheaders.should_receive( :[]= ).with( 'Expires', an_instance_of(String) )
 
 		@handler.process( @request, @response )
 	end
@@ -271,7 +271,7 @@ describe ThingFish::DefaultHandler do
 		mockmetadata.should_receive( :checksum ).
 			at_least(:once).and_return( TEST_CHECKSUM )
 		mockheaders.should_receive( :[]= ).with( 'ETag', etag )
-		mockheaders.should_receive( :[]= ).with( 'Expires', :string )
+		mockheaders.should_receive( :[]= ).with( 'Expires', an_instance_of(String) )
 
 		@filestore.should_receive( :fetch_io ).with( HANDLER_TEST_UUID ).and_yield( io )
 
@@ -280,10 +280,12 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :send_header )
 
 		# Simulate reading testdata from a file
-		io.should_receive( :read ).twice.with( :numeric, '' ).and_return do |size,buf|
-			buf << testbuf.slice!( 0, testbuf.length )
-			buf.empty? ? nil : buf.length
-		end
+		io.should_receive( :read ).twice.
+			with( an_instance_of(Fixnum), '' ).
+			and_return do |size,buf|
+				buf << testbuf.slice!( 0, testbuf.length )
+				buf.empty? ? nil : buf.length
+			end
 		@response.should_receive( :write ).with( testdata ).and_return( testdata.length )
 
 		@response.should_receive( :finished )
@@ -489,10 +491,12 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :send_header )
 
 		# Simulate reading testdata from a file
-		io.should_receive( :read ).twice.with( :numeric, '' ).and_return do |size,buf|
-			buf << testbuf.slice!( 0, testbuf.length )
-			buf.empty? ? nil : buf.length
-		end
+		io.should_receive( :read ).twice.
+			with( an_instance_of(Fixnum), '' ).
+			and_return do |size,buf|
+				buf << testbuf.slice!( 0, testbuf.length )
+				buf.empty? ? nil : buf.length
+			end
 		@response.should_receive( :write ).with( testdata ).and_return( testdata.length )
 
 		@response.should_receive( :finished )

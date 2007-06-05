@@ -27,7 +27,6 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'erb'
 require 'thingfish/mixins'
 require 'thingfish/handler'
 require 'thingfish/constants'
@@ -68,7 +67,8 @@ end
 class ThingFish::StatusHandler < ThingFish::Handler
 	include ThingFish::Loggable,
 	        ThingFish::StaticResourcesHandler,
-	        ThingFish::Constants
+	        ThingFish::Constants,
+	        ThingFish::ResourceLoader
 
 
 	# SVN Revision
@@ -121,7 +121,7 @@ class ThingFish::StatusHandler < ThingFish::Handler
 				listener = self.listener
 				response.start( HTTP::OK, true ) do |headers, out|
 					headers['Content-Type'] = 'text/html'
-					out.write( template.result(binding) ) unless req_method == 'HEAD'
+					out.write( template.result(binding()) ) unless req_method == 'HEAD'
 				end
 			else
 				self.log.debug "Handling bad-method request"
@@ -158,15 +158,6 @@ class ThingFish::StatusHandler < ThingFish::Handler
 			@filters[uri] = filter
 		end
 	end
-	
-
-
-	### Load the specified +resource+ as an ERB template and return it.
-	def get_erb_resource( resource )
-		source = self.get_resource( resource )
-		return ERB.new( source )
-	end
-	
 
 end # class ThingFish::StatusHandler
 

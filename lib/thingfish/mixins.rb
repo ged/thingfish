@@ -95,6 +95,7 @@
 #
 
 require 'rbconfig'
+require 'erb'
 
 require 'thingfish'
 require 'mongrel/handlers'
@@ -156,15 +157,14 @@ module ThingFish # :nodoc:
 				listener.register( uri, handler )
 			end
 		end
-		
-		
 	end # module StaticResourcesHandler
 	
 	
 	### Adds some methods that can be used to load content from files in a 
 	### resources directory.
 	module ResourceLoader
-		include ThingFish::Loggable
+		include ThingFish::Loggable,
+		        ERB::Util
 
 		### Set up the resource directory of the object
 		def initialize( *args )
@@ -215,6 +215,13 @@ module ThingFish # :nodoc:
 		### Read the content from the file 
 		def get_resource( path )
 			return self.get_resource_io( path ).read
+		end
+
+
+		### Load the specified +resource+ as an ERB template and return it.
+		def get_erb_resource( resource )
+			source = self.get_resource( resource )
+			return ERB.new( source )
 		end
 
 

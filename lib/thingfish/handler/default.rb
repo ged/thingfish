@@ -180,11 +180,11 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# :TODO: dispatch on request.params['HTTP_ACCEPT']
 		self.log.debug "Loading index resource %p" % [@options[:html_index]]
-		content = self.get_resource( @options[:html_index] )
+		content = self.get_erb_resource( @options[:html_index] )
 
 		response.start( HTTP::OK, true ) do |headers, out|
 			headers['Content-Type'] = 'text/html'
-			out.write( content )
+			out.write( content.result(binding()) )
 		end
 
 	end

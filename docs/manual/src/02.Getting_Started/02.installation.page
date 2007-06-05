@@ -7,19 +7,15 @@ inMenu: true
 
 h2. Installation
 
-h3. Dependencies
+h3. Requirements
 
-* Ruby (>= 1.8.5): "http://www.ruby-lang.org/en/downloads/":http://www.ruby-lang.org/en/downloads/
-  
-If you have RubyGems installed, you can install all these dependencies by just installing the @thingfish@ gem. If you'd rather install from source, you'll need these:
+ThingFish is written in ruby, and is tested using version 1.8.6:
 
-* Mongrel (>= 1.0.1): "http://mongrel.rubyforge.org/":http://mongrel.rubyforge.org/
-* PluginFactory (>= 1.0.2): "http://deveiate.org/projects/PluginFactory":http://deveiate.org/projects/PluginFactory
-* UUIDTools (>= 1.0.0): "http://rubyforge.org/projects/uuidtools/":http://rubyforge.org/projects/uuidtools/
+* Ruby (>= 1.8.6): "http://www.ruby-lang.org/en/downloads/":http://www.ruby-lang.org/en/downloads/
 
+Other versions may work, but are not tested.
 
-
-h3. ThingFish
+h3. Ruby Modules
 
 There are two ways you can install ThingFish. The easiest is to use RubyGems:
 
@@ -30,7 +26,12 @@ There are two ways you can install ThingFish. The easiest is to use RubyGems:
   caption: Install via gem
   }}
 
-*Via source* (requires Rake, RSpec, and RCov)
+
+If you'd rather install from source, you'll need these:
+
+* Mongrel (>= 1.0.1): "http://mongrel.rubyforge.org/":http://mongrel.rubyforge.org/
+* PluginFactory (>= 1.0.2): "http://deveiate.org/projects/PluginFactory":http://deveiate.org/projects/PluginFactory
+* UUIDTools (>= 1.0.0): "http://rubyforge.org/projects/uuidtools/":http://rubyforge.org/projects/uuidtools/
 
 {example: {
   filename: examples/installing-from-source.console,
@@ -38,4 +39,25 @@ There are two ways you can install ThingFish. The easiest is to use RubyGems:
   line_numbers: false,
   caption: Install from source
   }}
+
+If you want to help out with development, run tests, or generate documentation, 
+you'll need a few more things:
+
+* webgen (>= 0.4.4): "http://webgen.rubyforge.org/":http://webgen.rubyforge.org/
+* RSpec (>= 1.0.4): "http://rspec.rubyforge.org/":http://rspec.rubyforge.org/
+* rcov (>= 0.7.0): "http://eigenclass.org/hiki.rb?rcov":http://eigenclass.org/hiki.rb?rcov
+* lockfile (>= 1.4.3): "http://codeforpeople.com/lib/ruby/lockfile/":http://codeforpeople.com/lib/ruby/lockfile/
+* rcodetools (>= 0.5.0): "http://eigenclass.org/hiki/rcodetools":http://eigenclass.org/hiki/rcodetools
+* CodeRay (>= 0.7.0): "http://coderay.rubychan.de/":http://coderay.rubychan.de/
+* Redcloth (>= 3.0.4): "http://whytheluckystiff.net/ruby/redcloth/":http://whytheluckystiff.net/ruby/redcloth/
+
+If you have RubyGems installed, you can install these automatically via the 
+@install_dependencies@ task of the Rakefile:
+
+{example: {
+  filename: examples/installing-dependencies.console,
+  language: console,
+  line_numbers: false,
+  caption: Install dependencies as gems via the Rakefile task
+}}
 

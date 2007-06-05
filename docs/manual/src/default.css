@@ -35,6 +35,45 @@ body {
 }
 /* @end */
 
+/* @group Tag Defaults */
+a {
+	text-decoration: none;
+	color: #556433;
+	background-color: inherit;
+	border-bottom: 1px dotted #556433;
+}
+
+a:hover {
+	color: #6c8c22;
+	background-color: inherit;
+	border-bottom: 1px solid #6c8c22;
+}
+
+a img {
+	border: 0;
+}
+
+p {
+	margin: 0 0 16px 0;
+}
+
+blockquote {
+	border-top: 1px solid #d8d8d8;
+	border-right: 1px solid #d8d8d8;
+	border-bottom: 1px solid #d8d8d8;
+	border-left: 4px solid #cccccc;
+	margin: 16px;
+	padding: 7px 7px 7px 11px;
+	background: #f4f4f4 url(images/menubg.gif) bottom left repeat-x;
+	color: #505050;
+}
+
+blockquote p {
+	font-size: 1.1em;
+	line-height: 1.3em;
+	margin: 0;
+}
+/* @end */
 
 /* @group Header */
 #header {
@@ -261,46 +300,6 @@ body {
 /* @end */
 
 
-/* @group Various tags */
-a {
-	text-decoration: none;
-	color: #505050;
-	background-color: inherit;
-}
-
-a:hover {
-	text-decoration: underline;
-	color: #286ea0;
-	background-color: inherit;
-}
-
-a img {
-	border: 0;
-}
-
-p {
-	margin: 0 0 16px 0;
-}
-
-blockquote {
-	border-top: 1px solid #d8d8d8;
-	border-right: 1px solid #d8d8d8;
-	border-bottom: 1px solid #d8d8d8;
-	border-left: 4px solid #cccccc;
-	margin: 16px;
-	padding: 7px 7px 7px 11px;
-	background: #f4f4f4 url(images/menubg.gif) bottom left repeat-x;
-	color: #505050;
-}
-
-blockquote p {
-	font-size: 1.1em;
-	line-height: 1.3em;
-	margin: 0;
-}
-/* @end */
-
-
 /* @group Table styles */
 table {
 	margin: 0 0 16px 0;
@@ -389,7 +388,7 @@ textarea {
 }
 /* @end */
 
-/* @group Various classes */
+/* @group Generic classes */
 .left {
 	margin: 10px 10px 5px 0;
 	float: left;
@@ -473,6 +472,20 @@ img.framed {
 
 
 /* @group Definition Lists */
+dl {
+}
+
+dt {
+	font-weight: bold;
+}
+dd {
+	margin-bottom: 0.5em;
+}
+dd + dt {
+	margin-top: 1em;
+}
+
+
 dl.kvlist {
 }
 
@@ -482,55 +495,32 @@ dl.kvlist dd dl {
 
 dl.kvlist dt {
 	font-weight: bold;
-	border-bottom: 1px solid #e4e0d2;
-	padding: 2px 16px 0px;
-	background: #918474 url(images/icons/bullet_black.png) no-repeat 0 3px;
-	color: #f8f7f1;
+	border-bottom: 1px dotted #999;
 }
+dl.kvlist dt:after {
+	content: ":";
+}
+dl.kvlist dt.placeholder {
+	font-weight: normal;
+	color: #666;
+	font-style: italic;
+}
+
 dl.kvlist dd + dl.kvlist dt {
 	margin-top: 12px;
 }
 
 dl.kvlist dd {
-	background-color: #f1eddf;
 	padding-left: 20px;
 }
 dl.kvlist dd.subsection {
-	padding-left:  30px;
-	padding-bottom: 15px;
 }
-dl.kvlist dd.default, dl.kvlist dd.valid-values {
-	color: #333;
-	padding-top: 4px;
-	padding-bottom: 4px;
-	padding-left: 46px;
+dl.kvlist dd.default, 
+dl.kvlist dd.valid-values {
+	color: #666;
 	font-style: italic;
 }
 
-dl.kvlist dd.default {
-	background-image: url(images/icons/bullet_go.png);
-	background-repeat: no-repeat;
-	background-position: 25px 5px;
-}
-dl.kvlist dd.valid-values {
-	background-image: url(images/icons/note.png);
-	background-repeat: no-repeat;
-	background-position: 25px 5px;
-}
-dl.kvlist dd ul {
-	padding: 0;
-	margin:  0;
-}
-
-dl.kvlist dd.subsection > dl dt {
-	background-color: #f8f7f1;
-	color: #666;
-	padding-top: 3px;
-	border: 1px solid #cdcbbe;
-}
-dl.kvlist dd.subsection > dl dd {
-	background-color: #e4e0d2;
-}
 /* @end */
 
 

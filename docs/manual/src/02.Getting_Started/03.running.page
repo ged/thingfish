@@ -5,7 +5,8 @@ inMenu: true
 
 h2. Running the Server
 
-The server comes with a @thingfishd@ command line program which can be started in the usual fashion:
+The server comes with a @thingfishd@ command line program which can be started in 
+the usual fashion:
 
 {example: {
   filename: examples/starting-the-server.sh,
@@ -14,7 +15,19 @@ The server comes with a @thingfishd@ command line program which can be started i
   caption: Starting the server
   }}
 
-The server is configured via a single YAML file, which will look something like this:
+The server reads its configuration from a single file called @thingfish.conf@ which
+is expected to be in Ruby's @sysconfdir@ by default. You can point it at a config
+file somewhere else with the @-f@ flag:
+
+{example: {
+  filename: examples/starting-with-config.sh,
+  language: shell,
+  testable: true,
+  caption: Starting the server with an alternate config file
+  }}
+
+The config file is a YAML file, and a basic configuration should look something like 
+this:
 
 {example: {filename: examples/etc/thingfish.conf, 
 	escapeHTML: false,
@@ -82,9 +95,63 @@ The meaning of the config values are as follows:
 			<dd class="valid-values">May be either one of the special 
 				values <code>stderr</code> or <code>stdout</code>, which correspond 
 				to the STDERR and STDOUT file descriptors, or a path to a logfile.
-				If the path is not absolute, it is relative to  </dd>
+				If the path is not absolute, it is relative to	</dd>
 			<dd class="default">Defaults to: <code>stderr</code></dd>
 		</dl>
+	</dd>
+	
+	<dt>plugins</dt>
+	<dd class="description">This section contains configuration information for any
+		plugins you wish to be loaded. It has one section for each type of
+		plugin:</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>filestore</dt>
+			<dd class="description">Configuration of the plugin which provides the 
+				filestore implementation.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+					<dd class="description">The name of the plugin to load, e.g., 
+						the gemname.</dd>
+					<dd class="default">Defaults to @memory@</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+			
+			<dt>metastore</dt>
+			<dd class="description">Configuration of the plugin which provides the
+				metastore implementation.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+	                <dd class="description">The name of the plugin which provides the 
+						metastore implementation.</dd>
+					<dd class="default">Defaults to @memory@</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+
+			<dt>handlers</dt>
+			<dd class="description">Configuration of any handler plugins you wish to
+				be loaded to handle various part of the urispace of the server. This 
+				is in the form of a YAML array of hashes, one plugin per hash. Each 
+				hash has the name of the plugin to be loaded as the key, and any 
+				plugin-specific configuration is stored in the value. This 
+				plugin-specific configuration must contain at least a @uris@ pair, 
+				which should be an array of the URIs the handler should handle, 
+				relative to the root. See the documentation for the plugin itself for
+				additional values that can be set.
+			</dd>
+			<dd class="default">The default is to only handle requests via the default
+				handler.</dd>
+		</dl>		
 	</dd>
 </dl>
 

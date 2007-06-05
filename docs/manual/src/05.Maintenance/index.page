@@ -1,7 +1,9 @@
 ---
 title: Index
 directoryName: Maintenance
+inMenu: true
 ---
 
-{menu: {menuStyle: vertical, options: {maxLevels: 2, startLevel: 2}}}
+We currently don't know of any maintenance that is required. We'll fill in this 
+section with our experiences running it.
 

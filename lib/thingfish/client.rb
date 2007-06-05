@@ -79,7 +79,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 # 
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -90,8 +90,8 @@ require 'net/http'
 require 'net/https'
 require 'uri'
 require 'forwardable'
-require "date"
-require "set"
+require 'date'
+require 'set'
 
 require 'thingfish'
 require 'thingfish/constants'

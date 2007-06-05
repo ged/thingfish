@@ -156,8 +156,6 @@ class ThingFish::Resource
 		if @io
 			rval = @io.read
 			@io.rewind
-		elsif @uuid && @client 
-			# :TODO: Demand-load the data
 		end
 		
 		return rval

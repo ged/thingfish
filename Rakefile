@@ -214,7 +214,7 @@ end
 
 ### RSpec tasks
 begin
-	gem 'rspec', '>= 0.9.4'
+	gem 'rspec', '>= 1.0.4'
 	require 'spec/rake/spectask'
 
 	### Task: spec

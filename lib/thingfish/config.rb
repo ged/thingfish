@@ -263,7 +263,8 @@ class ThingFish::Config
 			raise ThingFish::ConfigError, "missing uris key for handler '%s'" % [name] \
 				unless options.key?('uris')
 
-			return name, Array(options.delete('uris')), options
+			options['uris'] = Array( options['uris'] )
+			return name, options['uris'], options
 
 		else
 			raise ThingFish::ConfigError, "invalid value %p for handler config" % [options]

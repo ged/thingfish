@@ -87,6 +87,7 @@ class ThingFish::Handler
 	def listener=( listener )
 		@filestore = listener.filestore
 		@metastore = listener.metastore
+		@config    = listener.config
 		super
 	end
 

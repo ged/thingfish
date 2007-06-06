@@ -103,6 +103,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	# mechanism used by the daemon.
 	attr_reader :metastore
 
+	# The ThingFish::Config instance that contains all current configuration
+	# information used by the daemon.
+	attr_reader :config
+
 
 	### Shut the server down gracefully, outputting the specified +reason+ for the
 	### shutdown to the logs.

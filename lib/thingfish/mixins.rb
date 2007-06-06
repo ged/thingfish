@@ -117,7 +117,7 @@ module ThingFish # :nodoc:
 	end # module Loggable
 
 
-	### Add the ability to servce static content from a ThingFish::Handler's resource
+	### Add the ability to service static content from a ThingFish::Handler's resource
 	### directory
 	module StaticResourcesHandler
 		

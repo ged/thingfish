@@ -126,7 +126,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			response.start( HTTP::NOT_FOUND ) do |headers, out|
 				out.write( "Resource not found" )
 			end
-			self.log.error "No handler mapping for %p, falling through to static" % uri
+			self.log.debug "No handler mapping for %p, falling through to static" % uri
 		end
 		
 	rescue StandardError => err

@@ -526,6 +526,10 @@ dl.kvlist dd.valid-values {
 
 
 /* @group Example plugin style */
+.example {
+    margin-bottom: 20px;
+}
+
 .example pre {
 	padding: 4px 8px;
 }

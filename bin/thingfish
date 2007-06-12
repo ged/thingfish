@@ -2,9 +2,12 @@
 # 
 # thingfish - a command-line interface to ThingFish servers
 # 
-# == Synopsis
+# == Usage
 # 
-#   $ thingfish upload FILE
+#   $ thingfish URL upload FILE
+#   $ thingfish URL check  UUID
+#   $ thingfish URL fetch  UUID FILE
+#   $ thingfish URL update UUID FILE
 # 
 # == Version
 #
@@ -24,7 +27,7 @@ BEGIN {
 
 
 require 'thingfish'
-require 'net/http'
+require 'thingfish/client'
 require 'uri'
 
 
@@ -33,7 +36,7 @@ class ThingFish::CommandLineClient
 	
 	### Create a new ThingFish::CommandLineClient
 	def initialize
-		@mime_analyzer = nil
+		@client = nil
 	end
 	
 	
@@ -43,7 +46,7 @@ class ThingFish::CommandLineClient
 
 	### Main logic
 	def main( uri, verb, *args )
-		uri = URI.parse( uri ) or raise "invalid uri '%s'" % [uri]
+		@client = ThingFish::Client.new( uri )
 	
 		until args.empty?
 			case verb
@@ -81,17 +84,17 @@ class ThingFish::CommandLineClient
 	### If +file+ is nil, the content will be read from STDIN instead.
 	def do_upload( uri, file=nil )
 		fh = get_reader_io( file )
-		mimetype = get_mimetype( fh )
+		resource = ThingFish::Resource.new( fh )
+		resource.format = self.get_mimetype( fh )
 
-		req = Net::HTTP::Post.new( uri.path )
-		req.body_stream = fh
-		req['Content-Type'] = mimetype
-		req['Content-Length'] = fh.stat.size
+		if file
+			resource.filename = file
+			resource.extent = File.size( file )
+		end
 
-		response = send_request( uri, req )
-		location = response['location']
-	
-		$deferr.puts "Uploaded to: #{location}"
+		@client.store( resource )
+		
+		$deferr.puts "Uploaded to: #{resource.location}"
 	end
 
 
@@ -99,59 +102,40 @@ class ThingFish::CommandLineClient
 	### with the content from the specified +file+. If +file+ is nil, the content will
 	### be read from STDIN instead.
 	def do_update( uri, uuid, file=nil )
+		@client.has?( uuid ) or
+			raise "No such resource #{uuid}"
+
 		fh = get_reader_io( file )
-		mimetype = get_mimetype( fh )
+		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
+		resource.save
 
-		uri.path += uuid
-	
-		req = Net::HTTP::Put.new( uri.path )
-		req.body_stream = fh
-		req['Content-Type'] = mimetype
-		req['Content-Length'] = fh.stat.size
-
-		response = send_request( uri, req )
 		$deferr.puts "Updated #{uuid}"
 	end
 
+
+	### Verify that a resource with the specified +uuid+ exists on the ThingFish at 
+	### the given +uri+.
+	def do_check( uri, uuid )
+		if @client.has?( uuid )
+			$deferr.puts "%s has resource %s" % [ @client.uri, uuid ]
+		else
+			$deferr.puts "%s does NOT have resource %s" % [ @client.uri, uuid ]
+		end
+	end
+	
 
 	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
 	### and write it to the specified +file+. If +file+ is nil, the content will be
 	### written to STDOUT instead.
 	def do_download( uri, uuid, file )
-		uri.path += uuid
-	
-		req = Net::HTTP::Get.new( uri.path )
-		req['Accept'] = '*/*'
+		resource = @client.fetch( uuid ) or
+			raise "No such resource #{uuid}"
+			
+		fh = get_writer_io( file )
+		resource.export( fh )
+		fh.close
 
-		# Send the request and read the body of the response into the filehandle
-		send_request( uri, req ) do |response|
-			bytes = 0
-			fh = get_writer_io( file )
-
-			response.read_body do |chunk|
-				bytes += chunk.size
-				fh.print( chunk )
-			end
-
-			fh.close
-			$deferr.puts "Wrote %d bytes from %s." % [ bytes, uuid ]
-		end
-	end
-
-
-	### Fetch the headers for the specified +uuid+ on the ThingFish at the given +uri+
-	### and output them to stdout.
-	def do_check( uri, uuid )
-		uri.path += uuid
-	
-		req = Net::HTTP::Head.new( uri.path )
-		req['Accept'] = '*/*'
-
-		# Send the request and read the body of the response into the filehandle
-		send_request( uri, req ) do |response|
-			bytes = 0
-			$defout.puts( response.inspect )
-		end
+		$deferr.puts "Fetched resource at %s." % [ uuid ]
 	end
 
 
@@ -168,113 +152,6 @@ class ThingFish::CommandLineClient
 	def get_writer_io( filename=nil )
 		return $defout unless filename
 		return File.open( filename, File::WRONLY|File::CREAT|File::TRUNC )
-	end
-
-
-	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
-	### object). The +limit+ specifies how many redirects will be followed before giving 
-	### up.
-	def send_request( uri, req, limit=10, &block )
-		req['User-Agent'] = 'ThingFish Test Client/$Rev$'
-		$deferr.puts "Request: ", dump_request_object( req )
-		response = nil
-		
-		if ENV['http_proxy']
-			$deferr.puts "Using proxy #{ENV['http_proxy']}..."
-			proxyuri = URI.parse( ENV['http_proxy'] )
-			proxy = Net::HTTP::Proxy( proxyuri.host, proxyuri.port )
-			response = proxy.start( uri.host, uri.port ) do |conn|
-				conn.read_timeout = 600
-				conn.request( req, &block )
-			end
-		else
-			response = Net::HTTP.start( uri.host, uri.port ) do |conn|
-				conn.request( req, &block )
-			end
-		end
-	
-		$deferr.puts "Response:", dump_response_object( response )
-
-		case response
-	
-		# 2xx -> Success
-		when Net::HTTPSuccess
-			return response
-		
-		# 3xx -> Redirect (:TODO: what about 304 NOT MODIFIED?)
-		when Net::HTTPRedirection
-			uri = URI.parse( response['location'] )
-			return send_request( response['location'], req, limit - 1 )
-
-		# 401 -> Ask for authentication
-		when Net::HTTPUnauthorized
-			limit = 3 if limit > 3 # Only try 3 times instead of the default
-			response.error! if limit.zero?
-			add_authentication( response, req )
-			return send_request( uri, req, limit - 1 )
-		
-		else
-			# Raise an appropriate exception
-			response.error!
-		end
-
-	end
-
-
-	### Return the request object as a string suitable for debugging
-	def dump_request_object( request )
-		buf = "#{request.method} #{request.path} HTTP/#{Net::HTTP::HTTPVersion}\r\n"
-		request.each_capitalized do |k,v|
-			buf << "#{k}: #{v}\r\n"
-		end
-		buf << "\r\n"
-
-		return buf
-	end
-
-
-	### Return the response object as a string suitable for debugging
-	def dump_response_object( response )
-		buf = "#{response.code} #{response.message}\r\n"
-		response.each_capitalized do |k,v|
-			buf << "#{k}: #{v}\r\n"
-		end
-		buf << "\r\n"
-		
-		return buf
-	end
-	
-
-	### Add the authentication of the type specified by the given +response+ to the
-	### given request.
-	def add_authentication( response, request )
-		authtype = response['WWW-Authenticate'] or response.error!
-
-		case authtype
-		when /basic/i
-			username, password = prompt_for_authentication( response )
-			req.basic_auth( username, password )
-		
-		else
-			code = response.code
-			msg = response.message.dump + 
-				" and requested authtype (#{authtype}) not supported"
-	      	raise response.error_type.new( code + ' ' + msg, response )
-		end
-	end
-
-
-	### Prompt the user for authentication to the realm specified in the given +response+.
-	def prompt_for_authentication( response )
-		require 'password'
-		require 'etc'
-
-		curuser = Etc.getpwuid( Process.euid ).name
-
-		username = prompt_with_default( "Username", curuser ) {|name| name =~ /^\w+$/}
-		password = Password.get( "Password" )
-	
-		return username, password
 	end
 
 

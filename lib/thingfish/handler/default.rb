@@ -82,7 +82,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	ENTITY_TAG_PATTERN = %r{
 		(w/)?		# Weak flag
 		"			# Opaque-tag
-			([^"]+)		# Quoted-string
+			([^"]+)	# Quoted-string
 		"			# Closing quote
 	  }ix
 
@@ -149,6 +149,19 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
+	### Make the content for the handler section of the index page.
+	def make_index_content( uri )
+		# If the manual was built and installed in the static content for this 
+		# handler, link to that.
+		if self.resource_exists?( "static/manual/index.html" )
+			tmpl = self.get_erb_resource( "index_content.html" )
+			return tmpl.result( binding() )
+		else
+			return nil
+		end
+	end
+	
+
 	#########
 	protected
 	#########
@@ -182,11 +195,25 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		self.log.debug "Loading index resource %p" % [@options[:html_index]]
 		content = self.get_erb_resource( @options[:html_index] )
 
+		handler_index_sections = self.get_handler_index_sections
+
 		response.start( HTTP::OK, true ) do |headers, out|
 			headers['Content-Type'] = 'text/html'
 			out.write( content.result(binding()) )
 		end
 
+	end
+
+
+	### Iterate over the loaded handlers and ask each for any content it wants shown
+	### on the index HTML page.
+	def get_handler_index_sections
+		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
+		return handlers.collect do |uri,handlers|
+			handlers.
+				select {|h| h.is_a?(ThingFish::Handler) }.
+				collect {|h| h.make_index_content( uri ) }
+		end.flatten.compact
 	end
 
 

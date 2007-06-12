@@ -29,6 +29,11 @@ require 'rake/gempackagetask'
 require 'misc/rake/svnhelpers'
 require 'pathname'
 
+### Write a message to STDERR if $VERBOSE is true
+def log( *msg )
+	$deferr.puts( *msg ) if $VERBOSE || $verbose
+end
+
 
 ### Config constants
 PKG_NAME      = 'thingfish'
@@ -47,13 +52,18 @@ STATICWWWDIR  = WWWDIR  + 'static'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 
 TEXT_FILES    = %w( Rakefile README LICENSE )
-SPEC_DIRS     = ['spec'] + Dir.glob( 'plugins/*/spec' )
-SPEC_FILES    = Dir.glob( 'spec/*_spec.rb' ) +
-                Dir.glob( 'plugins/*/spec/*_spec.rb' )
-LIB_FILES     = Dir.glob('lib/**/*.rb').delete_if { |item| item =~ /\.svn/ }
+SPECDIR       = BASEDIR + 'spec'
+SPEC_FILES    = Pathname.glob( SPECDIR + '*_spec.rb' )
+LIB_FILES     = Pathname.glob( LIBDIR + '**/*.rb').delete_if { |item| item =~ /\.svn/ }
 
 RELEASE_FILES = TEXT_FILES + LIB_FILES + SPEC_FILES
 
+# Plugin constants
+PLUGINDIR        = BASEDIR + 'plugins'
+PLUGINS          = Pathname.glob( PLUGINDIR + '*' ).select {|path| path.directory? }
+PLUGIN_LIBS      = PLUGINS.collect {|dir| dir + 'lib' }
+PLUGIN_RAKEFILES = PLUGINS.collect {|dir| dir + 'Rakefile' }
+PLUGIN_SPECFILES = PLUGINS.collect {|dir| Pathname.glob(dir + 'spec/*_spec.rb') }.flatten
 
 
 
@@ -220,14 +230,22 @@ begin
 	### Task: spec
 	Spec::Rake::SpecTask.new( :spec ) do |task|
 		task.spec_files = SPEC_FILES
-		task.libs.unshift( FileList['plugins/**/lib'] )
+		task.libs += [LIBDIR]
 		task.spec_opts = ['-c', '-f','s', '-b']
 	end
-	task :test => [:spec] do; end
+	task :spec => ['spec:plugins']
+	task :test => [:spec]
 
 
 	### Task: spec:autotest
 	namespace :spec do
+		desc "Run specs for the included plugins"
+		Spec::Rake::SpecTask.new( :plugins ) do |task|
+			task.spec_files = PLUGIN_SPECFILES
+			task.libs += [LIBDIR] + PLUGIN_LIBS
+			task.spec_opts = ['-c', '-f','s', '-b']
+		end
+
 		desc "Run rspec every time there's a change to one of the files"
 		task :autotest do |t|
 			basedir = Pathname.new( __FILE__ )
@@ -241,15 +259,13 @@ begin
 	
 		desc "Generate HTML output for a spec run"
 		Spec::Rake::SpecTask.new( :html ) do |task|
-			task.spec_files = SPEC_FILES
-			task.libs += FileList['plugins/**/lib']
+			task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 			task.spec_opts = ['-f','h', '-D']
 		end
 
 		desc "Generate plain-text output for a CruiseControl.rb build"
 		Spec::Rake::SpecTask.new( :text ) do |task|
-			task.spec_files = SPEC_FILES
-			task.libs += FileList['plugins/**/lib']
+			task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 			task.spec_opts = ['-f','s']
 		end
 	end
@@ -271,14 +287,16 @@ end
 ### RCov (via RSpec) tasks
 begin
 	gem 'rcov'
-	gem 'rspec', '>= 0.9.0'
+	gem 'rspec', '>= 1.0.4'
 	require 'misc/rake/verifytask'
 
 	### Task: coverage (via RCov)
+	### Task: spec
 	desc "Build test coverage reports"
 	Spec::Rake::SpecTask.new( :coverage ) do |task|
-		task.spec_files = SPEC_FILES
-		task.libs += FileList['plugins/**/lib']
+		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
+		task.libs += [LIBDIR] + PLUGIN_LIBS
+		task.spec_opts = ['-c', '-f', 'p', '-b']
 		task.rcov_opts = ['--exclude', 'spec', '--xrefs', '--save' ]
 		task.rcov = true
 	end

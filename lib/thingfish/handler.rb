@@ -92,6 +92,15 @@ class ThingFish::Handler
 	end
 
 
+	### If the handler should be linked from the main index HTML page, return an
+	### HTML fragment linking it to the specified +uri+. Returning +nil+ (the 
+	### default) means that this handler shouldn't be linked.
+	def make_index_content( uri )
+		# return %{<a href="%s">%s</a>} % [uri, self.class.name] # For testing
+		return nil
+	end
+	
+
 
 	#########
 	protected

@@ -142,6 +142,13 @@ class ThingFish::StatusHandler < ThingFish::Handler
 	end
 
 
+	### Return the HTML fragment that should be used to link to this handler.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "index_content.html" )
+		return tmpl.result( binding() )
+	end
+
+
 	#########
 	protected
 	#########

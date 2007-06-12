@@ -85,7 +85,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		self.log.debug {
 			"Handler map is:\n    " + 
 			self.classifier.handler_map.collect {|uri, handlers|
-				"%s: [%s]" % [ uri, handlers.collect{|h| h.class.name}.join(" ,") ]
+				"%s: [%s]" % [ uri, handlers.collect{|h| h.class.name}.join(", ") ]
 			}.join( "\n    ")
 		}
 	end
@@ -111,6 +111,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Shut the server down gracefully, outputting the specified +reason+ for the
 	### shutdown to the logs.
 	def shutdown( reason="no reason" )
+		self.log.warn "Shutting down: #{reason}"
 		self.stop
 	end
 

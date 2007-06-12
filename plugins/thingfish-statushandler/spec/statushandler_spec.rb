@@ -103,6 +103,12 @@ describe "A status handler with no stats filters" do
 		@handler.process( @request, @response )
 	end
 
+	it "can build an HTML fragment for the index page" do
+		erb_template = ERB.new( "Some template that refers to <%= uri %>" )
+		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		@handler.make_index_content( "/foo" ).should ==
+			"Some template that refers to /foo"
+	end
 end
 
 
@@ -121,7 +127,7 @@ describe "A status handler with stats filters" do
 	it "registers a StatisticsFilter with its listener for each configured URI" do
 		@listener.
 			should_receive( :register ).
-			with( :string, duck_type(:process, :dump), true ).
+			with( an_instance_of(String), duck_type(:process, :dump), true ).
 			exactly(3).times
 		
 		@handler.listener = @listener

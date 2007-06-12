@@ -212,6 +212,15 @@ module ThingFish # :nodoc:
 		protected
 		#########
 
+		### Return true if the specified resource exists
+		def resource_exists?( path )
+			resdir = self.resource_dir or
+				raise "No resource directory available"
+			resource = resdir + path
+			return resource.exist? && resource.file?
+		end
+
+
 		### Read the content from the file 
 		def get_resource( path )
 			return self.get_resource_io( path ).read

@@ -34,14 +34,14 @@ end
 ###	C O N T E X T S
 #####################################################################
 
-describe "The base handler class" do
+describe ThingFish::Handler do
 	it "should register subclasses as plugins" do
 		ThingFish::Handler.get_subclass( 'test' ).should == TestHandler
 	end
 end
 
 
-describe "An instance of a derivative class" do
+describe ThingFish::Handler, " concrete subclass instance" do
 
 	before(:each) do
 	    @handler = ThingFish::Handler.create( 'test' )
@@ -80,6 +80,10 @@ describe "An instance of a derivative class" do
 		@handler.listener = mock_listener
 	end
 	
+
+	it "doesn't add to the index content by default" do
+		@handler.make_index_content( '/foo' ).should be_nil
+	end
 end
 
 # vim: set nosta noet ts=4 sw=4:

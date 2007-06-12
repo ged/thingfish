@@ -614,5 +614,19 @@ describe ThingFish::DefaultHandler do
 	end
 
 
+	it "adds a link to the manual to the main index page if the manual is installed" do
+		@handler.stub!( :resource_exists? ).and_return( true )
+		@handler.stub!( :get_resource ).and_return( "some content" )
+		@handler.stub!( :get_erb_resource ).and_return( ERB.new("Some stuff") )
+		@handler.make_index_content( '/' ).should == "Some stuff"
+	end
+
+
+	it "doesn't add a link to the manual if the manual is not installed" do
+		@handler.stub!( :resource_exists? ).and_return( false )
+		@handler.make_index_content( '/' ).should be_nil
+	end
+	
+
 end
 

@@ -40,31 +40,26 @@ describe "The daemon class" do
 	before(:each) do
 		@log = StringIO.new('')
 		ThingFish.logger = Logger.new( @log )
+		@stub_socket = stub( "Server listener socket" )
+		TCPServer.stub!( :new ).and_return( @stub_socket )
 	end
-
-	after(:each) do
-		# workaround EADDRINUSE
-		@daemon.instance_variable_get( :@socket ).close
-	end
-
 
 	it "outputs a new instance's handler config to the debug log" do
 		@daemon = ThingFish::Daemon.new
 		@log.rewind
 		@log.read.should =~ %r{Handler map is:\s*/: \[.*?\]}
+		# rescue Errno::EADDRINUSE
+		# 	$deferr.puts "Skipping: something already running on the default port"
+		# end
 	end
 end
 
 describe "A new daemon with no arguments" do
 	before(:each) do
+		@stub_socket = stub( "Server listener socket" )
+		TCPServer.stub!( :new ).and_return( @stub_socket )
 		@daemon = ThingFish::Daemon.new
 	end
-
-	after(:each) do
-		# workaround EADDRINUSE
-		@daemon.instance_variable_get( :@socket ).close
-	end
-
 
 	it "uses default config IP" do
 		@daemon.host.should equal( ThingFish::Config::DEFAULTS[:ip])
@@ -161,6 +156,8 @@ describe "A daemon with one or more handlers in its configuration" do
 			{'test' => '/test' },
 		]
 		
+		@stub_socket = stub( "Server listener socket" )
+		TCPServer.stub!( :new ).and_return( @stub_socket )
 		@daemon = ThingFish::Daemon.new( @config )
 	end
 

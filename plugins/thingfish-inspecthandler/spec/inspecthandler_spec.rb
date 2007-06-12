@@ -48,7 +48,7 @@ describe "The inspection handler" do
 		@response.should_receive( :start ).with( HTTP::OK ).
 			and_yield( @headers, @out )
 		@headers.should_receive( :[]= ).with( 'Content-Type', 'text/html' )
-	    @out.should_receive( :write ).with( :string )
+	    @out.should_receive( :write ).with( an_instance_of(String) )
 		@handler.process( @request, @response )
 	end
 

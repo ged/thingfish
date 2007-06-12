@@ -117,6 +117,8 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 			include ThingFish::ResourceLoader
 			alias_method :get_mah_bucket, :get_resource
 			public :get_mah_bucket
+			alias_method :check_mah_bucket, :resource_exists?
+			public :check_mah_bucket
 		}
 	end
 
@@ -136,6 +138,10 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 
 	it "is able to load stuff from its resources dir" do
 	    @obj.get_mah_bucket( @tmpname ).should == TEST_RESOURCE_CONTENT
+	end
+	
+	it "can test for the existance of a resource" do
+		@obj.check_mah_bucket( @tmpname ).should == true
 	end
 
 end

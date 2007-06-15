@@ -1,6 +1,7 @@
 /* @override 
 	http://gont.v10.wvs/ThingFish/default.css
 	http://localhost/ThingFish/default.css
+	http://localhost:3474/manual/default.css
 */
 
 /* 
@@ -50,6 +51,9 @@ a:hover {
 }
 
 a img {
+	border: 0;
+}
+a.thickbox {
 	border: 0;
 }
 
@@ -128,7 +132,7 @@ blockquote p {
 
 #avmenu li a, #avmenu li span {
 	font-weight: bold;
-	height: 20px;
+	min-height: 20px;
 	text-decoration: none;
 	color: #6c8c22;
 	display: block;
@@ -163,7 +167,7 @@ blockquote p {
 }
 
 #avmenu ul ul a {
-	height: 16px;
+	min-height: 16px;
 	margin: 0;
 	padding: 4px 0 0 8px;
 }
@@ -172,6 +176,11 @@ blockquote p {
 	font-size: 1.5em;
 	font-weight: normal;
 }
+
+#avmenu li.webgen-menu-submenu {
+	overflow: hidden;
+}
+
 /* @end */
 
 

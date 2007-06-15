@@ -51,10 +51,13 @@ MANUALDIR     = DOCSDIR + 'manual'
 STATICWWWDIR  = WWWDIR  + 'static'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 
-TEXT_FILES    = %w( Rakefile README LICENSE )
+TEXT_FILES    = %w( Rakefile README LICENSE ).
+	collect {|filename| BASEDIR + filename }
 SPECDIR       = BASEDIR + 'spec'
-SPEC_FILES    = Pathname.glob( SPECDIR + '*_spec.rb' )
-LIB_FILES     = Pathname.glob( LIBDIR + '**/*.rb').delete_if { |item| item =~ /\.svn/ }
+SPEC_FILES    = Pathname.glob( SPECDIR + '*_spec.rb' ).
+	delete_if {|item| item =~ /\.svn/ }
+LIB_FILES     = Pathname.glob( LIBDIR + '**/*.rb').
+	delete_if {|item| item =~ /\.svn/ }
 
 RELEASE_FILES = TEXT_FILES + LIB_FILES + SPEC_FILES
 
@@ -78,6 +81,7 @@ task :clean => [ :clobber_rdoc, :clobber_package, :clobber_coverage, :clobber_ma
 	File.rm( files ) unless files.empty?
 	FileUtils.rm_rf( 'artifacts' )
 end
+task :clobber_manual => :clobber_generated_manual
 
 
 ### Task: rdoc
@@ -109,8 +113,10 @@ gemspec = Gem::Specification.new do |gem|
 
 	gem.has_rdoc 	= true
 
-	gem.files      	= RELEASE_FILES
-	gem.test_files 	= SPEC_FILES
+	gem.files      	= RELEASE_FILES.
+		collect {|f| f.relative_path_from(BASEDIR).to_s }
+	gem.test_files 	= SPEC_FILES.
+		collect {|f| f.relative_path_from(BASEDIR).to_s }
 
 	gem.autorequire	= 'thingfish'
 
@@ -129,6 +135,7 @@ end
 
 ### Task: install
 task :install => [:package] do
+	$deferr.puts 
 	installer = Gem::Installer.new( %{pkg/#{PKG_FILE_NAME}.gem} )
 	installer.install
 end
@@ -200,13 +207,16 @@ begin
 	gem 'coderay'
 	gem 'RedCloth'
 
-	Webgen::Rake::WebgenTask.new( :generate_manual ) do |task|
+	Webgen::Rake::WebgenTask.new( :generated_manual ) do |task|
 		task.directory = MANUALDIR
+		task.clobber_outdir = true
 	end
 	
-	task :manual => [:generate_manual] do
+	task :manual => [:generated_manual] do
 		outputdir = MANUALDIR + 'output'
 		targetdir = STATICWWWDIR + 'manual'
+
+		rmtree( targetdir )
 		cp_r( outputdir, targetdir, :verbose => true )
 	end
 	
@@ -216,7 +226,7 @@ rescue LoadError => err
 	end
 
 	task :manual => :no_webgen
-	task :clobber_manual
+	task :clobber_generated_manual
 end
 
 

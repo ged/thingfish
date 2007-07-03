@@ -230,6 +230,8 @@ module ThingFish # :nodoc:
 		### Load the specified +resource+ as an ERB template and return it.
 		def get_erb_resource( resource )
 			source = self.get_resource( resource )
+			self.log.debug "Making new ERB template from '%p' (%d bytes)" % 
+				[resource, source.length]
 			return ERB.new( source )
 		end
 

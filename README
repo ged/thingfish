@@ -3,8 +3,350 @@
 ThingFish is a highly-accessible network store for cataloging large files and their
 associated metadata.
 
-== Dependencies
+== Goals ==
+=== Simplicity ===
+The system should, in its most basic form, only do two things:
 
- * Ruby 1.8.5 or greater
- * Mongrel
- * UUIDTools
+ 1. Store files via a network interface.
+ 2. Store metadata about the files and a search facility for finding files via their associated metadata.
+
+
+=== Modularity ===
+
+The system should have as much of the backend details abstracted out into plugin
+functionality as possible. This will allow the basic system to remain simple and be
+expanded to fit an environment's needs. It also makes incremental functionality
+easier, as plugins can be created when the functionality they encapsulate is required
+rather than up front.
+
+We wish to minimize the dependencies necessary to get a basic installation up and
+running. The base system should only require a recent installation of Ruby and
+Mongrel (http://mongrel.rubyforge.org/). Plugins which extend it or replace the
+default simple backends with better-tuned and functional ones may depend on whatever
+they wish.
+
+
+=== Language Neutrality ===
+
+The service API presented by ThingFish should be as portable as possible, requiring
+only network sockets and an standards-compliant implementation of HTTP 1.1.
+
+To this end, we've chosen the REST architectural style (http://rest.blueoxen.net/cgi-bin/wiki.pl?WhatIsREST).
+
+
+=== Scalability ===
+
+While scalability is an obvious goal for most every network-accessable service, we
+feel like it's important to consider it up front.
+
+Because of its modularity, ThingFish should be able to scale both deep and wide
+without sacrificing simplicity in the default configuration. New strategies for
+scalability (caching, file storage, metadata semantics) can be introduced as they are
+needed without having to take their implementation into consideration for the initial
+system.
+
+Using a REST API also helps with wide scalability, as it is a stateless protocol and
+therefore can be load-balanced with little to no changes to the server software.
+
+
+== Additional Features ==
+
+=== Auto-Generation of Metadata ===
+
+ThingFish will also support extraction and auto-generation of metadata from the
+stored file.
+
+Examples:
+ - Detection of filetype based on magic for less-useful upload mimetypes
+     - application/octet-stream
+     - text/plain
+ - Previews for appropriate mimetypes
+ - Extraction of embedded metadata (e.g., camera info, codec, etc.)
+ - Pluggable extractions
+     - Each extractor knows what mimetypes it can extract its metadata from
+ - upload time
+ - uploading agent (e.g., User-Agent header)
+ - uploading ip
+
+We're trying to name metadata according to the conventions of the Dublin Core where
+possible/appropriate. The default metadata we're currently extracting (from the HTTP
+request) is:
+
+ +-----------------------------------------------------------+
+ | Description    | Dublin Core Type   | Metastore Attribute |
+ |----------------+--------------------+---------------------|
+ | Content-type   | format             | format              |
+ | Content-length | extent             | extent              |
+ | User-agent     | n/a                | useragent           |
+ | Uploading IP   | n/a                | uploadaddress       |
+ | Upload Date    | created            | created             |
+ | Modified Date  | modified           | modified            |
+ | Checksum       | n/a                | checksum            |
+ +-----------------------------------------------------------+
+
+
+=== Content Negotiation ===
+
+The daemon will also support pluggable
+negotiation (http://www.w3.org/Protocols/rfc2616/rfc2616-sec12.html Transparent HTTP content), which will allow customizable serialization of complex datatyes and
+on-the-fly transformation of fetched files.
+
+For URIs that return RDF triples or other structural data, the client will be able to
+fetch it in YAML, JSON, XML, HTML, or perhaps other formats
+(Turtle (http://en.wikipedia.org/wiki/Turtle_%28syntax%29)?,
+N3 (http://en.wikipedia.org/wiki/Notation_3)?)
+
+This will be implemented with a table of transformations from one mimetype to
+another. If the mimetype of the file is in the accepts list, return it as-is. If not,
+a response format is detemined by taking the list of formats the requester accepts,
+then iterating over the table of transformations. If a transformation exists for the
+requested type, it executes and returns the data in the requested format.
+
+Pluggable output formats
+  - YAML
+  - JSON
+  - XML
+  - HTML
+  - RSS
+  - Image/audio re-encoding PNG->TIFF, etc.
+  - PDF
+  - Human-readable text
+
+
+== Implementation ==
+=== Language ===
+    - Ruby
+        - Daemon built around Mongrel (Mongrel: Home <http://mongrel.rubyforge.org/>)
+    - C extensions where necessary for speed/scalability
+
+=== "Driving" Application ===
+
+We've selected a few little apps to help us flesh out the functionality. They should
+allow us to exercise most of the planned functionality.
+
+ - MP3 Catalog (Floyd?)
+ - Picture gallery
+
+
+=== File Storage ===
+
+The storage backend should be pluggable. The default implementation should use a
+simple filesystem directory structure, perhaps with hashed names based on a
+resource's UUID.
+
+Duplicates should be avoided via checksumming, perhaps with the error response
+returning a referral to the original via a {{{Location}}} header or something.
+
+We also need to handle the case of duplicates being uploaded in the case where there
+are ACLs which restrict access to the original copy. In the case where there's
+already a resource in the filestore with the same checksum that is not accessible to
+the uploading user, a duplicate '''should''' be transparently created. We want to
+avoid informing the second uploading user of the first object's existence if she
+doesn't have permissions to view it to avoid information leakage.
+
+
+=== Associated Metadata ===
+
+The default metadata structure for ThingFish files will be a basic key/value list
+implemented with an in-memory hash. You can customize the metadata layer via
+pluggable metastore strategies (http://en.wikipedia.org/wiki/Strategy_pattern).
+
+The metastore for LAIKA's ThingFish installation will be a be an ontological system
+implemented using RDF (http://www.w3.org/RDF/) via the library (http://librdf.org Redland RDF). We will support Dublin Core Metadata Terms (http://dublincore.org/documents/2006/12/18/dcmi-terms/ the) at a minimum, but we plan to support the addition of
+other RDF vocabularies via plugins. Some likely additions:
+
+  FOAF (http://www.foaf-project.org/) (Friend of a Friend)::
+	designed to describe people, their interests and interconnections.
+
+  DOAC (http://ramonantonio.net/doac/) (Description of a Career)::
+	supplements FOAF to allow the sharing of r√©sum√© information.
+
+  DOAP (http://usefulinc.com/doap/) (Description of a Project)::
+	designed to describe software projects; uses FOAF to identify the people involved
+
+  Images Ontology (http://www.schemaweb.info/schema/SchemaDetails.aspx?id=131)::
+	Ontology for Images, image regions (SVG), videos, frames, segments, and what they depict.
+
+  Photography Vocabulary (http://www.schemaweb.info/schema/SchemaDetails.aspx?id=173)::
+	Definitions of various terms related to photographs and photography equipment.
+
+
+
+==== Search ====
+
+Metadata searching will support two interfaces: a basic query mapper that will
+generate simple queries via a naive interface on the current metastore strategy, and
+a more-robust query engine that will provide a raw, implementation-specific query
+interface via a POST request, with the body of the request containing the query text.
+
+Results from a search will be returned via one of the results-serialization
+strategies.
+
+
+==== Handlers ====
+===== Default Handler =====
+  Fetch the toplevel index (exactly what this means is subject to content negotiation)::
+    {{{GET /}}}
+  Return the data for a given file::
+    {{{GET /«uuid»}}}
+  Upload a file::
+    {{{POST /}}}
+  Replace a file's data::
+    {{{PUT /«uuid»}}}
+  Delete a file from the datastore::
+    {{{DELETE /«uuid»}}}
+
+===== Search Handler =====
+Returns a list of URIs for files which match the given search criteria.
+
+  Find files with a given filename::
+    {{{GET /search?filename=ovenmitt.jpg}}}
+  Find files with given tags::
+    {{{GET /search?tag=(bondage|domination)+ovenmitt}}}
+  Find a list of files with a complex query::
+    {{{GET /search?tag=porn;filename=asian*;created=before+1/12/2007;owner=mahlon}}}
+  Complex query interface::
+    Find a list of still images created by the same person in the same namespace as a
+    given resource via a metastore implementation-specific query (RDF+SPARQL in this
+    example):
+    {{{
+    POST /search HTTP/1.1
+    Content-type: application/sparql-query
+
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX dc: <http://purl.org/dc/elements/1.1/>
+    PREFIX dcmi: <http://dublincore.org/documents/dcmi-type-vocabulary/>
+    PREFIX thingfish: <http://oss.laika.com/thingfish/rdf/2007/03/schema#>
+    SELECT ?urn 
+    WHERE  {
+        urn:uuid:c10b7ee8-cdad-11db-a110-23336f446aba dc:creator ?person
+        urn:uuid:c10b7ee8-cdad-11db-a110-23336f446aba thingfish:namespace ?ns
+        ?urn dc:creator ?person
+        ?urn dc:type dcmi:StillImage
+        ?urn thingfish:namespace ?ns
+    }
+    }}}
+
+===== Metadata Handler =====
+Returns a list of metadata tuples.
+
+  Return a list of all metadata tuples for a given file::
+    {{{GET /metadata/«uuid»}}}
+  Find all tags in the store::
+    {{{GET /metadata/tag}}}
+  Find all tags for a given file::
+    {{{GET /metadata/tag/«uuid»}}}
+  Return the first preview that matches the request's {{{Accepts:}}} header for a
+  given file:::
+    {{{GET /metadata/preview/«uuid»}}}
+  Add a tag for the given file::
+    {{{POST /metadata/tag/«uuid»}}}
+  Replace the namespace for the given file::
+    {{{PUT /metadata/namespace/«uuid»}}}
+  Delete a namespace for the given file::
+    {{{DELETE /metadata/namespace/«uuid»}}}
+
+  Note that you won't be able to do this::
+    {{{DELETE|POST /metadata/«uuid»}}}
+  Since those actions would dirty the info for underlying data. These should return a
+  BAD_REQUEST.
+
+===== Admin Handler =====
+  Show available diskspace::
+    {{{GET /admin/diskspace}}}
+  Show and edit space/quotas per user::
+    {{{GET /admin/quotas}}}
+  Cleanup and maintenance (candidates for deletion?)::
+    {{{GET /admin/cleanup}}}
+  Show current usage (status, stats, and graphs -- rrd tool, IO, trending
+  performance)::
+    {{{GET /admin/status}}}
+
+== Release Plan ==
+
+[[PlannedMilestones(ThingFish)]]
+
+== References ==
+
+ * Map/Reduce in Ruby (http://multipart-mixed.com/software/simple_mapreduce_in_ruby.html Simple) - an interesting implementation using DRB/Rinda.
+
+ * for Ruby: Ridiculously Easy Distributed Programming (http://tech.rufy.com/2006/08/mapreduce-for-ruby-ridiculously-easy.html MapReduce) - another DRB/Rinda
+   implementation which doesn't seem to actually implement map/reduce, but has some
+   interesting ideas nonetheless.
+
+ * Hadoop (http://wiki.apache.org/lucene-hadoop/) - A Java distributed filesystem +
+   mapreduce implementation that came out of the Lucene project
+
+ * Spotlight Common Metadata Attribute Keys (http://developer.apple.com/documentation/Carbon/Reference/MetadataAttributesRef/Reference/CommonAttrs.html) - A list of commonly-used keys in the
+   Spotlight indexing system in MacOS X.
+
+ * Bloom Filters (http://en.wikipedia.org/wiki/Bloom_filter) - A space-efficient
+   probabilistic data structure that is used to test whether an element is a member
+   of a set. Could be used for very fast string-array indexes
+
+ * RFC 2616 (http://www.w3.org/Protocols/rfc2616/rfc2616.html) - HTTP 1.1
+
+ * RFC 2518 (http://www.webdav.org/specs/rfc2518.html) - HTTP Extensions for
+   Distributed Authoring -- WEBDAV
+
+ * RFC 4709 (http://www.faqs.org/rfcs/rfc4709.html) - Mounting Web Distributed
+   Authoring and Versioning (WebDAV) Servers
+
+ * SPARQL Query Service (http://xmlarmyknife.org/docs/rdf/sparql/) - Query-via-POST
+
+ * SPARQL/Update (http://jena.hpl.hp.com/~afs/SPARQL-Update.html) - An update
+   language for RDF graphs
+
+ * [http://thefigtrees.net/lee/sw/sparql.js sparql.js] - SPARQL Javascript Library
+
+
+== Crazy/Fun Ideas ==
+
+ * Implement enough of the DAV methods that we can mount a ThingFish as a trophy on
+   our MacOS desktop.[[br]]
+   From the RFC:
+
+   1. Client retrieves representation of WebDAV collection "/user42/inbox/".
+   {{{
+   GET /user42/inbox/ HTTP/1.1
+   Host: www.example.com
+   }}}
+
+   2. Server returns representation.
+   {{{
+   HTTP/1.1 200 OK
+   Content-Type: text/html
+   Content-Length: xxx
+
+   ..
+   <a href="?action=davmount">View this collection in your
+   WebDAV client</a>
+   ..
+   }}}
+
+   (note that the example shows only that part of the HTML page that
+   contains the relevant link)
+
+   3. Client follows link to "davmount" document
+   {{{
+   GET /user42/inbox/?action=davmount HTTP/1.1
+   Host: www.example.com
+   }}}
+
+   4. Server returns "davmount" document
+   {{{
+   HTTP/1.1 200 OK
+   Content-Type: application/davmount+xml
+   Content-Length: xxx
+   Cache-Control: private
+
+   <dm:mount xmlns:dm="http://purl.org/NET/webdav/mount">
+     <dm:url>http://www.example.com/user42/</dm:url>
+     <dm:open>inbox/</dm:open>
+   </dm:mount>
+   }}}
+
+
+ * The index response for an {{{Accepts:}}} header of {{{text/x-ruby}}} should be the
+   source code for the corresponding client library. This would work great with
+   {{{require-uri}}}.

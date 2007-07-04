@@ -1,0 +1,52 @@
+== Thingfish::UploadHandler
+
+A handler that accepts and unwraps multipart form uploads, as documented at
+http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+
+== Configuration
+
+To run this handler in your ThingFish, add a 'upload' section to the 'plugins' 
+section of your config file:
+
+    - upload:
+        uris: /upload
+        resource_dir: plugins/thingfish-uploadhandler/resources
+
+
+=== Config Keys
+
+[uris]::
+  The URIs to register the handler at.
+[+bufsize+]::
+    The size of the buffer to use when reading incoming data (in bytes).	
+    Defaults to ThingFish::UploadHandler::DEFAULT_BUFSIZE
+[+spooldir+]::
+    The directory in which to store uploaded resources before they are injected
+    into the filestore.
+    Defaults to ThingFish::UploadHandler::DEFAULT_SPOOLDIR
+[resource_dir]::
+  The directory which contains the upload html template.
+
+=== Resources
+
+This handler uses a template for its output, which installed by default in the
+'thingfish/uploadhandler' directory under your Ruby's datadir. If you wish to
+customize the output you can modify that file, or override the resource directory or
+the template name in the handler's options.
+
+
+== Authors
+
+ * Mahlon E. Smith <mahlon@laika.com>
+ * Michael Granger <mgranger@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License. To view a copy of this license, visit
+http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
+Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+

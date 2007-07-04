@@ -33,5 +33,6 @@ module ThingFish
 	class FileStoreError < ThingFish::Error; end
 	class FileStoreQuotaError < ThingFish::FileStoreError; end
 
+	class RequestError < ThingFish::Error; end
 end
 

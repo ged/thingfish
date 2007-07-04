@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>ThingFish :: upload</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
+
+    <link rel="stylesheet" type="text/css" href="/default.css" media="screen,projection" />
+  </head>
+
+  <body>
+    <div id="wrap">
+      <div id="header">
+        <h1><a href="/">ThingFish</a></h1>
+		<p><strong>Feed me.</strong></p>
+      </div>
+
+	<!-- content start -->
+	<div id="contentwide">
+		<p class="textright">&nbsp;</p>
+
+		<% if defined? files %>
+		<h2>Uploaded <%= files.length %> file(s)</h2>
+		<ul>
+		<% files.each do |file, meta| %>
+			<li><a href="<%= meta[:uuid] %>" title="<%= meta[:uuid] %>"><%= meta[:title] %></a></li>
+		<% end %>
+		</ul>
+		<% end %>
+
+		<h2>Upload new content</h2>
+		<form action="<%= uri %>" method="POST" enctype="multipart/form-data">
+
+			<strong>multi-value test, delete me</strong><br />
+			<input type="checkbox" name="thingfish-metadata-pork" value="fornk" />
+			<input type="checkbox" name="thingfish-metadata-pork" value="zoot" />
+			<input type="checkbox" name="thingfish-metadata-pork" value="tangz" />
+			<br /><br />
+
+			<table border="0">
+				<th colspan="2">Select file(s) for upload:</th>
+				<% 5.times do |i| %>
+				<tr>
+					<td>File <%= i + 1 %></td>
+					<td><input type="file" name="thingfish-upload" /></td>
+				</tr>
+				<% end %>
+			</table>
+
+			<table border="0">
+				<th colspan="2">Optional metadata:</th>
+				<tr>
+					<td>Namespace:</td>
+					<td><input type="textfield" name="thingfish-metadata-namespace" /></td>
+				</tr>
+				<tr>
+					<td>Rating:</td>
+					<td>
+						<select name="thingfish-metadata-rating">
+							<option value="" selected="selected">Please select rating</option>
+							<option value="5">Frikkin sweet!</option>
+							<option value="4">Rad.</option>
+							<option value="3">Eh, take it or leave it</option>
+							<option value="2">I've seen better</option>
+							<option value="1">Totally lame ass</option>
+						</select>
+					</td>
+				</tr>
+			</table>
+
+			<input type="submit" value="Upload" />
+		</form>
+
+	</div>
+	<!-- content end -->
+
+      <div id="footer">
+        <p>Copyright &copy; 2007 LAIKA, Inc. | 
+			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
+			  <p>$Id$</p>
+      </div>
+    </div>
+  </body>
+</html>

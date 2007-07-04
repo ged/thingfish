@@ -75,7 +75,7 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Create a new UploadHandler
 	def initialize( options={} )
-		@parser = MultipartMimeParser.new( options )
+		@parser = ThingFish::MultipartMimeParser.new( options )
 		super
 	end
 
@@ -152,19 +152,15 @@ class ThingFish::UploadHandler < ThingFish::Handler
 		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
 
 		# unwrap multipart
-		files, params = begin
-			parser = MultipartMimeParser.new( request.body, boundary, @bufsize, @spooldir )
-			parser.parse
-		rescue MultipartMimeParser::ParseError => err
-			self.log.error "%s: %s" % [err.class.name, err.message]
-			response.start( HTTP::BAD_REQUEST, true ) do |headers, out|
+		begin
+			files, params = @parser.parse( request.body, boundary )
+			self.log.debug "Parsed %d files and %d params (%p)" % 
+				[files.length, params.length, params.keys]
+		rescue ThingFish::RequestError => err
+			return response.start( HTTP::BAD_REQUEST, true ) do |headers, out|
 				out.write( err.message )
 			end
-			
-			return
 		end
-		self.log.debug "Parsed %d files and %d params (%p)" % 
-			[files.length, params.length, params.keys]
 
 		# merge global metadata with file specific metadata
 		# walk through parsed files, pass to thingfish meta and file stores

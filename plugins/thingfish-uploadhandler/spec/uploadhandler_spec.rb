@@ -39,8 +39,10 @@ UPLOAD_HEADERS = {
 	'CONTENT_LENGTH'       => '123456789'
 }
 
-SPECDIR = Pathname.new( __FILE__ ).dirname
-DATADIR = SPECDIR + 'data'
+unless defined?( SPECDIR )
+	SPECDIR = Pathname.new( __FILE__ ).dirname
+	DATADIR = SPECDIR + 'data'
+end
 
 
 ### Create a stub request prepopulated with HTTP headers and form data
@@ -66,7 +68,8 @@ describe ThingFish::UploadHandler do
 	
 
 	before( :each ) do
-		@handler = ThingFish::UploadHandler.new
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
 		@params = {
 			'REQUEST_METHOD' => 'POST',
 			'REQUEST_URI' => '/upload',
@@ -100,17 +103,37 @@ describe ThingFish::UploadHandler do
 		response.should_receive( :start ).
 			with( HTTP::BAD_REQUEST, true ).
 			and_yield( nil, outhandle )
-		outhandle.should_receive( :write ).with( /boundary mismatch/i )
+		outhandle.should_receive( :write ).with( /no initial boundary/i )
 		
 		@handler.process( request, response )
 	end
 
-	it "correctly inserts file content from request with one upload"
+	it "correctly inserts file content from request with one upload" do
+		request = load_fixtured_request( 'singleupload.form' )
+		response = mock( "response object", :null_object => true )
+		outheaders = mock( "response headers", :null_object => true )
+		outhandle = mock( "response filehandle", :null_object => true )
+		mockfilestore = mock( "filestore", :null_object => true )
+		mockmetastore = mock( "metastore", :null_object => true )
+		
+		mockhandler = mock( "daemon", :null_object => true )
+		mockhandler.should_receive( :filestore ).and_return( mockfilestore )
+		mockhandler.should_receive( :metastore ).and_return( mockmetastore )
+		
+		@handler.listener = mockhandler
+		
+		mockfilestore.should_receive( :store_io ).
+			with( an_instance_of(UUID), an_instance_of(Tempfile) ).
+			once
+		response.should_receive( :start ).
+			with( HTTP::CREATED, true ).
+			and_yield( outheaders, outhandle )
+
+		@handler.process( request, response )
+	end
 	
 	
 	it "correctly inserts file content from request with two uploads" do
-		ThingFish.logger.level = Logger::DEBUG
-
 		request = load_fixtured_request( '2_images.form' )
 		response = mock( "response object", :null_object => true )
 		outheaders = mock( "response headers", :null_object => true )
@@ -125,7 +148,7 @@ describe ThingFish::UploadHandler do
 		@handler.listener = mockhandler
 		
 		mockfilestore.should_receive( :store_io ).
-			with( ThingFish::Constants::Patterns::UUID_REGEXP, Tempfile ).
+			with( an_instance_of(UUID), an_instance_of(Tempfile) ).
 			twice
 		response.should_receive( :start ).
 			with( HTTP::CREATED, true ).

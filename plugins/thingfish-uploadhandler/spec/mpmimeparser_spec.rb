@@ -24,8 +24,10 @@ require 'thingfish/handler/upload'
 
 BOUNDARY = 'sillyBoundary'
 
-SPECDIR = Pathname.new( __FILE__ ).dirname
-DATADIR = SPECDIR + 'data'
+unless defined?( SPECDIR )
+	SPECDIR = Pathname.new( __FILE__ ).dirname
+	DATADIR = SPECDIR + 'data'
+end
 
 
 ### Create a stub request prepopulated with HTTP headers and form data

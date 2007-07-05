@@ -137,9 +137,9 @@ class ExampleTag < Tags::DefaultTag
 		libdir = basedir + 'lib'
 		log( :debug ) { "Appending " + libdir + " to $LOAD_PATH" }
 
-		options = XMPFilter::INITIALIZE_OPTS.dup
+		options = Rcodetools::XMPFilter::INITIALIZE_OPTS.dup
 		options[:include_paths] << libdir.to_s
-		return XMPFilter.run( sourcefile.read, options )
+		return Rcodetools::XMPFilter.run( sourcefile.read, options )
 		
 	rescue Exception => err
 		log( :error ) {

@@ -203,7 +203,7 @@ end
 begin
 	gem 'webgen'
 	require 'webgen/rake/webgentask'
-	gem 'rcodetools'
+	gem 'rcodetools', '>= 0.7.0.0'
 	gem 'coderay'
 	gem 'RedCloth'
 

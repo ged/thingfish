@@ -29,11 +29,6 @@
 		<% end %>
 		</div>
 		<% end %>
-		
-		<% plugin = @config.plugins.handlers.find { |plug| plug.key?('upload') } %>
-		<% if plugin %>
-		<p>You can also just start <a href="<%= plugin['upload']['uris'].first %>">uploading</a> stuff!</p>	
-		<% end %>
 
 	</div>
 	<!-- content end -->

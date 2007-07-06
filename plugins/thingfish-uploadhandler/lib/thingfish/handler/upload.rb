@@ -1,46 +1,44 @@
 #!/usr/bin/ruby
-=begin
+# 
+# Accept and unwrap multipart form uploads, as documented at
+# http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+# 
+# == Synopsis
+# 
+# 	# thingfish.conf
+# 	#
+# 	plugins:
+# 		handlers:
+# 			- upload:
+# 				uris: /upload
+# 				resource_dir: plugins/thingfish-uploadhandler/resources
+# 
+# == Config Keys
+# 
+# 	[+bufsize+]
+# 		The size of the buffer to use when reading incoming data (in bytes).	
+# 		Defaults to ThingFish::UploadHandler::DEFAULT_BUFSIZE
+# 
+# 	[+spooldir+]
+# 		The directory in which to store uploaded resources before they are injected
+# 		into the filestore.
+# 		Defaults to ThingFish::UploadHandler::DEFAULT_SPOOLDIR
+# 
+# == Version
+# 
+# $Id$
+# 
+# == Authors
+# 
+# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <mgranger@laika.com>
+# 
+# :include: LICENSE
+# 
+# --
+# 
+# Please see the file LICENSE in the 'docs' directory for licensing details.
 
-Accept and unwrap multipart form uploads, as documented at
-http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
-
-== Synopsis
-
-	# thingfish.conf
-	#
-	plugins:
-		handlers:
-			- upload:
-				uris: /upload
-				resource_dir: plugins/thingfish-uploadhandler/resources
-
-== Config Keys
-
-	[+bufsize+]
-		The size of the buffer to use when reading incoming data (in bytes).	
-		Defaults to ThingFish::UploadHandler::DEFAULT_BUFSIZE
-
-	[+spooldir+]
-		The directory in which to store uploaded resources before they are injected
-		into the filestore.
-		Defaults to ThingFish::UploadHandler::DEFAULT_SPOOLDIR
-
-== Version
-
-$Id$
-
-== Authors
-
-* Mahlon E. Smith <mahlon@laika.com>
-* Michael Granger <mgranger@laika.com>
-
-:include: LICENSE
-
---
-
-Please see the file LICENSE in the 'docs' directory for licensing details.
-
-=end
 
 require 'thingfish'
 require 'thingfish/handler'
@@ -113,6 +111,12 @@ class ThingFish::UploadHandler < ThingFish::Handler
 		end
 	end
 
+
+	### Return the HTML fragment that should be used to link to this handler.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "index_content.html" )
+		return tmpl.result( binding() )
+	end
 
 
 	#########

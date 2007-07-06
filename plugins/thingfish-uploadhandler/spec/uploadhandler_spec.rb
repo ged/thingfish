@@ -59,14 +59,49 @@ def load_fixtured_request( filename )
 end
 
 
-describe ThingFish::UploadHandler do
+describe ThingFish::UploadHandler, " (GET request)" do
 	include ThingFish::Constants::Patterns
 
 	before( :all ) do
 		ThingFish.logger.level = Logger::FATAL
 	end
 	
+	before( :each ) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
+		@params = {
+			'REQUEST_METHOD' => 'GET',
+			'REQUEST_URI' => '/upload',
+		}
+	end
 
+
+	it "returns an upload form" do
+		request = stub( "request object", :params => @params )
+		response = mock( "response object", :null_object => true )
+		outhandle = mock( "output filehandle" )
+		template = stub( "ERB template", :result => :rendered_output )
+		headers = mock( "response headers", :null_object => true )
+
+		@handler.should_receive( :get_erb_resource ).and_return( template )
+		response.should_receive( :start ).
+			with( HTTP::OK, true ).
+			and_yield( headers, outhandle )
+		headers.should_receive( :[]= ).with( /content-type/i, 'text/html' )
+		outhandle.should_receive( :write ).with( :rendered_output )
+		
+		@handler.process( request, response )
+	end
+	
+end
+
+describe ThingFish::UploadHandler, " (POST request)" do
+	include ThingFish::Constants::Patterns
+
+	before( :all ) do
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
@@ -75,7 +110,8 @@ describe ThingFish::UploadHandler do
 			'REQUEST_URI' => '/upload',
 		}
 	end
-	
+
+
 	it "returns an error response for a non-multipart form post" do
 		@params['HTTP_CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
 
@@ -157,10 +193,6 @@ describe ThingFish::UploadHandler do
 		@handler.process( request, response )
 	end
 	
-	# file chunker detection
-	# 	parsing of filename
-	# 	parsing of content-type
-
 end
 
 # vim: set nosta noet ts=4 sw=4:

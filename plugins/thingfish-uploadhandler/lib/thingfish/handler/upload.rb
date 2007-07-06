@@ -133,9 +133,6 @@ class ThingFish::UploadHandler < ThingFish::Handler
 			headers['Content-Type'] = 'text/html'
 			out.write( content.result(binding()) )
 		end
-	rescue Exception => err
-		self.log.error "Error: " + err.message
-		self.log.debug err.backtrace.join( "\n" )
 	end
 
 
@@ -182,9 +179,6 @@ class ThingFish::UploadHandler < ThingFish::Handler
 			headers['Content-Type'] = 'text/html'
 			out.write( content.result(binding()) )
 		end
-	rescue Exception => err
-		self.log.error "Error: " + err.message
-		self.log.debug err.backtrace.join( "\n" )
 	end
 
 

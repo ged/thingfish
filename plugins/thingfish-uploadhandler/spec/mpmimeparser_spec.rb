@@ -65,6 +65,16 @@ describe ThingFish::MultipartMimeParser do
 		}.should raise_error( ThingFish::RequestError, /^EOF while searching for headers/ )
 	end
 
+
+	it "raises an error when the document is truncated inside an extraneous form field" do
+		socket = load_form( "testform_truncated_metadata.form" )
+		
+		lambda { 
+			@parser.parse( socket, BOUNDARY ) 
+		}.should raise_error( ThingFish::RequestError, /^truncated MIME document/i )
+	end
+
+	
 	it "parses form fields that start with 'thingfish-metadata-' into the metadata hash" do
 		socket = load_form( "testform_metadataonly.form" )
 		

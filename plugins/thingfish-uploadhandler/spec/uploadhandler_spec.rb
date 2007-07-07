@@ -59,6 +59,52 @@ def load_fixtured_request( filename )
 end
 
 
+describe ThingFish::UploadHandler do
+
+	before( :all ) do
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
+	before( :each ) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
+	end
+
+
+	it "returns a METHOD_NOT_ALLOWED response for requests other than GET or POST" do
+		params = {
+			'REQUEST_METHOD' => 'TRACE',
+			'REQUEST_URI' => '/upload',
+		}
+		
+		request = stub( "request object", :params => params )
+		response = mock( "response object", :null_object => true )
+		outhandle = mock( "output filehandle" )
+		headers = mock( "response headers", :null_object => true )
+
+		response.should_receive( :start ).
+			with( HTTP::METHOD_NOT_ALLOWED, true ).
+			and_yield( headers, outhandle )
+		headers.should_receive( :[]= ).
+			with( 'Allow', 'GET, POST' )
+		outhandle.should_receive( :write ).
+			with( /not allowed/i )
+		
+		@handler.process( request, response )
+	end
+
+
+	it "builds content for the index handler" do
+		erb_resource = stub( 'erb resource', :result => 'some index stuff' )
+		@handler.should_receive( :get_erb_resource ).
+			with( /\w+\.html$/ ).
+			and_return( erb_resource )
+		
+		@handler.make_index_content( "/" ).should == 'some index stuff'
+	end
+	
+end
+
 describe ThingFish::UploadHandler, " (GET request)" do
 	include ThingFish::Constants::Patterns
 

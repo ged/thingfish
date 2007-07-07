@@ -103,7 +103,7 @@ class ThingFish::UploadHandler < ThingFish::Handler
 			self.handle_post_request( request, response )
 
 		else
-			self.log.notice( "Refusing to handle a #{method} request" )
+			self.log.warn( "Refusing to handle a #{method} request" )
 			response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
 				headers['Allow'] = 'GET, POST'
 				out.write( "%s method not allowed." % method )

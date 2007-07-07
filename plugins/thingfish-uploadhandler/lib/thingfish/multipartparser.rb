@@ -149,9 +149,6 @@ class ThingFish::MultipartMimeParser
 					[state.scanner.pre_match]
 				param = state.scanner.pre_match
 			else
-				### :TODO: read_at_least won't read anything if there's already 
-				###   @bufsize bytes in the buffer. We need to either spool every time
-				###   or have some other additional kind of read routine.
 				self.read_some_more( state.socket, scanner ) or
 					raise ThingFish::RequestError,
 						"EOF while scanning for a metadata parameter"

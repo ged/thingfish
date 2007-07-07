@@ -154,8 +154,10 @@ class ThingFish::Config
 	def parsed_logfile
 		case self.logging.logfile
 		when /^stdout$/i, /^defout$/i
+			$defout.sync = true
 			return $defout
 		when /^stderr$/i, /^deferr$/i
+			$deferr.sync = true
 			return $deferr
 		when %r{^/}
 			return self.logging.logfile

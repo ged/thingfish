@@ -157,7 +157,7 @@ class ThingFish::StatusHandler < ThingFish::Handler
 	def register_stats_filters( listener, uris )
 		return unless uris && uris.respond_to?( :uniq )
 		uris.uniq.each do |uri|
-			filter = Mongrel::StatisticsFilter.new( :sample_rate => 300 )
+			filter = Mongrel::StatisticsFilter.new( :sample_rate => 3 )
 			self.log.debug "Registering stats filter for %s at %p" %
 				[ self.class.name, uri ]
 			listener.register( uri, filter, true )

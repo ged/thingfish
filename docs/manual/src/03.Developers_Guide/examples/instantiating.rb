@@ -17,5 +17,3 @@ client.port = 5000
 client.user = 'mgranger'
 client.password = 'myS00perSekrit'
 
-client  # => 
-

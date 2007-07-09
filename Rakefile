@@ -306,7 +306,7 @@ begin
 	Spec::Rake::SpecTask.new( :coverage ) do |task|
 		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR] + PLUGIN_LIBS
-		task.spec_opts = ['-c', '-f', 'p', '-b']
+		task.spec_opts = ['-f', 'p', '-b']
 		task.rcov_opts = ['--exclude', 'spec', '--xrefs', '--save' ]
 		task.rcov = true
 	end

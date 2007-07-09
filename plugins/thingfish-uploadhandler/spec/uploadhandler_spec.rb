@@ -36,7 +36,8 @@ UPLOAD_HEADERS = {
 	'HTTP_CONNECTION'      => 'keep-alive',
 	'HTTP_REFERER'         => 'http://localhost:3474/upload',
 	'HTTP_CONTENT_TYPE'    => 'multipart/form-data; boundary=sillyBoundary',
-	'CONTENT_LENGTH'       => '123456789'
+	'CONTENT_LENGTH'       => '123456789',
+	'PATH_INFO'            => '',
 }
 
 unless defined?( SPECDIR )
@@ -74,7 +75,8 @@ describe ThingFish::UploadHandler do
 	it "returns a METHOD_NOT_ALLOWED response for requests other than GET or POST" do
 		params = {
 			'REQUEST_METHOD' => 'TRACE',
-			'REQUEST_URI' => '/upload',
+			'REQUEST_URI'    => '/upload',
+			'PATH_INFO'      => '',
 		}
 		
 		request = stub( "request object", :params => params )
@@ -117,7 +119,8 @@ describe ThingFish::UploadHandler, " (GET request)" do
 	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
 		@params = {
 			'REQUEST_METHOD' => 'GET',
-			'REQUEST_URI' => '/upload',
+			'REQUEST_URI'    => '/upload',
+			'PATH_INFO'      => '',
 		}
 	end
 
@@ -153,7 +156,8 @@ describe ThingFish::UploadHandler, " (POST request)" do
 	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
 		@params = {
 			'REQUEST_METHOD' => 'POST',
-			'REQUEST_URI' => '/upload',
+			'REQUEST_URI'    => '/upload',
+			'PATH_INFO'      => '',
 		}
 	end
 

@@ -42,7 +42,7 @@ describe ThingFish::Resource do
 
 
 	before do
-		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger = Logger.new( $stderr )
 		# ThingFish.logger.level = Logger::DEBUG
 		@io = StringIO.new( TEST_CONTENT )
 	end

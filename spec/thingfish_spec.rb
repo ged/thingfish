@@ -42,7 +42,7 @@ describe "The ThingFish module" do
 	
 	it "should know if its default logger is replaced" do
 		ThingFish.should be_using_default_logger
-		ThingFish.logger = Logger.new( $deferr )
+		ThingFish.logger = Logger.new( $stderr )
 		ThingFish.should_not be_using_default_logger
 	end
 

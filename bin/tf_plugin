@@ -53,7 +53,7 @@ end
 
 ### If running directly, handle parsing command-line arguments, etc.
 if __FILE__ == $0
-	$deferr.sync = $defout.sync = true
+	$stderr.sync = $stdout.sync = true
 	
 	begin
 		program = Pathname.new( $0 ).expand_path
@@ -76,7 +76,7 @@ if __FILE__ == $0
 			end
 			
 			opts.on( '--help', '-h', TrueClass, "Display this text." ) do
-				$deferr.puts( opts )
+				$stderr.puts( opts )
 				exit!( 0 )
 			end
 			
@@ -86,8 +86,8 @@ if __FILE__ == $0
 		PluginGenerator.new( options ).run( *args )
 		
 	rescue => err
-		$deferr.puts "ERROR: #{err.message}"
-		$deferr.puts "  " + err.backtrace.join("\n  ")
+		$stderr.puts "ERROR: #{err.message}"
+		$stderr.puts "  " + err.backtrace.join("\n  ")
 	end
 end
 

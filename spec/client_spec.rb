@@ -45,7 +45,7 @@ describe ThingFish::Client do
 
 
 	it "fetches a resource from the server by UUID via HTTP" do
-		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger = Logger.new( $stderr )
 		# ThingFish.logger.level = Logger::DEBUG
 
 		Net::HTTP::Get.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )

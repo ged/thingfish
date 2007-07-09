@@ -91,7 +91,7 @@ class ThingFish::CommandLineClient
 		response = send_request( uri, req )
 		location = response['location']
 	
-		$deferr.puts "Uploaded to: #{location}"
+		$stderr.puts "Uploaded to: #{location}"
 	end
 
 
@@ -110,7 +110,7 @@ class ThingFish::CommandLineClient
 		req['Content-Length'] = fh.stat.size
 
 		response = send_request( uri, req )
-		$deferr.puts "Updated #{uuid}"
+		$stderr.puts "Updated #{uuid}"
 	end
 
 
@@ -134,7 +134,7 @@ class ThingFish::CommandLineClient
 			end
 
 			fh.close
-			$deferr.puts "Wrote %d bytes from %s." % [ bytes, uuid ]
+			$stderr.puts "Wrote %d bytes from %s." % [ bytes, uuid ]
 		end
 	end
 
@@ -150,7 +150,7 @@ class ThingFish::CommandLineClient
 		# Send the request and read the body of the response into the filehandle
 		send_request( uri, req ) do |response|
 			bytes = 0
-			$defout.puts( response.inspect )
+			$stdout.puts( response.inspect )
 		end
 	end
 
@@ -166,7 +166,7 @@ class ThingFish::CommandLineClient
 	### Get an IO object for writing to the specified +filename+. If +filename+ is 
 	### +nil+, returns the IO for STDOUT instead.
 	def get_writer_io( filename=nil )
-		return $defout unless filename
+		return $stdout unless filename
 		return File.open( filename, File::WRONLY|File::CREAT|File::TRUNC )
 	end
 
@@ -176,11 +176,11 @@ class ThingFish::CommandLineClient
 	### up.
 	def send_request( uri, req, limit=10, &block )
 		req['User-Agent'] = 'ThingFish Test Client/$Rev$'
-		$deferr.puts "Request: ", dump_request_object( req )
+		$stderr.puts "Request: ", dump_request_object( req )
 		response = nil
 		
 		if ENV['http_proxy']
-			$deferr.puts "Using proxy #{ENV['http_proxy']}..."
+			$stderr.puts "Using proxy #{ENV['http_proxy']}..."
 			proxyuri = URI.parse( ENV['http_proxy'] )
 			proxy = Net::HTTP::Proxy( proxyuri.host, proxyuri.port )
 			response = proxy.start( uri.host, uri.port ) do |conn|
@@ -193,7 +193,7 @@ class ThingFish::CommandLineClient
 			end
 		end
 	
-		$deferr.puts "Response:", dump_response_object( response )
+		$stderr.puts "Response:", dump_response_object( response )
 
 		case response
 	
@@ -283,7 +283,7 @@ class ThingFish::CommandLineClient
 		unless @mime_analyzer
 			begin
 				require 'mahoro'
-				$deferr.puts "Using Mahoro for MIME analysis"
+				$stderr.puts "Using Mahoro for MIME analysis"
 				flags = Mahoro::SYMLINK|Mahoro::MIME
 				@mime_analyzer = Mahoro.new( flags )
 			rescue LoadError
@@ -292,7 +292,7 @@ class ThingFish::CommandLineClient
 			unless @mime_analyzer
 				begin
 					require 'filemagic'
-					$deferr.puts "Using Filemagic for MIME analysis"
+					$stderr.puts "Using Filemagic for MIME analysis"
 					flags = FileMagic::MAGIC_SYMLINK|FileMagic::MAGIC_MIME
 					@mime_analyzer = FileMagic.new( flags )
 				rescue LoadError
@@ -340,8 +340,8 @@ if __FILE__ == $0
 
 		client.main( *ARGV )
 	rescue => err
-		$deferr.puts "ERROR: #{err.message}"
-		$deferr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
+		$stderr.puts "ERROR: #{err.message}"
+		$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
 	end
 end
 

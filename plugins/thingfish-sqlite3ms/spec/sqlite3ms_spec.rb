@@ -36,12 +36,12 @@ describe "A SQLite3 MetaStore" do
 	end
 
 	before(:all) do
-		# ThingFish.logger = Logger.new( $deferr )
+		# ThingFish.logger = Logger.new( $stderr )
 		# ThingFish.logger.level = Logger::DEBUG
 
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 		@tmpdir = make_tempdir()
-		# $deferr.puts "Creating sqlite3 store: %p" % @tmpdir.to_s
+		# $stderr.puts "Creating sqlite3 store: %p" % @tmpdir.to_s
 	    @store = ThingFish::MetaStore.create( 'sqlite3',
 			:root => @tmpdir.to_s,
 			:resource_dir => resdir

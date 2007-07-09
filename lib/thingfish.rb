@@ -52,7 +52,7 @@ module ThingFish
 	Numeric.extend( ThingFish::NumericConstantMethods )
 
 	# Global logging object
-	@default_logger = Logger.new( $deferr )
+	@default_logger = Logger.new( $stderr )
 	@default_logger.level = Logger::WARN
 	@logger = @default_logger
 	class << self

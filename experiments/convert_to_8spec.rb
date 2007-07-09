@@ -15,7 +15,7 @@ def edit_in_place( file, testMode=false ) # :yields: line
 			fh.each do |line|
 				newline = yield( line ) or next
 				tempfile.print( newline )
-				$deferr.puts "%p -> %p" % [ line, newline ] if
+				$stderr.puts "%p -> %p" % [ line, newline ] if
 					line != newline
 			end
 		end

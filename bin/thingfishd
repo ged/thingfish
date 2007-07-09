@@ -53,13 +53,13 @@ def parse_args( args )
 		oparser.separator 'Other Options:'
 		
 		oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
-			$deferr.puts oparser
+			$stderr.puts oparser
 			exit!
         end
 
 		# Another typical switch to print the version.
 		oparser.on_tail( "--version", "Show ThingFish version" ) do
-			$deferr.puts ThingFish.version_string( true )
+			$stderr.puts ThingFish.version_string( true )
 			exit!
 		end
 	end

@@ -53,7 +53,7 @@ describe ThingFish::Config do
 	end
 
 	it "doesn't replace an installed logger if it's not the default logger" do
-		logger = Logger.new( $deferr )
+		logger = Logger.new( $stderr )
 		ThingFish.logger = logger
 		ThingFish.logger.level = Logger::WARN
 		@config.install
@@ -90,24 +90,24 @@ describe ThingFish::Config do
 		@config.method(:parsed_logging_level).to_proc.should raise_error( ArgumentError )
 	end
 
-	it "parses a logfile of 'deferr' to the STDERR IO object" do
-		@config.logging.logfile = 'deferr'
-		@config.parsed_logfile.should == $deferr
+	it "parses a logfile of 'stderr' to the STDERR IO object" do
+		@config.logging.logfile = 'stderr'
+		@config.parsed_logfile.should == $stderr
 	end
 
 	it "parses a logfile of 'DEFOUT' to the STDOUT IO object" do
 		@config.logging.logfile = 'DEFOUT'
-		@config.parsed_logfile.should == $defout
+		@config.parsed_logfile.should == $stdout
 	end
 
 	it "parses a logfile of 'STDERR' to the STDERR IO object" do
 		@config.logging.logfile = 'STDERR'
-		@config.parsed_logfile.should == $deferr
+		@config.parsed_logfile.should == $stderr
 	end
 
 	it "parses a logfile of 'stdout' to the STDOUT IO object" do
 		@config.logging.logfile = 'stdout'
-		@config.parsed_logfile.should == $defout
+		@config.parsed_logfile.should == $stdout
 	end
 
 	it "parses an unspecified logfile as nil" do

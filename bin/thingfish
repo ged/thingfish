@@ -94,7 +94,7 @@ class ThingFish::CommandLineClient
 
 		@client.store( resource )
 		
-		$deferr.puts "Uploaded to: #{resource.location}"
+		$stderr.puts "Uploaded to: #{resource.location}"
 	end
 
 
@@ -109,7 +109,7 @@ class ThingFish::CommandLineClient
 		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
 		resource.save
 
-		$deferr.puts "Updated #{uuid}"
+		$stderr.puts "Updated #{uuid}"
 	end
 
 
@@ -117,9 +117,9 @@ class ThingFish::CommandLineClient
 	### the given +uri+.
 	def do_check( uri, uuid )
 		if @client.has?( uuid )
-			$deferr.puts "%s has resource %s" % [ @client.uri, uuid ]
+			$stderr.puts "%s has resource %s" % [ @client.uri, uuid ]
 		else
-			$deferr.puts "%s does NOT have resource %s" % [ @client.uri, uuid ]
+			$stderr.puts "%s does NOT have resource %s" % [ @client.uri, uuid ]
 		end
 	end
 	
@@ -135,7 +135,7 @@ class ThingFish::CommandLineClient
 		resource.export( fh )
 		fh.close
 
-		$deferr.puts "Fetched resource at %s." % [ uuid ]
+		$stderr.puts "Fetched resource at %s." % [ uuid ]
 	end
 
 
@@ -150,7 +150,7 @@ class ThingFish::CommandLineClient
 	### Get an IO object for writing to the specified +filename+. If +filename+ is 
 	### +nil+, returns the IO for STDOUT instead.
 	def get_writer_io( filename=nil )
-		return $defout unless filename
+		return $stdout unless filename
 		return File.open( filename, File::WRONLY|File::CREAT|File::TRUNC )
 	end
 
@@ -160,7 +160,7 @@ class ThingFish::CommandLineClient
 		unless @mime_analyzer
 			begin
 				require 'mahoro'
-				$deferr.puts "Using Mahoro for MIME analysis"
+				$stderr.puts "Using Mahoro for MIME analysis"
 				flags = Mahoro::SYMLINK|Mahoro::MIME
 				@mime_analyzer = Mahoro.new( flags )
 			rescue LoadError
@@ -169,7 +169,7 @@ class ThingFish::CommandLineClient
 			unless @mime_analyzer
 				begin
 					require 'filemagic'
-					$deferr.puts "Using Filemagic for MIME analysis"
+					$stderr.puts "Using Filemagic for MIME analysis"
 					flags = FileMagic::MAGIC_SYMLINK|FileMagic::MAGIC_MIME
 					@mime_analyzer = FileMagic.new( flags )
 				rescue LoadError
@@ -217,8 +217,8 @@ if __FILE__ == $0
 
 		client.main( *ARGV )
 	rescue => err
-		$deferr.puts "ERROR: #{err.message}"
-		$deferr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
+		$stderr.puts "ERROR: #{err.message}"
+		$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
 	end
 end
 

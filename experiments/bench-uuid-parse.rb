@@ -58,7 +58,7 @@ end
 uuid = '9c74650e-cc6d-11db-b5ad-cb306488e280'
 
 n = 10_000
-$deferr.puts "Running #{n} iterations"
+$stderr.puts "Running #{n} iterations"
 Benchmark.bm( 10 ) do |bench|
 	bench.report( "Null") do
 		n.times {}

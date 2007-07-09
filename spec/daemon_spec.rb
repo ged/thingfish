@@ -49,7 +49,7 @@ describe "The daemon class" do
 		@log.rewind
 		@log.read.should =~ %r{Handler map is:\s*/: \[.*?\]}
 		# rescue Errno::EADDRINUSE
-		# 	$deferr.puts "Skipping: something already running on the default port"
+		# 	$stderr.puts "Skipping: something already running on the default port"
 		# end
 	end
 end

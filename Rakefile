@@ -31,7 +31,7 @@ require 'pathname'
 
 ### Write a message to STDERR if $VERBOSE is true
 def log( *msg )
-	$deferr.puts( *msg ) if $VERBOSE || $verbose
+	$stderr.puts( *msg ) if $VERBOSE || $verbose
 end
 
 
@@ -135,7 +135,7 @@ end
 
 ### Task: install
 task :install => [:package] do
-	$deferr.puts 
+	$stderr.puts 
 	installer = Gem::Installer.new( %{pkg/#{PKG_FILE_NAME}.gem} )
 	installer.install
 end
@@ -155,10 +155,10 @@ task :cruise => [:clean, :coverage, :package] do |task|
 	artifact_dir = ARTIFACTS_DIR.cleanpath
 	artifact_dir.mkpath
 	
-	$deferr.puts "Copying coverage stats..."
+	$stderr.puts "Copying coverage stats..."
 	FileUtils.cp_r( 'coverage', artifact_dir )
 	
-	$deferr.puts "Copying packages..."
+	$stderr.puts "Copying packages..."
 	FileUtils.cp_r( FileList['pkg/*'].to_a, artifact_dir )
 end
 
@@ -173,7 +173,7 @@ DEPENDENCIES = %w[webgen rspec rcov lockfile rcodetools coderay redcloth]
 task :install_dependencies do
 	# Check for root
 	if Process.euid != 0
-		$deferr.puts "This probably won't work, as you aren't root, but I'll try anyway"
+		$stderr.puts "This probably won't work, as you aren't root, but I'll try anyway"
 	end
 
 	installer = Gem::RemoteInstaller.new( :include_dependencies => true )
@@ -181,15 +181,15 @@ task :install_dependencies do
 
 	DEPENDENCIES.each do |gemname|
 		if (( specs = gemindex.search(gemname) )) && ! specs.empty?
-			$deferr.puts "Version %s of %s is already installed; skipping..." % 
+			$stderr.puts "Version %s of %s is already installed; skipping..." % 
 				[ specs.first.version, specs.first.name ]
 			next
 		end
 
-		$deferr.puts "Trying to install #{gemname}..."
+		$stderr.puts "Trying to install #{gemname}..."
 		gems = installer.install( gemname )
 		gems.compact!
-		$deferr.puts "Installed: %s" % [gems.collect {|spec| spec.full_name}.join(', ')]
+		$stderr.puts "Installed: %s" % [gems.collect {|spec| spec.full_name}.join(', ')]
 
 		gems.each do |gem|
 			Gem::DocManager.new( gem, '-w4 -SNH' ).generate_ri
@@ -222,7 +222,7 @@ begin
 	
 rescue LoadError => err
 	task :no_webgen do
-		$deferr.puts "Documentation tasks not defined: %s" % [err.message]
+		$stderr.puts "Documentation tasks not defined: %s" % [err.message]
 	end
 
 	task :manual => :no_webgen
@@ -281,7 +281,7 @@ begin
 	end
 rescue LoadError => err
 	task :no_rspec do
-		$deferr.puts "Testing tasks not defined: RSpec rake tasklib not available: %s" %
+		$stderr.puts "Testing tasks not defined: RSpec rake tasklib not available: %s" %
 			[ err.message ]
 	end
 	
@@ -339,7 +339,7 @@ begin
 	end
 rescue LoadError => err
 	task :no_rcov do
-		$deferr.puts "Coverage tasks not defined: RSpec+RCov tasklib not available: %s" %
+		$stderr.puts "Coverage tasks not defined: RSpec+RCov tasklib not available: %s" %
 			[ err.message ]
 	end
 

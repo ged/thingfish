@@ -87,12 +87,12 @@ module UtilityFunctions
 	# Create a string that contains the ANSI codes specified and return it
 	def ansi_code( *attributes )
 		attributes.flatten!
-		# $deferr.puts "Returning ansicode for TERM = %p: %p" %
+		# $stderr.puts "Returning ansicode for TERM = %p: %p" %
 		# 	[ ENV['TERM'], attributes ]
 		return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
 		attributes = AnsiAttributes.values_at( *attributes ).compact.join(';')
 
-		# $deferr.puts "  attr is: %p" % [attributes]
+		# $stderr.puts "  attr is: %p" % [attributes]
 		if attributes.empty? 
 			return ''
 		else
@@ -642,7 +642,7 @@ module UtilityFunctions
 				fh.each {|line|
 					newline = yield( line ) or next
 					tempfile.print( newline )
-					$deferr.puts "%p -> %p" % [ line, newline ] if
+					$stderr.puts "%p -> %p" % [ line, newline ] if
 						line != newline
 				}
 			}
@@ -719,7 +719,7 @@ module UtilityFunctions
 			divider
 			message result.chomp + "\n"
 			divider
-			$deferr.puts
+			$stderr.puts
 		end
 	end
 

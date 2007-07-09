@@ -25,7 +25,7 @@ RDF = Redland::Namespace.new( 'http://www.w3.org/1999/02/22-rdf-syntax-ns#' )
 RDFS = Redland::Namespace.new( 'http://www.w3.org/2000/01/rdf-schema#' )
 
 def add_namespace( url )
-	$deferr.puts "Adding %p to the model" % [url]
+	$stderr.puts "Adding %p to the model" % [url]
 	$parser.parse_into_model( $model, url )
 	mod = Module.new do
 		@namespace = Redland::Namespace.new( url )

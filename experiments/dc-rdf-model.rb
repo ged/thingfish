@@ -32,9 +32,9 @@ URLS = %w[
 ]
 
 URLS.each do |uri|
-	$deferr.print "Loading vocabulary from %p..." % [uri]
+	$stderr.print "Loading vocabulary from %p..." % [uri]
 	$parser.parse_into_model( $model, uri )
-	$deferr.puts " done."
+	$stderr.puts " done."
 end
 
 start_irb_session( binding() )

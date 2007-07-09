@@ -93,20 +93,22 @@ class ThingFish::UploadHandler < ThingFish::Handler
 	def process( request, response )
 		super
 
-		method = request.params['REQUEST_METHOD']
+		if request.params['PATH_INFO'] == ''
+			method = request.params['REQUEST_METHOD']
 
-		case method
-		when 'GET'
-			self.handle_get_request( request, response )
+			case method
+			when 'GET'
+				self.handle_get_request( request, response )
 
-		when 'POST'
-			self.handle_post_request( request, response )
+			when 'POST'
+				self.handle_post_request( request, response )
 
-		else
-			self.log.warn( "Refusing to handle a #{method} request" )
-			response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
-				headers['Allow'] = 'GET, POST'
-				out.write( "%s method not allowed." % method )
+			else
+				self.log.warn( "Refusing to handle a #{method} request" )
+				response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
+					headers['Allow'] = 'GET, POST'
+					out.write( "%s method not allowed." % method )
+				end
 			end
 		end
 	end

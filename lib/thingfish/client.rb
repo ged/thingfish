@@ -101,7 +101,9 @@ require 'thingfish/resource'
 
 ### The thingfish client library
 class ThingFish::Client
-	include ThingFish::Constants::Patterns, ThingFish::Loggable
+	include ThingFish::Constants::Patterns,
+		ThingFish::Constants,
+		ThingFish::Loggable
 
 	extend Forwardable
 

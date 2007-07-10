@@ -26,14 +26,9 @@ require 'rake'
 require 'rake/rdoctask'
 require 'rake/packagetask'
 require 'rake/gempackagetask'
-require 'misc/rake/svnhelpers'
 require 'pathname'
 
-### Write a message to STDERR if $VERBOSE is true
-def log( *msg )
-	$stderr.puts( *msg ) if $VERBOSE || $verbose
-end
-
+$dryrun = false
 
 ### Config constants
 PKG_NAME      = 'thingfish'
@@ -46,6 +41,7 @@ BASEDIR       = Pathname.new( __FILE__ ).dirname.expand_path
 LIBDIR        = BASEDIR + 'lib'
 DOCSDIR       = BASEDIR + 'docs'
 VARDIR        = BASEDIR + 'var'
+MISCDIR       = BASEDIR + 'misc'
 WWWDIR        = VARDIR  + 'www'
 MANUALDIR     = DOCSDIR + 'manual'
 STATICWWWDIR  = WWWDIR  + 'static'
@@ -68,10 +64,22 @@ PLUGIN_LIBS      = PLUGINS.collect {|dir| dir + 'lib' }
 PLUGIN_RAKEFILES = PLUGINS.collect {|dir| dir + 'Rakefile' }
 PLUGIN_SPECFILES = PLUGINS.collect {|dir| Pathname.glob(dir + 'spec/*_spec.rb') }.flatten
 
+# Load task plugins
+RAKE_TASKDIR = MISCDIR + 'rake'
+Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
+	require tasklib
+end
 
 
 ### Default task
 task :default  => [:clean, :spec, :verify, :package]
+
+desc "Turn on dry-run mode"
+task :dryrun do
+	$dryrun = true
+	log ">>> Dry-run mode <<<"
+end
+
 
 ### Task: clean
 desc "Clean pkg, coverage, and rdoc; remove .bak files"
@@ -97,7 +105,7 @@ end
 
 ### Task: gem
 gemspec = Gem::Specification.new do |gem|
-	pkg_build = extract_svn_rev( BASEDIR ) || 0
+	pkg_build = get_svn_rev( BASEDIR ) || 0
 	
 	gem.name    	= PKG_NAME
 	gem.version 	= "%s.%s" % [ PKG_VERSION, pkg_build ]
@@ -298,7 +306,6 @@ end
 begin
 	gem 'rcov'
 	gem 'rspec', '>= 1.0.4'
-	require 'misc/rake/verifytask'
 
 	### Task: coverage (via RCov)
 	### Task: spec

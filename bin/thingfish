@@ -88,13 +88,13 @@ class ThingFish::CommandLineClient
 		resource.format = self.get_mimetype( fh )
 
 		if file
-			resource.filename = file
+			resource.title  = file
 			resource.extent = File.size( file )
 		end
 
 		@client.store( resource )
 		
-		$stderr.puts "Uploaded to: #{resource.location}"
+		$stderr.puts "Uploaded to: #{resource.uuid}"
 	end
 
 
@@ -212,7 +212,20 @@ if __FILE__ == $0
 	progname = Pathname.new( $0 ).basename
 	
 	begin
-		raise "Usage: #{progname} THINGFISH_URL ACTION" unless ARGV.length >= 2
+		unless ARGV.length >= 2
+			usage = <<-USAGE
+			Usage:
+				#{$0} <URL> [upload|check|fetch|update] <FILE|UUID> [OPTS]
+			
+				#{$0} URL upload FILE
+				#{$0} URL check  UUID
+				#{$0} URL fetch  UUID FILE
+				#{$0} URL update UUID FILE
+			USAGE
+			usage.gsub!(/^\t{3}/, '').gsub!(/\t/, '  ')
+			puts usage
+			exit 1
+		end
 		client = ThingFish::CommandLineClient.new
 
 		client.main( *ARGV )

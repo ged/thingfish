@@ -139,6 +139,9 @@ class ThingFish::MetaStore
 	### Return a ResourceProxy for the given +uuid+ that can used to get, set, and
 	### query metadata about the resource associated with +uuid+.
 	def []( uuid )
+		raise ThingFish::PluginError,
+			"%s did not call its parent class's initializer" % [self.class.name] unless
+			@proxy_class
 		return @proxy_class.new( uuid.to_s, self )
 	end
 

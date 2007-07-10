@@ -85,6 +85,13 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 		@metastore[ TEST_UUID ].should == @metastore[ uuid_obj ]
 	end
 
+	it "throws an exception if the proxy class isn't set in the index operator method [bug #2]" do
+		@metastore.instance_variable_set( :@proxy_class, nil )
+		lambda {
+			@metastore[ TEST_UUID ]
+		}.should raise_error( ThingFish::PluginError, /did not call.+initializer/ )
+	end
+
 	it "can extract a default set of metadata for new uploaded resources" do
 		params = {
 			'CONTENT_TYPE'    => 'foo/bar',

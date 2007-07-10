@@ -50,6 +50,7 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 	def initialize( options={} )
 		@options = options
 		@metadata = Hash.new {|hash,key| hash[key] = {} }
+		super
 	end
 	
 

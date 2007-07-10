@@ -1,8 +1,8 @@
+#####################################################################
+###	S U B V E R S I O N   T A S K S   A N D   H E L P E R S
+#####################################################################
 
-gem 'rspec', '>= 0.9.0'
-gem 'rake'
 require 'rake/tasklib'
-
 
 #
 # Work around the inexplicable behaviour of the original RDoc::VerifyTask, which 

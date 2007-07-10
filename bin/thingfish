@@ -215,12 +215,10 @@ if __FILE__ == $0
 		unless ARGV.length >= 2
 			usage = <<-USAGE
 			Usage:
-				#{$0} <URL> [upload|check|fetch|update] <FILE|UUID> [OPTS]
-			
-				#{$0} URL upload FILE
-				#{$0} URL check  UUID
-				#{$0} URL fetch  UUID FILE
-				#{$0} URL update UUID FILE
+				#{progname} THINGFISH_URL upload FILE
+				#{progname} THINGFISH_URL check  UUID
+				#{progname} THINGFISH_URL fetch  UUID FILE
+				#{progname} THINGFISH_URL update UUID FILE
 			USAGE
 			usage.gsub!(/^\t{3}/, '').gsub!(/\t/, '  ')
 			puts usage

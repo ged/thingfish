@@ -88,7 +88,7 @@ class ThingFish::CommandLineClient
 		resource.format = self.get_mimetype( fh )
 
 		if file
-			resource.title  = file
+			resource.title  = File.basename( file )
 			resource.extent = File.size( file )
 		end
 
@@ -107,6 +107,13 @@ class ThingFish::CommandLineClient
 
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
+		resource.format = self.get_mimetype( fh )
+
+		if file
+			resource.title  = File.basename( file )
+			resource.extent = File.size( file )
+		end
+
 		resource.save
 
 		$stderr.puts "Updated #{uuid}"

@@ -235,7 +235,7 @@ class ThingFish::Client
 		request['Content-Length']      = resource.extent if resource.extent
 		request['Content-Type']        = resource.format if resource.format
 		request['Content-Disposition'] = 'attachment;filename="%s"' %
-		 	[ resource.filename ] if resource.filename
+		 	[ resource.title ] if resource.title
 
 		response = self.send_request( request )
 		resource.set_attributes_from_http_response( response )

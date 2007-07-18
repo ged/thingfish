@@ -129,7 +129,7 @@ describe ThingFish::DefaultHandler do
 		@request.should_receive( :params ).at_least(1).and_return( params )
 		@request.should_receive( :body ).and_return( body )
 		@filestore.should_receive( :store_io ).
-			once.with( Patterns::UUID_REGEXP, body ).
+			once.with( an_instance_of(UUID), body ).
 			and_return( TEST_CHECKSUM )
 		@response.should_receive( :start ).
 			once.with( HTTP::CREATED, true ).
@@ -143,7 +143,7 @@ describe ThingFish::DefaultHandler do
 		
 		@metastore.should_receive( :extract_default_metadata )
 		@metastore.should_receive( :[] ).
-			with( Patterns::UUID_REGEXP ).
+			with( an_instance_of(UUID) ).
 			at_least( 1 ).
 			and_return( mdproxy )
 		mdproxy.should_receive( :checksum= ).with( TEST_CHECKSUM )
@@ -161,10 +161,11 @@ describe ThingFish::DefaultHandler do
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
 		@request.should_receive( :body ).and_return( body )
-		@filestore.should_receive( :store_io ).once.with( Patterns::UUID_REGEXP, body ).
+		@filestore.should_receive( :store_io ).once.
+			with( an_instance_of(UUID), body ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
 
-		@metastore.should_receive( :delete_properties ).with( Patterns::UUID_REGEXP )
+		@metastore.should_receive( :delete_properties ).with( an_instance_of(UUID) )
 
 		@response.should_receive( :start ).once.
 			with( HTTP::REQUEST_ENTITY_TOO_LARGE, true ).and_yield( @headers, @out )

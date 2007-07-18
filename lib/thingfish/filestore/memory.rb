@@ -66,35 +66,35 @@ class ThingFish::MemoryFileStore < ThingFish::FileStore
 		raise ThingFish::FileStoreQuotaError, "Out of memory" if
 			self.total_size + data.length > @options[:maxsize]
 
-		@data[uuid] = data
+		@data[ uuid.to_s ] = data
 		return Digest::MD5.hexdigest( data )
 	end
 
 
 	### FileStore API: read the data in the store at the given +uuid+.
 	def fetch( uuid )
-		return @data[uuid]
+		return @data[ uuid.to_s ]
 	end
 
 
 	### FileStore API: delete the data in the store at the given +uuid+ and return its
 	### data (if it existed).
 	def delete( uuid )
-		return @data.delete( uuid ) ? true : false
+		return @data.delete( uuid.to_s ) ? true : false
 	end
 
 
 	### Return +true+ if the store has a file corresponding to the specified +uuid+.
 	def has_file?( uuid )
-		return @data.key?( uuid )
+		return @data.key?( uuid.to_s )
 	end
 
 
 	### Return the size of the resource corresponding to the given +uuid+ in bytes. 
 	### Returns +nil+ if the given +uuid+ is not in the store.
 	def size( uuid )
-		return nil unless @data.key?( uuid )
-		return @data[uuid].length
+		return nil unless @data.key?( uuid.to_s )
+		return @data[ uuid.to_s ].length
 	end
 	
 	

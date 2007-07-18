@@ -247,11 +247,10 @@ begin
 
 	### Task: spec
 	Spec::Rake::SpecTask.new( :spec ) do |task|
-		task.spec_files = SPEC_FILES
+		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR]
 		task.spec_opts = ['-c', '-f','s', '-b']
 	end
-	task :spec => ['spec:plugins']
 	task :test => [:spec]
 
 

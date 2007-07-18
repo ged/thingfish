@@ -13,6 +13,7 @@ begin
 	require 'spec/runner'
 	require 'logger'
 	require 'thingfish'
+	require 'spec/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -53,6 +54,20 @@ describe "The ThingFish module" do
 	it "returns a version string with a build number if asked" do
 		ThingFish.version_string(true).should =~ /\w+ [\d.]+ \(build \d+\)/
 	end
+	
 end
+
+
+include ThingFish::TestConstants
+
+describe UUID, " (local monkeypatches)" do
+	
+	it "is equal to a String with the same UUID in it" do
+		uuidobj = UUID.parse( TEST_UUID )
+		uuidobj.should == TEST_UUID
+	end
+	
+end
+
 
 # vim: set nosta noet ts=4 sw=4:

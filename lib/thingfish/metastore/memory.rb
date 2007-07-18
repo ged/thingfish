@@ -60,40 +60,40 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
-		@metadata[ uuid ][ propname.to_sym ] = value
+		@metadata[ uuid.to_s ][ propname.to_sym ] = value
 	end
 
 	
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
-		return @metadata[ uuid ][ propname.to_sym ]
+		return @metadata[ uuid.to_s ][ propname.to_sym ]
 	end
 
 	
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
-		return @metadata[ uuid ].clone
+		return @metadata[ uuid.to_s ].clone
 	end
 
 
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
-		return @metadata[ uuid ].key?( propname.to_sym )
+		return @metadata[ uuid.to_s ].key?( propname.to_sym )
 	end
 
 
 	### MetaStore API: Removes +propname+ from given +uuid+
 	def delete_property( uuid, propname )
-		return @metadata[ uuid ].delete( propname.to_sym ) ? true : false
+		return @metadata[ uuid.to_s ].delete( propname.to_sym ) ? true : false
 	end
 	
 	
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_properties( uuid )
-		count = @metadata[ uuid ].length
-		@metadata.delete( uuid )
+		count = @metadata[ uuid.to_s ].length
+		@metadata.delete( uuid.to_s )
 		return count
 	end
 	

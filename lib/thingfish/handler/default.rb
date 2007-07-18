@@ -222,7 +222,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# Store the resource with a new UUID
 		uuid = UUID.timestamp_create
-		self.store_resource( request, uuid.to_s )
+		self.store_resource( request, uuid )
 
 		# Create the response
 		response.start( HTTP::CREATED, true ) do |headers, out|
@@ -277,7 +277,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 				
 				self.log.info "Sending resource %s" % [uuid]
 				response.status = HTTP::OK
-				response.header['Content-type'] = @metastore[ uuid.to_s ].format
+				response.header['Content-type'] = @metastore[ uuid ].format
 				self.add_cache_headers( response, uuid )
 				
 				# Send an OK status with the Content-length set to the 
@@ -370,8 +370,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			[ message, status_code ]
 
 		if new_resource
-			@metastore.delete_properties( uuid.to_s )
-			@filestore.delete( uuid.to_s )
+			@metastore.delete_properties( uuid )
+			@filestore.delete( uuid )
 		end
 		
 		response.start( status_code, true ) do |headers, out|

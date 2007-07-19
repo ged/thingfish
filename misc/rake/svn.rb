@@ -37,7 +37,7 @@ end
 ### Return the URL to the repository root for the specified +dir+.
 def get_svn_repo_root( dir='.' )
 	info = get_svn_info( dir )
-	return info['Repository Root']
+	return info['Repository Root'] + '/thingfish'
 end
 
 
@@ -128,8 +128,8 @@ namespace :svn do
 	task :tag do
 		svninfo   = get_svn_info()
 		tag       = make_new_tag()
-		svntrunk  = svninfo['Repository Root'] + '/trunk'
-		svntagdir = svninfo['Repository Root'] + '/tags'
+		svntrunk  = svninfo['Repository Root'] + '/thingfish/trunk'
+		svntagdir = svninfo['Repository Root'] + '/thingfish/tags'
 		svntag    = svntagdir + '/' + tag
 
 		desc = "Tagging trunk as #{svntag}"
@@ -145,7 +145,7 @@ namespace :svn do
 		last_tag    = get_latest_svn_timestamp_tag()
 		svninfo     = get_svn_info()
 		release     = ThingFish::VERSION
-		svnrel      = svninfo['Repository Root'] + '/releases'
+		svnrel      = svninfo['Repository Root'] + '/thingfish/releases'
 		svnrelease  = svnrel + '/' + release
 
 		if last_tag.nil?

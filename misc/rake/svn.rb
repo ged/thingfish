@@ -71,6 +71,8 @@ end
 def svn_ls( url=nil )
 	url ||= get_svn_url()
 	list = IO.read( '|-' ) or exec 'svn', 'ls', url
+
+	trace 'svn ls of %s: %p' % [url, list] if $trace
 	
 	return [] if list.nil? || list.empty?
 	return list.split( $INPUT_RECORD_SEPARATOR )
@@ -153,12 +155,14 @@ namespace :svn do
 			fail
 		end
 
-		if svn_ls( svnrel ).empty?
+		releases = svn_ls( svnrel )
+		trace "Releases: %p" % [releases]
+		if releases.include?( release )
 			error "Version #{release} already has a branch (#{svnrelease}). Did you mean" +
 				"to increment the version in thingfish.rb?"
 			fail
 		else
-			log "No #{svnrel} version currently exists"
+			trace "No #{svnrel} version currently exists"
 		end
 		
 		desc = "Release tag\n  #{last_tag}\nto\n  #{svnrelease}"

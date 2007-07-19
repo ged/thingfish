@@ -70,15 +70,18 @@ Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
 	require tasklib
 end
 
+if Rake.application.options.trace
+	$trace = true
+	log "$trace is enabled"
+end
+
+if Rake.application.options.dryrun
+	$dryrun = true
+	log "$dryrun is enabled"
+end
 
 ### Default task
 task :default  => [:clean, :spec, :verify, :package]
-
-desc "Turn on dry-run mode"
-task :dryrun do
-	$dryrun = true
-	log ">>> Dry-run mode <<<"
-end
 
 
 ### Task: clean

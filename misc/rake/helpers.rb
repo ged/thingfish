@@ -31,11 +31,17 @@ ANSI_ATTRIBUTES = {
 
 ### Output a logging message
 def log( *msg )
-	print "  " if $trace && $verbose
 	output = colorize( msg.flatten.join(' '), 'cyan' )
 	$deferr.puts( output )
 end
 
+
+### Output a logging message
+def trace( *msg )
+	return unless $trace
+	output = colorize( msg.flatten.join(' '), 'yellow' )
+	$deferr.puts( output )
+end
 
 
 ### Run the specified command +cmd+ with system(), failing if the execution

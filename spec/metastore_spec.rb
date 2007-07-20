@@ -11,7 +11,7 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
 	require 'thingfish'
 	require 'thingfish/metastore'
 rescue LoadError
@@ -69,10 +69,16 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 		}.should raise_error( NotImplementedError, /#delete_property/ )
 	end
 
-	it "raises NotImplementedError for #delete_all_properties" do
+	it "raises NotImplementedError for #delete_properties" do
 		lambda {
 			@metastore.delete_properties( TEST_UUID, TEST_PROP )
 		}.should raise_error( NotImplementedError, /#delete_properties/ )
+	end
+
+	it "raises NotImplementedError for #get_all_property_keys" do
+		lambda {
+			@metastore.get_all_property_keys( TEST_UUID, TEST_PROP )
+		}.should raise_error( NotImplementedError, /#get_all_property_keys/ )
 	end
 	
 	it "returns a ResourceProxy to use when interacting with a resource's metadata set" do

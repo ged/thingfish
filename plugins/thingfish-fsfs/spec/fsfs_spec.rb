@@ -9,12 +9,20 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'pathname'
-require 'tmpdir'
-require 'spec/runner'
-require 'spec/constants'
-require 'thingfish/constants'
-require 'thingfish/filestore/filesystem'
+begin
+	require 'pathname'
+	require 'tmpdir'
+	require 'spec/runner'
+	require 'spec/lib/constants'
+	require 'thingfish/constants'
+	require 'thingfish/filestore/filesystem'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 
 include ThingFish::Constants

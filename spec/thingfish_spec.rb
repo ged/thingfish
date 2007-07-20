@@ -13,7 +13,7 @@ begin
 	require 'spec/runner'
 	require 'logger'
 	require 'thingfish'
-	require 'spec/constants'
+	require 'spec/lib/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'

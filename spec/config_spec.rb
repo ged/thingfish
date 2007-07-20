@@ -16,6 +16,7 @@ begin
 	require 'spec/runner'
 	require 'thingfish'
 	require 'thingfish/config'
+	require 'spec/lib/helpers'
 	require 'thingfish/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -30,9 +31,10 @@ end
 ###	C O N T E X T S
 #####################################################################
 
-include ThingFish::Constants
 
 describe ThingFish::Config do
+	include ThingFish::Constants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 	end

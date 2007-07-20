@@ -96,7 +96,14 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 		@metadata.delete( uuid.to_s )
 		return count
 	end
-	
+
+	### MetaStore API: Return all property keys in store
+	def get_all_property_keys
+		return @metadata.collect do | uuid, props |
+			props.keys
+		end.flatten.uniq
+	end
+
 end # class ThingFish::MemoryMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

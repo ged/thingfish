@@ -11,7 +11,7 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
 	require 'thingfish'
 	require 'thingfish/exceptions'
 	require 'thingfish/filestore/memory'
@@ -24,13 +24,9 @@ rescue LoadError
 	raise
 end
 
-include ThingFish::TestConstants
 
 describe ThingFish::MemoryFileStore do
-
-	before(:all) do
-		@uuid = UUID.parse( TEST_UUID )
-	end
+	include ThingFish::TestConstants
 
 	before(:each) do
 	    @fs = ThingFish::FileStore.create( 'memory' )
@@ -49,7 +45,7 @@ describe ThingFish::MemoryFileStore do
 	end
 
 	it "returns data for existing entries stored by UUID object" do
-	    @fs.store_io( @uuid, @io )
+	    @fs.store_io( TEST_UUID_OBJ, @io )
 		@fs.fetch_io( TEST_UUID ) do |io|
 			io.read.should == TEST_CONTENT
 		end
@@ -57,7 +53,7 @@ describe ThingFish::MemoryFileStore do
 
 	it "returns data for existing entries fetched by UUID object" do
 	    @fs.store_io( TEST_UUID, @io )
-		@fs.fetch_io( @uuid ) do |io|
+		@fs.fetch_io( TEST_UUID_OBJ ) do |io|
 			io.read.should == TEST_CONTENT
 		end
 	end
@@ -70,7 +66,7 @@ describe ThingFish::MemoryFileStore do
 
 	it "deletes requested items by UUID object" do
 		@fs.store( TEST_UUID, TEST_CONTENT )
-		@fs.delete( @uuid ).should be_true
+		@fs.delete( TEST_UUID_OBJ ).should be_true
 		@fs.fetch( TEST_UUID ).should be_nil
 	end
 
@@ -89,7 +85,7 @@ describe ThingFish::MemoryFileStore do
 
 	it "returns true when checking has_file? for a file it has by UUID object" do
 		@fs.store( TEST_UUID, TEST_CONTENT )
-		@fs.has_file?( @uuid ).should be_true
+		@fs.has_file?( TEST_UUID_OBJ ).should be_true
 	end
 
 	it "returns false when checking has_file? for a file which has been deleted" do
@@ -101,7 +97,7 @@ describe ThingFish::MemoryFileStore do
 	it "knows what the size of any of its stored resources is" do
 		@fs.store( TEST_UUID, TEST_CONTENT )
 		@fs.size( TEST_UUID ).should == TEST_CONTENT.length
-		@fs.size( @uuid ).should == TEST_CONTENT.length
+		@fs.size( TEST_UUID_OBJ ).should == TEST_CONTENT.length
 	end
 	
 	it "returns nil when asked for the size of a resource it doesn't contain" do
@@ -112,6 +108,8 @@ describe ThingFish::MemoryFileStore do
 end
 
 describe ThingFish::MemoryFileStore, " with a maxsize of 2k" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@fs = ThingFish::FileStore.create( 'memory', :maxsize => 2_048 )
 	end

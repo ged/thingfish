@@ -11,7 +11,8 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'time'
 
 	require 'thingfish'
@@ -26,14 +27,15 @@ rescue LoadError
 end
 
 
-include ThingFish::Constants
-include ThingFish::TestConstants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::DefaultHandler do
+	include ThingFish::Constants
+	include ThingFish::TestConstants
+	include ThingFish::TestHelpers
 
 	before(:each) do
 		# ThingFish.logger.level = Logger::DEBUG
@@ -196,7 +198,7 @@ describe ThingFish::DefaultHandler do
 	### GET/HEAD /«UUID» request tests
 	it "handles HEAD /<<uuid>>" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'HEAD'
 		  }
 		etag = %q{"%s"} % [TEST_CHECKSUM]
@@ -204,7 +206,7 @@ describe ThingFish::DefaultHandler do
 		mockmetadata = mock( "metadata proxy", :null_object => true )
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :header ).at_least(1).and_return( mockheaders )
@@ -215,7 +217,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :finished )
 
 		@metastore.should_receive( :[] ).
-			at_least(:once).with( HANDLER_TEST_UUID ).
+			at_least(:once).with( TEST_UUID_OBJ ).
 			and_return( mockmetadata )
 
 		mockmetadata.should_receive( :checksum ).
@@ -229,12 +231,12 @@ describe ThingFish::DefaultHandler do
 	
 	it "normalizes the case of UUIDs" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID.to_s.upcase}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ.to_s.upcase}",
 			'REQUEST_METHOD' => 'HEAD'
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :header ).at_least(1).and_return({})
@@ -250,7 +252,7 @@ describe ThingFish::DefaultHandler do
 
 	it "handles GET /<<uuid>>" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'GET'
 		  }
 		testdata = 'this is some data for testing'
@@ -262,19 +264,19 @@ describe ThingFish::DefaultHandler do
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
 		@filestore.should_receive( :has_file? ).
-			with( HANDLER_TEST_UUID ).and_return( true )
+			with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :header ).at_least(1).and_return( mockheaders )
 
 		@metastore.should_receive( :[] ).
-			at_least(1).with( HANDLER_TEST_UUID ).and_return( mockmetadata )
+			at_least(1).with( TEST_UUID_OBJ ).and_return( mockmetadata )
 
 		mockmetadata.should_receive( :checksum ).
 			at_least(:once).and_return( TEST_CHECKSUM )
 		mockheaders.should_receive( :[]= ).with( 'ETag', etag )
 		mockheaders.should_receive( :[]= ).with( 'Expires', an_instance_of(String) )
 
-		@filestore.should_receive( :fetch_io ).with( HANDLER_TEST_UUID ).and_yield( io )
+		@filestore.should_receive( :fetch_io ).with( TEST_UUID_OBJ ).and_yield( io )
 
 		@filestore.should_receive( :size ).and_return( 1024 )
 		@response.should_receive( :send_status ).with( 1024 )
@@ -297,12 +299,12 @@ describe ThingFish::DefaultHandler do
 
 	it "responds with a 404 NOT FOUND for a GET to a nonexistent /<<uuid>>" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'GET'
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( false )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( false )
 		@response.should_receive( :start ).
 			once.with( HTTP::NOT_FOUND, true ).
 			and_yield( @headers, @out )
@@ -314,7 +316,7 @@ describe ThingFish::DefaultHandler do
 	it "returns a 405 METHOD NOT ALLOWED response to a request to /<uuid> with a " +
 	   "method other than GET, HEAD, PUT, or DELETE" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'TRACE'
 		}
 
@@ -342,7 +344,7 @@ describe ThingFish::DefaultHandler do
 
 	it "checks request's 'If-Modified-Since' header to see if it can return a 304 NOT MODIFIED response" do
 		params = {
-			'REQUEST_URI'            => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'            => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'         => 'GET',
 			'HTTP_IF_MODIFIED_SINCE' => 2.days.ago.httpdate,
 		  }
@@ -352,9 +354,9 @@ describe ThingFish::DefaultHandler do
 		etag = %q{"%s"} % [TEST_CHECKSUM]
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		
-		@metastore.should_receive( :[] ).with( HANDLER_TEST_UUID ).
+		@metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).
 			at_least( 1 ).
 			and_return( mockmetadata )
 		mockmetadata.should_receive( :modified ).
@@ -377,7 +379,7 @@ describe ThingFish::DefaultHandler do
 	it "checks request's single cache token to see if it can return a 304 NOT MODIFIED response" do
 		etag = %q{"%s"} % 'd6af7eeb992c81ba7b3b0fac3693d7fd'
 		params = {
-			'REQUEST_URI'        => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'        => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'     => 'GET',
 			'HTTP_IF_NONE_MATCH' => etag,
 		  }
@@ -386,10 +388,10 @@ describe ThingFish::DefaultHandler do
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
 		@metastore.should_receive( :[] ).at_least(1).
-			with( HANDLER_TEST_UUID ).and_return( mockmetadata )
+			with( TEST_UUID_OBJ ).and_return( mockmetadata )
 		mockmetadata.should_receive( :checksum ).
 			at_least(:twice).and_return( etag )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
 		@response.should_receive( :header ).at_least(1).and_return({})
 
@@ -402,7 +404,7 @@ describe ThingFish::DefaultHandler do
 	it "checks all of request's cache tokens to see if it can return a 304 NOT MODIFIED response" do
 		etag = 'd6af7eeb992c81ba7b3b0fac3693d7fd'
 		params = {
-			'REQUEST_URI'        => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'        => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'     => 'GET',
 			'HTTP_IF_NONE_MATCH' => "W/\"v1.2\", \"#{etag}\"",
 		  }
@@ -411,10 +413,10 @@ describe ThingFish::DefaultHandler do
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
 		@metastore.should_receive( :[] ).at_least(1).
-			with( HANDLER_TEST_UUID ).and_return( mockmetadata )
+			with( TEST_UUID_OBJ ).and_return( mockmetadata )
 		mockmetadata.should_receive( :checksum ).
 			at_least(:twice).and_return( etag )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
 		@response.should_receive( :header ).at_least(1).and_return({})
 
@@ -427,13 +429,13 @@ describe ThingFish::DefaultHandler do
 	it "ignores weak cache tokens" do
 		etag = 'W/"v1.2"'
 		params = {
-			'REQUEST_URI'        => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'        => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'     => 'GET',
 			'HTTP_IF_NONE_MATCH' => "#{etag}",
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :header ).at_least(1).and_return({})
 
@@ -445,13 +447,13 @@ describe ThingFish::DefaultHandler do
 
 	it "returns a 304 NOT MODIFIED for a GET with a wildcard If-None-Match" do
 		params = {
-			'REQUEST_URI'        => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'        => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'     => 'GET',
 			'HTTP_IF_NONE_MATCH' => "*",
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
 		@response.should_receive( :header ).at_least(1).and_return({})
 
@@ -464,7 +466,7 @@ describe ThingFish::DefaultHandler do
 	it "ignores a wildcard 'If-None-Match' if the 'If-Modified-Since' header is out of date" do
 		# ThingFish.logger.level = Logger::DEBUG
 		params = {
-			'REQUEST_URI'            => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'            => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD'         => 'GET',
 			'HTTP_IF_NONE_MATCH'     => "*",
 			'HTTP_IF_MODIFIED_SINCE' => 2.days.ago.httpdate,
@@ -476,16 +478,16 @@ describe ThingFish::DefaultHandler do
 		mockmetadata = mock( "metadata proxy", :null_object => true )
 
 		@request.should_receive( :params ).at_least(1).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@metastore.should_receive( :[] ).
-			at_least(1).with( HANDLER_TEST_UUID ).and_return( mockmetadata )
+			at_least(1).with( TEST_UUID_OBJ ).and_return( mockmetadata )
 		mockmetadata.should_receive( :modified ).
 			at_least(1).and_return( Time.now )
 		
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :header ).at_least(1).and_return({})
 
-		@filestore.should_receive( :fetch_io ).with( HANDLER_TEST_UUID ).and_yield( io )
+		@filestore.should_receive( :fetch_io ).with( TEST_UUID_OBJ ).and_yield( io )
 
 		@filestore.should_receive( :size ).and_return( 1024 )
 		@response.should_receive( :send_status ).with( 1024 )
@@ -510,7 +512,7 @@ describe ThingFish::DefaultHandler do
 
 	it "handles PUT to /<<uuid>> for existing resource" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'CONTENT_TYPE'   => TEST_CONTENT_TYPE,
 			'REQUEST_METHOD' => 'PUT'
 		  }
@@ -518,17 +520,17 @@ describe ThingFish::DefaultHandler do
 		mockmetadata = mock( "metadata proxy", :null_object => true )
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :start ).once.with( HTTP::OK, true ).
 			and_yield( @headers, @out )
 
 		@request.should_receive( :body ).and_return( io )
-		@filestore.should_receive( :store_io ).with( HANDLER_TEST_UUID, io ).and_return( TEST_CHECKSUM )
+		@filestore.should_receive( :store_io ).with( TEST_UUID_OBJ, io ).and_return( TEST_CHECKSUM )
  		@metastore.
 			should_receive( :extract_default_metadata ).
-			with( HANDLER_TEST_UUID, @request )
+			with( TEST_UUID_OBJ, @request )
 		@metastore.should_receive( :[] ).
-			at_least(:once).with( HANDLER_TEST_UUID ).
+			at_least(:once).with( TEST_UUID_OBJ ).
 			and_return( mockmetadata )
 		mockmetadata.should_receive( :checksum= ).with( TEST_CHECKSUM )
 			
@@ -538,7 +540,7 @@ describe ThingFish::DefaultHandler do
 
 	it "handles PUT to /<<uuid>> for new resource" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'CONTENT_TYPE'   => TEST_CONTENT_TYPE,
 			'REQUEST_METHOD' => 'PUT'
 		  }
@@ -546,17 +548,17 @@ describe ThingFish::DefaultHandler do
 		mockmetadata = mock( "metadata proxy", :null_object => true )
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( false )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( false )
 		@response.should_receive( :start ).once.with( HTTP::CREATED, true ).
 			and_yield( @headers, @out )
 
 		@request.should_receive( :body ).and_return( io )
-		@filestore.should_receive( :store_io ).once.with( HANDLER_TEST_UUID, io ).and_return( TEST_CHECKSUM )
+		@filestore.should_receive( :store_io ).once.with( TEST_UUID_OBJ, io ).and_return( TEST_CHECKSUM )
 		@metastore.
 			should_receive( :extract_default_metadata ).
-			with( HANDLER_TEST_UUID, @request )
+			with( TEST_UUID_OBJ, @request )
 		@metastore.should_receive( :[] ).
-			at_least(:once).with( HANDLER_TEST_UUID ).
+			at_least(:once).with( TEST_UUID_OBJ ).
 			and_return( mockmetadata )
 		mockmetadata.should_receive( :checksum= ).with( TEST_CHECKSUM )
 
@@ -566,14 +568,14 @@ describe ThingFish::DefaultHandler do
 
 	it "returns a 413 REQUEST ENTITY TOO LARGE for a PUT to /<<uuid>> that exceeds quota" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'PUT'
 		}
 		body = StringIO.new( "~~~" * 1024 )
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
 		@request.should_receive( :body ).and_return( body )
-		@filestore.should_receive( :store_io ).once.with( HANDLER_TEST_UUID, body ).
+		@filestore.should_receive( :store_io ).once.with( TEST_UUID_OBJ, body ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
 		@response.should_receive( :start ).once.
 			with( HTTP::REQUEST_ENTITY_TOO_LARGE, true ).and_yield( @headers, @out )
@@ -587,12 +589,12 @@ describe ThingFish::DefaultHandler do
 
 	it "handles DELETE of /<<uuid>>" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'DELETE'
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( true )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 		@response.should_receive( :start ).once.with( HTTP::OK, true ).
 			and_yield( @headers, @out )
 
@@ -602,12 +604,12 @@ describe ThingFish::DefaultHandler do
 
 	it "handles DELETE of nonexistent /<<uuid>>" do
 		params = {
-			'REQUEST_URI'    => "/#{HANDLER_TEST_UUID}",
+			'REQUEST_URI'    => "/#{TEST_UUID_OBJ}",
 			'REQUEST_METHOD' => 'DELETE'
 		  }
 
 		@request.should_receive( :params ).at_least(2).and_return( params )
-		@filestore.should_receive( :has_file? ).with( HANDLER_TEST_UUID ).and_return( false )
+		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( false )
 		@response.should_receive( :start ).once.with( HTTP::NO_CONTENT, true ).
 			and_yield( @headers, @out )
 

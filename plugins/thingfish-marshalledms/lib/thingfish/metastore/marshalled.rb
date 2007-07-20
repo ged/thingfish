@@ -33,14 +33,21 @@
 # Please see the file LICENSE in the base directory for licensing details.
 #
 
-require 'pathname'
-require 'pstore'
-require 'lockfile'
+begin
+	require 'pathname'
+	require 'pstore'
+	require 'lockfile'
 
-require 'thingfish'
-require 'thingfish/exceptions'
-require 'thingfish/metastore'
-
+	require 'thingfish'
+	require 'thingfish/exceptions'
+	require 'thingfish/metastore'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 ### ThingFish::MarshalledMetaStore-- a metastore plugin for ThingFish
 class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
@@ -102,8 +109,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	def set_property( uuid, propname, value )
 		@lock.lock do
 			@metadata.transaction do
-				@metadata[ uuid ] ||= {}
-				@metadata[ uuid ][ propname.to_sym ] = value
+				@metadata[ uuid.to_s ] ||= {}
+				@metadata[ uuid.to_s ][ propname.to_sym ] = value
 			end
 		end
 	end
@@ -113,8 +120,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		@metadata.transaction do
-			@metadata[ uuid ] ||= {}
-			return @metadata[ uuid ][ propname.to_sym ]
+			@metadata[ uuid.to_s ] ||= {}
+			return @metadata[ uuid.to_s ][ propname.to_sym ]
 		end
 	end
 
@@ -123,8 +130,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
 		@metadata.transaction do
-			@metadata[ uuid ] ||= {}
-			return @metadata[ uuid ].clone
+			@metadata[ uuid.to_s ] ||= {}
+			return @metadata[ uuid.to_s ].clone
 		end
 	end
 
@@ -132,8 +139,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
 		@metadata.transaction do
-			@metadata[ uuid ] ||= {}
-			return @metadata[ uuid ].key?( propname.to_sym )
+			@metadata[ uuid.to_s ] ||= {}
+			return @metadata[ uuid.to_s ].key?( propname.to_sym )
 		end
 	end
 
@@ -142,8 +149,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	def delete_property( uuid, propname )
 		@lock.lock do
 			@metadata.transaction do
-				@metadata[ uuid ] ||= {}
-				return @metadata[ uuid ].delete( propname.to_sym ) ? true : false
+				@metadata[ uuid.to_s ] ||= {}
+				return @metadata[ uuid.to_s ].delete( propname.to_sym ) ? true : false
 			end
 		end
 	end
@@ -153,14 +160,29 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	def delete_properties( uuid )
 		@lock.lock do
 			@metadata.transaction do
-				return 0 if @metadata[ uuid ].nil?
-				count = @metadata[ uuid ].length
-				@metadata.delete( uuid )
+				return 0 if @metadata[ uuid.to_s ].nil?
+				count = @metadata[ uuid.to_s ].length
+				@metadata.delete( uuid.to_s )
 				return count
 			end
 		end
 	end
-	
+
+	### MetaStore API: Return all property keys in store
+	def get_all_property_keys
+
+		# PStore doesn't implement a collect(), so we need a manual collector.
+		keys = []
+
+		@lock.lock do
+			@metadata.transaction(true) do
+				@metadata.roots.each do |uuid|
+					keys << @metadata[ uuid ].keys
+				end
+			end
+		end
+		return keys.flatten.uniq
+	end
 		
 end # class ThingFish::MarshalledMetaStore
 

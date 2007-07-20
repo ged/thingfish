@@ -11,8 +11,10 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'thingfish'
+	require 'thingfish/constants'
 	require 'thingfish/client'
 	require 'thingfish/resource'
 rescue LoadError

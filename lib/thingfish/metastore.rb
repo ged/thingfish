@@ -152,7 +152,8 @@ class ThingFish::MetaStore
 		:get_property,
 		:get_properties,
 		:delete_property,
-		:delete_properties
+		:delete_properties,
+		:get_all_property_keys
 
 
 	### Extract a default set of metadata for the upload in the given +request+.

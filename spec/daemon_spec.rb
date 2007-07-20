@@ -11,7 +11,8 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'thingfish'
 	require 'thingfish/daemon'
 	require 'thingfish/config'
@@ -24,7 +25,6 @@ rescue LoadError
 end
 
 
-include ThingFish::TestConstants
 
 class TestHandler < ThingFish::Handler
 end
@@ -35,7 +35,7 @@ end
 #####################################################################
 
 describe "The daemon class" do
-	
+	include ThingFish::TestConstants
 
 	before(:each) do
 		@log = StringIO.new('')
@@ -55,6 +55,8 @@ describe "The daemon class" do
 end
 
 describe "A new daemon with no arguments" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@stub_socket = stub( "Server listener socket" )
 		TCPServer.stub!( :new ).and_return( @stub_socket )
@@ -72,6 +74,8 @@ end
 
 
 describe "A new daemon with a differing ip config" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 		@config.ip = TEST_IP
@@ -91,7 +95,7 @@ describe "A new daemon with a differing ip config" do
 	end
 
 
-	it "binds to the test ip (#{TEST_IP})" do
+	it "binds to the test ip" do
 		@daemon.host.should equal( TEST_IP) if @daemon
 	end
 
@@ -102,6 +106,8 @@ end
 
 
 describe "A new daemon with a differing port config" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 		@config.port = TEST_PORT
@@ -118,13 +124,15 @@ describe "A new daemon with a differing port config" do
 		@daemon.host.should equal( ThingFish::Config::DEFAULTS[:ip])
 	end
 
-	it "binds to the test port (#{TEST_PORT})" do
+	it "binds to the test port" do
 		@daemon.port.should equal( TEST_PORT)
 	end
 end
 
 
 describe "A new daemon with an ip and host configured" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 		@config.ip = TEST_IP
@@ -138,11 +146,11 @@ describe "A new daemon with an ip and host configured" do
 	end
 
 
-	it "binds to the test ip (#{TEST_IP})" do
+	it "binds to the test ip" do
 		@daemon.host.should equal( TEST_IP)
 	end
 
-	it "binds to test port (#{TEST_PORT})" do
+	it "binds to test port" do
 		@daemon.port.should equal( TEST_PORT)
 	end
 
@@ -150,6 +158,8 @@ end
 
 
 describe "A daemon with one or more handlers in its configuration" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 		@config.plugins.handlers = [
@@ -168,6 +178,8 @@ describe "A daemon with one or more handlers in its configuration" do
 end
 
 describe "A running server" do
+	include ThingFish::TestConstants
+
 	before(:each) do
 		@config = ThingFish::Config.new
 		@config.port = 7777

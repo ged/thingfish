@@ -11,7 +11,8 @@ BEGIN {
 
 begin
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'thingfish'
 	require 'thingfish/resource'
 rescue LoadError
@@ -29,6 +30,7 @@ end
 
 describe ThingFish::Resource do
 	include ThingFish::TestConstants
+	include ThingFish::TestHelpers
 
 	before(:all) do
 		@tmpfile = Tempfile.new( 'test.txt', '.' )

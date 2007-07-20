@@ -144,7 +144,10 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 		@metadata.transaction
 		begin
 			r_id = get_resource_id( uuid )
+			self.log.debug "Executing %p for set_property(%p, %p, %p)" %
+				[ set_sql.gsub(/\s+/, ' '), uuid, propname, value ]
 			@metadata.execute( set_sql, r_id, propname, value )
+			self.log.debug "   no exception was raised."
 		rescue SQLite3::SQLException
 			self.log.debug "Creating new metadata property row: #{propname}"
 
@@ -156,6 +159,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 			@metadata.execute( propadd_sql, propname )
 			@metadata.execute( set_sql, r_id, propname, value )
 		end
+		self.log.debug "Committing."
 		@metadata.commit
 	end
 	
@@ -239,6 +243,18 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 		# trigger cleans up the other tables
 		@metadata.execute( delete_sql, uuid )
 	end
+
+
+	### MetaStore API: Returns a list of all property keys in the database.
+	def get_all_property_keys
+		select_sql = %q{
+			SELECT DISTINCT key
+			FROM metakey
+		}
+		
+		return @metadata.execute( select_sql ).flatten.collect { |k| k.to_sym }
+	end
+	
 
 
 	### Return the schema that describes the database as a String, loading

@@ -12,7 +12,7 @@ BEGIN {
 begin
 	require 'rbconfig'
 	require 'spec/runner'
-	require 'spec/constants'
+	require 'spec/lib/constants'
 	require 'thingfish'
 	require 'thingfish/handler'
 rescue LoadError

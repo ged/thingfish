@@ -7,8 +7,8 @@
 #   # thingfish.conf
 #   plugins:
 #     handlers:
-#		- inspect: ['/admin/inspect', '/whatever/inspect']
-#		- pork: /admin/inspect
+#		- inspect:
+#           uris: ['/admin/inspect', '/whatever/inspect']
 # 
 # == Version
 #

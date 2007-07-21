@@ -218,12 +218,11 @@ begin
 	gem 'coderay'
 	gem 'RedCloth'
 
-	Webgen::Rake::WebgenTask.new( :generated_manual ) do |task|
+	Webgen::Rake::WebgenTask.new( :manual ) do |task|
 		task.directory = MANUALDIR
 		task.clobber_outdir = true
 	end
-	
-	task :manual => [:generated_manual] do
+	task :manual do
 		outputdir = MANUALDIR + 'output'
 		targetdir = STATICWWWDIR + 'manual'
 
@@ -319,7 +318,17 @@ begin
 		task.rcov_opts = ['--exclude', 'spec', '--xrefs', '--save' ]
 		task.rcov = true
 	end
+	task :coverage do
+		targetdir = STATICWWWDIR + 'coverage'
+
+		rmtree( targetdir )
+		cp_r( 'coverage', targetdir, :verbose => true )
+	end
+
+
 	task :rcov => [:coverage] do; end
+	
+	
 
 	### Other coverage tasks
 	namespace :coverage do

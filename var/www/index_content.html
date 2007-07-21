@@ -1,3 +1,23 @@
-<p>We're going to add some more stuff here, but in the meantime, you can read 
-	<a href="/manual/">our spiffy manual</a>.</p>
+<p>
+	This is a ThingFish v<%= ThingFish::VERSION %> server; there are 
+	many like it, but this one is yours.
+
+	<ul>
+	<% if self.resource_directory?('static/manual') %>
+		<li>Read <a href="/manual/">our spiffy manual</a>!</li>
+	<% else %>
+		<li>The manual isn't installed. You can install it by running
+			<code>rake manual</code> in the installation directory.</li>
+	<% end %>
+
+	<% if self.resource_directory?('static/coverage') %>
+		<li>View the <a href="/coverage/">test coverage</a>!</li>
+	<% else %>
+		<li>The coverage statistics aren't installed. You can build
+			and install them by running <code>rake coverage</code>
+			in the installation directory.</li>
+	<% end %>
+	</ul>
+
+</p>
 

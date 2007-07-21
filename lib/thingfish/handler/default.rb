@@ -151,14 +151,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	### Make the content for the handler section of the index page.
 	def make_index_content( uri )
-		# If the manual was built and installed in the static content for this 
-		# handler, link to that.
-		if self.resource_exists?( "static/manual/index.html" )
-			tmpl = self.get_erb_resource( "index_content.html" )
-			return tmpl.result( binding() )
-		else
-			return nil
-		end
+		tmpl = self.get_erb_resource( "index_content.html" )
+		return tmpl.result( binding() )
 	end
 	
 

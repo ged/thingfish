@@ -14,6 +14,8 @@ begin
 	require 'tmpdir'
 	require 'spec/runner'
 	require 'spec/lib/metastore_behavior'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'thingfish/metastore/sqlite3'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -23,13 +25,15 @@ rescue LoadError
 	raise
 end
 
+include ThingFish::TestHelpers
+include ThingFish::TestConstants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe "A SQLite3 MetaStore" do
-
+	
 	before(:all) do
 #		ThingFish.logger = Logger.new( $stderr )
 #		ThingFish.logger.level = Logger::DEBUG

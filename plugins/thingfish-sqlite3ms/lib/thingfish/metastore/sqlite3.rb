@@ -44,18 +44,27 @@ require 'thingfish/metastore'
 ### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been 
 ### renamed)
 module SQLite3::Pragmas
+
+	### Get the schema version from the database (the value of the 'schema_version' 
+	### pragma value)
 	def schema_version
 		get_int_pragma "schema_version"
 	end
 
+	### Set the schema version from the database (the value of the 'schema_version'
+	### pragma value)
 	def schema_version=( version )
 		set_int_pragma "schema_version", version
 	end
 
+	### Get the user version from the database (the value of the 'user_version' 
+	### pragma value)
 	def user_version
 		get_int_pragma "user_version"
 	end
 
+	### Set the user version from the database (the value of the 'user_version'
+	### pragma value)
 	def user_version=( version )
 		set_int_pragma "user_version", version
 	end

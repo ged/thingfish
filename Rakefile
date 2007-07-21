@@ -92,7 +92,6 @@ task :clean => [ :clobber_rdoc, :clobber_package, :clobber_coverage, :clobber_ma
 	File.rm( files ) unless files.empty?
 	FileUtils.rm_rf( 'artifacts' )
 end
-task :clobber_manual => :clobber_generated_manual
 
 
 ### Task: rdoc

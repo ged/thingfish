@@ -9,9 +9,19 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
-require 'stringio'
-require 'spec/runner'
-require "thingfish/mixins"
+begin
+	require 'stringio'
+	require 'spec/runner'
+	require 'spec/lib/helpers'
+	require 'spec/lib/constants'
+	require "thingfish/mixins"
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 describe ThingFish::Loggable, " (class)" do
 	before(:each) do
@@ -107,28 +117,29 @@ describe ThingFish::ResourceLoader do
 end
 
 describe "A class which has mixed in ThingFish::ResourceLoader" do
+	include ThingFish::TestHelpers
+	
 	before(:all) do
-		@tmpfile = Tempfile.new( 'test.txt', '.' )
+		@resdir = make_tempdir()
+		@resdir.mkpath
+		
+		@tmpfile = Tempfile.new( 'test.txt', @resdir )
 		@tmpfile.print( TEST_RESOURCE_CONTENT )
 		@tmpfile.close
 		@tmpname = Pathname.new( @tmpfile.path ).basename
 	
 		@klass = Class.new {
 			include ThingFish::ResourceLoader
-			alias_method :get_mah_bucket, :get_resource
-			public :get_mah_bucket
-			alias_method :check_mah_bucket, :resource_exists?
-			public :check_mah_bucket
+			public :get_resource, :resource_exists?, :resource_directory?
 		}
 	end
-
+	
 	after(:all) do
-		@tmpfile.delete
+		@resdir.rmtree
 	end
 
 	before(:each) do
 		ThingFish.logger.level = Logger::DEBUG
-		@resdir = Pathname.new( @tmpfile.path ).dirname.expand_path
 		@obj = @klass.new( :resource_dir => @resdir )
 	end
 
@@ -137,11 +148,19 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 	end
 
 	it "is able to load stuff from its resources dir" do
-	    @obj.get_mah_bucket( @tmpname ).should == TEST_RESOURCE_CONTENT
+	    @obj.get_resource( @tmpname ).should == TEST_RESOURCE_CONTENT
 	end
 	
 	it "can test for the existance of a resource" do
-		@obj.check_mah_bucket( @tmpname ).should == true
+		@obj.resource_exists?( @tmpname ).should be_true()
+	end
+
+	it "can test for the existance of a resource directory" do
+		@obj.resource_directory?( @tmpname ).should be_false()
+		dir = (@resdir + 'testdirectory')
+		@obj.resource_directory?( dir.basename ).should be_false()
+		dir.mkpath
+		@obj.resource_directory?( dir.basename ).should be_true()
 	end
 
 end

@@ -217,7 +217,17 @@ module ThingFish # :nodoc:
 			resdir = self.resource_dir or
 				raise "No resource directory available"
 			resource = resdir + path
-			return resource.exist? && resource.file?
+			return resource.exist?
+		end
+
+
+		### Return true if the specified directory exists under the resource 
+		### directory.
+		def resource_directory?( path )
+			resdir = self.resource_dir or
+				raise "No resource directory available"
+			resource = resdir + path
+			return resource.directory?
 		end
 
 

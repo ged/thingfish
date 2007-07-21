@@ -62,7 +62,7 @@ module ThingFish::TestHelpers
 	###
 	def make_tempdir
 		dirname = "%s.%d.%0.4f" % [
-			Pathname.new( __FILE__ ).basename('.rb'),
+			'thingfish_spec',
 			Process.pid,
 			(Time.now.to_f % 3600),
 		  ]

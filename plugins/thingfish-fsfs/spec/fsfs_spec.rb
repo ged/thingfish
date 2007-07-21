@@ -14,6 +14,7 @@ begin
 	require 'tmpdir'
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/filestore_behavior'
 	require 'thingfish/constants'
 	require 'thingfish/filestore/filesystem'
 rescue LoadError
@@ -35,20 +36,10 @@ include ThingFish::TestConstants
 
 describe "A Filesystem FileStore" do
 
-	def make_tempdir
-		dirname = "%s.%d.%0.4f" % [
-			Pathname.new( __FILE__ ).basename('.rb'),
-			Process.pid,
-			(Time.now.to_f % 3600),
-		  ]
-		return Pathname.new( Dir.tmpdir ) + dirname
-	end
-
 	before(:all) do
 		@tmpdir = make_tempdir()
 	end
 
-	
 	before(:each) do
 	    @fs = ThingFish::FileStore.create( 'filesystem', :root => @tmpdir.to_s )
 		@io = StringIO.new( TEST_RESOURCE_CONTENT )
@@ -58,6 +49,11 @@ describe "A Filesystem FileStore" do
 		@tmpdir.rmtree
 	end
 
+
+	### Behaviors
+	
+	it_should_behave_like "A FileStore"
+	
 	
 	### Specs
 	

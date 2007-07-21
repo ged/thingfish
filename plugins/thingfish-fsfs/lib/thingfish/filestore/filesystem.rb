@@ -254,7 +254,8 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	### Return the size of the resource corresponding to the given +uuid+ in bytes. 
 	### Returns +nil+ if the given +uuid+ is not in the store.
 	def size( uuid )
-		return self.hashed_path( uuid ).size
+		path = self.hashed_path( uuid )
+		return path.exist? ? path.size : nil
 	end
 	
 	

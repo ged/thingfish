@@ -286,7 +286,7 @@ begin
 		desc "Generate plain-text output for a CruiseControl.rb build"
 		Spec::Rake::SpecTask.new( :text ) do |task|
 			task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
-			task.spec_opts = ['-f','s']
+			task.spec_opts = ['-f','p']
 		end
 	end
 rescue LoadError => err
@@ -338,14 +338,15 @@ begin
 			task.rcov_opts = ['--exclude', 'spec', '--text-coverage-diff']
 			task.rcov = true
 		end
+
+		### Task: verify coverage
+		desc "Build coverage statistics"
+		VerifyTask.new( :verify => :rcov ) do |task|
+			task.threshold = 85.0
+		end
 	end
 
 
-	### Task: verify coverage
-	desc "Build coverage statistics"
-	VerifyTask.new( :verify => :rcov ) do |task|
-		task.threshold = 85.0
-	end
 rescue LoadError => err
 	task :no_rcov do
 		$stderr.puts "Coverage tasks not defined: RSpec+RCov tasklib not available: %s" %

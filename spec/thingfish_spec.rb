@@ -23,6 +23,9 @@ rescue LoadError
 end
 
 
+include ThingFish::TestConstants
+
+
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
@@ -57,8 +60,6 @@ describe "The ThingFish module" do
 	
 end
 
-
-include ThingFish::TestConstants
 
 describe UUID, " (local monkeypatches)" do
 	

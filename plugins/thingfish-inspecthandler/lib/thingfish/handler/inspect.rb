@@ -31,11 +31,14 @@ require 'rbconfig'
 require 'pathname'
 require 'thingfish/mixins'
 require 'thingfish/handler'
+require 'thingfish/constants'
 
 
 ### Output a quick inspection page
 class ThingFish::InspectHandler < ThingFish::Handler
-	include ThingFish::Loggable
+	include ThingFish::Loggable,
+		ThingFish::Constants,
+		ThingFish::ResourceLoader
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -44,49 +47,46 @@ class ThingFish::InspectHandler < ThingFish::Handler
 	SVNId = %q$Id$
 
 
-	### Handle a request
-	def process( request, response )
-		params = request.params
-		self.log_request( request )
+	### Handler API: handle a GET request with an inspection page.
+	def handle_get_request( request, response )
+		self.log.debug "Inspect handler GET response"
+		return unless request.params['PATH_INFO'] == ''
+
+		# Attempt to serve upload form
+		content = self.get_erb_resource( 'inspect.rhtml' )
+		response.start( HTTP::OK, true ) do |headers, out|
+			self.log.debug "Start of response to the inspect handler"
+			inspected_objects = [
+				object_section( "Daemon", self.listener ),
+				object_section( "Request", request ),
+				object_section( "Request Body", request.body.read ),
+				object_section( "Request Body Size", request.body.length ),
+				object_section( "Headers", headers ),
+				object_section( "Response", response ),
+				object_section( "Handler", self ),
+			]
 		
-		response.start(200) do |headers, out|
-			headers["Content-Type"] = "text/html"
-
-			html = page do
-				object_section( "Daemon", self.listener ) +
-				object_section( "Request", request ) +
-				object_section( "Request Body", request.body.read ) +
-				object_section( "Request Body Size", request.body.length ) +
-				object_section( "Headers", headers ) +
-				object_section( "Response", response ) +
-				object_section( "Handler", self )
-			end
-
-			out.write( html )
+			self.log.debug "Setting content type"
+			headers['Content-Type'] = 'text/html'
+			out.write( content.result(binding()) )
 		end
 	end
-
-
-	### Wrap the results of a block in an HTML page.
-	def page
-		content = yield
-		page = get_resource( 'index.html' )
-		return page % [ content ]
+	
+	
+	### Return the HTML fragment that should be used to link to this handler.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "index_content.html" )
+		return tmpl.result( binding() )
 	end
+	
 
-
-	### Wrap the inspected +object+ in an HTML fragment and return it.
+	### Generated a prettyprinted inspect of the given +object+ and return it in
+	### a hash with the specified +title+.
 	def object_section( title, object )
 		buf = ''
 		PP.pp( object, buf )
 
-		return %{<div class="object-section"><h3>%s</h3><pre>%s</pre></div>\n\n} % [
-			title,
-			buf.gsub( /&/, '&amp;' ).
-				gsub( /</, '&lt;' ).
-				gsub( />/, '&gt;' ).
-				gsub( /"/, '&quot;' )
-		]
+		return { :title => title, :object => buf }
 	end
 
 

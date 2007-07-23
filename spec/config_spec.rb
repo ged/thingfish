@@ -13,11 +13,15 @@ begin
 	require 'tempfile'
 	require 'logger'
 	require 'fileutils'
+
 	require 'spec/runner'
+	require 'spec/lib/helpers'
+
 	require 'thingfish'
 	require 'thingfish/config'
-	require 'spec/lib/helpers'
 	require 'thingfish/constants'
+	require 'thingfish/filestore'
+	require 'thingfish/metastore'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -27,13 +31,13 @@ rescue LoadError
 end
 
 
+include ThingFish::Constants
+
+
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-
-
 describe ThingFish::Config do
-	include ThingFish::Constants
 
 	before(:each) do
 		@config = ThingFish::Config.new

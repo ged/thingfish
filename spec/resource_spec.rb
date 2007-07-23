@@ -24,13 +24,15 @@ rescue LoadError
 end
 
 
+include ThingFish::TestConstants
+include ThingFish::TestHelpers
+
+
 #####################################################################
 ###	E X A M P L E S
 #####################################################################
 
 describe ThingFish::Resource do
-	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
 
 	before(:all) do
 		@tmpfile = Tempfile.new( 'test.txt', '.' )

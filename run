@@ -1,16 +1,16 @@
 #!/bin/sh
 
 plugin_libs=(plugins/*/lib)
-echo ${plugin_libs[*]}
+# echo ${plugin_libs[*]}
 
 libflags=''
 for libdir in ${plugin_libs[*]}; do
 	libflags="-I${libdir} $libflags"
 done
 
-echo "Args are: "
-echo $*
+# echo "Args are: "
+# echo $*
 
-set -x
+# set -x
 exec ruby -Ilib $libflags bin/thingfishd -f etc/thingfish.conf $*
 

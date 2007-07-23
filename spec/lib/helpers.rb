@@ -2,9 +2,12 @@
 
 begin
 	require 'thingfish'
+	require 'thingfish/constants'
+	
 	require 'digest/md5'
 	require 'net/http'
 	require 'net/protocol'
+
 	require 'spec/lib/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -14,9 +17,10 @@ rescue LoadError
 	raise
 end
 
+include ThingFish::TestConstants
+include ThingFish::Constants
 
 module ThingFish::TestHelpers
-	include ThingFish::TestConstants
 
 	### Return a Net::HTTPSuccess object with the contents set to the specified 
 	### +data+.

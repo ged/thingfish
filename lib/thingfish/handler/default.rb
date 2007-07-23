@@ -94,9 +94,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### Set up a new DefaultHandler
 	def initialize( options={} )
 		super( CONFIG_DEFAULTS.merge(options) )
-
-		@filestore = nil
-		@metastore = nil
 	end
 
 
@@ -104,51 +101,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	public
 	######
 	
-	### Handle a request
-	def process( request, response )
-		super
-
-		uri = request.params['REQUEST_URI']
-		
-		case uri
-
-		# If this is a request to the root, handle it ourselves
-		when '/'
-			self.handle_index_request( request, response )
-
-		# Likewise for a request to /<a uuid>
-		when UUID_URL
-			uuid = parse_uuid( $1 )
-			self.handle_uuid_request( request, response, uuid )
-
-		# The default handler doesn't care about anything else
-		else
-			response.start( HTTP::NOT_FOUND ) do |headers, out|
-				out.write( "Resource not found" )
-			end
-			self.log.debug "No handler mapping for %p, falling through to static" % uri
-		end
-		
-	rescue StandardError => err
-		self.log.error "500 SERVER ERROR: %s" % [err.message]
-		self.log.debug {"  " + err.backtrace.join("\n  ") }
-
-		# If the response is already at least partially sent, we can't really do 
-		# anything.
-		if response.header_sent
-			self.log.error "Exception occurred after headers were already sent."
-			raise
-
-		# If it's not, return a 500 response
-		else
-			response.reset
-			response.start( HTTP::SERVER_ERROR, true ) do |headers, out|
-				out.write( err.message )
-			end
-		end
-	end
-
-
 	### Make the content for the handler section of the index page.
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "index_content.html" )
@@ -160,30 +112,100 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	protected
 	#########
 
-	### Handle a request for the toplevel index
-	def handle_index_request( request, response )
-		method  = request.params['REQUEST_METHOD']
-		accepts = request.params['HTTP_ACCEPT']
+	### Iterate over the loaded handlers and ask each for any content it wants shown
+	### on the index HTML page.
+	def get_handler_index_sections
+		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
+		return handlers.collect do |uri,handlers|
+			handlers.
+				select {|h| h.is_a?(ThingFish::Handler) }.
+				collect {|h| h.make_index_content( uri ) }
+		end.flatten.compact
+	end
 
-		case method
-		when 'GET'
-			self.handle_index_get( request, response )
 
-		when 'POST'
-			self.handle_index_post( request, response )
+	### Handler API: Handle a GET request
+	def handle_get_request( request, response )
+		uri = request.params['REQUEST_URI']
+		case uri
 
-		# 'DELETE' and 'PUT' aren't allowed for /
+		# If this is a request to the root, handle it ourselves
+		when '/'
+			self.handle_index_fetch_request( request, response )
+
+		# Likewise for a request to /<a uuid>
+		when UUID_URL
+			uuid = parse_uuid( $1 )
+			self.handle_resource_fetch_request( request, response, uuid )
+
+		# Fall through to the static handler for GET requests
 		else
-			response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
-				headers['Allow'] = 'GET, POST'
-				out.write( "Method not allowed." )
-			end
+			self.log.debug "No GET handler for %p, falling through to static" % uri
+		end
+		
+	end
+	alias_method :handle_head_request, :handle_get_request
+
+
+	### Handler API: Handle a POST request
+	def handle_post_request( request, response )
+		uri = request.params['REQUEST_URI']
+
+		case uri
+		when '/'
+			self.handle_create_request( request, response )
+
+		when UUID_URL
+			self.send_method_not_allowed_response( response, 'PUT',
+				%w{GET HEAD PUT DELETE} )
+
+		else
+			self.log.debug "No POST handler for %p, falling through" % uri
+		end
+		
+	end
+
+
+	### Handler API: Handle a PUT request
+	def handle_put_request( request, response )
+		uri = request.params['REQUEST_URI']
+
+		case uri
+		when UUID_URL
+			uuid = parse_uuid( $1 )
+			self.handle_update_uuid_request( request, response, uuid )
+
+		when '/'
+			self.send_method_not_allowed_response( response, 'PUT',
+				%w{GET HEAD POST} )
+
+		else
+			self.log.debug "No PUT handler for %p, falling through" % uri
 		end
 	end
 
 
-	### Handle a GET request to '/'
-	def handle_index_get( request, response )
+	### Handler API: Handle a DELETE request
+	def handle_delete_request( request, response )
+		uri = request.params['REQUEST_URI']
+
+		case uri
+		when UUID_URL
+			uuid = parse_uuid( $1 )
+			self.handle_delete_uuid_request( request, response, uuid )
+
+		when '/'
+			self.send_method_not_allowed_response( response, 'PUT',
+				%w{GET HEAD POST} )
+		
+		else
+			self.log.debug "No DELETE handler for %p, falling through" % uri
+		end
+	end
+	
+
+	### Handle a request to fetch the index (GET or HEAD to /)
+	def handle_index_fetch_request( request, response )
 
 		# :TODO: dispatch on request.params['HTTP_ACCEPT']
 		self.log.debug "Loading index resource %p" % [@options[:html_index]]
@@ -199,20 +221,9 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
-	### Iterate over the loaded handlers and ask each for any content it wants shown
-	### on the index HTML page.
-	def get_handler_index_sections
-		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
-		return handlers.collect do |uri,handlers|
-			handlers.
-				select {|h| h.is_a?(ThingFish::Handler) }.
-				collect {|h| h.make_index_content( uri ) }
-		end.flatten.compact
-	end
-
-
-	### Handle a POST request to '/'
-	def handle_index_post( request, response )
+	### Handle a request to create a new resource with the request body as 
+	### data (POST to /)
+	def handle_create_request( request, response )
 
 		# Store the resource with a new UUID
 		uuid = UUID.timestamp_create
@@ -229,33 +240,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 	
 
-	### Handle a request for a UUID
-	def handle_uuid_request( request, response, uuid )
-		method  = request.params['REQUEST_METHOD']
-		accepts = request.params['HTTP_ACCEPT']
-
-		case method
-		when 'GET', 'HEAD'
-			self.handle_get_uuid_request( request, response, uuid )
-	
-		when 'PUT'
-			self.handle_put_uuid_request( request, response, uuid )
-	
-		when 'DELETE'
-			self.handle_delete_uuid_request( request, response, uuid )
-
-		else
-			response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
-				headers['Allow'] = 'HEAD, GET, PUT, DELETE'
-				out.write( "Method not allowed." )
-			end
-		end
-
-	end
-
-
-	### Handle fetching a file by UUID
-	def handle_get_uuid_request( request, response, uuid )
+	### Handle fetching a file by UUID (GET or HEAD to /{uuid})
+	def handle_resource_fetch_request( request, response, uuid )
 		if @filestore.has_file?( uuid )
 
 			# Try to send a NOT MODIFIED response
@@ -294,15 +280,14 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
-	### Handle uploading a file by UUID
-	def handle_put_uuid_request( request, response, uuid )
+	### Handle updating a file by UUID
+	def handle_update_uuid_request( request, response, uuid )
 		
 		# :TODO: Handle slow/big uploads by returning '202 Accepted' and spawning
 		#         a handler thread?
 		new_resource = ! @filestore.has_file?( uuid )
 		self.store_resource( request, uuid )
 		
-		# :TODO: dispatch on request.params['HTTP_ACCEPT']
 		if new_resource
 			response.start( HTTP::CREATED, true ) do |headers, out|
 				headers['Location'] = '/' + uuid.to_s
@@ -396,7 +381,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	def can_send_cached_response?( request, uuid )
 		params = request.params
 		moddate_checked = false
-		self.log.debug( "Checking to see if we can send a cached response (%p)" % [params] )
+		self.log.debug "Checking to see if we can send a cached response"
 		
 		# Check If-Modified-Since header
 		if (( moddatestr = params['HTTP_IF_MODIFIED_SINCE'] ))
@@ -413,7 +398,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 			if etagheader =~ /^\s*['"]?\*['"]?\s*$/
 
-				# If we've already check the modification data and our copy is newer
+				# If we've already checked the modification data and our copy is newer
 				# RFC 2616 14.26: "[...] if "*" is given and any current entity exists
 				# for that resource, then the server MUST NOT perform the requested
 				# method, unless required to do so because the resource's modification

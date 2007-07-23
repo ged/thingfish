@@ -104,36 +104,31 @@ class ThingFish::StatusHandler < ThingFish::Handler
 	attr_reader :filters
 	
 	
-	### Process a status request
-	def process( request, response )
-		super
-		
-		params = request.params
+	### Handler API: Send GET response
+	def handle_get_request( request, response )
+		self.log.debug "Handling GET request"
+		generate_output( response )	if request.params['PATH_INFO'] == ''
+	end
+	
+	
+	### Handler API: Send HEAD response
+	def handle_head_request( request, response )
+		self.log.debug "Handling HEAD request"
+		generate_output( response, false ) if request.params['PATH_INFO'] = ''	
+	end
+	
+	
+	### Create status content and write to response.
+	def generate_output( response, send_body=true )
+		listener = self.listener
 		template = self.get_erb_resource( @options['template_name'] )
-		req_method = params['REQUEST_METHOD']
-		self.log.debug "Req method is: %p, path_info is: %p" %
-		 	[ req_method, params['PATH_INFO'] ]
-
-		if params['PATH_INFO'] == ''
-			case req_method
-			when 'GET', 'HEAD'
-				self.log.debug "Handling GET/HEAD request"
-				listener = self.listener
-				response.start( HTTP::OK, true ) do |headers, out|
-					headers['Content-Type'] = 'text/html'
-					out.write( template.result(binding()) ) unless req_method == 'HEAD'
-				end
-			else
-				self.log.debug "Handling bad-method request"
-				response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
-					headers['Allow'] = 'GET, HEAD'
-					out.write( "Method not allowed." )
-				end
-			end
+		response.start( HTTP::OK, true ) do |headers, out|
+			headers['Content-Type'] = 'text/html'
+			out.write( template.result(binding()) ) if send_body
 		end
 	end
-
-
+	
+	
 	### Overload the listener writer to also register stats filters as soon as the
 	### handler is registered.
 	def listener=( listener )

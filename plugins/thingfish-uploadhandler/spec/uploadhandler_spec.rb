@@ -9,20 +9,33 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'pathname'
-require 'logger'
-require 'spec/runner'
-require 'stringio'
-require 'thingfish/constants'
+begin
+	require 'pathname'
+	require 'stringio'
+	require 'spec/runner'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
+	require 'spec/lib/handler_behavior'
 
-require 'thingfish/handler/upload'
+	require 'thingfish/constants'
+	require 'thingfish/handler/upload'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+
+include ThingFish::Constants,
+		ThingFish::TestConstants,
+		ThingFish::TestHelpers
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-
-include ThingFish::Constants
 
 UPLOAD_HEADERS = {
 	'REQUEST_METHOD'       => 'POST',
@@ -70,8 +83,14 @@ describe ThingFish::UploadHandler do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
 	end
+	
+	
+	# Shared behaviors
+	it_should_behave_like "A Handler"
 
 
+	# Examples
+	
 	it "returns a METHOD_NOT_ALLOWED response for requests other than GET or POST" do
 		params = {
 			'REQUEST_METHOD' => 'TRACE',

@@ -13,6 +13,7 @@ begin
 	require 'spec/runner'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
+	require 'spec/lib/handler_behavior'
 	require 'time'
 
 	require 'thingfish'
@@ -27,20 +28,23 @@ rescue LoadError
 end
 
 
+include ThingFish::Constants
+include ThingFish::TestConstants
+include ThingFish::TestHelpers
+
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
-
 describe ThingFish::DefaultHandler do
-	include ThingFish::Constants
-	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+
+	before( :all ) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
 
 	before(:each) do
-		# ThingFish.logger.level = Logger::DEBUG
-		ThingFish.logger.level = Logger::FATAL
-		
 		basedir = Pathname.new( __FILE__ ).expand_path.dirname.parent
 		@tmpfile  = Tempfile.new( 'defaulthandler.txt', basedir )
 		@tmpfile.print( TEST_CONTENT )
@@ -69,42 +73,32 @@ describe ThingFish::DefaultHandler do
 		@tmpfile.delete
 	end
 
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+
+	### Shared behaviors
+	it_should_behave_like "A Handler"
+
+
 	### Unknown URIs
 
-	it "sends a 404 response on unknown URIs" do
-		params = {
-			'REQUEST_URI'    => '/pork',
-			'REQUEST_METHOD' => 'GET'
-		}
-
-		@request.should_receive( :params ).at_least(1).and_return( params )
-		@response.should_receive( :start ).with( HTTP::NOT_FOUND ).and_yield( @headers, @out )
-		@out.should_receive( :write ).with( an_instance_of(String) )
-
-		@handler.process( @request, @response )
-	end
+	# it "sends a 404 response on unknown URIs" do
+	# 	params = {
+	# 		'REQUEST_URI'    => '/pork',
+	# 		'REQUEST_METHOD' => 'GET'
+	# 	}
+	# 
+	# 	@request.should_receive( :params ).at_least(1).and_return( params )
+	# 	@response.should_receive( :start ).with( HTTP::NOT_FOUND ).and_yield( @headers, @out )
+	# 	@out.should_receive( :write ).with( an_instance_of(String) )
+	# 
+	# 	@handler.process( @request, @response )
+	# end
 
 
 	### Index requests
-
-	it "handles uncaught exceptions with a SERVER_ERROR response if the response header hasn't been sent" do
-		params = {
-			'REQUEST_URI'    => '/',
-			'REQUEST_METHOD' => 'GET'
-		}
-
-		@request.should_receive( :params ).and_raise( "testing" )
-		@response.should_receive( :header_sent ).and_return( false )
-		@response.should_receive( :reset )
-		@response.should_receive( :start ).with( HTTP::SERVER_ERROR, true ).
-			and_yield( @headers, @out )
-		@out.should_receive( :write ).once.with( "testing" )
-
-		lambda {
-			@handler.process( @request, @response )
-		}.should_not raise_error()
-	end
-	
 
 	it "handles GET /" do
 		params = {
@@ -187,7 +181,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :start ).once.
 			with( HTTP::METHOD_NOT_ALLOWED, true ).
 			and_yield( @headers, @out )
-		@headers.should_receive( :[]= ).with( 'Allow', /(?:(GET|POST)\s*,?\s*){2}/ )
+		@headers.should_receive( :[]= ).with( 'Allow', 'GET, HEAD, POST' )
 		@out.should_receive( :write ).once.with( /not allowed/i )
 
 		@handler.process( @request, @response )
@@ -320,7 +314,7 @@ describe ThingFish::DefaultHandler do
 			'REQUEST_METHOD' => 'TRACE'
 		}
 
-		@request.should_receive( :params ).at_least(2).and_return( params )
+		@request.should_receive( :params ).at_least(:once).and_return( params )
 		@response.should_receive( :start ).once.
 			with( HTTP::METHOD_NOT_ALLOWED, true ).
 			and_yield( @headers, @out )

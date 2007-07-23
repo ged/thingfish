@@ -1,0 +1,28 @@
+Planned Features
+----------------
+
+ o Content negotiation:
+   * Accept: header handling
+   * Output filter plugin framework
+   * Metadata extraction plugin framework 
+
+ o Metadata REST API:
+   * /search - Find resources via metadata search
+   * /metadata - Fetch/query metadata
+
+ o Admin handler framework
+
+ o Authentication/Authorization
+
+ o More featureful backends
+   * RDF metastore
+   * High-performance filestore 
+
+ o Utility scripts for switching filestores, metastores, mass-updates of 
+   metadata, etc. 
+
+ o Pretty jQuery+Ext-enabled interface
+   * Search forms
+   * Metadata grid view
+   * Result galleries
+

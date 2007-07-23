@@ -64,6 +64,7 @@ module ThingFish
 	### Reset the global logger object to the default
 	def self::reset_logger
 		self.logger = self.default_logger
+		self.logger.level = Logger::WARN
 	end
 	
 

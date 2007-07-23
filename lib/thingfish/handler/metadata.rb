@@ -70,42 +70,6 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 	public
 	######
 	
-	### Handle a request
-	def process( request, response )
-		super
-		path = request.params['PATH_INFO']
-
-
-		case request.params['REQUEST_METHOD']
-		when 'GET'
-			return self.handle_get_request( request, response )
-			
-		# The metadata handler doesn't care about anything else
-		else
-			response.start( HTTP::NOT_FOUND ) do |headers, out|
-				out.write( "sucka foo" )
-			end
-			self.log.debug "No handler mapping for %p, falling through to static" % uri
-		end
-		
-	rescue StandardError => err
-		self.log.error "500 SERVER ERROR: %s" % [err.message]
-		self.log.debug {"  " + err.backtrace.join("\n  ") }
-
-		# If the response is already at least partially sent, we can't really do 
-		# anything.
-		if response.header_sent
-			self.log.error "Exception occurred after headers were already sent."
-			raise
-
-		# If it's not, return a 500 response
-		else
-			response.reset
-			response.start( HTTP::SERVER_ERROR, true ) do |headers, out|
-				out.write( err.message )
-			end
-		end
-	end
 
 
 	#########
@@ -115,8 +79,9 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 	### Handle a GET request
 	def handle_get_request( request, response )
 		uri = request.params['REQUEST_URI']
+		metadata_keys = @metastore.get_all_property_keys.collect { |k| k.to_s }
 		
-		# Attempt to serve upload form
+		# Attempt to serve metadata list html
 		content = self.get_erb_resource( 'metadata.rhtml' )
 		response.start( HTTP::OK, true ) do |headers, out|
 			headers['Content-Type'] = 'text/html'

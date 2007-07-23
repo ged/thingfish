@@ -112,8 +112,7 @@ def make_svn_commit_log( dir='.' )
 	diff = IO.read( '|-' ) or exec 'svn', 'diff'
 	fail "No differences." if diff.empty?
 
-	sourceref = "source:%s/" % get_svn_path( dir )
-	return diff.gsub( /Index: /, sourceref )
+	return diff
 end
 
 

@@ -14,6 +14,7 @@ begin
 	require 'tmpdir'
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'spec/lib/filestore_behavior'
 	require 'thingfish/constants'
 	require 'thingfish/filestore/filesystem'
@@ -26,8 +27,9 @@ rescue LoadError
 end
 
 
-include ThingFish::Constants
-include ThingFish::TestConstants
+include ThingFish::Constants,
+	ThingFish::TestConstants,
+	ThingFish::TestHelpers
 
 #####################################################################
 ###	C O N T E X T S
@@ -37,6 +39,8 @@ include ThingFish::TestConstants
 describe "A Filesystem FileStore" do
 
 	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
 		@tmpdir = make_tempdir()
 	end
 
@@ -48,6 +52,12 @@ describe "A Filesystem FileStore" do
 	after(:each) do
 		@tmpdir.rmtree
 	end
+	
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+	
 
 
 	### Behaviors
@@ -203,16 +213,10 @@ describe "A FileSystem FileStore with a hash depth of greater than 8" do
 end
 
 describe "A Filesystem FileStore with a maxsize of 2k" do
-	def make_tempdir
-		dirname = "%s.%d.%0.4f" % [
-			Pathname.new( __FILE__ ).basename('.rb'),
-			Process.pid,
-			(Time.now.to_f % 3600),
-		  ]
-		return Pathname.new( Dir.tmpdir ) + dirname
-	end
 
 	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
 		@tmpdir = make_tempdir()
 	end
 
@@ -226,6 +230,12 @@ describe "A Filesystem FileStore with a maxsize of 2k" do
 		@tmpdir.rmtree
 	end
 
+	after(:all) do
+		ThingFish.reset_logger
+	end
+	
+	
+	# Examples
 	
 	it "raises a FileStoreQuotaError when trying to store data > 3k" do
 		lambda {

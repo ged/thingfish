@@ -25,9 +25,9 @@ rescue LoadError
 	raise
 end
 
+include ThingFish::TestConstants
 
 describe ThingFish::MemoryFileStore do
-	include ThingFish::TestConstants
 
 	before(:each) do
 	    @fs = ThingFish::FileStore.create( 'memory' )
@@ -39,7 +39,6 @@ describe ThingFish::MemoryFileStore do
 end
 
 describe ThingFish::MemoryFileStore, " with a maxsize of 2k" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@fs = ThingFish::FileStore.create( 'memory', :maxsize => 2_048 )

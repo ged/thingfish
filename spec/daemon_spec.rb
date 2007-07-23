@@ -25,6 +25,7 @@ rescue LoadError
 end
 
 
+include ThingFish::TestConstants
 
 class TestHandler < ThingFish::Handler
 end
@@ -35,7 +36,6 @@ end
 #####################################################################
 
 describe "The daemon class" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@log = StringIO.new('')
@@ -55,7 +55,6 @@ describe "The daemon class" do
 end
 
 describe "A new daemon with no arguments" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@stub_socket = stub( "Server listener socket" )
@@ -74,7 +73,6 @@ end
 
 
 describe "A new daemon with a differing ip config" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -106,7 +104,6 @@ end
 
 
 describe "A new daemon with a differing port config" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -131,7 +128,6 @@ end
 
 
 describe "A new daemon with an ip and host configured" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -158,7 +154,6 @@ end
 
 
 describe "A daemon with one or more handlers in its configuration" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -178,7 +173,6 @@ describe "A daemon with one or more handlers in its configuration" do
 end
 
 describe "A running server" do
-	include ThingFish::TestConstants
 
 	before(:each) do
 		@config = ThingFish::Config.new

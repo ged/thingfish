@@ -12,6 +12,8 @@ BEGIN {
 begin
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
+	require 'spec/lib/handler_behavior'
 	require 'time'
 
 	require 'thingfish'
@@ -34,7 +36,7 @@ include ThingFish::TestConstants
 #####################################################################
 
 describe ThingFish::MetadataHandler do
-
+	
 	before(:each) do
 		# ThingFish.logger.level = Logger::DEBUG
 		ThingFish.logger.level = Logger::FATAL
@@ -56,26 +58,10 @@ describe ThingFish::MetadataHandler do
 	end
 
 
-	### Index requests
-
-	it "handles uncaught exceptions with a SERVER_ERROR response if the response header hasn't been sent" do
-		params = {
-			'REQUEST_URI'    => '/',
-			'REQUEST_METHOD' => 'GET'
-		}
-
-		@request.should_receive( :params ).and_raise( "testing" )
-		@response.should_receive( :header_sent ).and_return( false )
-		@response.should_receive( :reset )
-		@response.should_receive( :start ).with( HTTP::SERVER_ERROR, true ).
-			and_yield( @headers, @out )
-		@out.should_receive( :write ).once.with( "testing" )
-
-		lambda {
-			@handler.process( @request, @response )
-		}.should_not raise_error()
-	end
+	# Shared behaviors
+	it_should_behave_like "A Handler"
 	
+	# Examples
 
 	it "handles GET /metadata" do
 		params = {

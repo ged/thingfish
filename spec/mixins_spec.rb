@@ -14,7 +14,9 @@ begin
 	require 'spec/runner'
 	require 'spec/lib/helpers'
 	require 'spec/lib/constants'
+	
 	require "thingfish/mixins"
+	require "thingfish/handler"
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -22,6 +24,14 @@ rescue LoadError
 	end
 	raise
 end
+
+
+include ThingFish::TestHelpers
+
+
+#####################################################################
+###	C O N T E X T S
+#####################################################################
 
 describe ThingFish::Loggable, " (class)" do
 	before(:each) do
@@ -117,7 +127,6 @@ describe ThingFish::ResourceLoader do
 end
 
 describe "A class which has mixed in ThingFish::ResourceLoader" do
-	include ThingFish::TestHelpers
 	
 	before(:all) do
 		@resdir = make_tempdir()

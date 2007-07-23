@@ -89,31 +89,6 @@ class ThingFish::UploadHandler < ThingFish::Handler
 	attr_accessor :parser
 	
 
-	### Process a upload request
-	def process( request, response )
-		super
-
-		if request.params['PATH_INFO'] == ''
-			method = request.params['REQUEST_METHOD']
-
-			case method
-			when 'GET'
-				self.handle_get_request( request, response )
-
-			when 'POST'
-				self.handle_post_request( request, response )
-
-			else
-				self.log.warn( "Refusing to handle a #{method} request" )
-				response.start( HTTP::METHOD_NOT_ALLOWED, true ) do |headers, out|
-					headers['Allow'] = 'GET, POST'
-					out.write( "%s method not allowed." % method )
-				end
-			end
-		end
-	end
-
-
 	### Return the HTML fragment that should be used to link to this handler.
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "index_content.html" )
@@ -127,6 +102,7 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Handle a GET request
 	def handle_get_request( request, response )
+		return unless request.params['PATH_INFO'] == ''
 		uri = request.params['REQUEST_URI']
 		
 		# Attempt to serve upload form
@@ -140,6 +116,8 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Handle a POST request
 	def handle_post_request( request, response )
+		return unless request.params['PATH_INFO'] == ''
+
 		self.log.debug "Handling POSTed upload/s"
 		uri          = request.params['REQUEST_URI']
 		content_type = request.params['HTTP_CONTENT_TYPE'] || ''

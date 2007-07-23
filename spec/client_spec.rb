@@ -26,14 +26,14 @@ rescue LoadError
 end
 
 
+include ThingFish::TestConstants
+include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::Client do
-	include ThingFish::TestConstants
-	include ThingFish::Constants
 	
 	before(:each) do
 		@mock_response = mock( "response object", :null_object => true )
@@ -144,7 +144,6 @@ end
 
 
 describe ThingFish::Client, " created with no arguments" do
-	include ThingFish::Constants
 	
 	before(:each) do
 		@client = ThingFish::Client.new
@@ -178,7 +177,6 @@ describe ThingFish::Client, " created with no arguments" do
 end
 
 describe ThingFish::Client, " created with a hostname" do
-	include ThingFish::Constants
 	
 	before(:each) do
 	    @client = ThingFish::Client.new( TEST_SERVER )

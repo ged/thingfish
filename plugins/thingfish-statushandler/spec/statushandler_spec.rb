@@ -9,13 +9,28 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'pathname'
-require 'spec/runner'
-require 'stringio'
-require 'thingfish/constants'
+begin
+	require 'pathname'
+	require 'stringio'
+	require 'spec/runner'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
+	require 'spec/lib/handler_behavior'
 
-require 'thingfish/handler/status'
+	require 'thingfish/constants'
+	require 'thingfish/handler/status'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
+
+include ThingFish::Constants,
+		ThingFish::TestConstants,
+		ThingFish::TestHelpers
 
 
 #####################################################################
@@ -26,6 +41,11 @@ include ThingFish::Constants
 
 describe "A status handler with no stats filters" do
 	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+
+	after(:all) do
 		ThingFish.reset_logger
 	end
 

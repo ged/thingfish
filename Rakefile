@@ -96,12 +96,19 @@ end
 
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
-	rdoc.rdoc_dir = 'docs/html'
+	rdoc.rdoc_dir = 'docs/api'
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
 	rdoc.options += ['-w', '4', '-SHN', '-i', 'docs']
 
 	rdoc.rdoc_files.include 'README'
-	rdoc.rdoc_files.include LIB_FILES
+	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.to_s }
+end
+task :rdoc do
+	outputdir = DOCSDIR + 'api'
+	targetdir = STATICWWWDIR + 'api'
+
+	rmtree( targetdir )
+	cp_r( outputdir, targetdir, :verbose => true )
 end
 
 
@@ -255,7 +262,6 @@ begin
 	task :test => [:spec]
 
 
-	### Task: spec:autotest
 	namespace :spec do
 		desc "Run specs for the included plugins"
 		Spec::Rake::SpecTask.new( :plugins ) do |task|
@@ -265,15 +271,31 @@ begin
 		end
 
 		desc "Run rspec every time there's a change to one of the files"
-		task :autotest do |t|
-			basedir = Pathname.new( __FILE__ )
-			$LOAD_PATH.unshift( LIBDIR ) unless $LOAD_PATH.include?( LIBDIR )
+        task :autotest do
+            require 'autotest/rspec'
+            autotester = Autotest::Rspec.new
+			autotester.exceptions = %r{\.svn|\.skel}
+            autotester.test_mappings = {
+                %r{^spec/.*\.rb$} => proc {|filename, _|
+                    filename
+                },
+                %r{^lib/thingfish/[^/]*\.rb$} => proc {|_, m|
+                    ["spec/#{m[1]}_spec.rb"]
+                },
+                %r{^lib/thingfish/(.*)/(.*)\.rb$} => proc {|_, m|
+                    ["spec/#{m[2] + m[1]}_spec.rb"]
+                },
+                %r{^plugins/(.*)/lib.*/(.*)\.rb$} => proc {|_, m|
+                    autotester.files_matching %r{plugins/#{m[1]}/spec/.*_spec.rb}
+                },
+                %r{^spec/lib/(.*)_behavior\.rb$} => proc {|_, m|
+                    autotester.files_matching %r{^.*#{m[0]}_spec\.rb$}
+                },
+            }
+            
+            autotester.run
+        end
 
-			require 'rspec_autotest'
-			$v = true
-			$vcs = 'svn'
-			RspecAutotest.run
-		end
 	
 		desc "Generate HTML output for a spec run"
 		Spec::Rake::SpecTask.new( :html ) do |task|

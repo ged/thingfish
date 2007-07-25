@@ -45,6 +45,7 @@ MISCDIR       = BASEDIR + 'misc'
 WWWDIR        = VARDIR  + 'www'
 MANUALDIR     = DOCSDIR + 'manual'
 STATICWWWDIR  = WWWDIR  + 'static'
+PKGDIR        = BASEDIR + 'pkg'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 
 TEXT_FILES    = %w( Rakefile README LICENSE ).
@@ -139,7 +140,7 @@ gemspec = Gem::Specification.new do |gem|
 
   	gem.add_dependency( 'mongrel', '>= 1.0.1' )
   	gem.add_dependency( 'uuidtools', '>= 1.0.0' )
-  	gem.add_dependency( 'PluginFactory', '>= 1.0.2' )
+  	gem.add_dependency( 'pluginfactory	', '>= 1.0.2' )
 end
 Rake::GemPackageTask.new( gemspec ) do |task|
 	task.gem_spec = gemspec
@@ -147,6 +148,25 @@ Rake::GemPackageTask.new( gemspec ) do |task|
 	task.need_tar_gz = true
 	task.need_tar_bz2 = true
 	task.need_zip = true
+end
+
+
+desc "Build the ThingFish gem and gems for all the plugins in #{PLUGINS}"
+task :gems => [:gem] do
+	log "Building gems for plugins in: %s" % [PLUGINS.join(', ')]
+	PLUGINS.each do |plugindir|
+		cp BASEDIR + 'LICENSE', plugindir
+		Dir.chdir( plugindir ) do
+			system 'rake', 'gem'
+		end
+		
+		fail unless $?.success?
+		
+		pkgdir = plugindir + 'pkg'
+		gems = Pathname.glob( pkgdir + '*.gem' )
+		log "Would copy #{gems} from #{pkgdir} to #{PKGDIR}"
+		cp gems, PKGDIR
+	end
 end
 
 

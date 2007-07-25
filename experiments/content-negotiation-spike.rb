@@ -63,24 +63,62 @@ class Negotiator
 			]
 		end
 		
+		
+		def to_s
+			[
+				self.mediatype,
+				self.qvaluestring,
+				self.extension_strings
+			].compact.join(';')
+		end
+		
+		def mediatype
+			"%s/%s" % [ self.type || '*', self.subtype || '*' ]
+		end
+		
+		def qvaluestring
+			"q=%0.2f" % [self.qvalue]
+		end
+		
+		def extension_strings
+			return nil if @accept_exts.empty?
+			@accept_exts.compact.join('; ')
+		end
+		
 		def <=>( other )
 			if @type.nil?
+				$stderr.puts "%s's type is more specific than %s" % [self, other]
 				return 1 if ! other.type.nil?
-			else
-				return -1 if other.type.nil?
+			elsif other.type.nil?
+				$stderr.puts "%s's type is less specific than %s" % [self, other]
+				return -1 
 			end
 			
 			if @subtype.nil?
+				$stderr.puts "%s's subtype is less specific than %s" % [self, other]
 				return 1 if ! other.subtype.nil?
-			else
-				return -1 if other.subtype.nil?
+			elsif other.subtype.nil?
+				$stderr.puts "%s's subtype is less specific than %s" % [self, other]
+				return -1 
 			end
 			
-			if rval = (@accept_exts.length <=> other.accept_exts.length).nonzero?
+			if rval = (other.accept_exts.length <=> @accept_exts.length).nonzero?
+				if rval < 1
+					$stderr.puts "%s has more extensions than %s" % [self, other]
+				else
+					$stderr.puts "%s has fewer extensions than %s" % [self, other]
+				end
+					
 				return rval
 			end
 			
-			if rval = (@qvalue <=> other.qvalue).nonzero?
+			if rval = (other.qvalue <=> @qvalue).nonzero?
+				if rval < 1
+					$stderr.puts "%s has a higher qvalue than %s" % [self, other]
+				else
+					$stderr.puts "%s has a lower qvalue than %s" % [self, other]
+				end
+
 				return rval
 			end
 			
@@ -91,6 +129,7 @@ class Negotiator
 	def initialize( filters )
 		@filters = filters
 	end
+	
 	
 	### Return a filter which will translate the given +content_type+ into one of
 	### the types specified by +accept_header+, or nil if no suitable filter is found.
@@ -117,8 +156,10 @@ class Negotiator
 		params = header.sub( /accept\s*:\s*/i, '' ).split( /\s*,\s*/ )
 
 		params.each do |param|
-			media_range, qvalue, *accept_ext = param.split( /\s*;\s*/ )
-			rval << AcceptParam.new( media_range, qvalue, *accept_ext )
+			media_range, *stuff = param.split( /\s*;\s*/ )
+			qval, opts = stuff.partition {|par| par =~ /^q\s*=/ }
+		
+			rval << AcceptParam.new( media_range, qval.first, *opts )
 		end
 		
 		return rval	

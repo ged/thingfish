@@ -52,6 +52,7 @@ class ThingFish::Config
 	DEFAULTS = {
 		:ip      => DEFAULT_BIND_IP,
 		:port    => DEFAULT_PORT,
+		:user    => nil,
 		:defaulthandler => {
 		    :html_index => 'index.html',
 		    :resource_dir => nil,

@@ -102,6 +102,26 @@ describe "A new daemon with a differing ip config" do
 	end
 end
 
+describe "A new root-started daemon with a user configged" do
+
+	before(:each) do
+		@config = ThingFish::Config.new
+		@config.user = 'not-root'
+		@daemon = ThingFish::Daemon.new( @config )
+	end
+
+	it "drops privileges" do
+		Process.should_receive(:euid).at_least(:once).and_return(0)
+		
+		pwent = mock( 'not-root pw entry' ) 
+		Etc.should_receive( :getpwnam ).with( @config.user ).and_return( pwent )
+		pwent.should_receive( :uid ).and_return( 1000 )
+
+		Process.should_receive( :euid= ).with( 1000 )
+		@daemon.run
+	end
+end
+
 
 describe "A new daemon with a differing port config" do
 

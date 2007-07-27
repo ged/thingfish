@@ -140,7 +140,7 @@ gemspec = Gem::Specification.new do |gem|
 
   	gem.add_dependency( 'mongrel', '>= 1.0.1' )
   	gem.add_dependency( 'uuidtools', '>= 1.0.0' )
-  	gem.add_dependency( 'pluginfactory	', '>= 1.0.2' )
+  	gem.add_dependency( 'pluginfactory	', '>= 1.0.3' )
 end
 Rake::GemPackageTask.new( gemspec ) do |task|
 	task.gem_spec = gemspec
@@ -270,7 +270,7 @@ end
 
 ### RSpec tasks
 begin
-	gem 'rspec', '>= 1.0.4'
+	gem 'rspec', '>= 1.0.5'
 	require 'spec/rake/spectask'
 
 	### Task: spec

@@ -36,6 +36,7 @@
 require 'thingfish'
 require 'mongrel'
 require 'uuidtools'
+require 'etc'
 require 'logger'
 
 require 'thingfish/constants'
@@ -90,7 +91,6 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		}
 	end
 
-
 	######
 	public
 	######
@@ -106,6 +106,19 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	# The ThingFish::Config instance that contains all current configuration
 	# information used by the daemon.
 	attr_reader :config
+
+
+	### Perform any additional daemon actions before actually starting
+	### the Mongrel side of things.
+	def run
+		# Drop privileges if we're root, and we're configged to do so.
+		if Process.euid.zero? and ! @config.user.nil?
+			self.log.debug "Dropping privileges (user: %s)" % @config.user
+			Process.euid = Etc.getpwnam( @config.user ).uid
+		end
+
+		super
+	end
 
 
 	### Shut the server down gracefully, outputting the specified +reason+ for the

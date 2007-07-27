@@ -30,7 +30,7 @@ There are two ways you can install ThingFish. The easiest is to use RubyGems:
 If you'd rather install from source, you'll need these:
 
 * Mongrel (>= 1.0.1): "http://mongrel.rubyforge.org/":http://mongrel.rubyforge.org/
-* PluginFactory (>= 1.0.2): "http://deveiate.org/projects/PluginFactory":http://deveiate.org/projects/PluginFactory
+* PluginFactory (>= 1.0.3): "http://deveiate.org/projects/PluginFactory":http://deveiate.org/projects/PluginFactory
 * UUIDTools (>= 1.0.0): "http://rubyforge.org/projects/uuidtools/":http://rubyforge.org/projects/uuidtools/
 
 {example: {
@@ -44,10 +44,10 @@ If you want to help out with development, run tests, or generate documentation,
 you'll need a few more things:
 
 * webgen (>= 0.4.4): "http://webgen.rubyforge.org/":http://webgen.rubyforge.org/
-* RSpec (>= 1.0.4): "http://rspec.rubyforge.org/":http://rspec.rubyforge.org/
+* RSpec (>= 1.0.5): "http://rspec.rubyforge.org/":http://rspec.rubyforge.org/
 * rcov (>= 0.7.0): "http://eigenclass.org/hiki.rb?rcov":http://eigenclass.org/hiki.rb?rcov
 * lockfile (>= 1.4.3): "http://codeforpeople.com/lib/ruby/lockfile/":http://codeforpeople.com/lib/ruby/lockfile/
-* rcodetools (>= 0.5.0): "http://eigenclass.org/hiki/rcodetools":http://eigenclass.org/hiki/rcodetools
+* rcodetools (>= 0.7.0): "http://eigenclass.org/hiki/rcodetools":http://eigenclass.org/hiki/rcodetools
 * CodeRay (>= 0.7.0): "http://coderay.rubychan.de/":http://coderay.rubychan.de/
 * Redcloth (>= 3.0.4): "http://whytheluckystiff.net/ruby/redcloth/":http://whytheluckystiff.net/ruby/redcloth/
 

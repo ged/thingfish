@@ -216,16 +216,25 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 
 	### FileStore API: read the data in the store at the given +uuid+.
 	def fetch( uuid )
-		self.open_reader( uuid ) do |fh|
-			return fh.read
-		end
+		io = self.open_reader( uuid ) or return nil
+		return io.read
 	end
 	
 	
 	### FileStore API: Retrieve an IO for the data corresponding to the given +uuid+.
-	def fetch_io( uuid, &block )
-		raise LocalJumpError, "no block given" unless block
-		self.open_reader( uuid, &block )
+	### If a block is given, 
+	def fetch_io( uuid )
+		io = self.open_reader( uuid )
+		
+		if block_given?
+			begin
+				yield( io )
+			ensure
+				io.close if io && !io.closed?
+			end
+		else
+			return io
+		end
 	end
 	
 
@@ -320,19 +329,15 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	end
 
 
-	### Yield an IO object open for reading from the file that 
-	### corresponds to +uuid+ to the supplied block.
+	### Return an IO object open for reading from the file that 
+	### corresponds to +uuid+.
 	def open_reader( uuid )
-		raise LocalJumpError, "no block given" unless block_given?
 		path = self.hashed_path( uuid )
 		return nil unless path.exist?
 
 		self.log.debug "Opening reader for %s" % [path]
 		
-		io = path.open( File::RDONLY )
-		yield( io )
-	ensure
-		io.close if io && !io.closed?
+		return path.open( File::RDONLY )
 	end
 
 

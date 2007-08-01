@@ -35,7 +35,7 @@ require 'thingfish/mixins'
 require 'thingfish/daemon'
 
 
-### Mixin for ThingFish Handler plugins
+### Base class for ThingFish Handler plugins
 class ThingFish::Handler
 	include PluginFactory,
 		Mongrel::HttpHandlerPlugin,
@@ -57,11 +57,20 @@ class ThingFish::Handler
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### Return an Array of prefixes to use when searching for derivatives.
+	### PluginFactory interface: Return an Array of prefixes to use when searching 
+	### for derivatives.
 	def self::derivative_dirs
 		['thingfish/handler']
 	end
+
 	
+	### PluginFactory interface: Return a sprintf string which describes the naming
+	### convention of plugin gems for this class. The results will be used as an
+	### argument to the 'Kernel::gem' function.
+	def self::rubygem_name_pattern
+		'thingfish-%shandler'
+	end
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S

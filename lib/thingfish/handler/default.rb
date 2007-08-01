@@ -229,9 +229,15 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		uuid = UUID.timestamp_create
 		self.store_resource( request, uuid )
 
+		# response.status = HTTP::CREATED
+		# response.headers['Location'] = '/' + uuid.to_s
+		# response.body = "Uploaded with ID #{uuid}"
+
 		# Create the response
 		response.start( HTTP::CREATED, true ) do |headers, out|
 			headers['Location'] = '/' + uuid.to_s
+			# TODO: Accepts header checks, return
+			# uuid => {metadata} in format requested
 			out.write( "Uploaded with ID #{uuid}" )
 		end
 	rescue ThingFish::FileStoreQuotaError => err

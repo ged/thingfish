@@ -138,6 +138,7 @@ class Negotiator
 		
 	end
 	
+	
 	### Parse the given +header+ and return a list of mimetypes in order of 
 	### specificity and q-value, with most-specific and highest q-values sorted
 	### first.

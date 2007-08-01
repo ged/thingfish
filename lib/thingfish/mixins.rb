@@ -53,7 +53,7 @@
 #
 # == Description
 #
-# This module includes a collectin of mixins used in ThingFish classes. It currently
+# This module includes a collection of mixins used in ThingFish classes. It currently
 # contains:
 #
 # === ThingFish::Loggable

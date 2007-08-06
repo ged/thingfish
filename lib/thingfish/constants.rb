@@ -25,6 +25,7 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
+require 'tmpdir'
 require 'thingfish'
 
 
@@ -39,6 +40,12 @@ module ThingFish::Constants
 	# The default port to listen on
 	DEFAULT_PORT = 3474
 
+	# The buffer chunker size
+	DEFAULT_BUFSIZE = 2 ** 14
+
+	# The default location of upload temporary files
+	DEFAULT_SPOOLDIR = Dir.tmpdir
+	
 
 	# HTTP status and result constants
 	module HTTP
@@ -107,6 +114,10 @@ module ThingFish::Constants
 		HEX2  = /[[:xdigit:]]{2}/
 
 		UUID_REGEXP = /#{HEX8}-#{HEX4}-#{HEX4}-#{HEX4}-#{HEX12}/
+
+		# Network IO patterns
+		CRLF = /\r?\n/
+		BLANK_LINE = /#{CRLF}#{CRLF}/
 	end
 
 

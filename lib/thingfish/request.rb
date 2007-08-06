@@ -8,8 +8,8 @@
 #   require 'thingfish/request'
 #
 #   def process( request, response )
-#       if request.multipart?
-#           files, params = request.parse_multipart
+#       if request.has_multipart_body?
+#           files, params = request.parse_multipart_body
 #       end
 #       
 #       types = request.accepted_types
@@ -37,9 +37,10 @@
 require 'thingfish'
 require 'thingfish/mixins'
 require 'thingfish/utils'
+require 'thingfish/multipartmimeparser'
 require 'forwardable'
 
-### Resource wrapper class
+### Request wrapper class
 class ThingFish::Request
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
@@ -53,6 +54,9 @@ class ThingFish::Request
 	# SVN Id
 	SVNId = %q$Id$
 
+	# Pattern to match a valid multipart form upload 'Content-Type' header
+	MULTIPART_MIMETYPE_PATTERN = %r{(multipart/form-data).*boundary="?([^\";,]+)"?}
+	
 
 	### A parsed Accept-header parameter
 	class AcceptParam
@@ -203,10 +207,14 @@ class ThingFish::Request
 
 
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
-	def initialize( mongrel_request )
+	### The specified +spooldir+ will be used for spooling uploaded files, 
+	def initialize( mongrel_request, spooldir, bufsize )
 		@mongrel_request = mongrel_request
+		@spooldir        = spooldir
+		@bufsize         = bufsize
 		@headers         = nil
 		@accepted_types  = nil
+		@uri             = nil
 	end
 
 
@@ -220,6 +228,31 @@ class ThingFish::Request
 	
 	# The original Mongrel::HttpRequest object
 	attr_reader :mongrel_request
+
+	# The configured spool directory
+	attr_reader :spooldir
+	
+	# The configured buffer size
+	attr_reader :bufsize
+	
+	
+	# scheme, userinfo, host, port, path, query and fragment
+	
+	### Return a URI object for the requested URI.
+	def uri
+		return @uri unless @uri.nil?
+		
+		params = @mongrel_request.params
+		@uri = URI::HTTP.build(
+			:scheme => 'http',
+			:host   => params['SERVER_NAME'],
+			:port   => params['SERVER_PORT'],
+			:path   => params['REQUEST_PATH'],
+			:query  => params['QUERY_STRING']
+		)
+
+		return @uri
+	end
 	
 	
 	### Return a Hash of the HTTP headers of the request. Note that the headers are
@@ -242,6 +275,38 @@ class ThingFish::Request
 	def accepted_types
 		@accepted_types ||= self.parse_accept_header( self.headers['Accept'] )
 		return @accepted_types
+	end
+
+	
+	### Returns true if the request is of type 'multipart/form-request' and has
+	### a valid boundary.
+	def has_multipart_body?
+		content_type = self.headers['Content-type'] or return false
+		return content_type =~ MULTIPART_MIMETYPE_PATTERN ? true : false
+	end
+
+
+	### Parse the files and form parameters from a multipart (upload) form request 
+	### body. It throws ThingFish::RequestErrors on malformed input, or if you
+	### try to parse a multipart body from a non-multipart request.
+	def parse_multipart_body
+		content_type = self.headers['Content-type'] or
+			raise ThingFish::RequestError, "No content-type header?!"
+
+		# Match explicitly here instead of calling has_multipart_body? so
+		# we aren't replying on $1 and $2 being set at a distance
+		unless content_type =~ MULTIPART_MIMETYPE_PATTERN
+			self.log.error "Tried to parse a multipart body for a '%s' request" %
+				[content_type]
+			raise ThingFish::RequestError, "not a multipart form request"
+		end
+		
+		mimetype, boundary = $1, $2
+		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
+		
+		parser = ThingFish::MultipartMimeParser.new( @spooldir, @bufsize )
+		
+		return parser.parse( @mongrel_request.body, boundary )
 	end
 	
 	

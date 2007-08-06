@@ -26,6 +26,7 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
+require 'tmpdir'
 require 'pathname'
 require 'forwardable'
 require 'yaml'
@@ -50,13 +51,17 @@ class ThingFish::Config
 
 	# Define the layout and defaults for the underlying structs
 	DEFAULTS = {
-		:ip      => DEFAULT_BIND_IP,
-		:port    => DEFAULT_PORT,
-		:user    => nil,
+		:ip       => DEFAULT_BIND_IP,
+		:port     => DEFAULT_PORT,
+		:user     => nil,
+		:spooldir => DEFAULT_SPOOLDIR,
+		:bufsize  => DEFAULT_BUFSIZE,
+
 		:defaulthandler => {
 		    :html_index => 'index.html',
 		    :resource_dir => nil,
 		},
+
 		:plugins => {
 			:filestore => {
 				:name => 'memory',
@@ -68,6 +73,7 @@ class ThingFish::Config
 			:handlers => [],
 			:filters => [],
 		},
+
 		:logging => {
 			:logfile => 'stderr',
 			:level => 'warn',

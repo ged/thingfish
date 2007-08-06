@@ -43,15 +43,14 @@
 require 'thingfish'
 require 'thingfish/handler'
 require 'thingfish/constants'
+require 'thingfish/multipartmimeparser'
 require 'mongrel/handlers'
 require 'strscan'
 require 'forwardable'
 require 'tempfile'
 require 'uuidtools'
-require 'e2mmap'
 
 class ThingFish::UploadHandler < ThingFish::Handler
-	require 'thingfish/multipartparser'
 
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
@@ -73,7 +72,7 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Create a new UploadHandler
 	def initialize( options={} )
-		@parser = ThingFish::MultipartMimeParser.new( options )
+		@parser = ThingFish::MultipartMimeParser.new
 		super
 	end
 
@@ -120,6 +119,22 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 		self.log.debug "Handling POSTed upload/s"
 		uri          = request.params['REQUEST_URI']
+
+		### The new way:
+		# unless request.has_multipart_body?
+		# 	self.log.error "Bad content type; expected multipart, got: %p" % [content_type]
+		# 	respond_with HTTP::BAD_REQUEST,
+		# 		'Unable to parse multipart/form-data or find boundary.'
+		# end
+		# 	
+		# begin
+		# 	files, params = request.parse_multipart_body
+		# 	self.log.debug "Parsed %d files and %d params (%p)" % 
+		# 		[files.length, params.length, params.keys]
+		# rescue ThingFish::RequestError => err
+		# 	respond_with HTTP::BAD_REQUEST, err.message
+		# end
+	
 		content_type = request.params['HTTP_CONTENT_TYPE'] || ''
 
 		# attempt to verify content-type, and parse boundry string

@@ -36,7 +36,9 @@ describe ThingFish::Request do
 	
 	before( :each ) do
 		@mongrel_request = mock( "mongrel request", :null_object => true )
-		@request = ThingFish::Request.new( @mongrel_request )
+		
+		@request = ThingFish::Request.new( @mongrel_request,
+			DEFAULT_SPOOLDIR, DEFAULT_BUFSIZE )
 	end
 
 	
@@ -73,8 +75,57 @@ describe ThingFish::Request do
 		@request.accepted_types[2].mediatype.should == 'text/xml'
 	end
 	
-	it "knows whether it has a multipart body or not" 
-	it "provides an interface to parse multipart documents" 
+	it "knows when it does not have a multipart/form-data body" do
+		params = {
+			'Content-type' => 'application/x-www-form-urlencoded'
+		}
+
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@request.should_not have_multipart_body()
+	end
+	
+	it "knows when it has a multipart/form-data body" do
+		params = {
+			'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary="greatgoatsofgerta"'
+		}
+
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@request.should have_multipart_body()
+	end
+	
+	
+	it "provides an interface to parse a multipart/form-data body" do
+		params = {
+			'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary="greatgoatsofgerta"'
+		}
+		parser = mock( "multipart parser", :null_object => true )
+
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+		@mongrel_request.should_receive( :body ).once.and_return( :body )
+		parser.should_receive( :parse ).once.
+			with( :body, 'greatgoatsofgerta' ).
+			and_return( :parsed_stuff )
+
+		@request.parse_multipart_body.should == :parsed_stuff
+	end
+
+
+	it "knows what the requested URI is" do
+		params = {
+			'REQUEST_PATH' => '/inspect',
+			'SERVER_NAME' => 'thingfish.laika.com',
+			'SERVER_PORT' => '3474',
+			'QUERY_STRING' => 'king=thingwit',
+		}
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+
+		@request.uri.should be_an_instance_of( URI::HTTP )
+		@request.uri.path.should  == '/inspect'
+		@request.uri.host.should  == 'thingfish.laika.com'
+		@request.uri.query.should == 'king=thingwit'
+		@request.uri.port.should  == 3474
+	end
     
 end
 
@@ -161,9 +212,7 @@ describe ThingFish::Request::AcceptParam do
 			ThingFish::Request::AcceptParam.parse( 'porksausage' )
 		}.should raise_error()
 	end
-	
-	
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

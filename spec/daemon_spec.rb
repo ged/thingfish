@@ -110,9 +110,10 @@ describe "A new root-started daemon with a user configged" do
 		@daemon = ThingFish::Daemon.new( @config )
 	end
 
+
 	it "drops privileges" do
 		Process.should_receive(:euid).at_least(:once).and_return(0)
-		
+	
 		pwent = mock( 'not-root pw entry' ) 
 		Etc.should_receive( :getpwnam ).with( @config.user ).and_return( pwent )
 		pwent.should_receive( :uid ).and_return( 1000 )

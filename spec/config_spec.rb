@@ -218,6 +218,8 @@ TEST_CONFIG =<<END
 ---
 port: 3474
 ip: 127.0.0.1
+spooldir: /vagrant/swahili
+bufsize: 2
 
 logging:
     level: warn
@@ -263,12 +265,14 @@ describe ThingFish::Config, " created with source" do
 	it "should contain values specified in the source" do
 		@config.ip.should == '127.0.0.1'
 		@config.port.should == 3474
+		@config.spooldir.should == '/vagrant/swahili'
+		@config.bufsize.should == 2
 		@config.plugins.keys.should include( :filestore)
 		@config.plugins.keys.should include( :metadata)
 		@config.plugins.keys.should include( :handlers)
 		@config.plugins.keys.should include( :filters)
 		@config.plugins.filestore.hashdepth.should == 4
-		@config.plugins.metadata.extractors.should be_an_instance_of( Array)
+		@config.plugins.metadata.extractors.should be_an_instance_of( Array )
 	end
 
 	it "should dump values specified in the source" do
@@ -414,6 +418,8 @@ NO_FILESTORE_PLUGIN_CONFIG =<<END
 ---
 port: 3474
 ip: 127.0.0.1
+spooldir: /tmp
+bufsize: 65535
 
 logging:
     level: warn

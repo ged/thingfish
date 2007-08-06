@@ -9,13 +9,21 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'pathname'
-require 'logger'
-require 'spec/runner'
-require 'stringio'
-require 'thingfish/constants'
 
-require 'thingfish/handler/upload'
+begin
+	require 'pathname'
+	require 'logger'
+	require 'spec/runner'
+	require 'stringio'
+	require 'thingfish/constants'
+	require 'thingfish/multipartmimeparser'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 
 #####################################################################

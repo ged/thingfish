@@ -1,24 +1,46 @@
 #!/usr/bin/env ruby
+# 
+# ThingFish::MultipartMimeParser -- a parser for extracting uploaded files and 
+# parameters from the body of a multipart/form-data request.
+# 
+# == Synopsis
+# 
+#   require 'thingfish/multipartmimeparser'
+#
+#   parser = ThingFish::MultipartMimeParser.new
+#   files, params = parser.parse( io, '---boundary' )
+#       
+# == Version
+#
+#  $Id$
+# 
+# == Authors
+# 
+# * Michael Granger <mgranger@laika.com>
+# * Mahlon E. Smith <mahlon@laika.com>
+# 
+#:include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the 'docs' directory for licensing details.
+#
+
+
+require 'tmpdir'
 
 require 'thingfish'
+require 'thingfish/constants'
 require 'thingfish/exceptions'
-require 'thingfish/handler/upload'
 
 
 ### A class for parsing multipart mime documents from a stream.
 class ThingFish::MultipartMimeParser
-	include ThingFish::Loggable
+	include ThingFish::Loggable,
+		ThingFish::Constants,
+		ThingFish::Constants::Patterns
 
-	# The buffer chunker size
-	DEFAULT_BUFSIZE = 8192
 
-	# The default location of upload temporary files
-	DEFAULT_SPOOLDIR = '/tmp'
-	
-	# Parse patterns
-	CRLF = /\r?\n/
-	BLANK_LINE = /#{CRLF}#{CRLF}/
-	
 	# Parser state struct
 	ParseState = Struct.new( "MPMParseState", :socket, :scanner, :boundary_pat,
 		:boundary_size, :files, :metadata )
@@ -27,9 +49,9 @@ class ThingFish::MultipartMimeParser
 	### Create a new MultipartMimeParser that will parse uploads and metadata 
 	### from the given +socket+ as a stream, and spool files to a temporary 
 	### directory.
-	def initialize( options={} )
-		@bufsize  = options['bufsize']  || DEFAULT_BUFSIZE
-		@spooldir = options['spooldir'] || DEFAULT_SPOOLDIR
+	def initialize( spooldir=DEFAULT_SPOOLDIR, bufsize=DEFAULT_BUFSIZE )
+		@spooldir = spooldir || DEFAULT_SPOOLDIR
+		@bufsize  = bufsize  || DEFAULT_BUFSIZE
 	end
 
 
@@ -276,5 +298,5 @@ class ThingFish::MultipartMimeParser
 	end
 	
 	
-end # class ThingFish::UploadHandler::MultipartMimeParser
+end # class ThingFish::MultipartMimeParser
 

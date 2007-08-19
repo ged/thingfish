@@ -55,7 +55,17 @@ The meaning of the config values are as follows:
 	<dt>user</dt>
 	<dd class="description">The username to run as if we're started as root.</dd>
 	<dd class="default">No default</dd>
-
+	
+	<dt>daemon</dt>
+	<dd class="description">Either <code>true</code> or <code>false</code>.
+	    Whether or not to detach from the controlling terminal.</dd>
+	<dd class="default">Defaults to <code>false</code></dd>
+	
+	<dt>pidfile</dt>
+	<dd class="description">A filename to write the daemon's pid to.  Ignored
+	    if daemon mode is not enabled.</dd>
+	<dd class="default">No default</dd>
+	
 	<dt>defaulthandler</dt>
 	<dd class="description">This subsection contains configuration values for the 
 		top-level handler object of the daemon.</dd>
@@ -159,5 +169,4 @@ The meaning of the config values are as follows:
 		</dl>		
 	</dd>
 </dl>
-
 

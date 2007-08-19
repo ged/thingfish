@@ -57,6 +57,8 @@ class ThingFish::Config
 		:spooldir => DEFAULT_SPOOLDIR,
 		:bufsize  => DEFAULT_BUFSIZE,
 
+		:daemon  => false,
+		:pidfile => nil,
 		:defaulthandler => {
 		    :html_index => 'index.html',
 		    :resource_dir => nil,

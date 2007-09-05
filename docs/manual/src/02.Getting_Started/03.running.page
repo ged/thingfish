@@ -75,7 +75,7 @@ The meaning of the config values are as follows:
 			<dd class="description">This contains the name of the file to serve by 
 				default for requests to the <code>/</code> URI when no content-type 
 				is specified.</dd>
-			<dd class="default">Defaults to <code>index.html</code></dd>
+			<dd class="default">Defaults to <code>index.rhtml</code></dd>
 			
 			<dt>resource_dir</dt>
 			<dd class="description">The directory to search for static resources 

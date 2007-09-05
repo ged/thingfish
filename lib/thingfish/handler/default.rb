@@ -31,7 +31,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -65,14 +65,11 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	# Pattern that matches requests to /«uuid»
 	UUID_URL = %r{^/(#{UUID_REGEXP})$}
 
-	# Buffer output in 4k chunks
-	CHUNK_SIZE = 4096
-
 	# Config defaults
 	CONFIG_DEFAULTS = {
-		:html_index => 'index.html',
+		:html_index 	  => 'index.rhtml',
 		:cache_expiration => 30.minutes,
-		:resources_dir => nil, # Use the ThingFish::Handler default
+		:resources_dir	  => nil, # Use the ThingFish::Handler default
 	}
 
 	# Pattern to match UUIDs more efficiently than uuidtools
@@ -101,33 +98,9 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	public
 	######
 	
-	### Make the content for the handler section of the index page.
-	def make_index_content( uri )
-		tmpl = self.get_erb_resource( "index_content.html" )
-		return tmpl.result( binding() )
-	end
-	
-
-	#########
-	protected
-	#########
-
-	### Iterate over the loaded handlers and ask each for any content it wants shown
-	### on the index HTML page.
-	def get_handler_index_sections
-		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
-		return handlers.collect do |uri,handlers|
-			handlers.
-				select {|h| h.is_a?(ThingFish::Handler) }.
-				collect {|h| h.make_index_content( uri ) }
-		end.flatten.compact
-	end
-
-
 	### Handler API: Handle a GET request
 	def handle_get_request( request, response )
-		uri = request.params['REQUEST_URI']
-		case uri
+		case request.uri.path
 
 		# If this is a request to the root, handle it ourselves
 		when '/'
@@ -140,7 +113,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# Fall through to the static handler for GET requests
 		else
-			self.log.debug "No GET handler for %p, falling through to static" % uri
+			self.log.debug "No GET handler for %p, falling through to static" % request.uri
 		end
 		
 	end
@@ -149,18 +122,16 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	### Handler API: Handle a POST request
 	def handle_post_request( request, response )
-		uri = request.params['REQUEST_URI']
-
-		case uri
+		case request.uri.path
 		when '/'
 			self.handle_create_request( request, response )
 
 		when UUID_URL
-			self.send_method_not_allowed_response( response, 'PUT',
+			self.send_method_not_allowed_response( response, 'POST',
 				%w{GET HEAD PUT DELETE} )
 
 		else
-			self.log.debug "No POST handler for %p, falling through" % uri
+			self.log.debug "No POST handler for %p, falling through" % request.uri
 		end
 		
 	end
@@ -168,16 +139,14 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	### Handler API: Handle a PUT request
 	def handle_put_request( request, response )
-		uri = request.params['REQUEST_URI']
-
-		case uri
-		when UUID_URL
-			uuid = parse_uuid( $1 )
-			self.handle_update_uuid_request( request, response, uuid )
-
+		case request.uri.path
 		when '/'
 			self.send_method_not_allowed_response( response, 'PUT',
 				%w{GET HEAD POST} )
+
+		when UUID_URL
+			uuid = parse_uuid( $1 )
+			self.handle_update_uuid_request( request, response, uuid )
 
 		else
 			self.log.debug "No PUT handler for %p, falling through" % uri
@@ -187,39 +156,20 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	### Handler API: Handle a DELETE request
 	def handle_delete_request( request, response )
-		uri = request.params['REQUEST_URI']
-
-		case uri
+		case request.uri.path
+		when '/'
+			self.send_method_not_allowed_response( response, 'DELETE',
+				%w{GET HEAD POST} )
+		
 		when UUID_URL
 			uuid = parse_uuid( $1 )
 			self.handle_delete_uuid_request( request, response, uuid )
 
-		when '/'
-			self.send_method_not_allowed_response( response, 'PUT',
-				%w{GET HEAD POST} )
-		
 		else
 			self.log.debug "No DELETE handler for %p, falling through" % uri
 		end
 	end
 	
-
-	### Handle a request to fetch the index (GET or HEAD to /)
-	def handle_index_fetch_request( request, response )
-
-		# :TODO: dispatch on request.params['HTTP_ACCEPT']
-		self.log.debug "Loading index resource %p" % [@options[:html_index]]
-		content = self.get_erb_resource( @options[:html_index] )
-
-		handler_index_sections = self.get_handler_index_sections
-
-		response.start( HTTP::OK, true ) do |headers, out|
-			headers['Content-Type'] = 'text/html'
-			out.write( content.result(binding()) )
-		end
-
-	end
-
 
 	### Handle a request to create a new resource with the request body as 
 	### data (POST to /)
@@ -229,22 +179,63 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		uuid = UUID.timestamp_create
 		self.store_resource( request, uuid )
 
-		# response.status = HTTP::CREATED
-		# response.headers['Location'] = '/' + uuid.to_s
-		# response.body = "Uploaded with ID #{uuid}"
-
 		# Create the response
-		response.start( HTTP::CREATED, true ) do |headers, out|
-			headers['Location'] = '/' + uuid.to_s
-			# TODO: Accepts header checks, return
-			# uuid => {metadata} in format requested
-			out.write( "Uploaded with ID #{uuid}" )
-		end
+		response.status = HTTP::CREATED
+		response.headers[:location] = '/' + uuid.to_s
+		response.body = "Uploaded with ID #{uuid}"
+
 	rescue ThingFish::FileStoreQuotaError => err
 		return handle_upload_error( response, uuid, 
 			HTTP::REQUEST_ENTITY_TOO_LARGE, err.message )
 	end
 	
+	
+	#########
+	protected
+	#########
+
+	### Make the content for the handler section of the index page.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "index_content.rhtml" )
+		return tmpl.result( binding() )
+	end
+	
+	
+	### Iterate over the loaded handlers and ask each for any content it wants shown
+	### on the index HTML page.
+	def get_handler_index_sections
+		self.log.debug "Fetching index sections for all registered handlers"
+		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
+		return handlers.collect do |uri,handlers|
+			self.log.debug "  collecting index content from %p (%p)" % 
+				[handlers.collect {|h| h.class.name}, uri]
+			handlers.
+				select {|h| h.is_a?(ThingFish::Handler) }.
+				collect {|h| h.make_index_content( uri ) }
+		end.flatten.compact
+	end
+
+
+	### Handle a request to fetch the index (GET or HEAD to /)
+	def handle_index_fetch_request( request, response )
+
+		if request.accepts?( 'text/html' )
+			self.log.debug "Loading index resource %p" % [@options[:html_index]]
+			content = self.get_erb_resource( @options[:html_index] )
+			
+			handler_index_sections = self.get_handler_index_sections
+			html = content.result( binding() )
+
+			response.headers[:content_type] = 'text/html'
+			response.status = HTTP::OK
+			response.body = html
+
+		else
+			# TODO: sweeeet
+			response.body = [:something_sweet_yet_undecided]
+		end
+	end
+
 
 	### Handle fetching a file by UUID (GET or HEAD to /{uuid})
 	def handle_resource_fetch_request( request, response, uuid )
@@ -252,36 +243,34 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 			# Try to send a NOT MODIFIED response
 			if self.can_send_cached_response?( request, uuid )
+				self.log.info "Client has a cached copy of %s" % [uuid]
 				response.status = HTTP::NOT_MODIFIED
 				self.add_cache_headers( response, uuid )
-				response.send_status
-				response.send_header
+				return
 				
 			else
-
-				# :TODO: content negotiation
-				
 				self.log.info "Sending resource %s" % [uuid]
 				response.status = HTTP::OK
-				response.header['Content-type'] = @metastore[ uuid ].format
+				response.headers[:content_type] = @metastore[ uuid ].format
 				self.add_cache_headers( response, uuid )
+
+				# Add content disposition headers
+				self.add_content_disposition( request, response, uuid )
 				
 				# Send an OK status with the Content-length set to the 
 				# size of the resource
-				response.send_status( @filestore.size(uuid) )
-				response.send_header
+				response.headers[:content_length] = @filestore.size( uuid )
 				
 				# HEAD requests just get the header
-				unless request.params['REQUEST_METHOD'] == 'HEAD'
-					self.do_buffered_filestore_read( uuid, response )
+				unless request.http_method == 'HEAD'
+					self.log.info "Setting response body to the resource IO"
+					response.body = @filestore.fetch_io( uuid )
 				end
 			end
 			
-			response.finished
 		else
-			response.start( HTTP::NOT_FOUND, true ) do |headers, out|
-				out.write( "UUID '#{uuid}' not found in the filestore" )
-			end			
+			response.status = HTTP::NOT_FOUND
+			response.body = "UUID '#{uuid}' not found in the filestore"
 		end
 	end
 
@@ -295,14 +284,12 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		self.store_resource( request, uuid )
 		
 		if new_resource
-			response.start( HTTP::CREATED, true ) do |headers, out|
-				headers['Location'] = '/' + uuid.to_s
-				out.write( "Uploaded with ID #{uuid}" )
-			end
+			response.status = HTTP::CREATED
+			response.headers[:location] = '/' + uuid.to_s
+			response.body = "Uploaded with ID #{uuid}"
 		else
-			response.start( HTTP::OK, true ) do |headers, out|
-				out.write( "UUID '#{uuid}' updated" )
-			end
+			response.status = HTTP::OK
+			response.body = "UUID '#{uuid}' updated"
 		end
 	rescue ThingFish::FileStoreQuotaError => err
 		return handle_upload_error( response, uuid, 
@@ -314,13 +301,11 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	def handle_delete_uuid_request( request, response, uuid )
 		if @filestore.has_file?( uuid )
 			@filestore.delete( uuid )
-			response.start( HTTP::OK, true ) do |headers, out|
-				out.write( "UUID '#{uuid}' deleted" )
-			end
+			response.status = HTTP::OK
+			response.body = "Resource '#{uuid}' deleted"
 		else
-			response.start( HTTP::NO_CONTENT, true ) do |headers, out|
-				out.write( "UUID '#{uuid}' not found in the filestore" )
-			end
+			response.status = HTTP::NOT_FOUND
+			response.body = "Resource '#{uuid}' not found"
 		end
 	end
 
@@ -338,8 +323,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
 			uuid,
-			request.params['CONTENT_TYPE'],
-			Integer(request.params['HTTP_CONTENT_LENGTH']) / 1024.0,
+			request.headers[:content_type],
+			Integer(request.headers[:content_length]) / 1024.0,
 			@metastore[ uuid ].checksum
 		  ]
 		
@@ -359,47 +344,31 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			@filestore.delete( uuid )
 		end
 		
-		response.start( status_code, true ) do |headers, out|
-			out.write( message )
-		end
+		response.status = status_code
+		response.body   = message
 	end
 	
 	
-	### Buffer the resource specified by +uuid+ from the filestore to the given 
-	### +response+.
-	def do_buffered_filestore_read( uuid, response )
-		@filestore.fetch_io( uuid ) do |io|
-			buf = ''
-			while io.read( CHUNK_SIZE, buf )
-				until buf.empty?
-					bytes = response.write( buf )
-					buf.slice!( 0, bytes )
-				end
-			end
-		end
-	end
-
-
 	### Returns true if the given +request+'s headers indicate that the local copy
 	### of the data corresponding to the specified +uuid+ are cached remotely, and
 	### the client can just use the cached version. This usually means that the
 	### handler will send a 304 NOT MODIFIED.
 	def can_send_cached_response?( request, uuid )
-		params = request.params
 		moddate_checked = false
 		self.log.debug "Checking to see if we can send a cached response"
 		
 		# Check If-Modified-Since header
-		if (( moddatestr = params['HTTP_IF_MODIFIED_SINCE'] ))
+		if (( moddatestr = request.headers[:if_modified_since] ))
 			moddate = Time.parse( moddatestr )
 			self.log.debug "Comparing modification dates (%p vs. %p)" %
 				[ @metastore[ uuid ].modified, moddate ]
-			return true if @metastore[ uuid ].modified <= moddate
+				
+			return true if Time.parse( @metastore[ uuid ].modified ) <= moddate
 			moddate_checked = true
 		end
 			
 		# Check If-None-Match header
-		if (( etagheader = params['HTTP_IF_NONE_MATCH'] ))
+		if (( etagheader = request.headers[:if_none_match] ))
 			self.log.debug "Testing etags (%p) against resource %s" % [ etagheader, uuid ]
 
 			if etagheader =~ /^\s*['"]?\*['"]?\s*$/
@@ -454,15 +423,35 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 	
 	
-	
 	### Add cache control headers to the given +response+ for the specified +uuid+.
 	def add_cache_headers( response, uuid )
 		self.log.debug "Adding cache headers to response for %s" % [uuid]
 		
-		response.header[ 'ETag' ] = %q{"%s"} % [@metastore[ uuid ].checksum]
-		response.header[ 'Expires' ] = 1.year.from_now.httpdate
+		response.headers[ :etag ] = %q{"%s"} % [@metastore[ uuid ].checksum]
+		response.headers[ :expires ] = 1.year.from_now.httpdate
 	end
 	
+
+	### Add content disposition handlers to the given +response+ for the
+	### specified +uuid+.  As described in RFC 2183, this is an optional,
+	### but convenient header when using UUID-keyed resources.
+	def add_content_disposition( request, response, uuid )
+
+		disposition = []
+		disposition << 'attachment' if request.query_args['attach']
+
+		if (( filename = @metastore[ uuid ].title ))
+			disposition << "filename=%s" % [ filename ]
+		end
+
+		if (( modified_date = @metastore[ uuid ].modified ))
+			disposition << "modification-date=\"%s\"" % 
+				[ Time.parse( modified_date ).rfc822 ]
+		end
+
+		response.headers[ :content_disposition ] = disposition.join('; ')
+	end
+
 
 
 	#######

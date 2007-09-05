@@ -6,8 +6,8 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
 
-	<script src="<%= uri %>/js/jquery.js" type="text/javascript" charset="utf-8"></script>
-	<script src="<%= uri %>/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
+	<script src="<%= request.uri.path %>/js/jquery.js" type="text/javascript" charset="utf-8"></script>
+	<script src="<%= request.uri.path %>/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
 
     <link rel="stylesheet" type="text/css" href="/default.css" media="screen,projection" />
   </head>
@@ -33,7 +33,7 @@
 		<% end %>
 
 		<h2>Upload new content</h2>
-		<form action="<%= uri %>" method="POST" enctype="multipart/form-data">
+		<form action="<%= request.uri.path %>" method="POST" enctype="multipart/form-data">
 
 			<table border="0">
 				<th colspan="2">Select file(s) for upload:</th>

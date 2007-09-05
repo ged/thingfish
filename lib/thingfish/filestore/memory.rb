@@ -21,7 +21,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -63,7 +63,7 @@ class ThingFish::MemoryFileStore < ThingFish::FileStore
 	### FileStore API: write the specified +data+ to the store at the given +uuid+
 	### and return a hash of the data.
 	def store( uuid, data )
-		raise ThingFish::FileStoreQuotaError, "Out of memory" if
+		raise ThingFish::FileStoreQuotaError, "Out of memory quota" if
 			self.total_size + data.length > @options[:maxsize]
 
 		@data[ uuid.to_s ] = data

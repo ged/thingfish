@@ -13,9 +13,11 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname
-	libdir = basedir + "lib"
+	libdir = basedir + 'lib'
+	docsdir = basedir + 'docs'
 
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
+	$LOAD_PATH.unshift( docsdir.to_s ) unless $LOAD_PATH.include?( docsdir.to_s )
 }
 
 
@@ -44,6 +46,7 @@ VARDIR        = BASEDIR + 'var'
 MISCDIR       = BASEDIR + 'misc'
 WWWDIR        = VARDIR  + 'www'
 MANUALDIR     = DOCSDIR + 'manual'
+RDOCDIR       = DOCSDIR + 'rdoc'
 STATICWWWDIR  = WWWDIR  + 'static'
 PKGDIR        = BASEDIR + 'pkg'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
@@ -79,6 +82,7 @@ end
 if Rake.application.options.dryrun
 	$dryrun = true
 	log "$dryrun is enabled"
+	Rake.application.options.dryrun = false
 end
 
 ### Default task
@@ -97,12 +101,24 @@ end
 
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
+	tf_template = DOCSDIR + 'rdoc/thingfish-template.rb'
+	
 	rdoc.rdoc_dir = 'docs/api'
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
-	rdoc.options += ['-w', '4', '-SHN', '-i', 'docs']
-
+	rdoc.options += [
+		'-w', '4',
+		'-SHN',
+		'-i', 'docs',
+		'-f', 'xhtml',
+		'-W', 'http://opensource.laika.com/browser/thingfish/trunk/'
+	  ]
+	# rdoc.template = allison_template.to_s
+	#rdoc.template = tf_template.to_s
+	
 	rdoc.rdoc_files.include 'README'
-	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.to_s }
+	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.relative_path_from(BASEDIR).to_s }
+	
+	log "Option list is: %p" % [rdoc.option_list]
 end
 task :rdoc do
 	outputdir = DOCSDIR + 'api'
@@ -273,11 +289,13 @@ begin
 	gem 'rspec', '>= 1.0.5'
 	require 'spec/rake/spectask'
 
+	COMMON_SPEC_OPTS = ['-c', '-f', 's']
+
 	### Task: spec
 	Spec::Rake::SpecTask.new( :spec ) do |task|
 		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR]
-		task.spec_opts = ['-c', '-f','s', '-b']
+		task.spec_opts = COMMON_SPEC_OPTS
 	end
 	task :test => [:spec]
 
@@ -287,7 +305,7 @@ begin
 		Spec::Rake::SpecTask.new( :plugins ) do |task|
 			task.spec_files = PLUGIN_SPECFILES
 			task.libs += [LIBDIR] + PLUGIN_LIBS
-			task.spec_opts = ['-c', '-f','s', '-b']
+			task.spec_opts = COMMON_SPEC_OPTS
 		end
 
 		desc "Run rspec every time there's a change to one of the files"
@@ -356,7 +374,7 @@ begin
 		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR] + PLUGIN_LIBS
 		task.spec_opts = ['-f', 'p', '-b']
-		task.rcov_opts = ['--exclude', 'spec', '--xrefs', '--save' ]
+		task.rcov_opts = ['--exclude', 'spec,monkeypatches', '--xrefs', '--save' ]
 		task.rcov = true
 	end
 	task :coverage do

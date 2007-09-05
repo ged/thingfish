@@ -19,7 +19,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -60,7 +60,7 @@ class ThingFish::Config
 		:daemon  => false,
 		:pidfile => nil,
 		:defaulthandler => {
-		    :html_index => 'index.html',
+		    :html_index => 'index.rhtml',
 		    :resource_dir => nil,
 		},
 

@@ -36,9 +36,8 @@ describe ThingFish::Request do
 	
 	before( :each ) do
 		@mongrel_request = mock( "mongrel request", :null_object => true )
-		
-		@request = ThingFish::Request.new( @mongrel_request,
-			DEFAULT_SPOOLDIR, DEFAULT_BUFSIZE )
+		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
+		@request = ThingFish::Request.new( @mongrel_request, config )
 	end
 
 	
@@ -77,7 +76,7 @@ describe ThingFish::Request do
 	
 	it "knows when it does not have a multipart/form-data body" do
 		params = {
-			'Content-type' => 'application/x-www-form-urlencoded'
+			'Content-type' => 'application/x-bungtruck'
 		}
 
 		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
@@ -111,6 +110,31 @@ describe ThingFish::Request do
 	end
 
 
+	it "provides a Hash for URI query arguments" do
+		params = {
+			'REQUEST_PATH' => '/876e30c4-56bd-11dc-88be-0016cba18fb9',
+			'SERVER_NAME' => 'thingfish.laika.com',
+			'SERVER_PORT' => '3474',
+			'QUERY_STRING' => 'wow%20ow%20wee%20wow=1&no-val;semicolon-val=jyes',
+		}
+		@mongrel_request.should_receive( :params ).
+			at_least(:once).
+			and_return( params )
+		
+		@request.uri.should be_an_instance_of( URI::HTTP )
+		@request.uri.query.should_receive( :nil? ).
+			once.
+			and_return( false )
+
+		args = @request.query_args
+		args.should have(3).members
+		args['wow ow wee wow'].should == 1
+		args['no-val'].should == true
+		args['semicolon-val'].should == 'jyes'
+		args['nonexistent'].should == nil
+	end
+
+
 	it "knows what the requested URI is" do
 		params = {
 			'REQUEST_PATH' => '/inspect',
@@ -127,92 +151,54 @@ describe ThingFish::Request do
 		@request.uri.port.should  == 3474
 	end
     
-end
 
-
-describe ThingFish::Request::AcceptParam do
-
-	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-	end
-
-	after( :all ) do
-		ThingFish.reset_logger
-	end
-
-
-	ValidHeaders = {
-		'*/*' =>
-			{:type => nil, :subtype => nil, :qval => 1.0},
-		'*/*; q=0.1' =>
-			{:type => nil, :subtype => nil, :qval => 0.1},
-		'*/*;q=0.1' =>
-			{:type => nil, :subtype => nil, :qval => 0.1},
-		'image/*' =>
-			{:type => 'image', :subtype => nil, :qval => 1.0},
-		'image/*; q=0.18' =>
-			{:type => 'image', :subtype => nil, :qval => 0.18},
-		'image/*;q=0.4' =>
-			{:type => 'image', :subtype => nil, :qval => 0.4},
-		'image/*;q=0.9; porn=0; anseladams=1' =>
-			{:type => 'image', :subtype => nil, :qval => 0.9,
-				:extensions => %w[anseladams=1 porn=0]},
-		'image/png' =>
-			{:type => 'image', :subtype => 'png', :qval => 1.0},
-		'application/x-porno' =>
-			{:type => 'application', :subtype => 'x-porno', :qval => 1.0},
-		'image/png; q=0.2' =>
-			{:type => 'image', :subtype => 'png', :qval => 0.2},
-		'image/x-giraffes;q=0.2' =>
-			{:type => 'image', :subtype => 'x-giraffes', :qval => 0.2},
-		'example/pork;    headcheese=0;withfennel=1' =>
-			{:type => 'example', :subtype => 'pork', :qval => 1.0,
-				:extensions => %w[headcheese=0 withfennel=1]},
-		'model/vnd.moml+xml' =>
-			{:type => 'model', :subtype => 'vnd.moml+xml', :qval => 1.0},
-		'model/parasolid.transmit.binary; q=0.2' =>
-			{:type => 'model', :subtype => 'parasolid.transmit.binary',
-				:qval => 0.2},
-		'image/png; q=0.2; compression=1' =>
-			{:type => 'image', :subtype => 'png', :qval => 0.2,
-				:extensions => %w[compression=1]},
-	}
-
-
-	it "parses valid Accept header values" do
-		ValidHeaders.each do |hdr, expectations|
-			rval = ThingFish::Request::AcceptParam.parse( hdr )
+	it "knows what the request method is" do
+		params = {
+			'REQUEST_METHOD' => 'GET',
+		}
 		
-			rval.should be_an_instance_of( ThingFish::Request::AcceptParam )
-			rval.type.should == expectations[:type]
-			rval.subtype.should == expectations[:subtype]
-			rval.qvalue.should == expectations[:qval]
-			if expectations[:extensions]
-				expectations[:extensions].each do |ext|
-					rval.extensions.should include(ext)
-				end
-			end
-		end
-	end
-
-	it "is lenient (but warns) about invalid qvalues" do
-		rval = nil
-		lambda {
-			rval = ThingFish::Request::AcceptParam.parse( '*/*; q=18' )
-		}.should_not raise_error()
-		
-		rval.should be_an_instance_of( ThingFish::Request::AcceptParam )
-		rval.qvalue.should == 1.0
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@request.http_method.should == 'GET'
 	end
 	
 	
-	it "rejects invalid Accept header values" do
-		lambda {
-			ThingFish::Request::AcceptParam.parse( 'porksausage' )
-		}.should raise_error()
+	it "knows what the requesters address is" do
+		params = {
+			'REMOTE_ADDR' => '127.0.0.1',
+		}
+		
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@request.remote_addr.should be_an_instance_of( IPAddr )
+		@request.remote_addr.to_s.should == '127.0.0.1'
 	end
 
+
+	it "knows what mimetypes are acceptable responses" do
+		params = {
+			'HTTP_ACCEPT' => 'text/html, text/plain; q=0.5, image/*;q=0.1',
+		}
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		
+		@request.accepts?( 'text/html' ).should be_true()
+		@request.accepts?( 'text/plain' ).should be_true()
+		@request.accepts?( 'text/ascii' ).should be_false()
+
+		@request.accepts?( 'image/png' ).should be_true()
+		@request.accepts?( 'application/x-yaml' ).should be_false()
+	end
+	
+
+	it "accepts anything if the client doesn't provide an Accept header" do
+		params = {}
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		
+		@request.accepts?( 'text/html' ).should be_true()
+		@request.accepts?( 'text/plain' ).should be_true()
+		@request.accepts?( 'text/ascii' ).should be_true()
+		@request.accepts?( 'image/png' ).should be_true()
+		@request.accepts?( 'application/x-yaml' ).should be_true()
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

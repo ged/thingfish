@@ -13,6 +13,7 @@ begin
 	require 'rbconfig'
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/handler_behavior'
 	require 'thingfish'
 	require 'thingfish/handler'
 rescue LoadError
@@ -60,6 +61,10 @@ describe ThingFish::Handler, " concrete subclass instance" do
 	end
 
 
+	### Shared behaviors
+	it_should_behave_like "A Handler"
+
+
 	### Specs
 	it "knows what its normalized name is" do
 		@handler.plugin_name.should == 'testhandler'
@@ -76,7 +81,15 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		}
 		
 		request = mock( "request object" )
-		request.should_receive( :params ).at_least(1).and_return( params )
+		request.should_receive( :remote_addr ).
+			at_least(:once).
+			and_return( IPAddr.new('127.0.0.1') )
+		request.should_receive( :http_method ).
+			at_least(:once).
+			and_return( 'POST' )
+		request.should_receive( :uri ).
+			at_least(:once).
+			and_return( URI.parse('/poon')	)
 		
 		@handler.log_request( request )
 		logfile.rewind
@@ -94,6 +107,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 	it "doesn't add to the index content by default" do
 		@handler.make_index_content( '/foo' ).should be_nil
 	end
+	
 end
 
 
@@ -105,48 +119,47 @@ describe ThingFish::Handler, " that handles GET and HEAD requests" do
 	end
 
 
+	### Shared behaviors
+	it_should_behave_like "A Handler"
+
+
 	### Specs
 	
 	it "should call its #handle_get_request method on a GET request" do
-		params = {
-			'REQUEST_METHOD' => 'GET',
-			'REMOTE_ADDR'    => '127.0.0.1',
-			'REQUEST_URI'    => '/spoon',
-		}
-		
-		request = mock( "request object" )
-		response = stub( "response object", :header => {} )
-		
-		request.should_receive( :params ).at_least(1).and_return( params )
+		request = mock( "request object", :null_object => true )
+		response = stub( "response object", :headers => {} )
+
+		response.stub!( :handlers ).and_return( [] )
+		request.should_receive( :http_method ).
+			at_least(:once).
+			and_return( 'GET' )
 
 		@handler.process( request, response ).should == :get_response
 	end
 
 	
 	it "should respond with a METHOD_NOT_ALLOWED response on a POST request" do
-		params = {
-			'REQUEST_METHOD' => 'POST',
-			'REMOTE_ADDR'    => '127.0.0.1',
-			'REQUEST_URI'    => '/spoon',
-		}
-		
-		request = mock( "request object" )
+		request = mock( "request object", :null_object => true )
 		response = mock( "response object", :null_object => true )
-		outhandle = mock( "output filehandle" )
-		headers = mock( "response headers", :null_object => true )
+		headertable = mock( "response headers", :null_object => true )
 
-		request.should_receive( :params ).at_least(1).and_return( params )
-		response.
-			should_receive( :start ).
-			with( HTTP::METHOD_NOT_ALLOWED, true ).
-			and_yield( headers, outhandle )
-		headers.
-			should_receive( :[]= ).
-			with( 'Allow', 'GET, HEAD' )
-		outhandle.
-			should_receive( :write ).
-			with( /POST.*not allowed/ )
+		request.should_receive( :http_method ).
+			at_least(:once).
+			and_return( 'POST' )
+		@handler.stub!( :methods ).
+			and_return(['handle_get_request', 'handle_head_request'])
 		
+		response.should_receive( :status= ).
+			with( HTTP::METHOD_NOT_ALLOWED )
+		response.should_receive( :headers ).
+			at_least(:once).
+			and_return( headertable )
+		
+		headertable.should_receive( :[]= ).
+			with( :allow, 'GET, HEAD' )
+		response.should_receive( :body= ).
+			with( /POST.*not allowed/ )
+
 		@handler.process( request, response )
 	end
 	

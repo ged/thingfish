@@ -15,7 +15,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -43,7 +43,12 @@ module ThingFish
 	class FileStoreQuotaError < ThingFish::FileStoreError; end
 
 	# Something was wrong with a request
-	class RequestError < ThingFish::Error; end
+	class RequestError < ThingFish::Error
+		
+   	end
+
+	# Something was wrong with a response
+	class ResponseError < ThingFish::Error; end
 	
 end
 

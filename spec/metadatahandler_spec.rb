@@ -36,6 +36,8 @@ include ThingFish::TestConstants
 #####################################################################
 
 describe ThingFish::MetadataHandler do
+	TESTING_KEYS = [ :some, :keys, :for, :testing ]
+	STRINGIFIED_TESTING_KEYS = TESTING_KEYS.collect {|k| k.to_s }
 	
 	before(:each) do
 		# ThingFish.logger.level = Logger::DEBUG
@@ -49,7 +51,7 @@ describe ThingFish::MetadataHandler do
 		@request   = mock( "request", :null_object => true )
 		@response  = mock( "response", :null_object => true )
 		@headers   = mock( "headers", :null_object => true )
-		@out       = mock( "out", :null_object => true )
+		@response.stub!( :headers ).and_return( @headers )
 		@listener  = mock( "listener", :null_object => true )
 		@metastore = mock( "metastore", :null_object => true )
 		
@@ -63,26 +65,40 @@ describe ThingFish::MetadataHandler do
 	
 	# Examples
 
-	it "handles GET /metadata" do
-		params = {
-			'REQUEST_URI'    => '/metadata',
-			'REQUEST_METHOD' => 'GET'
-		}
-
-		request = stub( "request object", :params => params )
-		response = mock( "response object", :null_object => true )
-		outhandle = mock( "output filehandle" )
+	it "returns a page describing all metadata keys for a text/html GET to /metadata" do
 		template = stub( "ERB template", :result => :rendered_output )
-		headers = mock( "response headers", :null_object => true )
+
+		@metastore.should_receive( :get_all_property_keys ).
+			and_return( TESTING_KEYS )
+
+		@request.should_receive( :accepts? ).
+			with( 'text/html' ).
+			and_return( true )
 
 		@handler.should_receive( :get_erb_resource ).and_return( template )
-		response.should_receive( :start ).
-			with( HTTP::OK, true ).
-			and_yield( headers, outhandle )
-		headers.should_receive( :[]= ).with( /content-type/i, 'text/html' )
-		outhandle.should_receive( :write ).with( :rendered_output )
+		template.should_receive( :result ).and_return( :rendered_output )
+	
+		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@response.should_receive( :body= ).with( :rendered_output )
 		
-		@handler.process( request, response )
+		@handler.handle_get_request( @request, @response )
+	end
+
+
+	it "returns a data-structure describing all metadata keys for a non-html GET to /metadata" do
+		@metastore.should_receive( :get_all_property_keys ).
+			and_return( TESTING_KEYS )
+
+		@request.should_receive( :accepts? ).
+			with( 'text/html' ).
+			and_return( false )
+
+		@handler.should_not_receive( :get_erb_resource )
+
+		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :body= ).with( STRINGIFIED_TESTING_KEYS )
+		
+		@handler.handle_get_request( @request, @response )
 	end
 
 

@@ -27,7 +27,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 # 
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -35,10 +35,12 @@
 #
 
 require 'thingfish'
+require 'thingfish/acceptparam'
+require 'thingfish/exceptions'
 require 'thingfish/mixins'
-require 'thingfish/utils'
 require 'thingfish/multipartmimeparser'
 require 'forwardable'
+require 'ipaddr'
 
 ### Request wrapper class
 class ThingFish::Request
@@ -54,165 +56,14 @@ class ThingFish::Request
 	# SVN Id
 	SVNId = %q$Id$
 
-	# Pattern to match a valid multipart form upload 'Content-Type' header
-	MULTIPART_MIMETYPE_PATTERN = %r{(multipart/form-data).*boundary="?([^\";,]+)"?}
-	
-
-	### A parsed Accept-header parameter
-	class AcceptParam
-		include ThingFish::Loggable, Comparable
-		
-		# The default quality value (weight) if none is specified
-		Q_DEFAULT = 1.0
-		Q_MAX = Q_DEFAULT
-
-		
-		### Parse the given +accept_param+ and return an AcceptParam object.
-		def self::parse( accept_param )
-			raise ArgumentError, "Bad Accept param: no media-range" unless
-				accept_param =~ %r{/}
-			media_range, *stuff = accept_param.split( /\s*;\s*/ )
-			type, subtype = media_range.split( '/', 2 )
-			qval, opts = stuff.partition {|par| par =~ /^q\s*=/ }
-	
-			return new( type, subtype, qval.first, *opts )
-		end
-		
-
-
-		### Create a new ThingFish::Request::AcceptParam with the
-		### given media +range+, quality value (+qval+), and extensions
-		def initialize( type, subtype, qval=Q_DEFAULT, *extensions )
-			type    = nil if type == '*'
-			subtype = nil if subtype == '*'
-			
-			@type       = type
-			@subtype    = subtype
-			@qvalue     = normalize_qvalue( qval )
-			@extensions = extensions.flatten
-		end
-
-
-		######
-		public
-		######
-
-		# The 'type' part of the media range
-		attr_reader :type
-
-		# The 'subtype' part of the media range
-		attr_reader :subtype
-
-		# The weight of the param
-		attr_reader :qvalue
-
-		# An array of any accept-extensions specified with the parameter
-		attr_reader :extensions
-
-
-		### Return a human-readable version of the object
-		def inspect
-			"#<%s:0x%07x '%s/%s' q=%0.3f %p>" % [
-				self.class.name,
-				self.object_id * 2,
-				self.type || '*',
-				self.subtype || '*',
-				self.qvalue,
-				self.extensions,
-			]
-		end
-		
-		### Return the parameter as a String suitable for inclusion in an Accept 
-		### HTTP header
-		def to_s
-			[
-				self.mediatype,
-				self.qvaluestring,
-				self.extension_strings
-			].compact.join(';')
-		end
-
-
-		### The mediatype of the parameter, consisting of the type and subtype
-		### separated by '/'.
-		def mediatype
-			"%s/%s" % [ self.type || '*', self.subtype || '*' ]
-		end
-		alias_method :mimetype, :mediatype
-		alias_method :content_type, :mediatype
-		
-
-		### The weighting or "qvalue" of the parameter in the form "q=<value>"
-		def qvaluestring
-			"q=%0.2f" % [self.qvalue]
-		end
-		
-		
-		### Return a String containing any extensions for this parameter, joined
-		### with ';'
-		def extension_strings
-			return nil if @extensions.empty?
-			@extensions.compact.join('; ')
-		end
-
-
-		### Comparable interface. Sort parameters by weight: Returns -1 if +other+ 
-		### is less specific than the receiver, 0 if +other+ is as specific as 
-		### the receiver, and +1 if +other+ is more specific than the receiver.
-		def <=>( other )
-			if @type.nil?
-				return 1 if ! other.type.nil?
-			elsif other.type.nil?
-				return -1 
-			end
-			
-			if @subtype.nil?
-				return 1 if ! other.subtype.nil?
-			elsif other.subtype.nil?
-				return -1 
-			end
-			
-			if rval = (other.extensions.length <=> @extensions.length).nonzero?
-				return rval
-			end
-			
-			if rval = (other.qvalue <=> @qvalue).nonzero?
-				return rval
-			end
-			
-			return 0
-		end
-		
-		
-		#######
-		private
-		#######
-
-		### Given an input +qvalue+, return the Float equivalent.
-		def normalize_qvalue( qvalue )
-			return Q_DEFAULT unless qvalue
-			qvalue = Float( qvalue.to_s.sub(/q=/, '') ) unless
-				qvalue.is_a?( Float )
-
-			if qvalue > Q_MAX
-				self.log.warn "Squishing invalid qvalue %p to %0.1f" % 
-					[ qvalue, Q_DEFAULT ]
-				return Q_DEFAULT
-			end
-			
-			return qvalue
-		end
-		
-	end # ThingFish::Request::AcceptParam
-
 
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
 	### The specified +spooldir+ will be used for spooling uploaded files, 
-	def initialize( mongrel_request, spooldir, bufsize )
+	def initialize( mongrel_request, config )
 		@mongrel_request = mongrel_request
-		@spooldir        = spooldir
-		@bufsize         = bufsize
+		@config          = config
 		@headers         = nil
+		@query_args		 = nil
 		@accepted_types  = nil
 		@uri             = nil
 	end
@@ -228,30 +79,28 @@ class ThingFish::Request
 	
 	# The original Mongrel::HttpRequest object
 	attr_reader :mongrel_request
-
-	# The configured spool directory
-	attr_reader :spooldir
 	
-	# The configured buffer size
-	attr_reader :bufsize
-	
-	
-	# scheme, userinfo, host, port, path, query and fragment
 	
 	### Return a URI object for the requested URI.
 	def uri
-		return @uri unless @uri.nil?
-		
-		params = @mongrel_request.params
-		@uri = URI::HTTP.build(
-			:scheme => 'http',
-			:host   => params['SERVER_NAME'],
-			:port   => params['SERVER_PORT'],
-			:path   => params['REQUEST_PATH'],
-			:query  => params['QUERY_STRING']
-		)
+		if @uri.nil?
+			params = @mongrel_request.params
+			@uri = URI::HTTP.build(
+				:scheme => 'http',
+				:host   => params['SERVER_NAME'],
+				:port   => params['SERVER_PORT'],
+				:path   => params['REQUEST_PATH'],
+				:query  => params['QUERY_STRING']
+			)
+		end
 
 		return @uri
+	end
+
+
+	### Return the URI path with the parts leading up to the current handler.
+	def path_info
+		@mongrel_request.params['PATH_INFO']
 	end
 	
 	
@@ -271,17 +120,51 @@ class ThingFish::Request
 	end
 
 
+	### Return a Hash of request query arguments.  This is a regular Hash, rather
+	### than a ThingFish::Table, because we can't arbitrarily normalize query
+	### arguments.
+	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => true}
+	### TODO: Parse query args for methods other than GET.
+	def query_args
+		return {} if @uri.query.nil?
+		@query_args = @uri.query.split(/[&;]/).inject({}) do |hash,arg|
+			key, val = arg.split('=')
+			case val
+			when NilClass
+				val = true
+			when /^\d+$/
+				val = val.to_i
+			else
+				val = URI.decode( val )
+			end
+
+			hash[ URI.decode( key ) ] = val
+			hash
+		end
+		self.log.debug( "Query arguments parsed as: %p" % [ @query_args ] )
+		return @query_args
+	end
+
+
 	### Read in the Accept header and return an array of AcceptParam objects.
 	def accepted_types
-		@accepted_types ||= self.parse_accept_header( self.headers['Accept'] )
+		@accepted_types ||= self.parse_accept_header( self.headers[:accept] )
 		return @accepted_types
 	end
+
+
+	### Returns boolean true/false if the requestor can handle the given
+	### +content_type+.
+	def accepts?( content_type )
+		return self.accepted_types.find {|type| type =~ content_type } ? true : false
+	end
+	alias_method :accept?, :accepts?
 
 	
 	### Returns true if the request is of type 'multipart/form-request' and has
 	### a valid boundary.
 	def has_multipart_body?
-		content_type = self.headers['Content-type'] or return false
+		content_type = self.headers[:content_type] or return false
 		return content_type =~ MULTIPART_MIMETYPE_PATTERN ? true : false
 	end
 
@@ -290,7 +173,7 @@ class ThingFish::Request
 	### body. It throws ThingFish::RequestErrors on malformed input, or if you
 	### try to parse a multipart body from a non-multipart request.
 	def parse_multipart_body
-		content_type = self.headers['Content-type'] or
+		content_type = self.headers[ :content_type ] or
 			raise ThingFish::RequestError, "No content-type header?!"
 
 		# Match explicitly here instead of calling has_multipart_body? so
@@ -304,9 +187,21 @@ class ThingFish::Request
 		mimetype, boundary = $1, $2
 		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
 		
-		parser = ThingFish::MultipartMimeParser.new( @spooldir, @bufsize )
+		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
 		
 		return parser.parse( @mongrel_request.body, boundary )
+	end
+	
+	
+	### Returns the current request's http METHOD.
+	def http_method
+		return self.params['REQUEST_METHOD']
+	end
+	
+	
+	### Returns the requester IP address as an IPAddr object.
+	def remote_addr
+		return IPAddr.new( self.params['REMOTE_ADDR'] )
 	end
 	
 	
@@ -334,20 +229,18 @@ class ThingFish::Request
 		#                  ) *( ";" parameter )
 		# accept-params  = ";" "q" "=" qvalue *( accept-extension )
 		# accept-extension = ";" token [ "=" ( token | quoted-string ) ]
-		header.flatten.each do |headerval|
+		header.compact.flatten.each do |headerval|
 			params = headerval.split( /\s*,\s*/ )
 
 			params.each do |param|
-				rval << AcceptParam.parse( param )
+				rval << ThingFish::AcceptParam.parse( param )
 			end
 		end
-		
+
+		rval << ThingFish::AcceptParam.new( '*', '*' ) if rval.empty?
 		return rval
 	end
 	
-	
-	
-
 end # ThingFish::Request
 
 # vim: set nosta noet ts=4 sw=4:

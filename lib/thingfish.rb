@@ -34,10 +34,6 @@ require 'uuidtools'
 ### Toplevel namespace module
 module ThingFish
 
-	require 'thingfish/constants'
-	require 'thingfish/exceptions'
-	require 'thingfish/mixins'
-
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -46,6 +42,11 @@ module ThingFish
 
 	# Package version
 	VERSION = '0.1.0'
+
+	# Need to require these here so some constants are already defined
+	require 'thingfish/constants'
+	require 'thingfish/exceptions'
+	require 'thingfish/mixins'
 
 
 	# Add some method to core classes

@@ -26,3 +26,11 @@ Planned Features
    * Metadata grid view
    * Result galleries
 
+
+Do me straight away
+-------------------
+
+- Metastore value format -- object/string serialization (use YAML's #taguri ?) 
+
+- Client -- use content disposition filename if none is specified, fallback to using
+  mime type mappings in constants

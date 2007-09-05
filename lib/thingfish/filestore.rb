@@ -37,7 +37,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -121,7 +121,9 @@ class ThingFish::FileStore
 	### Call the supplied block with an IO object opened to the data for the given
 	### +uuid+.
 	def fetch_io( uuid )
-		yield StringIO.new( self.fetch(uuid) )
+		io = StringIO.new( self.fetch(uuid) )
+		yield( io ) if block_given?
+		return io
 	end
 
 end # class ThingFish::FileStore

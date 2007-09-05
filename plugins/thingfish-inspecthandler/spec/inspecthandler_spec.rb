@@ -39,7 +39,7 @@ include ThingFish::Constants,
 describe "The inspection handler" do
 	before(:all) do
 		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		ThingFish.logger.level = Logger::DEBUG
 	end
 	
 	before(:each) do
@@ -59,28 +59,26 @@ describe "The inspection handler" do
 
 	# Shared behaviors
 	it_should_behave_like "A Handler"
-	
+
 	
 	# Examples
 
 	it "should return inspected objects" do
-		params = {
-			'REQUEST_METHOD' => 'GET',
-			'REQUEST_URI'    => '/inspect',
-			'PATH_INFO'      => '',
-		}
-		
 		@request.stub!( :pretty_print ).and_return( "PRETTYPRINTED REQUEST")
 		@request.stub!( :body ).and_return( StringIO.new("BODY") )
-		@request.stub!( :params ).and_return( params )
-		@headers.stub!( :pretty_print ).and_return( "PRETTYPRINTED HEADERS" )
+		@response.should_receive( :headers ).and_return( @headers )
 		@response.stub!( :pretty_print ).and_return( "PRETTYPRINTED RESPONSE" )
 
-		@response.should_receive( :start ).with( HTTP::OK, true ).
-			and_yield( @headers, @out )
-		@headers.should_receive( :[]= ).with( /Content-Type/i, 'text/html' )
-	    @out.should_receive( :write ).with( an_instance_of(String) )
-		@handler.process( @request, @response )
+		template = mock( "ERB template", :null_object => true )
+		@handler.should_receive( :get_erb_resource ).and_return( template )
+		@handler.should_receive( :pretty_print ).and_return( "some prettyprinted stuff" )
+		template.should_receive( :result ).and_return( :the_result )
+
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@response.should_receive( :body= ).with( :the_result )
+		
+		@handler.handle_get_request( @request, @response )
 	end
 
 end

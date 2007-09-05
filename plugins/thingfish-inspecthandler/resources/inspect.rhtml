@@ -19,13 +19,15 @@
 
 	<!-- content start -->
 	<div id="contentwide">
+		<p class="textright">&nbsp;</p>
 
-		<h1>ThingFish Internals</h1>
+		<h2>ThingFish Internals</h2>
+
 		<p class="server-software">Server software: <%= ThingFish::Daemon::SERVER_SOFTWARE %></p>
 
 		<% for object in inspected_objects %>
 		<div class="inspected-object">
-		<h2><%= h object[:title] %></h2>
+		<h3><%= h object[:title] %></h3>
 		<pre><%= h object[:object] %></pre>
 		</div>
 		

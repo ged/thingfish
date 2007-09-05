@@ -50,11 +50,12 @@ describe "A status handler with no stats filters" do
 	end
 
 	before(:each) do
-		@request  = mock( "request", :null_object => true )
-		@response = mock( "response", :null_object => true )
-		@headers  = mock( "headers", :null_object => true )
-		@out      = mock( "out", :null_object => true )
-		@listener = mock( "listener", :null_object => true )
+		@request          = mock( "request", :null_object => true )
+		@response         = mock( "response", :null_object => true )
+		@response_headers = mock( "response headers", :null_object => true )
+		@listener         = mock( "listener", :null_object => true )
+
+		@request.stub!( :headers ).and_return( @headers )
 
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'status', 'resource_dir' => resdir )
@@ -75,52 +76,59 @@ describe "A status handler with no stats filters" do
 
 
 	it "doesn't return a body for a HEAD request" do
-		params = {
-			'REQUEST_METHOD' => 'HEAD',
-			'PATH_INFO' => '',
-		}
-		@request.should_receive( :params ).at_least(1).and_return( params )
-		@response.should_receive( :start ).and_yield( @headers, @out )
+		@request.should_receive( :path_info ).and_return( '' )
+		
+		@response.should_not_receive( :body= )
+		@response.should_receive( :status= ).with( HTTP::OK )
 
-		@headers.should_receive( :[]= ).with( 'Content-Type', 'text/html' )
-		@out.should_not_receive( :write )
-
-		@handler.process( @request, @response )
+		@handler.handle_head_request( @request, @response )
 	end
 
 
 	it "returns a status page for a GET request" do
-		params = {
-			'REQUEST_METHOD' => 'GET',
-			'PATH_INFO' => '',
-		}
-		@request.should_receive( :params ).at_least(1).and_return( params )
-		@response.should_receive( :start ).and_yield( @headers, @out )
-
-		@headers.should_receive( :[]= ).with( 'Content-Type', 'text/html' )
-	    @out.should_receive( :write ).with( /ThingFish Status/ )
-	
 		classifier = Mongrel::URIClassifier.new
 		classifier.register( '/status', @handler )
 		@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
 		@handler.listener = @listener
 	
-		@handler.process( @request, @response )
+		@request.should_receive( :path_info ).and_return( '' )
+		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( true )
+		
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@response.should_receive( :headers ).at_least( :once ).
+			and_return( @response_headers )
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@response.should_receive( :body= ).with( /ThingFish Status/i )
+
+		@handler.handle_get_request( @request, @response )
 	end
 
-	it "returns a METHOD_NOT_ALLOWED for anything but a GET or a HEAD" do
-		params = {
-			'REQUEST_METHOD' => 'POST',
-			'PATH_INFO' => '',
-		}
-		@request.should_receive( :params ).at_least(1).and_return( params )
-		@response.should_receive( :start ).with( HTTP::METHOD_NOT_ALLOWED, true ).
-			and_yield( @headers, @out )
 
-		@headers.should_receive( :[]= ).with( 'Allow', 'GET, HEAD' )
-	    @out.should_receive( :write ).with( /not allowed/i )
+	it "returns a ruby data structure for a non-HTML GET request" do
 		
-		@handler.process( @request, @response )
+		filter = mock( "a filter" )
+		stat   = mock( "a Mongrel::Stats object", :null_object => true )
+
+		classifier = Mongrel::URIClassifier.new
+		classifier.register( '/status', [filter, @handler] )
+		classifier.register( '/no-stats', [@handler] )
+		@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
+		@handler.listener = @listener
+		@handler.filters[ '/status' ] = filter
+	
+		@request.should_receive( :path_info ).and_return( '' )
+		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( false )
+		
+		filter.should_receive( :each_stat ).and_yield( stat )
+		stat.should_receive( :name ).at_least( :once ).and_return('porkenheimer')
+				
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@response.should_receive( :headers ).at_least( :once ).
+			and_return( @response_headers )
+		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :body= ).with( an_instance_of(Hash) )
+
+		@handler.handle_get_request( @request, @response )
 	end
 
 	it "can build an HTML fragment for the index page" do
@@ -154,5 +162,73 @@ describe "A status handler with stats filters" do
 	end
 	
 end
+
+
+describe Mongrel::StatisticsFilter, " (monkeypatched)" do
+	
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+
+	after(:all) do
+		ThingFish.reset_logger
+	end
+
+
+	before( :each ) do
+		@filter = Mongrel::StatisticsFilter.new( :sample_rate => 1 )
+	end
+	
+	
+	it "has an iterator that yields each stat" do
+		@filter.each_stat do |stat|
+			stat.should be_an_instance_of( Mongrel::Stats )
+		end
+	end
+
+
+	it "gathers statistcs from the ThingFish request and response objects " +
+		"instead of the Mongrel ones" do
+		
+		request = mock( "request object" )
+		request_headers = mock( "request headers" )
+		response = mock( "response object" )
+		response_headers = mock( "response headers" )
+		daemon = mock( "daemon object" )
+		workers = mock( "listener thread group" )
+		
+		
+		@filter.listener = daemon
+		daemon.should_receive( :workers ).and_return( workers )
+		workers.should_receive( :list ).and_return( [1,2,3,4,5,6,7] )
+
+		request.should_receive( :uri ).
+			any_number_of_times.
+			and_return( URI.parse('http://localhost:3474/pork') )
+		request.should_receive( :headers ).
+			at_least(:once).
+			and_return( request_headers )
+		request_headers.
+			should_receive( :length ).
+			and_return( 91752636 )
+
+		request.should_receive( :body ).
+			and_return( TEST_CONTENT )
+
+		response.should_receive( :get_content_length ).
+			and_return( 100 )
+		response.should_receive( :headers ).
+			at_least(:once).
+			and_return( response_headers )
+		response_headers.
+			should_receive( :to_s ).
+			and_return( "stringified headers" )
+		
+		@filter.process( request, response )
+	end
+	
+end
+
 
 # vim: set nosta noet ts=4 sw=4:

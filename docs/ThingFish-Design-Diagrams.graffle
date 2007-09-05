@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ApplicationVersion</key>
+	<array>
+		<string>com.omnigroup.OmniGrafflePro</string>
+		<string>129.12</string>
+	</array>
 	<key>CreationDate</key>
 	<string>2007-02-05 07:16:13 -0800</string>
 	<key>Creator</key>
@@ -82,7 +87,7 @@
 		</dict>
 	</array>
 	<key>ModificationDate</key>
-	<string>2007-08-03 16:48:29 -0700</string>
+	<string>2007-08-15 15:34:28 -0700</string>
 	<key>Modifier</key>
 	<string>Michael Granger</string>
 	<key>NotesVisible</key>
@@ -1785,7 +1790,7 @@
 				<string>YES</string>
 			</dict>
 			<key>HPages</key>
-			<integer>2</integer>
+			<integer>1</integer>
 			<key>IsPalette</key>
 			<string>NO</string>
 			<key>KeepToScale</key>
@@ -2826,10 +2831,10 @@ FILTER}</string>
 						<key>Text</key>
 						<string>{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
 {\fonttbl\f0\fnil\fcharset77 HelveticaNeue-Bold;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\pardirnatural
 
-\f0\b\fs20 \cf2 ThingFish::Request/\
+\f0\b\fs20 \cf0 ThingFish::Request/\
 ThingFish::Response}</string>
 					</dict>
 				</dict>
@@ -3155,10 +3160,10 @@ ThingFish::Response}</string>
 						<key>Text</key>
 						<string>{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
 {\fonttbl\f0\fnil\fcharset77 HelveticaNeue-Bold;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\pardirnatural
 
-\f0\b\fs20 \cf2 \expnd0\expndtw0\kerning0
+\f0\b\fs20 \cf0 \expnd0\expndtw0\kerning0
 HTTP\
 Response}</string>
 					</dict>
@@ -3310,10 +3315,10 @@ Response}</string>
 						<key>Text</key>
 						<string>{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
 {\fonttbl\f0\fnil\fcharset77 HelveticaNeue-Bold;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\pardirnatural
 
-\f0\b\fs20 \cf2 \expnd0\expndtw0\kerning0
+\f0\b\fs20 \cf0 \expnd0\expndtw0\kerning0
 HTTP\
 Request}</string>
 					</dict>
@@ -3451,11 +3456,14 @@ Request}</string>
 					<dict>
 						<key>Text</key>
 						<string>{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
-{\fonttbl\f0\fnil\fcharset77 HelveticaNeue-Bold;}
+{\fonttbl\f0\fnil\fcharset77 HelveticaNeue-Bold;\f1\fnil\fcharset77 HelveticaNeue;}
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\pardirnatural
 
-\f0\b\fs20 \cf1 DAEMON}</string>
+\f0\b\fs20 \cf1 DAEMON\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\qc\pardirnatural
+
+\f1\b0 \cf1 (Mongrel::HTTPServer)}</string>
 					</dict>
 				</dict>
 				<dict>
@@ -3903,7 +3911,7 @@ FILTER}</string>
 	<key>WindowInfo</key>
 	<dict>
 		<key>CurrentSheet</key>
-		<integer>0</integer>
+		<integer>2</integer>
 		<key>DrawerOpen</key>
 		<true/>
 		<key>DrawerTab</key>
@@ -3911,11 +3919,11 @@ FILTER}</string>
 		<key>DrawerWidth</key>
 		<real>180</real>
 		<key>Frame</key>
-		<string>{{526, 79}, {1461, 1450}}</string>
+		<string>{{293, 36}, {1128, 992}}</string>
 		<key>ShowRuler</key>
 		<true/>
 		<key>VisibleRegion</key>
-		<string>{{0.700411, -162}, {1001.59, 902.83}}</string>
+		<string>{{-90, 42.0247}, {768.351, 589.046}}</string>
 		<key>Zoom</key>
 		<real>1.4277330636978149</real>
 	</dict>

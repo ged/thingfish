@@ -26,7 +26,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -39,28 +39,36 @@ require 'uuidtools'
 require 'etc'
 require 'logger'
 
+require 'monkeypatches'
+
 require 'thingfish/constants'
 require 'thingfish/config'
+require 'thingfish/exceptions'
 require 'thingfish/mixins'
 require 'thingfish/filestore'
 require 'thingfish/metastore'
 require 'thingfish/handler'
+require 'thingfish/request'
+require 'thingfish/response'
 
 
 ### ThingFish daemon class
 class ThingFish::Daemon < Mongrel::HttpServer
-	include ThingFish::Constants, ThingFish::Loggable
+	include ThingFish::Constants,
+		ThingFish::Loggable,
+		ThingFish::ResourceLoader
 
+	# The subversion ID
 	SVNId = %q$Id$
+	
+	# The SVN revision number
 	SVNRev = %q$Rev$
-
-	# Constants for HTTP headers
-	SERVER_VERSION = '0.0.1'
-	SERVER_SOFTWARE = "ThingFish/#{SERVER_VERSION}"
-	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
 
 	# Options for the default handler
 	DEFAULT_HANDLER_OPTIONS = {}
+	
+	# The subdirectory to search for error templates
+	ERROR_TEMPLATE_DIR = Pathname.new( 'errors' )
 
 
 	### Create a new ThingFish daemon object that will listen on the specified +ip+
@@ -72,6 +80,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		# Load plugins for filestore, filters, and handlers
 		@filestore = @config.create_configured_filestore
 		@metastore = @config.create_configured_metastore
+		@filters = []
 
 		super( @config.ip, @config.port )
 		self.log.info "Starting at: http://%s:%d/" % [ @config.ip, @config.port ]
@@ -82,6 +91,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			self.log.info "  registering %s at %p" % [handler.class.name, uri]
 			self.register( uri, handler, handler.options['in_front'] )
 		end
+		
+		@resource_dir = @config.defaulthandler.resource_dir
 		
 		self.log.debug {
 			"Handler map is:\n    " + 
@@ -106,6 +117,9 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	# The ThingFish::Config instance that contains all current configuration
 	# information used by the daemon.
 	attr_reader :config
+	
+	# The Array of installed ThingFish::Filters
+	attr_reader :filters
 
 
 	### Perform any additional daemon actions before actually starting
@@ -164,31 +178,166 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Override Mongrel's handler-processing to incorporate filters, and our own 
 	### request and response objects.
 	def dispatch_to_handlers( client, handlers, mongrel_request, mongrel_response )
-		# request  = ThingFish::HttpRequest( mongrel_request )
-		# response = ThingFish::HttpResponse( mongrel_response )
-	
-		self.log.debug "Dispatching to %d handlers" % [handlers.length]
-		handlers.each do |handler|
-			handler.process( mongrel_request, mongrel_response )
-			break if client.closed?
+		request  = ThingFish::Request.new( mongrel_request, @config )
+		response = ThingFish::Response.new( mongrel_response )
+
+		begin
+			# Let the filters manhandle the request
+			self.filter_request( request, response )
+
+			# Now execute the given handlers on the request and response
+			self.run_handlers( client, handlers, request, response ) unless
+				response.is_handled?
+
+			# Let the filters manhandle the response
+			self.filter_response( response, request )
+
+			# Handle NOT_FOUND 
+			return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
+				unless response.is_handled?
+
+			# Normal response
+			self.send_response( response ) unless client.closed?
+
+		rescue ThingFish::RequestError, ThingFish::ResponseError => err
+			self.send_error_response( response, request, HTTP::BAD_REQUEST, client, err )
+
+		rescue StandardError => err
+			self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
 		end
-		
-		# mongrel_response.start( response.status, true ) do |headers, out|
-		# 	# Since Mongrel thinks it knows *all* the headers which can be 
-		# 	# duplicated, we have to write to the HeaderOut's buffer ourselves
-		# 	response.headers do |header, value|
-		# 		headers.out.write( "%s: %s\r\n" % [header, value] )
-		# 	end
-		# 	
-		# 	if response.body.respond_to?( :read )
-		# 		# TODO: buffer outbound IO
-		# 		out.write( response.body.read )
-		# 	else
-		# 		out.write( response.body.to_s )
-		# 	end
-		# end
+	end
+
+
+	### Filter and potentially modify the incoming request.
+	def filter_request( request, response )
+		@filters.each do |filter|
+			response.filters << filter
+			filter.handle_request( request, response )
+			break if response.status != ThingFish::Response::DEFAULT_STATUS
+		end
+	end
+
+
+	### Filter (and potentially modify) the outgoing response with the filters
+	### that were registered with it during the request-filtering stage
+	def filter_response( response, request )
+		response.filters.reverse.each do |filter|
+			filter.handle_response( response, request )
+		end
 	end
 	
+
+	### Handle errors in a consistent fashion.  Log and output to the client.
+	def send_error_response( response, request, statuscode, client, err=nil )
+		errtrace = debugtrace = ''
+
+		if err
+			errtrace = "Error while running %s: %s" % [
+				response.handlers.last,
+				err.message,
+			]
+			self.log.error( errtrace )
+
+			debugtrace = "Handlers were:\n  %s\nBacktrace:  %s" % [
+				response.handlers.collect {|h| h.class.name }.join("\n  "),
+				err.backtrace.join("\n  ")
+			]
+			self.log.debug( debugtrace )
+		end
+
+		response.reset
+		response.status = statuscode
+
+		# Build a pretty response if the client groks HTML
+		if request.accepts?( 'text/html' )
+			template = self.get_error_response_template( statuscode ) or
+				raise "Can't find an error template"
+			
+			response.headers[ :content_type ] = 'text/html'
+			response.body = template.result( binding() )
+		else
+			response.headers[ :content_type ] = 'text/plain'
+			response.body = "%d (%s)" % [ statuscode, HTTP::STATUS_NAME[statuscode] ]
+			response.body << "\n\n" << 
+				errtrace << "\n\n" <<
+				debugtrace << "\n\n"
+		end
+
+		self.send_response( response ) unless client.closed?
+	end
+
+
+	### Look for an error response template for the given status code in a directory 
+	### called 'errors', trying the most-specific code first, then one for the 
+	### 100-level code, then falling back to a template called 'generic.rhtml'.
+	def get_error_response_template( statuscode )
+		templates = [
+			ERROR_TEMPLATE_DIR + "%d.rhtml" % [statuscode],
+			ERROR_TEMPLATE_DIR + "%d.rhtml" % [(statuscode / 100).ceil * 100],
+			ERROR_TEMPLATE_DIR + 'generic.rhtml',
+		]
+		
+		templates.each do |tmpl|
+			self.log.debug "Trying to find error template %p" % [tmpl]
+			next unless self.resource_exists?( tmpl.to_s )
+			return self.get_erb_resource( tmpl.to_s )
+		end
+
+		return nil
+	end
+
+	
+	### Iterate through the handlers for this URI and execute each one. Stop 
+	### executing handlers as soon as the response's status changes.
+	def run_handlers( client, handlers, request, response )
+		self.log.debug "Dispatching to %d handlers" % [handlers.length]
+
+		# BRANCH: Iterate through handlers
+		handlers.each do |handler|
+			# BRANCH: Adds handlers to the response as it executes them
+			response.handlers << handler
+			handler.process( request, response )
+			# BRANCH: Stops running handlers on status change
+			# BRANCH: Stops running handlers if client connection closes
+			break if response.status != ThingFish::Response::DEFAULT_STATUS ||
+				client.closed?
+		end
+	end
+	
+
+	### Send the response on the socket, doing a buffered send if the response's 
+	### body responds to :read, or just writing it to the socket if not.
+	def send_response( response )
+		body = response.body
+
+		# Send the status line
+		status_line = STATUS_LINE_FORMAT %
+			[ response.status, HTTP::STATUS_NAME[ response.status ] ]
+		response.write( status_line )
+
+		# Send the headers
+		response.headers[:content_length] ||= response.get_content_length
+		response.headers[:date] = Time.now.httpdate
+		response.write( response.headers.to_s + "\r\n" )
+
+		# Send the buffered entity body
+		if body.respond_to?( :read )
+			buf     = ''
+			bufsize = @config.bufsize
+
+			while body.read( bufsize, buf )
+				until buf.empty?
+					bytes = response.write( buf )
+					buf.slice!( 0, bytes )
+				end
+			end
+		else
+			# Send unbuffered -- body already in memory.
+			response.write( body.to_s )
+		end
+		
+		response.done = true
+	end
 
 
 	### Create an instance of the default handler, with options dictated by the
@@ -204,115 +353,5 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	
 
 end # class ThingFish::Daemon
-
-
-
-####################################################################################
-###  BEGIN MONKEY EEK EEEK EEEEEEEEEEK
-####################################################################################
-class Mongrel::HttpServer
-	include Mongrel
-	
-	# Does the majority of the IO processing.  It has been written in Ruby using
-	# about 7 different IO processing strategies and no matter how it's done 
-	# the performance just does not improve.  It is currently carefully constructed
-	# to make sure that it gets the best possible performance, but anyone who
-	# thinks they can make it faster is more than welcome to take a crack at it.
-	def process_client(client)
-		$stderr.puts "Processing client request %p" % [client]
-		
-		begin
-			parser = HttpParser.new
-			params = HttpParams.new
-			request = nil
-			data = client.readpartial(Const::CHUNK_SIZE)
-			nparsed = 0
-
-			# Assumption: nparsed will always be less since data will get filled with more
-			# after each parsing.  If it doesn't get more then there was a problem
-			# with the read operation on the client socket.  Effect is to stop processing when the
-			# socket can't fill the buffer for further parsing.
-			while nparsed < data.length
-				nparsed = parser.execute(params, data, nparsed)
-
-				if parser.finished?
-					if not params[Const::REQUEST_PATH]
-						# it might be a dumbass full host request header
-						uri = URI.parse(params[Const::REQUEST_URI])
-						params[Const::REQUEST_PATH] = uri.request_uri
-					end
-
-					raise "No REQUEST PATH" if not params[Const::REQUEST_PATH]
-
-					script_name, path_info, handlers = @classifier.resolve(params[Const::REQUEST_PATH])
-
-					if handlers
-						params[Const::PATH_INFO] = path_info
-						params[Const::SCRIPT_NAME] = script_name
-						params[Const::REMOTE_ADDR] = params[Const::HTTP_X_FORWARDED_FOR] || client.peeraddr.last
-
-						# select handlers that want more detailed request notification
-						notifiers = handlers.select { |h| h.request_notify }
-						request = HttpRequest.new(params, client, notifiers)
-
-						# in the case of large file uploads the user could close the socket, so skip those requests
-						break if request.body == nil  # nil signals from HttpRequest::initialize that the request was aborted
-
-						# request is good so far, continue processing the response
-						response = HttpResponse.new(client)
-
-						dispatch_to_handlers(client, handlers, request, response)
-
-						# And finally, if nobody closed the response off, we finalize it.
-						unless response.done or client.closed? 
-							response.finished
-						end
-					else
-						# Didn't find it, return a stock 404 response.
-						client.write(Const::ERROR_404_RESPONSE)
-					end
-
-					break #done
-				else
-					# Parser is not done, queue up more data to read and continue parsing
-					chunk = client.readpartial(Const::CHUNK_SIZE)
-					break if !chunk or chunk.length == 0  # read failed, stop processing
-
-					data << chunk
-					if data.length >= Const::MAX_HEADER
-						raise HttpParserError.new("HEADER is longer than allowed, aborting client early.")
-					end
-				end
-			end
-		rescue EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-			client.close rescue Object
-		rescue HttpParserError
-			if $mongrel_debug_client
-				STDERR.puts "#{Time.now}: BAD CLIENT (#{params[Const::HTTP_X_FORWARDED_FOR] || client.peeraddr.last}): #$!"
-				STDERR.puts "#{Time.now}: REQUEST DATA: #{data.inspect}\n---\nPARAMS: #{params.inspect}\n---\n"
-			end
-		rescue Errno::EMFILE
-			reap_dead_workers('too many files')
-		rescue Object
-			STDERR.puts "#{Time.now}: ERROR: #$!"
-			STDERR.puts $!.backtrace.join("\n") if $mongrel_debug_client
-		ensure
-			client.close rescue Object
-			request.body.delete if request and request.body.class == Tempfile
-		end
-	end
-
-	# Process each handler in registered order until we run out or one finalizes the 
-	# response.
-	def dispatch_to_handlers(client, handlers, request, response)
-		handlers.each do |handler|
-			handler.process(request, response)
-			return if response.done or client.closed?
-		end
-	end
-end
-####################################################################################
-###  END MONKEY EEK EEEK EEEEEEEEEEK
-####################################################################################
 
 # vim: set nosta noet ts=4 sw=4:

@@ -27,6 +27,7 @@ DEFAULT_CONFIGFILE = Pathname.new(CONFIG['sysconfdir']) + 'thingfish.conf'
 ### Main logic
 def main( args )
 	opts = parse_args( args )
+	$0 = 'thingfishd'
 	run( opts )
 end
 

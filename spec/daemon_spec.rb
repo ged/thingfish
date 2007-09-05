@@ -31,30 +31,430 @@ class TestHandler < ThingFish::Handler
 end
 
 
+# Expose some methods for testing (ick, but we can't test through Mongrel any 
+# other way)
+class ThingFish::Daemon
+	public :dispatch_to_handlers,
+		:run_handlers,
+		:send_response,
+		:filter_request,
+		:filter_response
+end
+
+
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe "The daemon class" do
+describe ThingFish::Daemon do
 
 	before(:each) do
-		@log = StringIO.new('')
-		ThingFish.logger = Logger.new( @log )
 		@stub_socket = stub( "Server listener socket" )
 		TCPServer.stub!( :new ).and_return( @stub_socket )
+
+		@config = ThingFish::Config.new
+		@config.defaulthandler.resource_dir = 'var/www'
+
+		@daemon = ThingFish::Daemon.new( @config )
+		@request = mock( "request", :null_object => true )
+		@response = mock( "response", :null_object => true )
+		@handler = mock( "handler", :null_object => true )
+		@client = stub( "client", :closed? => false )
 	end
+
+
+	### Logging
 
 	it "outputs a new instance's handler config to the debug log" do
-		@daemon = ThingFish::Daemon.new
-		@log.rewind
-		@log.read.should =~ %r{Handler map is:\s*/: \[.*?\]}
-		# rescue Errno::EADDRINUSE
-		# 	$stderr.puts "Skipping: something already running on the default port"
-		# end
+		log = StringIO.new('')
+		ThingFish.logger = Logger.new( log )
+
+		daemon = ThingFish::Daemon.new
+
+		log.rewind
+		log.read.should =~ %r{Handler map is:\s*/: \[.*?\]}
 	end
+
+
+	### End-to-end
+	it "returns a valid http 404 response if no filter or handler sets the response status" do
+		filter = mock( "filter", :null_object => true )
+		
+		handlers = [ @handler ]
+		@daemon.filters << filter
+
+		filter.
+			should_receive( :handle_request ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		@handler.
+			should_receive( :process ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		filter.
+			should_receive( :handle_response ).
+			with( an_instance_of(ThingFish::Response), an_instance_of(ThingFish::Request) )
+
+		@response.should_receive( :write ).with( /404 not found/i )
+		@response.should_receive( :write ).with( /content-type:/i )
+		@response.should_receive( :write ).with( /<html/i )
+		
+		@daemon.dispatch_to_handlers( @client, handlers, @request, @response )
+	end
+	
+
+	it "does not try to send the response if the client closes the connection early" do
+		filter = mock( "filter", :null_object => true )
+		
+		handlers = [ @handler ]
+		@daemon.filters << filter
+
+		filter.
+			should_receive( :handle_request ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		@handler.
+			should_receive( :process ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		filter.
+			should_receive( :handle_response ).
+			with( an_instance_of(ThingFish::Response), an_instance_of(ThingFish::Request) )
+
+		@client.should_receive( :closed? ).at_least(:once).and_return( true )
+		@response.should_not_receive( :write )
+		
+		@daemon.dispatch_to_handlers( @client, handlers, @request, @response )
+	end
+	
+
+	it "sends a valid http response to the client after a successful run" do
+		filter = mock( "filter", :null_object => true )
+		
+		handlers = [ @handler ]
+		@daemon.filters << filter
+
+		filter.
+			should_receive( :handle_request ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		@handler.
+			should_receive( :process ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) ).
+			and_return do |req, res|
+				res.status = HTTP::OK
+				res.headers[:content_type] = 'text/html'
+				res.body = TEST_CONTENT
+			end
+		filter.
+			should_receive( :handle_response ).
+			with( an_instance_of(ThingFish::Response), an_instance_of(ThingFish::Request) )
+
+		@client.should_receive( :closed? ).at_least(:once).and_return( false )
+		@response.should_receive( :write ).with( /200 ok/i )
+		@response.should_receive( :write ).with( %r{content-type: text/html}i )
+		@response.should_receive( :write ).with( /<html/i )
+		
+		@daemon.dispatch_to_handlers( @client, handlers, @request, @response )
+	end
+	
+
+
+
+	### Handlers
+
+	it "runs through all of its handlers if none of them set the response status" do
+		handler_list = []
+		
+		second_handler = mock( "second handler", :null_object => true )
+		@handler.should_receive( :process )
+		@response.should_receive( :handlers ).
+			twice.
+			and_return( handler_list )
+		@response.should_receive( :status ).
+			twice.
+			and_return( ThingFish::Response::DEFAULT_STATUS )
+
+		second_handler.should_receive( :process )
+
+		handlers = [ @handler, second_handler ]
+		@daemon.run_handlers( @client, handlers, @request, @response )
+		
+		handler_list.should have(2).members
+		handler_list[0].should == @handler
+		handler_list[1].should == second_handler
+	end
+
+	it "iterates through its handlers and stops if any of them set response status" do
+		handler_list = []
+		second_handler = mock( "second handler", :null_object => true )
+
+		@handler.should_receive( :process )
+		@response.should_receive( :handlers ).
+			once.
+			and_return( handler_list )
+		@response.should_receive( :status ).
+			once.
+			and_return( HTTP::OK )
+
+		second_handler.should_not_receive( :process )
+
+		handlers = [ @handler, second_handler ]
+		@daemon.run_handlers( @client, handlers, @request, @response )
+		
+		handler_list.should have(1).member
+		handler_list[0].should == @handler
+	end
+
+
+	it "iterates through its handlers and stops if the connection is closed" do
+		handler_list = []
+		second_handler = mock( "second handler", :null_object => true )
+
+		client = mock( "client object", :null_object => true )
+		client.should_receive( :closed? ).and_return( true )
+
+		@handler.should_receive( :process )
+		@response.should_receive( :handlers ).
+			once.
+			and_return( handler_list )
+		@response.should_receive( :status ).
+			once.
+			and_return( ThingFish::Response::DEFAULT_STATUS )
+
+		second_handler.should_not_receive( :process )
+
+		handlers = [ @handler, second_handler ]
+		@daemon.run_handlers( client, handlers, @request, @response )
+		
+		handler_list.should have(1).member
+		handler_list[0].should == @handler
+	end
+
+
+	### Filters
+	
+	it "iterates through its filters on incoming requests" do
+		filter_uno = mock( "request filter number one", :null_object => true )
+		filter_dos = mock( "request filter number two", :null_object => true )
+		
+		@daemon.filters << filter_uno << filter_dos
+		@response.should_receive( :status ).
+			at_least( :once ).
+			and_return( ThingFish::Response::DEFAULT_STATUS )
+		
+		filter_uno.
+			should_receive( :handle_request ).
+			once.
+			with( @request, @response )
+		filter_dos.
+			should_receive( :handle_request ).
+			once.
+			with( @request, @response )
+		
+		@daemon.filter_request( @request, @response )
+	end
+	
+
+	it "filters the response through all the filters which saw the request" do
+		filter_uno  = mock( "request filter number one", :null_object => true )
+		filter_dos  = mock( "request filter number two", :null_object => true )
+		filter_tres = mock( "request filter number three", :null_object => true )
+		
+		@response.should_receive( :filters ).and_return([ filter_uno, filter_dos ])
+		
+		filter_uno.
+			should_receive( :handle_response ).
+			once.
+			with( @response, @request )
+		filter_dos.
+			should_receive( :handle_response).
+			once.
+			with( @response, @request )
+		filter_tres.
+			should_not_receive( :handle_response )
+		
+		@daemon.filter_response( @response, @request )
+	end
+	
+
+
+	### Content-length
+
+	it "asks the response for its content length if the content-length header hasn't " +
+		"been set" do
+		headers = mock( "response headers", :null_object => true )
+		headers.should_receive( :[] ).
+			at_least( :once ).
+			with( :content_length ).
+			and_return( nil )
+		
+		@response.should_receive( :headers ).at_least( :once ).and_return( headers )
+		@response.should_receive( :status ).at_least( :once ).and_return( HTTP::OK )
+		@response.should_receive( :get_content_length ).and_return( 15 )
+		@daemon.send_response( @response )
+	end
+	
+
+	### Buffering/unbuffered response
+
+	it "buffers the response when the body implements #read" do
+		headers = mock( "response headers", :null_object => true )
+		headers.should_receive( :[] ).
+			at_least( :once ).
+			with( :content_length ).
+			and_return( nil )
+		
+		@response.should_receive( :headers ).at_least( :once ).and_return( headers )
+		@response.should_receive( :status ).at_least( :once ).and_return( HTTP::OK )
+		
+		response_body = mock( "response body", :null_object => true )
+		@response.should_receive( :body ).
+			at_least( :once ).
+			and_return( response_body )
+
+		testdata = 'this is some data for testing'
+		testbuf = testdata.dup
+
+		response_body.should_receive( :respond_to? ).
+			with( :read ).
+			and_return( true )
+		response_body.should_receive( :read ).twice.
+			with( an_instance_of(Fixnum), '' ).
+			and_return do |size,buf|
+				buf << testbuf.slice!( 0, testbuf.length )
+				buf.empty? ? nil : buf.length
+			end
+
+		@response.should_receive( :write ).
+			with( testdata ).
+			and_return( testdata.length )
+		
+		@daemon.send_response( @response )
+	end
+	
+	
+	it "doesn't buffer the response when the body is in memory" do
+		headers = mock( "response headers", :null_object => true )
+		headers.should_receive( :[] ).
+			at_least( :once ).
+			with( :content_length ).
+			and_return( nil )
+		
+		@response.should_receive( :headers ).at_least( :once ).and_return( headers )
+		@response.should_receive( :status ).at_least( :once ).and_return( HTTP::OK )
+		
+		response_body = mock( "response body", :null_object => true )
+		@response.should_receive( :body ).
+			at_least( :once ).
+			and_return( response_body )
+
+		testdata = 'this is some data for testing'
+
+		response_body.should_receive( :respond_to? ).
+			with( :read ).
+			and_return( false )
+		response_body.should_receive( :to_s ).once.
+			and_return( testdata )
+			
+		@response.should_receive( :write ).
+			with( testdata ).
+			and_return( testdata.length )
+		
+		@daemon.send_response( @response )
+	end
+	
+	
+	### Exception-handling
+	it "handles uncaught exceptions with an HTML error page if the content-" +
+		"negotiation headers indicate HTML is acceptable" do
+
+		params    = {
+			'HTTP_ACCEPT' => 'text/html'
+		}
+		request   = mock( "mongrel request" )
+		response  = mock( "mongrel response" )
+
+		erroring_filter = mock( "buggy filter", :null_object => true )
+		@daemon.filters << erroring_filter
+		
+		erroring_filter.should_receive( :handle_request ).
+			and_raise( RuntimeError.new("some error") )
+		request.should_receive( :params ).at_least( :once ).
+			and_return( params )
+
+		response.should_receive( :write ).with( /500 internal server error/i )
+		response.should_receive( :write ).with( %r{content-type: text/html}i )
+		response.should_receive( :write ).with( /some error/i )
+		response.should_receive( :done= ).with( anything() )
+
+		client = mock( "client object", :null_object => true )
+		# BRANCH: client returns true
+		client.should_receive( :closed? ).and_return( false )
+		
+		lambda {
+			@daemon.dispatch_to_handlers( client, [], request, response )
+		}.should_not raise_error()
+	end
+	
+	
+	it "handles uncaught exceptions with a plain-text response if HTML isn't acceptable" do
+		params    = {
+			'HTTP_ACCEPT' => 'text/plain'
+		}
+		request   = mock( "mongrel request" )
+		response  = mock( "mongrel response" )
+
+		erroring_filter = mock( "buggy filter", :null_object => true )
+		@daemon.filters << erroring_filter
+		
+		erroring_filter.should_receive( :handle_request ).
+			and_raise( RuntimeError.new("some error") )
+		request.should_receive( :params ).at_least( :once ).
+			and_return( params )
+
+		response.should_receive( :write ).with( /500 internal server error/i )
+		response.should_receive( :write ).with( %r{content-type: text/plain}i )
+		response.should_receive( :write ).with( /some error/i )
+		response.should_receive( :done= ).with( anything() )
+
+		client = mock( "client object", :null_object => true )
+		# BRANCH: client returns true
+		client.should_receive( :closed? ).and_return( false )
+		
+		lambda {
+			@daemon.dispatch_to_handlers( client, [], request, response )
+		}.should_not raise_error()
+	end
+	
+
+	it "handles uncaught request errors with a valid http BAD_REQUEST response" do
+		params    = {
+			'HTTP_ACCEPT' => 'text/plain'
+		}
+		request   = mock( "mongrel request" )
+		response  = mock( "mongrel response" )
+
+		erroring_filter = mock( "buggy filter", :null_object => true )
+		@daemon.filters << erroring_filter
+		
+		erroring_filter.should_receive( :handle_request ).
+			and_raise( ThingFish::RequestError.new("bad client! no cupcake!") )
+		request.should_receive( :params ).at_least( :once ).
+			and_return( params )
+
+		response.should_receive( :write ).with( /400 bad request/i )
+		response.should_receive( :write ).with( %r{content-type: text/plain}i )
+		response.should_receive( :write ).with( /bad client/i )
+		response.should_receive( :done= ).with( anything() )
+
+		client = mock( "client object", :null_object => true )
+		client.should_receive( :closed? ).and_return( false )
+		
+		lambda {
+			@daemon.dispatch_to_handlers( client, [], request, response )
+		}.should_not raise_error()
+	end
+	
 end
 
-describe "A new daemon with no arguments" do
+
+describe ThingFish::Daemon, " constructed with no arguments" do
 
 	before(:each) do
 		@stub_socket = stub( "Server listener socket" )
@@ -72,7 +472,7 @@ describe "A new daemon with no arguments" do
 end
 
 
-describe "A new daemon with a differing ip config" do
+describe ThingFish::Daemon, " with a differing ip config" do
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -102,7 +502,7 @@ describe "A new daemon with a differing ip config" do
 	end
 end
 
-describe "A new root-started daemon with a user configged" do
+describe ThingFish::Daemon, " started as root with a user configged" do
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -124,7 +524,7 @@ describe "A new root-started daemon with a user configged" do
 end
 
 
-describe "A new daemon with a differing port config" do
+describe ThingFish::Daemon, " with a differing port config" do
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -148,7 +548,7 @@ describe "A new daemon with a differing port config" do
 end
 
 
-describe "A new daemon with an ip and host configured" do
+describe ThingFish::Daemon, " with an ip and host configured" do
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -174,7 +574,7 @@ describe "A new daemon with an ip and host configured" do
 end
 
 
-describe "A daemon with one or more handlers in its configuration" do
+describe ThingFish::Daemon, " with one or more handlers in its configuration" do
 
 	before(:each) do
 		@config = ThingFish::Config.new
@@ -193,7 +593,7 @@ describe "A daemon with one or more handlers in its configuration" do
 	
 end
 
-describe "A running server" do
+describe ThingFish::Daemon, " (while running)" do
 
 	before(:each) do
 		@config = ThingFish::Config.new

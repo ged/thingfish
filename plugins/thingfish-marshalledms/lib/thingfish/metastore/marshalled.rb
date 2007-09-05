@@ -26,7 +26,7 @@
 #  * Michael Granger <mgranger@laika.com>
 #  * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #

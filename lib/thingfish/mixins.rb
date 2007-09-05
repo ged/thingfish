@@ -87,7 +87,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -98,7 +98,7 @@ require 'rbconfig'
 require 'erb'
 
 require 'thingfish'
-require 'mongrel/handlers'
+
 
 module ThingFish # :nodoc:
 
@@ -117,7 +117,7 @@ module ThingFish # :nodoc:
 	end # module Loggable
 
 
-	### Add the ability to service static content from a ThingFish::Handler's resource
+	### Add the ability to serve static content from a ThingFish::Handler's resource
 	### directory
 	module StaticResourcesHandler
 		
@@ -143,6 +143,7 @@ module ThingFish # :nodoc:
 
 		### Hook the listener callback
 		def listener=( listener )
+			require 'thingfish/handler'
 			super
 			
 			basedir = self.resource_dir + self.class.static_resources_dir
@@ -150,7 +151,7 @@ module ThingFish # :nodoc:
 				[self.class.name, basedir.to_s]
 			my_uris = self.find_handler_uris
 
-			handler = Mongrel::DirHandler.new( basedir.to_s, false )
+			handler = ThingFish::Handler.create( 'staticcontent', basedir )
 			my_uris.each do |uri|
 				self.log.debug "...registering fallback %s for a %s at %p" %
 				 	[ handler.class.name, self.class.name, uri ]

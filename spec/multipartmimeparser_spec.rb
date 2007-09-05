@@ -56,6 +56,7 @@ describe ThingFish::MultipartMimeParser do
 		@parser = ThingFish::MultipartMimeParser.new
 	end
 
+
 	it "should error if the initial boundary can't be found" do
 		socket = load_form( "testform_bad.form" )
 		

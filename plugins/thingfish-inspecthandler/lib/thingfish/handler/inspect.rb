@@ -19,7 +19,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -49,33 +49,29 @@ class ThingFish::InspectHandler < ThingFish::Handler
 
 	### Handler API: handle a GET request with an inspection page.
 	def handle_get_request( request, response )
-		self.log.debug "Inspect handler GET response"
-		return unless request.params['PATH_INFO'] == ''
+		self.log.debug "Handling inspection request"
+		# return unless request.path_info == ''
 
-		# Attempt to serve upload form
 		content = self.get_erb_resource( 'inspect.rhtml' )
-		response.start( HTTP::OK, true ) do |headers, out|
-			self.log.debug "Start of response to the inspect handler"
-			inspected_objects = [
-				object_section( "Daemon", self.listener ),
-				object_section( "Request", request ),
-				object_section( "Request Body", request.body.read ),
-				object_section( "Request Body Size", request.body.length ),
-				object_section( "Headers", headers ),
-				object_section( "Response", response ),
-				object_section( "Handler", self ),
-			]
+		inspected_objects = [
+			object_section( "Daemon", self.listener ),
+			object_section( "Request", request ),
+			object_section( "Request Body", request.body.read ),
+			object_section( "Request Body Size", request.body.length ),
+			object_section( "Headers", request.headers.to_h ),
+			object_section( "Response", response ),
+			object_section( "Handler", self ),
+		]
 		
-			self.log.debug "Setting content type"
-			headers['Content-Type'] = 'text/html'
-			out.write( content.result(binding()) )
-		end
+		response.headers[ :content_type ] = 'text/html'
+		response.body = content.result( binding() )
+		response.status = HTTP::OK
 	end
 	
 	
 	### Return the HTML fragment that should be used to link to this handler.
 	def make_index_content( uri )
-		tmpl = self.get_erb_resource( "index_content.html" )
+		tmpl = self.get_erb_resource( "index_content.rhtml" )
 		return tmpl.result( binding() )
 	end
 	

@@ -44,7 +44,6 @@ require 'thingfish'
 require 'thingfish/handler'
 require 'thingfish/constants'
 require 'thingfish/multipartmimeparser'
-require 'mongrel/handlers'
 require 'strscan'
 require 'forwardable'
 require 'tempfile'
@@ -90,7 +89,7 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Return the HTML fragment that should be used to link to this handler.
 	def make_index_content( uri )
-		tmpl = self.get_erb_resource( "index_content.html" )
+		tmpl = self.get_erb_resource( "index_content.rhtml" )
 		return tmpl.result( binding() )
 	end
 
@@ -101,63 +100,27 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 	### Handle a GET request
 	def handle_get_request( request, response )
-		return unless request.params['PATH_INFO'] == ''
-		uri = request.params['REQUEST_URI']
+		return unless request.path_info == ''
 		
 		# Attempt to serve upload form
 		content = self.get_erb_resource( 'upload.rhtml' )
-		response.start( HTTP::OK, true ) do |headers, out|
-			headers['Content-Type'] = 'text/html'
-			out.write( content.result(binding()) )
-		end
+		response.headers[ :content_type ] = 'text/html'
+		response.body = content.result( binding() )
+		response.status = HTTP::OK
 	end
 
 
 	### Handle a POST request
 	def handle_post_request( request, response )
-		return unless request.params['PATH_INFO'] == ''
+		return unless request.path_info == ''
 
 		self.log.debug "Handling POSTed upload/s"
-		uri          = request.params['REQUEST_URI']
 
-		### The new way:
-		# unless request.has_multipart_body?
-		# 	self.log.error "Bad content type; expected multipart, got: %p" % [content_type]
-		# 	respond_with HTTP::BAD_REQUEST,
-		# 		'Unable to parse multipart/form-data or find boundary.'
-		# end
-		# 	
-		# begin
-		# 	files, params = request.parse_multipart_body
-		# 	self.log.debug "Parsed %d files and %d params (%p)" % 
-		# 		[files.length, params.length, params.keys]
-		# rescue ThingFish::RequestError => err
-		# 	respond_with HTTP::BAD_REQUEST, err.message
-		# end
+		# Parse the incoming request.
+		files, params = request.parse_multipart_body
+		self.log.debug "Parsed %d files and %d params (%p)" % 
+			[files.length, params.length, params.keys]
 	
-		content_type = request.params['HTTP_CONTENT_TYPE'] || ''
-
-		# attempt to verify content-type, and parse boundry string
-		unless content_type =~ %r{(multipart/form-data).*boundary="?([^\";,]+)"?}
-			self.log.error "Bad content type; expected multipart, got: %p" % [content_type]
-			return response.start( HTTP::BAD_REQUEST, true ) do |headers, out|
-				out.write( 'Unable to parse multipart/form-data or find boundary.' )
-			end
-		end
-		mimetype, boundary = $1, $2
-		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
-
-		# unwrap multipart
-		begin
-			files, params = @parser.parse( request.body, boundary )
-			self.log.debug "Parsed %d files and %d params (%p)" % 
-				[files.length, params.length, params.keys]
-		rescue ThingFish::RequestError => err
-			return response.start( HTTP::BAD_REQUEST, true ) do |headers, out|
-				out.write( err.message )
-			end
-		end
-
 		# merge global metadata with file specific metadata
 		# walk through parsed files, pass to thingfish meta and file stores
 		files.each do |file, meta|
@@ -170,10 +133,9 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 		# Return success with links to new files
 		content = self.get_erb_resource( 'upload.rhtml' )
-		response.start( HTTP::CREATED, true ) do |headers, out|
-			headers['Content-Type'] = 'text/html'
-			out.write( content.result(binding()) )
-		end
+		response.status = HTTP::OK
+		response.headers[ :content_type ] = 'text/html'
+		response.body = content.result( binding() )
 	end
 
 
@@ -181,7 +143,9 @@ class ThingFish::UploadHandler < ThingFish::Handler
 	### +request+ and storing any metadata in +meta+.
 	def store_resource( file, meta, request )
 		uuid = UUID.timestamp_create
+		self.log.debug "Storing %p as %p" % [ file, uuid ]
 		checksum = @filestore.store_io( uuid, file )
+		file.unlink
 
 		# Store some default metadata about the resource
 		@metastore[ uuid ].checksum = checksum

@@ -21,7 +21,7 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-#:include: LICENSE
+# :include: LICENSE
 #
 #---
 #
@@ -70,22 +70,20 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 	public
 	######
 	
-
-
-	#########
-	protected
-	#########
-
 	### Handle a GET request
 	def handle_get_request( request, response )
-		uri = request.params['REQUEST_URI']
-		metadata_keys = @metastore.get_all_property_keys.collect { |k| k.to_s }
+		metadata_keys = @metastore.get_all_property_keys.collect {|k| k.to_s }
 		
 		# Attempt to serve metadata list html
-		content = self.get_erb_resource( 'metadata.rhtml' )
-		response.start( HTTP::OK, true ) do |headers, out|
-			headers['Content-Type'] = 'text/html'
-			out.write( content.result(binding()) )
+		response.status = HTTP::OK
+		
+		if request.accepts?( 'text/html' )
+			content = self.get_erb_resource( 'metadata.rhtml' )
+			response.body = content.result( binding() )
+			response.headers[:content_type] = 'text/html'
+		else
+			response.headers[:content_type] = RUBY_MIMETYPE
+			response.body = metadata_keys
 		end
 	end
 

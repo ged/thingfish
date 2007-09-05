@@ -54,6 +54,10 @@ a:hover {
 	background: #f1edba;
 }
 
+.missing-docs {
+	font-size: 120%;
+	color: red;
+}
 
 /* @end */
 

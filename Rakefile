@@ -101,8 +101,6 @@ end
 
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
-	tf_template = DOCSDIR + 'rdoc/thingfish-template.rb'
-	
 	rdoc.rdoc_dir = 'docs/api'
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
 	rdoc.options += [

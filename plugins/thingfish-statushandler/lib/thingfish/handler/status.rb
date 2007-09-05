@@ -149,13 +149,22 @@ class ThingFish::StatusHandler < ThingFish::Handler
 	end
 
 
-	### Extract a Hash of statistics from each configured filter and return it.
+	### Extract a Hash of statistics from each configured filter and return it. Returns a Hash of 
+	### Hashes keyed by URI, then by the name of the metric for that URI, then by the particular
+	### statistics for that metric. If a URI is not monitored, the value for that URI will be nil.
 	def extract_statistics
+		
+		# Use the daemon's handler map to map URIs to a Hash of statistics for that
+		# URI.
 		return @listener.classifier.handler_map.inject({}) do |hash, pair|
 			uri = pair.first
 
+			# If there's a filter for this URI, extract the statistics from it
 			if @filters.key?( uri )
 				subhash = {}
+
+				# Each filter tracks one or more metrics in a Mongrel::Stats object. Extract
+				# the relevant date from each metric.
 				@filters[uri].each_stat do |stat|
 					subhash[ stat.name ] = {
 						:sum   => stat.sum,

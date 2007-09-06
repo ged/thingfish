@@ -38,6 +38,11 @@ include ThingFish::TestHelpers
 #####################################################################
 describe ThingFish::DefaultHandler do
 
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::DEBUG
+	end
+	
 	before(:each) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'var/www'
 		@handler          = ThingFish::DefaultHandler.new( 'resource_dir' => resdir )
@@ -192,14 +197,6 @@ describe ThingFish::DefaultHandler do
 	it "handles HEAD /{uuid}" do
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		@request_headers.should_receive( :[] ).
-			with( :if_modified_since ).
-			at_least( :once ).
-			and_return( nil )
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			at_least( :once ).
-			and_return( nil )
 
 		etag = %q{"%s"} % [ TEST_CHECKSUM ]
 
@@ -208,6 +205,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :status= ).with( HTTP::OK )
 
 		@request.should_receive( :http_method ).and_return( 'HEAD' )
+		@request.should_receive( :is_cached_by_client? ).at_least(:once).and_return( false )
 		@response.should_not_receive( :body= )
 		@response_headers.should_receive( :[]= ).with( :etag, etag )
 		@response_headers.should_receive( :[]= ).with( :expires, an_instance_of(String) )
@@ -245,6 +243,9 @@ describe ThingFish::DefaultHandler do
 		@filestore.should_receive( :has_file? ).
 			with( TEST_UUID_OBJ ).
 			and_return( true )
+		@request.should_receive( :is_cached_by_client? ).
+			at_least( :once ).
+			and_return( false )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
 		@mockmetadata.should_receive( :checksum ).
@@ -276,19 +277,15 @@ describe ThingFish::DefaultHandler do
 			at_least( :once ).
 			and_return( uri )
 
+		@request.should_receive( :is_cached_by_client? ).
+			at_least( :once ).
+			and_return( false )
+
 		@query_args = mock( "uri query arguments", :null_object => true )
 		@request.stub!( :query_args ).and_return( @query_args )
 		@query_args.should_receive( :[] ).with( 'attach' ).and_return( false )
 	
 		@mockmetadata.stub!( :title ).and_return('potap.mp3')
-		@request_headers.
-			should_receive( :[] ).
-			with( :if_modified_since ).
-			and_return( nil )
-		@request_headers.
-			should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( nil )
 
 		@response_headers.
 			should_receive( :[]= ).
@@ -333,23 +330,10 @@ describe ThingFish::DefaultHandler do
 
 	### Caching tests
 	
-	# [RFC 2616]: If any of the entity tags match the entity tag of the
-	# entity that would have been returned in the response to a similar
-	# GET request (without the If-None-Match header) on that resource,
-	# or if "*" is given and any current entity exists for that resource,
-	# then the server MUST NOT perform the requested method, unless
-	# required to do so because the resource's modification date fails
-	# to match that supplied in an If-Modified-Since header field in the
-	# request.
-
-	it "checks request's 'If-Modified-Since' header to see if it can " +
-		"return a 304 NOT MODIFIED response" do
+	it "checks the request to see if it can return a 304 NOT MODIFIED response" do
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		modtime = 8.days.ago
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-
-		@request_headers.should_receive( :[] ).
-			with( :if_modified_since ).
-			and_return( 2.days.ago.httpdate )
 
 		etag = %q{"%s"} % [TEST_CHECKSUM]
 
@@ -359,10 +343,14 @@ describe ThingFish::DefaultHandler do
 		
 		@mockmetadata.should_receive( :modified ).
 			at_least( 1 ).
-			and_return( 8.days.ago.to_s )
+			and_return( modtime )
 		@mockmetadata.should_receive( :checksum ).
 			at_least( 1 ).
 			and_return( TEST_CHECKSUM )
+
+		@request.should_receive( :is_cached_by_client? ).
+			with( TEST_CHECKSUM, modtime ).
+			and_return( true )
 		
 		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
 		@response_headers.should_receive( :[]= ).
@@ -371,142 +359,6 @@ describe ThingFish::DefaultHandler do
 		@handler.handle_get_request( @request, @response )
 	end
 	
-
-	it "checks request's single cache token to see if it can return a " +
-		"304 NOT MODIFIED response" do
-
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		etag = %q{"%s"} % 'd6af7eeb992c81ba7b3b0fac3693d7fd'
-
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( etag )
-
-		@mockmetadata.should_receive( :checksum ).
-			at_least(:twice).and_return( etag )
-
-		@filestore.should_receive( :has_file? ).
-			with( TEST_UUID_OBJ ).
-			and_return( true )
-
-		@response.should_receive( :status= ).
-			with( HTTP::NOT_MODIFIED )
-
-		@handler.handle_get_request( @request, @response )
-	end
-	
-
-	it "checks all of request's cache tokens to see if it can return " +
-		"a 304 NOT MODIFIED response" do
-
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		etag = %q{"%s"} % 'd6af7eeb992c81ba7b3b0fac3693d7fd'
-
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( %Q{W/"v1.2", "#{etag}"} )
-
-		@mockmetadata.should_receive( :checksum ).
-			at_least(:twice).and_return( etag )
-
-		@filestore.should_receive( :has_file? ).
-			with( TEST_UUID_OBJ ).
-			and_return( true )
-		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
-
-		@handler.handle_get_request( @request, @response )
-	end
-	
-
-	it "ignores weak cache tokens" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		etag = 'W/"v1.2"'
-
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( etag )
-
-		@filestore.should_receive( :has_file? ).
-			with( TEST_UUID_OBJ ).
-			and_return( true )
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "returns a 304 NOT MODIFIED for a GET with a wildcard If-None-Match" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( '*' )
-
-		@filestore.should_receive( :has_file? ).
-			with( TEST_UUID_OBJ ).
-			and_return( true )
-		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
-
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "ignores a wildcard 'If-None-Match' if the 'If-Modified-Since' " +
-		"header is out of date" do
-
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		etag = %q{"%s"} % [ TEST_CHECKSUM ]
-
-		# If the resource exists
-		@filestore.should_receive( :has_file? ).
-			with( TEST_UUID_OBJ ).
-			and_return( true )
- 
-		metastore = mock( "metastore", :null_object => true )
-		mdproxy   = mock( "metadata proxy", :null_object => true )
-		listener  = mock( "thingfish daemon", :null_object => true )
-		metastore.stub!( :[] ).and_return( mdproxy )
-		listener.stub!( :filestore ).and_return( @filestore )
-		listener.stub!( :metastore ).and_return( metastore )
-		@handler.listener = listener
- 
-		# Check cacheability, which should indicate it's not cacheable
-		@request_headers.should_receive( :[] ).
-			with( :if_modified_since ).
-			and_return( 8.days.ago.httpdate )
-		mdproxy.should_receive( :modified ).
-			at_least( :once ).
-			and_return( 2.days.ago.to_s )
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( '*' )
-		mdproxy.should_receive( :checksum ).
-			at_least( :once ).and_return( TEST_CHECKSUM )
-  
-		# ...so it should fetch the resource's IO
-		@filestore.should_receive( :fetch_io ).
-			with( TEST_UUID_OBJ ).
-			and_return( :an_io )
-		@filestore.should_receive( :size ).and_return( 1024 )
-  
-		# ...and respond with it
-		@response_headers.should_receive( :[]= ).with( :etag, etag )
-		@response_headers.should_receive( :[]= ).
-			with( :expires, an_instance_of(String) )
-		@response_headers.should_receive( :[]= ).
-			with( :content_length, 1024 )
-  
-		@response.should_receive( :body= ).with( :an_io )
-  
-		@request.stub!( :http_method ).and_return( 'GET' )
-		@handler.handle_get_request( @request, @response )
-	end
-
 
 	### PUT /«uuid» tests
 

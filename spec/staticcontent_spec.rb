@@ -105,10 +105,13 @@ describe ThingFish::StaticContentHandler do
 			should_receive( :[]= ).
 			with( :content_type, 'text/html' )
 
-		@pathname.should_receive( :size ).and_return( 7 )
+		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
+		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
+		@request.should_receive( :is_cached_by_client? ).and_return( false )
+
 		@response_headers.
 			should_receive( :[]= ).
-			with( :content_length, 7 )
+			with( :content_length, 10 )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -127,10 +130,13 @@ describe ThingFish::StaticContentHandler do
 			should_receive( :[]= ).
 			with( :content_type, ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
 
-		@pathname.should_receive( :size ).and_return( 7938844 )
+		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
+		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
+		@request.should_receive( :is_cached_by_client? ).and_return( false )
+
 		@response_headers.
 			should_receive( :[]= ).
-			with( :content_length, 7938844 )
+			with( :content_length, 10 )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -161,10 +167,13 @@ describe ThingFish::StaticContentHandler do
 			should_receive( :[]= ).
 			with( :content_type, ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
 
-		@indexpath.should_receive( :size ).and_return( 7938844 )
+		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
+		@indexpath.should_receive( :stat ).at_least( :once ).and_return( stat )
+		@request.should_receive( :is_cached_by_client? ).and_return( false )
+
 		@response_headers.
 			should_receive( :[]= ).
-			with( :content_length, 7938844 )
+			with( :content_length, 10 )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -173,6 +182,36 @@ describe ThingFish::StaticContentHandler do
 
 		@handler.handle_get_request( @request, @response )
 	end
+	
+	
+	it "sends a 304 NOT MODIFIED response if the request's etag header matches" do
+		@request.should_receive( :path_info ).
+			and_return( 'barrel/o/pork.html' )
+		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		
+		mtime = 3.days.ago
+		
+		@pathname.should_receive( :directory? ).and_return( false )
+		@pathname.should_receive( :exist? ).and_return( true )
+		@pathname.should_receive( :file? ).and_return( true )
+		@pathname.should_receive( :readable? ).and_return( true )
+
+		stat = stub( "file stat", :mtime => mtime, :size => 10, :ino => 23452 )
+		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
+			
+		@request.should_receive( :is_cached_by_client? ).
+			with( "%d-%d-%d" % [ mtime.to_i, 10, 23452 ], mtime ).
+			and_return( true )
+
+		@response.should_receive( :status= ).with( HTTP::NOT_MODIFIED )
+
+		@pathname.should_not_receive( :open ).with('r').and_return( :an_IO )
+		@response.should_not_receive( :body= ).with( :an_IO )
+
+		@handler.handle_get_request( @request, @response )
+	end
+	
+	
 end
 
 

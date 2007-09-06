@@ -34,10 +34,16 @@ include ThingFish::Constants
 
 describe ThingFish::Request do
 	
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
 	before( :each ) do
 		@mongrel_request = mock( "mongrel request", :null_object => true )
 		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
 		@request = ThingFish::Request.new( @mongrel_request, config )
+		@request.stub!( :path_info ).and_return( '/a/test/path' )
 	end
 
 	
@@ -197,6 +203,86 @@ describe ThingFish::Request do
 		@request.accepts?( 'text/ascii' ).should be_true()
 		@request.accepts?( 'image/png' ).should be_true()
 		@request.accepts?( 'application/x-yaml' ).should be_true()
+	end
+end
+
+describe ThingFish::Request, " with cache headers" do
+
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
+	before( :each ) do
+		@config = stub( "config object" )
+		@request_headers = mock( "request headers", :null_object => true )
+		@request = ThingFish::Request.new( @mongrel_request, @config )
+		@request.instance_variable_set( :@headers, @request_headers )
+		@request.stub!( :path_info ).and_return( '/a/test/path' )
+		
+		@etag = %{"%s"} % [ TEST_CHECKSUM ]
+		@weak_etag = %{W/"v1.2"}
+	end
+
+	
+	### Cache header predicate
+	
+	# [RFC 2616]: If any of the entity tags match the entity tag of the
+	# entity that would have been returned in the response to a similar
+	# GET request (without the If-None-Match header) on that resource,
+	# or if "*" is given and any current entity exists for that resource,
+	# then the server MUST NOT perform the requested method, unless
+	# required to do so because the resource's modification date fails
+	# to match that supplied in an If-Modified-Since header field in the
+	# request.
+
+	it "checks the content cache token to see if it is cached by the client" do
+		@request_headers.should_receive( :[] ).
+			with( :if_none_match ).
+			and_return( @etag )
+
+		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+	end
+	
+	
+	it "checks all cache content tokens to see if it is cached by the client" do
+		@request_headers.should_receive( :[] ).
+			with( :if_none_match ).
+			and_return( %Q{#{@weak_etag}, "#{@etag}"} )
+
+		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+	end
+	
+
+	it "ignores weak cache tokens when checking to see if it is cached by the client" do
+		@request_headers.should_receive( :[] ).
+			with( :if_none_match ).
+			and_return( @weak_etag )
+
+		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
+	end
+
+
+	it "indicates that the client has a cached copy with a wildcard If-None-Match" do
+		@request_headers.should_receive( :[] ).
+			with( :if_none_match ).
+			and_return( '*' )
+
+		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+	end
+
+
+	it "ignores a wildcard 'If-None-Match' if the 'If-Modified-Since' " +
+	   "header is out of date when checking to see if the client has a cached copy" do
+
+		@request_headers.should_receive( :[] ).
+			with( :if_modified_since ).
+			and_return( 8.days.ago.httpdate )
+		@request_headers.should_receive( :[] ).
+			with( :if_none_match ).
+			and_return( '*' )
+  
+		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
 	end
 	
 end

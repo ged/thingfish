@@ -75,14 +75,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	# Pattern to match UUIDs more efficiently than uuidtools
 	UUID_PATTERN = /^(#{HEX8})-(#{HEX4})-(#{HEX4})-(#{HEX2})(#{HEX2})-(#{HEX12})$/
 
-	# Pattern to match the contents of ETag and If-None-Match headers
-	ENTITY_TAG_PATTERN = %r{
-		(w/)?		# Weak flag
-		"			# Opaque-tag
-			([^"]+)	# Quoted-string
-		"			# Closing quote
-	  }ix
-
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -104,10 +96,12 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# If this is a request to the root, handle it ourselves
 		when '/'
+			self.log.debug "Index request"
 			self.handle_index_fetch_request( request, response )
 
 		# Likewise for a request to /<a uuid>
 		when UUID_URL
+			self.log.debug "UUID request"
 			uuid = parse_uuid( $1 )
 			self.handle_resource_fetch_request( request, response, uuid )
 
@@ -354,72 +348,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### the client can just use the cached version. This usually means that the
 	### handler will send a 304 NOT MODIFIED.
 	def can_send_cached_response?( request, uuid )
-		moddate_checked = false
-		self.log.debug "Checking to see if we can send a cached response"
-		
-		# Check If-Modified-Since header
-		if (( moddatestr = request.headers[:if_modified_since] ))
-			moddate = Time.parse( moddatestr )
-			self.log.debug "Comparing modification dates (%p vs. %p)" %
-				[ @metastore[ uuid ].modified, moddate ]
-				
-			return true if Time.parse( @metastore[ uuid ].modified ) <= moddate
-			moddate_checked = true
-		end
-			
-		# Check If-None-Match header
-		if (( etagheader = request.headers[:if_none_match] ))
-			self.log.debug "Testing etags (%p) against resource %s" % [ etagheader, uuid ]
-
-			if etagheader =~ /^\s*['"]?\*['"]?\s*$/
-
-				# If we've already checked the modification data and our copy is newer
-				# RFC 2616 14.26: "[...] if "*" is given and any current entity exists
-				# for that resource, then the server MUST NOT perform the requested
-				# method, unless required to do so because the resource's modification
-				# date fails to match that supplied in an If-Modified-Since header
-				# field in the request"
-				if moddate_checked
-					self.log.debug "Cache miss: wildcard If-None-Match, but " +
-						"If-Modified-Since is out of date"
-					return false
-				end
-
- 				self.log.debug "Cache hit: wildcard If-None-Match"
-				return true
-			end
-			
-			etagheader.scan( ENTITY_TAG_PATTERN ) do |weakflag, tag|
-				return true if self.etag_matches_resource?( uuid, weakflag, tag )
-			end
-		end
-			
-		self.log.debug "Response wasn't cacheable"
-		return false
-	end
-	
-
-	### Returns true if the given +tag+ (i.e., the 'opaque-tag' part of an ETag from 
-	### RFC 2616, section 3.11) matches the checksum of the resource associated with 
-	### the specified +uuid+. ThingFish currently doesn't support weak validators, 
-	### so if +weakflag+ is set, this method currently always returns false.
-	def etag_matches_resource?( uuid, weakflag, tag )
-
-		# Client weak request is allowed, but ignored.
-		# (checksumming is always strong)
-		if weakflag
-			self.log.debug "Cache miss: Weak entity tag"
-			return false
-		end
-
-		# :TODO: Perhaps cache this if creating the metadata proxy becomes a 
-		# performance hit.
-		if @metastore[ uuid ].checksum == tag
-			self.log.debug "Cache hit: Etag checksum match (%p)" % [tag]
-			return true
-		else
-			self.log.debug "Cache miss: Etag doesn't match (%p)" % [tag]
-		end
+		metadata = @metastore[ uuid ]
+		return request.is_cached_by_client?( metadata.checksum, metadata.modified )
 	end
 	
 	

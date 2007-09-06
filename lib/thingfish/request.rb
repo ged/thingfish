@@ -56,6 +56,14 @@ class ThingFish::Request
 	# SVN Id
 	SVNId = %q$Id$
 
+	# Pattern to match the contents of ETag and If-None-Match headers
+	ENTITY_TAG_PATTERN = %r{
+		(w/)?		# Weak flag
+		"			# Opaque-tag
+			([^"]+)	# Quoted-string
+		"			# Closing quote
+	  }ix
+
 
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
 	### The specified +spooldir+ will be used for spooling uploaded files, 
@@ -190,6 +198,72 @@ class ThingFish::Request
 		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
 		
 		return parser.parse( @mongrel_request.body, boundary )
+	end
+	
+	
+	### Checks cache headers against the given etag and modification time.
+	### Returns boolean true if the client claims to have a valid copy.
+	def is_cached_by_client?( etag, modtime )
+		modtime_checked = false
+		self.log.debug "Checking to see if we can send a cached response"
+		
+		path_info = self.path_info
+		modtime = Time.parse( modtime.to_s ) unless modtime.is_a?( Time )
+	
+		# Check If-Modified-Since header
+		if (( modtimestr = self.headers[:if_modified_since] ))
+			client_modtime = Time.parse( modtimestr )
+			self.log.debug "Comparing %s's modification dates (%p vs. %p)" %
+				[ path_info, modtime, client_modtime ]
+				
+			return true if modtime <= client_modtime
+			modtime_checked = true
+		end
+			
+		# Check If-None-Match header
+		if (( etagheader = self.headers[:if_none_match] ))
+			self.log.debug "Testing etags (%p) on %s against resource's etag %s" % 
+				[ etagheader, path_info, etag ]
+
+				# etag wildcard regexp
+			if etagheader =~ /^\s*['"]?\*['"]?\s*$/
+
+				# If we've already checked the modification data and our copy is newer
+				# RFC 2616 14.26: "[...] if "*" is given and any current entity exists
+				# for that resource, then the server MUST NOT perform the requested
+				# method, unless required to do so because the resource's modification
+				# date fails to match that supplied in an If-Modified-Since header
+				# field in the request"
+				if modtime_checked
+					self.log.debug( ("Cache miss (%s): wildcard If-None-Match, but " +
+						"If-Modified-Since is out of date") % [ path_info ] )
+					return false
+				end
+
+ 				self.log.debug "Cache hit (%s): wildcard If-None-Match" %
+					[ path_info ]
+				return true
+			end
+			
+			etagheader.scan( ENTITY_TAG_PATTERN ) do |weakflag, tag|
+				if weakflag
+					self.log.debug "Cache miss (%s): Weak entity tag" % [ path_info ]
+					next
+				end
+				
+				if tag == etag
+					self.log.debug "Cache hit (%s): Etag checksum match (%p)" % 
+						[ path_info, tag ]
+					return true
+				else
+					self.log.debug "Cache miss (%s): Etag doesn't match (%p)" % 
+						[ path_info, tag ]
+				end	
+			end
+		end
+			
+		self.log.debug "Response for %s wasn't cacheable" % [ path_info ]
+		return false
 	end
 	
 	

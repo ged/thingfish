@@ -98,23 +98,18 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 			return
 		end
 
-		# TODO: Add etag caching
-		# Calculate caching data (lots of this stuff borrowed from Mongrel's 
-		# DirHandler)
-		# mtime = file.mtime
-		# etag = Const::ETAG_FORMAT % [mtime.to_i, file.size, file.ino]
-		# response.headers[:etag] = etag
-		# response.headers[:]
-		# 
-		# if self.is_cacheable( request, file )
-		# 	response.status = HTTP::NOT_MODIFIED
-		# 	response.body = ''
-		# 
-		# 	response.headers[:etag] = 
-		# 
-		# 	return
-		# end
+		# Add cache headers
+		file_stat = file.stat
+ 		etag = "%d-%d-%d" % [ file_stat.mtime.to_i, file_stat.size, file_stat.ino ]
+		response.headers[:etag] = %Q{"#{etag}"}
+		response.headers[:expires] = 1.year.from_now.httpdate
 
+		# Send a NOT_MODIFIED response if possible
+		if request.is_cached_by_client?( etag, file_stat.mtime )
+			response.status = HTTP::NOT_MODIFIED
+			return
+		end
+		
 		# Set Content-Type and Content-Length headers.
 		extension = file.extname.downcase
 		if MIMETYPE_MAP.key?( extension )
@@ -127,7 +122,7 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 			self.log.warn "No MIME mapping for %p" % [ extension ]
 			response.headers[:content_type] = DEFAULT_CONTENT_TYPE
 		end
-		response.headers[:content_length] = file.size
+		response.headers[:content_length] = file_stat.size
 				
 		response.status = HTTP::OK
 		response.body = file.open('r')

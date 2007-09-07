@@ -222,7 +222,7 @@ class ThingFish::Request
 			
 		# Check If-None-Match header
 		if (( etagheader = self.headers[:if_none_match] ))
-			self.log.debug "Testing etags (%p) on %s against resource's etag %s" % 
+			self.log.debug "Testing etag %s on %s against resource's etag %s" % 
 				[ etagheader, path_info, etag ]
 
 				# etag wildcard regexp
@@ -252,13 +252,11 @@ class ThingFish::Request
 				end
 				
 				if tag == etag
-					self.log.debug "Cache hit (%s): Etag checksum match (%p)" % 
-						[ path_info, tag ]
+					self.log.debug "Cache hit (%s)" % [ path_info ]
 					return true
 				else
-					self.log.debug "Cache miss (%s): Etag doesn't match (%p)" % 
-						[ path_info, tag ]
-				end	
+					self.log.debug "Cache miss (%s)" % [ path_info ]
+				end
 			end
 		end
 			

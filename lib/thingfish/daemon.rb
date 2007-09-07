@@ -80,7 +80,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		# Load plugins for filestore, filters, and handlers
 		@filestore = @config.create_configured_filestore
 		@metastore = @config.create_configured_metastore
-		@filters = []
+		@filters = @config.create_configured_filters
 
 		super( @config.ip, @config.port )
 		self.log.info "Starting at: http://%s:%d/" % [ @config.ip, @config.port ]

@@ -31,11 +31,14 @@ require 'pathname'
 require 'pluginfactory'
 require 'thingfish'
 require 'thingfish/mixins'
+require 'thingfish/acceptparam'
 
 
 ### Base class for ThingFish Filter plugins
 class ThingFish::Filter
-	include PluginFactory, ThingFish::Loggable
+	include PluginFactory,
+		ThingFish::Loggable,
+		ThingFish::AbstractClass
 
 
 	# SVN Revision
@@ -43,6 +46,9 @@ class ThingFish::Filter
 
 	# SVN Id
 	SVNId = %q$Id$
+
+	# The default handled types (*/*)
+	DEFAULT_HANDLED_TYPE = ThingFish::AcceptParam.new( nil, nil )
 
 
 	#################################################################
@@ -68,10 +74,10 @@ class ThingFish::Filter
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Set up a new Handler object
-	def initialize( options={} )
+	### Set up a new Filter object
+	def initialize( options={} ) # :notnew:
 		@config = nil
-		super
+		super()
 	end
 	
 
@@ -79,6 +85,23 @@ class ThingFish::Filter
 	public
 	######
 
+	virtual :handle_request, :handle_response
+
+
+	### Return an Array of ThingFish::AcceptParam objects which describe which content types
+	### the filter is interested in. The default returns */*, which indicates that it is 
+	### interested in all requests/responses.
+	def handled_types
+		return [DEFAULT_HANDLED_TYPE]
+	end
+	
+	
+	### Returns true if this filter can handle the given +content_type+.
+	def accepts?( content_type )
+		return self.handled_types.find {|type| type =~ content_type } ? true : false
+	end
+	alias_method :accept?, :accepts?
+	
 	
 
 end # class ThingFish::Filter

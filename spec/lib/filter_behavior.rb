@@ -30,5 +30,11 @@ describe "A Filter", :shared => true do
 	include ThingFish::TestHelpers
 
 
+	it "knows what types it handles" do
+		@filter.handled_types.should be_an_instance_of( Array )
+		@filter.handled_types.each {|f| f.should be_an_instance_of(ThingFish::AcceptParam) }
+	end
+
+	
 end
 

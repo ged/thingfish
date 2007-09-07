@@ -35,6 +35,9 @@ require 'logger'
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/mixins'
+require 'thingfish/filter'
+require 'thingfish/filestore'
+require 'thingfish/metastore'
 
 
 ### The configuration reader/writer class for ThingFish::Daemon.
@@ -73,7 +76,7 @@ class ThingFish::Config
 				:extractors => [],
 			},
 			:handlers => [],
-			:filters => [],
+			:filters => {},
 		},
 
 		:logging => {
@@ -218,6 +221,18 @@ class ThingFish::Config
 		self.log.info "Creating a %s metastore with options %p" % [ name, options ]
 		
 		return ThingFish::MetaStore.create( name, options )
+	end
+	
+
+	### Instantiate, configure, and return the filter plugins specified by the
+	### configuration.
+	def create_configured_filters
+		filters = self.plugins.filters.to_hash
+		
+		return filters.collect do |name, options|
+			self.log.info "Loading '%s' filter with options: %p" % [ name, options ]
+			 ThingFish::Filter.create( name.to_s, options )
+		end
 	end
 	
 

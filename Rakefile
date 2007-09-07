@@ -116,7 +116,7 @@ Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_files.include 'README'
 	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.relative_path_from(BASEDIR).to_s }
 	
-	log "Option list is: %p" % [rdoc.option_list]
+	trace "Option list is: %p" % [rdoc.option_list]
 end
 task :rdoc do
 	outputdir = DOCSDIR + 'api'

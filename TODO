@@ -34,3 +34,14 @@ Do me straight away
 
 - Client -- use content disposition filename if none is specified, fallback to using
   mime type mappings in constants
+
+- Write a benchmarking suite so we can establish a baseline of performance and track the impact on
+  performance of any future changes.
+  * AutoBench? (http://www.xenoclast.org/autobench/)
+  * Httperf? (http://www.hpl.hp.com/research/linux/httperf/)
+
+- Update docs!  Fill in placeholders now that APIs are solid.
+
+- Handle the HTTP::NOT_ACCEPTABLE case; currently this 404s if the body is set, but the status
+  is still the default.
+

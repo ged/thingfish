@@ -1,0 +1,23 @@
+== Thingfish::JSONFilter
+
+This is a filter plugin for ThingFish which converts Ruby data structures
+into JSON strings.
+
+It requires the json module, available at
+	http://json.rubyforge.org/
+
+== Configuration
+
+ plugins:
+     filters:
+         json: ~
+
+== Authors
+
+* Michael Granger <mgranger@laika.com>
+* Mahlon E. Smith <mahlon@laika.com>
+
+== License
+
+Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
+

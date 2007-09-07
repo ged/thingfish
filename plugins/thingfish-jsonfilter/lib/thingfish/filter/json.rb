@@ -1,12 +1,12 @@
 #!/usr/bin/ruby
 # 
-# A YAML conversion filter for ThingFish
+# A JSON conversion filter for ThingFish
 # 
 # == Synopsis
 # 
 #   plugins:
 #       filters:
-#          yaml: ~
+#          json: ~
 # 
 # == Version
 #
@@ -24,7 +24,7 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'yaml'
+require 'json'
 
 require 'thingfish'
 require 'thingfish/mixins'
@@ -32,9 +32,9 @@ require 'thingfish/constants'
 require 'thingfish/acceptparam'
 
 
-### A YAML-conversion filter for ThingFish. It converts Ruby objects in the body of responses 
-### to YAML if the client accepts 'text/x-yaml'.
-class ThingFish::YAMLFilter < ThingFish::Filter
+### A JSON-conversion filter for ThingFish. It converts Ruby objects in the body of responses 
+### to JSON if the client accepts 'application/json'.
+class ThingFish::JSONFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
@@ -69,27 +69,26 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	end
 
 
-	### Convert outgoing ruby object responses into YAML.
+	### Convert outgoing ruby object responses into JSON.
 	def handle_response( response, request )
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.accept?( 'text/x-yaml' ) &&
+		return unless request.accept?( 'application/json' ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue
 		begin
-			self.log.debug "Converting a %s response to text/x-yaml" %
+			self.log.debug "Converting a %s response to application/json" %
 				[ response.headers[:content_type] ]
-			response.body = response.body.to_yaml
+			response.body = response.body.to_json
 		rescue => err
-			self.log.error "%s while attempting to convert %p to YAML: %s" %
+			self.log.error "%s while attempting to convert %p to JSON: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = 'text/x-yaml'
+			response.headers[:content_type] = 'application/json'
 			response.status = HTTP::OK
 		end
-
 	end
 
 
@@ -101,7 +100,8 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	end
 	
 	
-end # class ThingFish::YAMLFilter
+end # class ThingFish::JSONFilter
 
 # vim: set nosta noet ts=4 sw=4:
+
 

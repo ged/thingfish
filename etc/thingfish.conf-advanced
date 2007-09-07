@@ -1,0 +1,57 @@
+#
+# This is an advanced configuration file for ThingFish.
+#
+# Please note that this -probably- won't work without modifications
+# that properly reflect your environment.
+#
+# Behaviors:
+#	- Bind only to the localhost interface, port 80.
+#	- Become a daemon.
+#	- Store metadata and filedata persistently.
+#   - All data is stored under /home/thingfish/var.
+#	- Install some useful intropection and file upload handlers.
+#	- Install some basic response filters.
+#
+---
+port: 80
+ip: 127.0.0.1
+spooldir: /home/thingfish/var/spool
+bufsize: 16384
+user: daemon
+daemon: true
+pidfile: /home/thingfish/var/thingfish.pid
+
+defaulthandler:
+    html_index: index.rhtml
+    resource_dir: /home/thingfish/var/www
+
+logging:
+    level: info
+    logfile: /home/thingfish/var/thingfish.log
+
+plugins:
+    filestore:
+        name: filesystem
+        maxsize: 1073741824
+        root: /home/thingfish/var
+    metastore:
+        name: marshalled
+        root: /home/thingfish/var
+    filters:
+        yaml: ~
+        json: ~
+    handlers:
+        - inspect:
+            uris: /inspect
+            resource_dir: /home/thingfish/plugins/thingfish-inspecthandler/resources
+        - upload:
+            uris: /upload
+            resource_dir: /home/thingfish/plugins/thingfish-uploadhandler/resources
+        - metadata:
+            uris: /metadata
+            resource_dir: /home/thingfish/var/www
+        - status:
+            uris: /status
+            stat_uris: [/, /inspect, /upload, /metadata, /status]
+            resource_dir: /home/thingfish/plugins/thingfish-statushandler/resources
+

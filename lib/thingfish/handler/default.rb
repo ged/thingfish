@@ -371,7 +371,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		disposition << 'attachment' if request.query_args['attach']
 
 		if (( filename = @metastore[ uuid ].title ))
-			disposition << "filename=%s" % [ filename ]
+			disposition << "filename=\"%s\"" % [ filename ]
 		end
 
 		if (( modified_time = @metastore[ uuid ].modified ))

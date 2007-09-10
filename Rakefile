@@ -185,14 +185,14 @@ end
 
 
 ### Task: install
-task :install => [:package] do
+task :install_gem => [:package] do
 	$stderr.puts 
 	installer = Gem::Installer.new( %{pkg/#{PKG_FILE_NAME}.gem} )
 	installer.install
 end
 
 ### Task: uninstall
-task :uninstall => [:clean] do
+task :uninstall_gem => [:clean] do
 	uninstaller = Gem::Uninstaller.new( PKG_FILE_NAME )
 	uninstaller.uninstall
 end

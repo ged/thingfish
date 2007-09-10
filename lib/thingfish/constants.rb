@@ -53,10 +53,17 @@ module ThingFish::Constants
 	# The default location of upload temporary files
 	DEFAULT_SPOOLDIR = Dir.tmpdir
 	
-	# Constants for HTTP headers
+	### Constants for HTTP headers
+	
+	# The version of the server
 	SERVER_VERSION = ThingFish::VERSION
+	
+	# The version + the name of the server
 	SERVER_SOFTWARE = "ThingFish/#{SERVER_VERSION}"
+	
+	# Version and name of the server + subversion rev
 	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
+
 
 	# Suck in a mapping of default mime types by file extension from the data
 	# section of this file
@@ -68,9 +75,12 @@ module ThingFish::Constants
 	# Pattern to match a valid multipart form upload 'Content-Type' header
 	MULTIPART_MIMETYPE_PATTERN = %r{(multipart/form-data).*boundary="?([^\";,]+)"?}
 	
-	# Steal some Mongrel constants
-	STATUS_LINE_FORMAT = Mongrel::Const::STATUS_FORMAT
-	HEADER_FORMAT      = Mongrel::Const::HEADER_FORMAT
+
+	# The format used to create the HTTP response's status line
+	STATUS_LINE_FORMAT = "HTTP/1.1 %d %s\r\n".freeze
+	
+	# The format used to generate HTTP headers
+	HEADER_FORMAT      = "%s: %s\r\n".freeze
 
 
 	# HTTP status and result constants

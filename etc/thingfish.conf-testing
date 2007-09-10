@@ -1,0 +1,45 @@
+#
+# This is a configuration file for ThingFish we use for testing while developing.
+#
+# It causes the daemon to run from the development directory only, and store filestore 
+# and metadata in /tmp/thingfish. 
+#
+---
+port: 3474
+ip: 0.0.0.0
+spooldir: /tmp/thingfish
+bufsize: 16384
+
+defaulthandler:
+    html_index: index.rhtml
+    resource_dir: var/www
+
+logging:
+    level: debug
+    logfile: stdout
+
+plugins:
+    filestore:
+        name: filesystem
+        maxsize: 1073741824
+        root: /tmp/thingfish
+    metastore:
+        name: marshalled
+        root: /tmp/thingfish
+    handlers:
+        - inspect:
+            uris: /inspect
+            resource_dir: plugins/thingfish-inspecthandler/resources
+        - status:
+            uris: /status
+            stat_uris: [/, /inspect, /upload]
+            resource_dir: plugins/thingfish-statushandler/resources
+        - upload:
+            uris: /upload
+            resource_dir: plugins/thingfish-uploadhandler/resources
+        - metadata:
+            uris: /metadata
+            resource_dir: var/www
+    filters:
+        yaml: {}
+        json: {}

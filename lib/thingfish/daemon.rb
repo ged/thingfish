@@ -314,8 +314,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		status_line = STATUS_LINE_FORMAT %
 			[ response.status, HTTP::STATUS_NAME[ response.status ] ]
 		response.write( status_line )
+		self.log.info "Response: #{status_line.chomp}"
 
 		# Send the headers
+		response.headers[:connection] = 'close'
 		response.headers[:content_length] ||= response.get_content_length
 		response.headers[:date] = Time.now.httpdate
 		response.write( response.headers.to_s + "\r\n" )

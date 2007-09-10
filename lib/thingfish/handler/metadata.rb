@@ -28,14 +28,13 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'pp'
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/handler'
 require 'thingfish/mixins'
 
 
-### The default top-level handler for the thingfish daemon
+### The default metadata handler for the thingfish daemon
 class ThingFish::MetadataHandler < ThingFish::Handler
 
 	include ThingFish::Constants,

@@ -290,7 +290,7 @@ describe ThingFish::DefaultHandler do
 		@response_headers.
 			should_receive( :[]= ).
 			with( :content_disposition,
-				'filename=potap.mp3; ' + 
+				'filename="potap.mp3"; ' + 
 				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
 
 		@request.stub!( :http_method ).and_return( 'GET' )

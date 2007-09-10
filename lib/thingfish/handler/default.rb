@@ -374,9 +374,10 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			disposition << "filename=%s" % [ filename ]
 		end
 
-		if (( modified_date = @metastore[ uuid ].modified ))
-			disposition << "modification-date=\"%s\"" % 
-				[ Time.parse( modified_date ).rfc822 ]
+		if (( modified_time = @metastore[ uuid ].modified ))
+			modified_time = Time.parse( modified_time.to_s ) unless
+				modified_time.is_a?( Time )
+			disposition << "modification-date=\"%s\"" % [ modified_time.rfc822 ]
 		end
 
 		response.headers[ :content_disposition ] = disposition.join('; ')

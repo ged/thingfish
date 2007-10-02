@@ -74,6 +74,7 @@ class ThingFish::Request
 		@query_args		 = nil
 		@accepted_types  = nil
 		@uri             = nil
+		@metadata        = Hash.new {|h,k| h[k] = {} }
 	end
 
 
@@ -87,6 +88,10 @@ class ThingFish::Request
 	
 	# The original Mongrel::HttpRequest object
 	attr_reader :mongrel_request
+
+	# The hashes of uploaded metadata, one per body part being uploaded, keyed on the IO
+	# of the uploaded file.
+	attr_reader :metadata
 	
 	
 	### Return a URI object for the requested URI.
@@ -126,6 +131,7 @@ class ThingFish::Request
 		
 		return @headers
 	end
+	alias_method :header, :headers
 
 
 	### Return a Hash of request query arguments.  This is a regular Hash, rather
@@ -135,7 +141,7 @@ class ThingFish::Request
 	### TODO: Parse query args for methods other than GET.
 	def query_args
 		return {} if @uri.query.nil?
-		@query_args = @uri.query.split(/[&;]/).inject({}) do |hash,arg|
+		@query_args ||= @uri.query.split(/[&;]/).inject({}) do |hash,arg|
 			key, val = arg.split('=')
 			case val
 			when NilClass
@@ -175,6 +181,7 @@ class ThingFish::Request
 		content_type = self.headers[:content_type] or return false
 		return content_type =~ MULTIPART_MIMETYPE_PATTERN ? true : false
 	end
+	alias_method :is_multipart?, :has_multipart_body?
 
 
 	### Parse the files and form parameters from a multipart (upload) form request 
@@ -198,6 +205,74 @@ class ThingFish::Request
 		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
 		
 		return parser.parse( @mongrel_request.body, boundary )
+	end
+
+
+	### Call the provided block once for each entity body of the request, which may
+	### be multiple times in the case of a multipart request.
+	###
+	### The +metadata_hash+ passed to the block of #each_body is a merged collection 
+	### of:
+	### 
+	###  * Any metadata extracted by (previous) filters
+	###  * Metadata passed in the request as query arguments (e.g., from an upload form)
+	###  * Content metadata that pertains to the body being yielded
+	###  * Request metadata (e.g., user agent, requester's IP, etc.)
+	### 
+	### The hash is merged top-down, which means that later values supercede earlier 
+	### ones. This is to prevent free-form upload metadata from colliding with the 
+	### metadata required for the filestore and metastore themselves.
+	def each_body  # :yields: body_io, metadata_hash
+		default_metadata = {
+			:useragent     => self.headers[ :user_agent ],
+			:uploadaddress => self.remote_addr
+		}
+
+		if self.has_multipart_body?
+			bodies, form_metadata = self.parse_multipart_body
+			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
+				[bodies.length, form_metadata.length, form_metadata.keys]
+			
+			bodies.each do |body, body_metadata|
+				extracted_metadata = self.metadata[body] || {}
+
+				# Content metadata is determined per-multipart section
+				merged = extracted_metadata.merge( form_metadata )
+				merged.update( body_metadata )
+				merged.update( default_metadata )
+				
+				body.open if body.closed?
+				self.log.debug "Yielding body = %p, merged metadata = %p" %
+					[ body, merged ]
+				yield( body, merged )
+			end
+		else
+			body, metadata = self.get_body_and_metadata
+			yield( body, metadata )
+		end
+	end
+
+
+	### Get the body IO and the merged hash of metadata
+	def get_body_and_metadata
+		raise ArgumentError, "Can't return a single body for a multipart request" if
+			self.has_multipart_body?
+		
+		default_metadata = {
+			:useragent     => self.headers[ :user_agent ],
+			:uploadaddress => self.remote_addr
+		}
+
+		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
+
+		# Content metadata is determined from http headers
+		merged = extracted_metadata.merge({
+			:format => self.headers[ :content_type ],
+			:extent => self.headers[ :content_length ],
+		})
+		merged.update( default_metadata )
+		
+		return @mongrel_request.body, merged
 	end
 	
 	
@@ -261,6 +336,15 @@ class ThingFish::Request
 		end
 			
 		self.log.debug "Response for %s wasn't cacheable" % [ path_info ]
+		return false
+	end
+
+	
+	### Return +true+ if the request is from XMLHttpRequest (as indicated by the
+	### 'X-Requested-With' header from Scriptaculous or jQuery)
+	def is_ajax_request?
+		xrw_header = self.headers[ :x_requested_with ]
+		return true if !xrw_header.nil? && xrw_header =~ /xmlhttprequest/i
 		return false
 	end
 	

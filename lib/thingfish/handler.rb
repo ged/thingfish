@@ -93,6 +93,10 @@ class ThingFish::Handler
 	public
 	######
 
+	# Rename the listener reader to reflect its name in ThingFish-land
+	alias_method :daemon, :listener
+
+
 	### Do some consistent stuff for each handler.
 	def process( request, response )
 		self.log_request( request )

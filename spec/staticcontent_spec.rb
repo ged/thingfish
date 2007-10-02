@@ -37,6 +37,8 @@ include ThingFish::TestHelpers
 describe ThingFish::StaticContentHandler do
 
 	before( :each ) do
+		ThingFish.logger.level = Logger::FATAL
+
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + '/tmp'
 		@handler = ThingFish::Handler.create( 'staticcontent', resdir )
 

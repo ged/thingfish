@@ -102,10 +102,15 @@ class ThingFish::UploadHandler < ThingFish::Handler
 	def handle_get_request( request, response )
 		return unless request.path_info == ''
 		
-		# Attempt to serve upload form
+		uri = request.uri.path
+		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
+		uploadform = formtemplate.result( binding() )
+
+		# uploadform is rendered in-place in this template
 		content = self.get_erb_resource( 'upload.rhtml' )
-		response.headers[ :content_type ] = 'text/html'
 		response.body = content.result( binding() )
+		
+		response.headers[ :content_type ] = 'text/html'
 		response.status = HTTP::OK
 	end
 
@@ -116,56 +121,23 @@ class ThingFish::UploadHandler < ThingFish::Handler
 
 		self.log.debug "Handling POSTed upload/s"
 
-		# Parse the incoming request.
-		files, params = request.parse_multipart_body
-		self.log.debug "Parsed %d files and %d params (%p)" % 
-			[files.length, params.length, params.keys]
-	
-		# merge global metadata with file specific metadata
-		# walk through parsed files, pass to thingfish meta and file stores
-		files.each do |file, meta|
-			meta.merge!( params )
-
-			# store the file
-			file.open  # reopen filehandle for store_io
-			meta[:uuid] = self.store_resource( file, meta, request )
+		files = []
+		request.each_body do |body, metadata|
+			body.open  # reopen filehandle for store_io
+			uuid = self.daemon.store_resource( body, metadata )
+			metadata[:uuid] = uuid
+			files << [ uuid, metadata ]
 		end
 
 		# Return success with links to new files
+		uri = request.uri.path
+		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
+		uploadform = formtemplate.result( binding() )
 		content = self.get_erb_resource( 'upload.rhtml' )
+
 		response.status = HTTP::OK
 		response.headers[ :content_type ] = 'text/html'
 		response.body = content.result( binding() )
-	end
-
-
-	### Store the data in +file+ as a new resource, extracting default metadata from
-	### +request+ and storing any metadata in +meta+.
-	def store_resource( file, meta, request )
-		uuid = UUID.timestamp_create
-		self.log.debug "Storing %p as %p" % [ file, uuid ]
-		checksum = @filestore.store_io( uuid, file )
-		file.unlink
-
-		# Store some default metadata about the resource
-		@metastore[ uuid ].checksum = checksum
-		@metastore.extract_default_metadata( uuid, request )
-
-		# Iterate over metadata hash, attach to file
-		meta.each do |key, val|
-			next if val.to_s.length.zero?
-			mstore = @metastore[ uuid ]
-			mstore.send( "#{key}=", val )
-		end
-
-		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
-			uuid,
-			meta[ :format ],
-			meta[ :extent ] / 1024.0,
-			checksum
-		  ]
-
-		return uuid
 	end
 
 end # class ThingFish::UploadHandler

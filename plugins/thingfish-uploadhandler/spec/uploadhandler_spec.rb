@@ -100,10 +100,17 @@ describe ThingFish::UploadHandler, " (GET request)" do
 
 	it "returns an upload form" do
 		template = stub( "ERB template", :result => :rendered_output )
+		formtemplate = stub( "ERB form template", :result => :rendered_form_output )
 
 		@request.should_receive( :path_info ).and_return( '' )
 
-		@handler.should_receive( :get_erb_resource ).and_return( template )
+		@handler.should_receive( :get_erb_resource ).
+			with( 'upload.rhtml' ).
+			and_return( template )
+		@handler.should_receive( :get_erb_resource ).
+			with( 'uploadform.rhtml' ).
+			and_return( formtemplate )
+		@response.should_not_receive( :body= ).with( :rendered_form_output )
 		@response.should_receive( :body= ).with( :rendered_output )
 		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
 		
@@ -138,7 +145,7 @@ describe ThingFish::UploadHandler, " (POST request)" do
 
 	### Examples
 	
-	it "correctly inserts file content from request with one upload" do
+	it "inserts upload file content from request" do
 		mockfilestore = mock( "filestore", :null_object => true )
 		mockmetastore = mock( "metastore", :null_object => true )
 		
@@ -149,20 +156,20 @@ describe ThingFish::UploadHandler, " (POST request)" do
 		@handler.listener = mockdaemon
 		
 		upload1 = mock( "upload tempfile 1", :null_object => true )
-		
-		files = {
-			upload1 => { :extent => 2048, :format => 'text/plain' },
-		}
-		metadata = { :global_key => :global_value }
+		metadata = mock( "merged metadata hash", :null_object => true )
+		metadata.should_receive( :[] ).
+			with( :uuid ).
+			at_least( :once ).
+			and_return( TEST_UUID )
 
 		@request.should_receive( :path_info ).
 			at_least(:once).
 			and_return( '' )
-		@request.should_receive( :parse_multipart_body ).
-			and_return([ files, metadata ])
+		@request.should_receive( :each_body ).
+			and_yield( upload1, metadata )
 
-		mockfilestore.should_receive( :store_io ).
-			with( an_instance_of(UUID), upload1 ).
+		mockdaemon.should_receive( :store_resource ).
+			with( upload1, metadata ).
 			once
 
 		@response.should_receive( :status= ).with( HTTP::OK )
@@ -170,49 +177,6 @@ describe ThingFish::UploadHandler, " (POST request)" do
 	
 		@handler.handle_post_request( @request, @response )
 	end
-	
-	
-	it "correctly inserts file content from request with two uploads" do
-		mockfilestore = mock( "filestore", :null_object => true )
-		mockmetastore = mock( "metastore", :null_object => true )
-		
-		mockdaemon = mock( "daemon", :null_object => true )
-		mockdaemon.should_receive( :filestore ).and_return( mockfilestore )
-		mockdaemon.should_receive( :metastore ).and_return( mockmetastore )
-		
-		@handler.listener = mockdaemon
-		
-		upload1 = mock( "upload tempfile 1", :null_object => true )
-		upload2 = mock( "upload tempfile 2", :null_object => true )
-		
-		files = {
-			upload1 => { :extent => 2048, :format => 'text/plain' },
-			upload2 => { :extent => 23823486, :format => 'image/png' },
-		}
-		metadata = { :global_key => :global_value }
-
-		@request.should_receive( :path_info ).
-			at_least(:once).
-			and_return( '' )
-		@request.should_receive( :parse_multipart_body ).
-			and_return([ files, metadata ])
-
-		# Store both of the uploads
-		mockfilestore.should_receive( :store_io ).
-			with( an_instance_of(UUID), upload1 ).
-			once
-		mockfilestore.should_receive( :store_io ).
-			with( an_instance_of(UUID), upload2 ).
-			once
-		upload1.should_receive( :unlink )
-		upload2.should_receive( :unlink )
-
-		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :body= ).with( /Uploaded \d+ file/ )
-	
-		@handler.handle_post_request( @request, @response )
-	end
-	
 end
 
 # vim: set nosta noet ts=4 sw=4:

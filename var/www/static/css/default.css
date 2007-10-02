@@ -12,12 +12,14 @@
  *
  */
 
+@import url(thickbox.css);
+
 /* @group Body and main container */
 body {
 	margin: 0 auto;
 	padding: 0;
 	font: 76% Verdana,Tahoma,Arial,sans-serif;
-	background: #eaeaea url(images/bg.gif) top center repeat-y;
+	background: #eaeaea url(/images/bg.gif) top center repeat-y;
 	color: #3a3a3a;
 }
 
@@ -34,7 +36,7 @@ body {
 /* @group Header */
 #header {
 	color: #505050;
-	background: #ffffff url(images/front.jpg) top left no-repeat;
+	background: #ffffff url(/images/front.jpg) top left no-repeat;
 	height: 250px;
 	margin: 0 0 10px 0;
 	padding: 0;
@@ -214,7 +216,7 @@ blockquote {
 	border-left: 4px solid #cccccc;
 	margin: 16px;
 	padding: 7px 7px 7px 11px;
-	background: #f4f4f4 url(images/menubg.gif) bottom left repeat-x;
+	background: #f4f4f4 url(/images/menubg.gif) bottom left repeat-x;
 	color: #505050;
 }
 
@@ -246,7 +248,7 @@ caption {
 th {
 	padding: 7px;
 	text-align: left;
-	background: #eaeaea url(images/menubg2.gif) bottom left repeat-x;
+	background: #eaeaea url(/images/menubg2.gif) bottom left repeat-x;
 	color: #505050;
 }
 
@@ -254,7 +256,7 @@ td {
 	padding: 7px;
 	font-size: 0.9em;
 	text-align: left;
-	background: #f4f4f4 url(images/menubg.gif) bottom left repeat-x;
+	background: #f4f4f4 url(/images/menubg.gif) bottom left repeat-x;
 	color: #303030;
 }
 /* @end */
@@ -267,7 +269,7 @@ td {
 	border-left: 4px solid #cccccc;
 	margin: 0 0 15px 0;
 	padding: 7px 7px 7px 11px;
-	background: #f4f4f4 url(images/menubg.gif) bottom left repeat-x;
+	background: #f4f4f4 url(/images/menubg.gif) bottom left repeat-x;
 	color: #505050;
 	font-weight: bold;
 	width: 120px;
@@ -379,7 +381,7 @@ dl.kvlist dt {
 	font-weight: bold;
 	border-bottom: 1px solid #e4e0d2;
 	padding: 2px 16px 0px;
-	background: #918474 url(images/icons/bullet_black.png) no-repeat 0 3px;
+	background: #918474 url(/images/icons/bullet_black.png) no-repeat 0 3px;
 	color: #f8f7f1;
 }
 dl.kvlist dd + dl.kvlist dt {
@@ -403,12 +405,12 @@ dl.kvlist dd.default, dl.kvlist dd.valid-values {
 }
 
 dl.kvlist dd.default {
-	background-image: url(images/icons/bullet_go.png);
+	background-image: url(/images/icons/bullet_go.png);
 	background-repeat: no-repeat;
 	background-position: 25px 5px;
 }
 dl.kvlist dd.valid-values {
-	background-image: url(images/icons/note.png);
+	background-image: url(/images/icons/note.png);
 	background-repeat: no-repeat;
 	background-position: 25px 5px;
 }

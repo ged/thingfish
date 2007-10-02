@@ -39,7 +39,7 @@ include ThingFish::Constants,
 describe "The inspection handler" do
 	before(:all) do
 		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::DEBUG
+		ThingFish.logger.level = Logger::FATAL
 	end
 	
 	before(:each) do

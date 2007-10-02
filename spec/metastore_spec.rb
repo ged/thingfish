@@ -97,34 +97,6 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 			@metastore[ TEST_UUID ]
 		}.should raise_error( ThingFish::PluginError, /did not call.+initializer/ )
 	end
-
-	it "can extract a default set of metadata for new uploaded resources" do
-		params = {
-			'CONTENT_TYPE'    => 'foo/bar',
-			'CONTENT_LENGTH'  => 162663,
-			'HTTP_USER_AGENT' => 'PyFish/1.2',
-			'REMOTE_ADDR'     => '198.145.180.83',
-		}
-		
-		mock_proxy = mock( "mock_name", :null_object => true )
-		proxy_class = stub( "metadata proxy", :new => mock_proxy )
-		request = mock( "mock_name", :null_object => true )
-		
-		@metastore.proxy_class = proxy_class
-		
-		request.should_receive( :params ).at_least( :once ).and_return( params )
-
-		mock_proxy.should_receive( :format= ).with( params['CONTENT_TYPE'] )
-		mock_proxy.should_receive( :extent= ).with( params['CONTENT_LENGTH'] )
-		mock_proxy.should_receive( :useragent= ).with( params['HTTP_USER_AGENT'] )
-		mock_proxy.should_receive( :uploadaddress= ).with( params['REMOTE_ADDR'] )
-
-		mock_proxy.should_receive( :created ).and_return( false )
-		mock_proxy.should_receive( :created= ).with( duck_type( :strftime ) )
-		mock_proxy.should_receive( :modified= ).with( duck_type(:strftime) )
-
-		@metastore.extract_default_metadata( TEST_UUID, request )
-	end
 end
 
 
@@ -161,6 +133,12 @@ describe ThingFish::MetaStore::ResourceProxy do
 	it "considers instances with the same UUID as equivalent" do
 		proxy2 = ThingFish::MetaStore::ResourceProxy.new( TEST_UUID, @store )
 		proxy2.should == @proxy
+	end
+	
+	it "can merge new data from a hash" do
+		@store.should_receive( :set_property ).with( TEST_UUID, 'format', TEST_PROPVALUE )
+		@store.should_receive( :set_property ).with( TEST_UUID, 'owner', 'perqualee' )
+		@proxy.update( :format => TEST_PROPVALUE, :owner => 'perqualee' )
 	end
 
 end

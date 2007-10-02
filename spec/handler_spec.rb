@@ -114,6 +114,8 @@ end
 describe ThingFish::Handler, " that handles GET and HEAD requests" do
 
 	before(:each) do
+		ThingFish.logger.level = Logger::FATAL
+
 	    @handler = ThingFish::Handler.create( 'getheadtest' )
 		@datadir = Config::CONFIG['datadir']
 	end

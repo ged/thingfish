@@ -56,7 +56,8 @@ require 'thingfish/response'
 class ThingFish::Daemon < Mongrel::HttpServer
 	include ThingFish::Constants,
 		ThingFish::Loggable,
-		ThingFish::ResourceLoader
+		ThingFish::ResourceLoader,
+		ThingFish::Daemonizable
 
 	# The subversion ID
 	SVNId = %q$Id$
@@ -125,40 +126,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Perform any additional daemon actions before actually starting
 	### the Mongrel side of things.
 	def run
-
-		# Become a daemon, doing all the things a good daemon does.
-		# TODO:  Not sure how to adequately test anything involving fork()...
-		if @config.daemon
-
-			if ! @config.pidfile.nil? && File.exists?( @config.pidfile )
-				self.log.warn "Stale pidfile found (%s)" % [ @config.pidfile ]
-			end
-
-			self.log.info "Detaching from terminal and daemonizing..."
-			fork and exit
-			Process.setsid
-
-			if ( pid = fork )
-				# parent, write pidfile if required
-				unless @config.pidfile.nil?
-					File.open( @config.pidfile, 'w' ) do |pidfile|
-						pidfile.puts pid
-					end
-				end
-				exit
-			end
-
-			Dir.chdir('/')
-			File.umask(0)
-			[ $stdin, $stdout, $stderr ].each { |io| io.send( :reopen, '/dev/null' ) }
-		end
-
-		# Drop privileges if we're root, and we're configged to do so.
-		if Process.euid.zero? and ! @config.user.nil?
-			self.log.debug "Dropping privileges (user: %s)" % @config.user
-			Process.euid = Etc.getpwnam( @config.user ).uid
-		end
-
+		daemonize( @config.pidfile ) if @config.daemon
+		become_user( @config.user )  if Process.euid.zero? and ! @config.user.nil?
 		super
 	end
 

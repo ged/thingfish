@@ -451,6 +451,109 @@ describe ThingFish::Daemon do
 		}.should_not raise_error()
 	end
 	
+	
+	### Resource storing
+	
+	it "knows how to store a new resource" do
+		UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
+		body = mock( "body IO" )
+		metadata = mock( "metadata hash", :null_object => true )
+
+		# Replace the filestore and metastore with mocks
+		filestore = mock( "filestore", :null_object => true )
+		@daemon.instance_variable_set( :@filestore, filestore )
+		metastore = mock( "metastore", :null_object => true )
+		@daemon.instance_variable_set( :@metastore, metastore )
+
+		filestore.should_receive( :store_io ).
+			with( TEST_UUID_OBJ, body ).
+			and_return( :a_checksum )
+
+		metadata_proxy = mock( "metadata proxy", :null_object => true )
+		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
+		metadata_proxy.should_receive( :update ).with( metadata )
+
+		metadata_proxy.should_receive( :checksum= ).with( :a_checksum )
+		metadata_proxy.should_receive( :created ).and_return( nil )
+		metadata_proxy.should_receive( :created= ).with an_instance_of( Time )
+		metadata_proxy.should_receive( :modified= ).with( an_instance_of(Time) )
+
+		metadata_proxy.stub!( :content_length ).and_return( 1 )
+
+		@daemon.store_resource( body, metadata ).should == TEST_UUID_OBJ
+	end
+	
+	
+	it "knows how to update the data and metadata for an existing resource" do
+		body = mock( "body IO" )
+		metadata = mock( "metadata hash", :null_object => true )
+
+		# Replace the filestore and metastore with mocks
+		filestore = mock( "filestore", :null_object => true )
+		@daemon.instance_variable_set( :@filestore, filestore )
+		metastore = mock( "metastore", :null_object => true )
+		@daemon.instance_variable_set( :@metastore, metastore )
+
+		filestore.should_receive( :store_io ).
+			with( TEST_UUID_OBJ, body ).
+			and_return( :a_checksum )
+
+		metadata_proxy = mock( "metadata proxy", :null_object => true )
+		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
+		metadata_proxy.should_receive( :update ).with( metadata )
+
+		metadata_proxy.should_receive( :checksum= ).with( :a_checksum )
+		metadata_proxy.should_receive( :created ).and_return( Time.now )
+		metadata_proxy.should_not_receive( :created= )
+		metadata_proxy.should_receive( :modified= ).with( an_instance_of(Time) )
+
+		metadata_proxy.stub!( :content_length ).and_return( 1 )
+
+		@daemon.store_resource( body, metadata, TEST_UUID_OBJ ).should == TEST_UUID_OBJ
+	end
+	
+	
+	it "cleans up new resources if there's an error while storing" do
+		UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
+		body = mock( "body IO" )
+		metadata = mock( "metadata hash", :null_object => true )
+
+		# Replace the filestore and metastore with mocks
+		filestore = mock( "filestore", :null_object => true )
+		@daemon.instance_variable_set( :@filestore, filestore )
+		metastore = mock( "metastore", :null_object => true )
+		@daemon.instance_variable_set( :@metastore, metastore )
+
+		filestore.should_receive( :store_io ).
+			with( TEST_UUID_OBJ, body ).
+			and_raise( RuntimeError.new('Happy time explosion!') )
+		filestore.should_receive( :delete ).with( TEST_UUID_OBJ )
+		
+		lambda {
+			@daemon.store_resource( body, metadata )
+		}.should raise_error( RuntimeError, 'Happy time explosion!' )
+	end
+	
+	
+	it "does not delete the resource if there's an error while updating" do
+		body = mock( "body IO" )
+		metadata = mock( "metadata hash", :null_object => true )
+
+		# Replace the filestore and metastore with mocks
+		filestore = mock( "filestore", :null_object => true )
+		@daemon.instance_variable_set( :@filestore, filestore )
+		metastore = mock( "metastore", :null_object => true )
+		@daemon.instance_variable_set( :@metastore, metastore )
+
+		filestore.should_receive( :store_io ).
+			with( TEST_UUID_OBJ, body ).
+			and_raise( RuntimeError.new('Happy time explosion!') )
+		filestore.should_not_receive( :delete ).with( TEST_UUID_OBJ )
+		
+		lambda {
+			@daemon.store_resource( body, metadata, TEST_UUID_OBJ )
+		}.should raise_error( RuntimeError, 'Happy time explosion!' )
+	end
 end
 
 

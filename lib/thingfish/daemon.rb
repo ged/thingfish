@@ -171,6 +171,44 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	end
 
 
+	### Store the data from the uploaded entity +body+ in the filestore; 
+	### create/update any associated metadata.
+	def store_resource( body, body_metadata, uuid=nil )
+		new_resource = uuid.nil?
+		uuid ||= UUID.timestamp_create
+
+		# :BRANCH: Deletes new resources if there's an error while storing
+		# :BRANCH: Doesn't delete it if it's an update
+		# Store the data, catching and cleaning up on error
+		begin
+			checksum = @filestore.store_io( uuid, body )
+		rescue => err
+			self.log.error "Error saving resource to filestore: %s" % [ err.message ]
+			@filestore.delete( uuid ) if new_resource
+			raise
+		end
+
+		# Store some default metadata about the resource
+		now = Time.now
+		metadata = @metastore[ uuid ]
+		metadata.update( body_metadata )
+
+		# :BRANCH: Won't overwrite an existing creation date
+		metadata.checksum = checksum
+		metadata.created  = now unless metadata.created
+		metadata.modified = now
+
+		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
+			uuid,
+			metadata.content_type,
+			Integer(metadata.content_length) / 1024.0,
+			metadata.checksum
+		  ]
+		
+		return uuid
+	end
+	
+
 	#########
 	protected
 	#########
@@ -199,14 +237,14 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			# Normal response
 			self.send_response( response ) unless client.closed?
 
-		rescue ThingFish::RequestError, ThingFish::ResponseError => err
-			self.send_error_response( response, request, HTTP::BAD_REQUEST, client, err )
+		rescue ThingFish::RequestError => err
+			self.send_error_response( response, request, err.status, client, err )
 
-		rescue StandardError => err
+		rescue => err
 			self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
 		end
 	end
-
+	
 
 	### Filter and potentially modify the incoming request.
 	def filter_request( request, response )
@@ -352,7 +390,6 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		
 		return ThingFish::Handler.create( 'default', options )
 	end
-	
 
 end # class ThingFish::Daemon
 

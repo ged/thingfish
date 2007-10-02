@@ -29,11 +29,6 @@ describe "A Handler", :shared => true do
 	include ThingFish::TestConstants
 	include ThingFish::TestHelpers
 
-	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-	end
-	
 
 	after( :all ) do
 		ThingFish.reset_logger

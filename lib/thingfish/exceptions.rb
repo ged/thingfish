@@ -42,13 +42,26 @@ module ThingFish
 	# its allotted quota.
 	class FileStoreQuotaError < ThingFish::FileStoreError; end
 
-	# Something was wrong with a request
-	class RequestError < ThingFish::Error
-		
-   	end
-
 	# Something was wrong with a response
 	class ResponseError < ThingFish::Error; end
+
+	# Something was wrong with a request
+	class RequestError < ThingFish::Error
+		def initialize( *args )
+			super
+			@status = HTTP::BAD_REQUEST
+		end
+		
+		attr_reader :status
+	end
+
+	# Upload exceeded quota
+	class RequestEntityTooLargeError < ThingFish::RequestError
+		def initialize( *args )
+			super
+			@status = HTTP::REQUEST_ENTITY_TOO_LARGE
+		end
+	end
 	
 end
 

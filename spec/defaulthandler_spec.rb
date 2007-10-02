@@ -40,7 +40,7 @@ describe ThingFish::DefaultHandler do
 
 	before(:all) do
 		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::DEBUG
+		ThingFish.logger.level = Logger::FATAL
 	end
 	
 	before(:each) do
@@ -65,11 +65,12 @@ describe ThingFish::DefaultHandler do
 
 		@request.stub!( :headers ).and_return( @request_headers )
 		@response.stub!( :headers ).and_return( @response_headers )
+		@request.stub!( :has_multipart_body? ).and_return( false )
 	end
 
 
 	### Shared behaviors
-	it_should_behave_like "A Handler"
+	# it_should_behave_like "A Handler"
 
 
 	### Index requests
@@ -110,55 +111,42 @@ describe ThingFish::DefaultHandler do
 	it "handles POST /" do
 		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( TEST_CONTENT_TYPE )
 
 		body = StringIO.new( TEST_CONTENT )
+		metadata = stub( "metadata hash" )
 
-		@request.should_receive( :body ).and_return( body )
-		@filestore.should_receive( :store_io ).
-			once.with( an_instance_of(UUID), body ).
-			and_return( TEST_CHECKSUM )
+		@request.should_receive( :get_body_and_metadata ).and_return([ body, metadata ])
 
 		@response_headers.should_receive( :[]= ).
-			with( :location, %r{/#{Patterns::UUID_REGEXP}} )
+			with( :location, %r{/#{TEST_UUID}} )
 		@response.should_receive( :body= ).
-			once.with( /Uploaded with ID #{Patterns::UUID_REGEXP}/ )
+			once.with( /Uploaded with ID #{TEST_UUID}/ )
 		@response.should_receive( :status= ).
 			once.with( HTTP::CREATED )
 
-		mdproxy = mock( "metadata proxy", :null_object => true )
-		
-		@metastore.should_receive( :extract_default_metadata )
-		@metastore.should_receive( :[] ).
-			with( an_instance_of(UUID) ).
-			at_least( 1 ).
-			and_return( mdproxy )
-		mdproxy.should_receive( :checksum= ).with( TEST_CHECKSUM )
+		@listener.should_receive( :store_resource ).
+			with( body, metadata ).
+			and_return( TEST_UUID )
 
 		@handler.handle_post_request( @request, @response )
 	end
 
 
-	it "returns a 413 REQUEST ENTITY TOO LARGE for an upload to / that exceeds quota" do
+	it "raises a ThingFish::RequestEntityTooLargeError for an upload to / that exceeds quota" do
 		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		body = StringIO.new( TEST_CONTENT )
+		md = stub( "metadata hash" )
 		
-		@request.should_receive( :body ).and_return( body )			
-		@filestore.should_receive( :store_io ).
-			with( an_instance_of(UUID), body ).
-			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
+		@request.should_receive( :get_body_and_metadata ).and_return([ body, md ])
+		@listener.should_receive( :store_resource ).
+			with( body, md ).
+			and_return { raise ThingFish::FileStoreQuotaError, "too NARROW, sucka!" }
 
-		@metastore.should_receive( :delete_properties ).with( an_instance_of(UUID) )
-
-		@response.should_receive( :status= ).with( HTTP::REQUEST_ENTITY_TOO_LARGE )
-		@response.should_receive( :body= ).with( /too large, sucka!/ )
-
-		Time.stub!( :parse ).and_return( @time )
-		@handler.handle_post_request( @request, @response )
+		lambda {
+			@handler.handle_post_request( @request, @response )
+		}.should raise_error( ThingFish::RequestEntityTooLargeError, /too NARROW/ )
 	end
 
 
@@ -195,7 +183,7 @@ describe ThingFish::DefaultHandler do
 	### GET/HEAD /«UUID» request tests
 	
 	it "handles HEAD /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		etag = %q{"%s"} % [ TEST_CHECKSUM ]
@@ -235,7 +223,7 @@ describe ThingFish::DefaultHandler do
 
 
 	it "handles GET /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 		
 		etag = %{"%s"} % [TEST_CHECKSUM]
@@ -271,8 +259,8 @@ describe ThingFish::DefaultHandler do
 	end
 
 
-	it "sets the content disposition of the requested resource" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+	it "doesn't set the content disposition header by default" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).
 			at_least( :once ).
 			and_return( uri )
@@ -281,15 +269,39 @@ describe ThingFish::DefaultHandler do
 			at_least( :once ).
 			and_return( false )
 
-		@query_args = mock( "uri query arguments", :null_object => true )
-		@request.stub!( :query_args ).and_return( @query_args )
-		@query_args.should_receive( :[] ).with( 'attach' ).and_return( false )
+		query_args = mock( "uri query arguments", :null_object => true )
+		@request.stub!( :query_args ).and_return( query_args )
+		query_args.should_receive( :[] ).with( 'attach' ).and_return( nil )
+
+		@response_headers.
+			should_not_receive( :[]= ).
+			with( :content_disposition, anything() )
+
+		@request.stub!( :http_method ).and_return( 'GET' )
+		@handler.handle_get_request( @request, @response )
+	end
+
+
+	it "sets the content disposition of the requested resource if asked to do so" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
+		@request.should_receive( :uri ).
+			at_least( :once ).
+			and_return( uri )
+
+		@request.should_receive( :is_cached_by_client? ).
+			at_least( :once ).
+			and_return( false )
+
+		query_args = mock( "uri query arguments", :null_object => true )
+		@request.stub!( :query_args ).and_return( query_args )
+		query_args.should_receive( :[] ).with( 'attach' ).and_return( true )
 	
 		@mockmetadata.stub!( :title ).and_return('potap.mp3')
 
 		@response_headers.
 			should_receive( :[]= ).
 			with( :content_disposition,
+				'attachment; ' +
 				'filename="potap.mp3"; ' + 
 				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
 
@@ -299,7 +311,7 @@ describe ThingFish::DefaultHandler do
 
 
 	it "responds with a 404 NOT FOUND for a GET to a nonexistent /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		@filestore.should_receive( :has_file? ).
@@ -314,7 +326,7 @@ describe ThingFish::DefaultHandler do
 
 
 	it "sends a METHOD_NOT_ALLOWED response for POST to /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		@response_headers.
@@ -331,7 +343,7 @@ describe ThingFish::DefaultHandler do
 	### Caching tests
 	
 	it "checks the request to see if it can return a 304 NOT MODIFIED response" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		modtime = 8.days.ago
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
@@ -363,26 +375,20 @@ describe ThingFish::DefaultHandler do
 	### PUT /«uuid» tests
 
 	it "handles PUT to /{uuid} for existing resource" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( TEST_CONTENT_TYPE )
-
 		io = StringIO.new( TEST_CONTENT )
+		metadata = stub( "metadata hash" )
 
 		@filestore.should_receive( :has_file? ).
 			with( TEST_UUID_OBJ ).
 			and_return( true )
-		@request.should_receive( :body ).and_return( io )
-		@filestore.should_receive( :store_io ).
-			with( TEST_UUID_OBJ, io ).
+
+		@request.should_receive( :get_body_and_metadata ).once.and_return([ io, {} ])
+		@listener.should_receive( :store_resource ).
+			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
- 		@metastore.
-			should_receive( :extract_default_metadata ).
-			with( TEST_UUID_OBJ, @request )
-		@mockmetadata.should_receive( :checksum= ).with( TEST_CHECKSUM )
 			
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -391,12 +397,8 @@ describe ThingFish::DefaultHandler do
 
 
 	it "handles PUT to /{uuid} for new resource" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( TEST_CONTENT_TYPE )
 
 		io = StringIO.new( TEST_CONTENT )
 
@@ -404,16 +406,11 @@ describe ThingFish::DefaultHandler do
 			with( TEST_UUID_OBJ ).
 			and_return( false )
 
-		@request.should_receive( :body ).and_return( io )
-		@filestore.should_receive( :store_io ).
-			with( TEST_UUID_OBJ, io ).
+		@request.should_receive( :get_body_and_metadata ).and_return([ io, {} ])
+		@listener.should_receive( :store_resource ).
+			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
-		@metastore.
-			should_receive( :extract_default_metadata ).
-			with( TEST_UUID_OBJ, @request )
-
-		@mockmetadata.should_receive( :checksum= ).with( TEST_CHECKSUM )
-
+			
 		@response.should_receive( :status= ).with( HTTP::CREATED )
 		@response_headers.should_receive( :[]= ).
 			with( :location, /#{TEST_UUID}/i )
@@ -421,20 +418,21 @@ describe ThingFish::DefaultHandler do
 		@handler.handle_put_request( @request, @response )
 	end
 
-	it "returns a 413 REQUEST ENTITY TOO LARGE for a PUT to /{uuid} that exceeds quota" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+	it "raises a ThingFish::RequestEntityTooLargeError for a PUT to /{uuid} that exceeds quota" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		body = StringIO.new( "~~~" * 1024 )
+		md = stub( "metadata hash" )
 
-		@request.should_receive( :body ).and_return( body )
-		@filestore.should_receive( :store_io ).with( TEST_UUID_OBJ, body ).
+		@request.should_receive( :get_body_and_metadata ).and_return([ body, md ])
+		@listener.should_receive( :store_resource ).
+			with( body, md, TEST_UUID_OBJ ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
-		@response.should_receive( :status= ).
-			with( HTTP::REQUEST_ENTITY_TOO_LARGE )
-		@response.should_receive( :body= ).with( /too large/i )
 
-		@handler.handle_put_request( @request, @response )
+		lambda {
+			@handler.handle_put_request( @request, @response )
+		}.should raise_error( ThingFish::RequestEntityTooLargeError, /too large/ )
 	end
 
 
@@ -442,7 +440,7 @@ describe ThingFish::DefaultHandler do
 	### DELETE /«UUID» tests
 
 	it "handles DELETE of /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		@filestore.should_receive( :has_file? ).
@@ -455,7 +453,7 @@ describe ThingFish::DefaultHandler do
 
 
 	it "returns a NOT_FOUND for a DELETE of nonexistent /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ}" )
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		@filestore.should_receive( :has_file? ).

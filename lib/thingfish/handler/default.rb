@@ -127,7 +127,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		else
 			self.log.debug "No POST handler for %p, falling through" % request.uri
 		end
-		
 	end
 
 
@@ -139,6 +138,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 				%w{GET HEAD POST} )
 
 		when UUID_URL
+			raise ThingFish::RequestError, "Multipart update not currently supported" if
+				request.has_multipart_body?
 			uuid = parse_uuid( $1 )
 			self.handle_update_uuid_request( request, response, uuid )
 
@@ -165,25 +166,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 	
 
-	### Handle a request to create a new resource with the request body as 
-	### data (POST to /)
-	def handle_create_request( request, response )
-
-		# Store the resource with a new UUID
-		uuid = UUID.timestamp_create
-		self.store_resource( request, uuid )
-
-		# Create the response
-		response.status = HTTP::CREATED
-		response.headers[:location] = '/' + uuid.to_s
-		response.body = "Uploaded with ID #{uuid}"
-
-	rescue ThingFish::FileStoreQuotaError => err
-		return handle_upload_error( response, uuid, 
-			HTTP::REQUEST_ENTITY_TOO_LARGE, err.message )
-	end
-	
-	
 	#########
 	protected
 	#########
@@ -199,7 +181,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### on the index HTML page.
 	def get_handler_index_sections
 		self.log.debug "Fetching index sections for all registered handlers"
-		handlers = @listener.classifier.handler_map.sort_by {|uri,h| uri }
+		handlers = self.daemon.classifier.handler_map.sort_by {|uri,h| uri }
 		return handlers.collect do |uri,handlers|
 			self.log.debug "  collecting index content from %p (%p)" % 
 				[handlers.collect {|h| h.class.name}, uri]
@@ -269,13 +251,31 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
+	### Handle a request to create a new resource with the request body as 
+	### data (POST to /)
+	def handle_create_request( request, response )
+
+		body, metadata = request.get_body_and_metadata
+		uuid = self.daemon.store_resource( body, metadata )
+
+		response.status = HTTP::CREATED
+		response.headers[:location] = '/' + uuid.to_s
+		response.body = "Uploaded with ID #{uuid}"
+
+	rescue ThingFish::FileStoreQuotaError => err
+		self.log.error "Quota error while creating a resource: %s" % [ err.message ]
+		raise ThingFish::RequestEntityTooLargeError, err.message
+	end
+	
+	
 	### Handle updating a file by UUID
 	def handle_update_uuid_request( request, response, uuid )
 		
 		# :TODO: Handle slow/big uploads by returning '202 Accepted' and spawning
 		#         a handler thread?
 		new_resource = ! @filestore.has_file?( uuid )
-		self.store_resource( request, uuid )
+		body, metadata = request.get_body_and_metadata
+		self.daemon.store_resource( body, metadata, uuid )
 		
 		if new_resource
 			response.status = HTTP::CREATED
@@ -286,8 +286,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			response.body = "UUID '#{uuid}' updated"
 		end
 	rescue ThingFish::FileStoreQuotaError => err
-		return handle_upload_error( response, uuid, 
-			HTTP::REQUEST_ENTITY_TOO_LARGE, err.message, new_resource )
+		self.log.error "Quota error while updating a resource: %s" % [ err.message ]
+		raise ThingFish::RequestEntityTooLargeError, err.message
 	end
 
 
@@ -301,45 +301,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			response.status = HTTP::NOT_FOUND
 			response.body = "Resource '#{uuid}' not found"
 		end
-	end
-
-
-	### Store the data from the upload in the specified +request+ in the filestore
-	### create/update any associated metadata.
-	def store_resource( request, uuid )
-
-		# Store the data
-		checksum = @filestore.store_io( uuid, request.body )
-
-		# Store some default metadata about the resource
-		@metastore[ uuid ].checksum = checksum
-		@metastore.extract_default_metadata( uuid, request )
-
-		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
-			uuid,
-			request.headers[:content_type],
-			Integer(request.headers[:content_length]) / 1024.0,
-			@metastore[ uuid ].checksum
-		  ]
-		
-		return checksum
-	end
-	
-
-	### Generate an error response using the specified +status_code+ and +message+
-	### for the upload of the resource for the given +uuid+. Handles cleanup of
-	### any uploaded data or metadata.
-	def handle_upload_error( response, uuid, status_code, message, new_resource=true )
-		self.log.error "Error while creating new resource: %s (%d)" %
-			[ message, status_code ]
-
-		if new_resource
-			@metastore.delete_properties( uuid )
-			@filestore.delete( uuid )
-		end
-		
-		response.status = status_code
-		response.body   = message
 	end
 	
 	
@@ -363,21 +324,22 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	
 
 	### Add content disposition handlers to the given +response+ for the
-	### specified +uuid+.  As described in RFC 2183, this is an optional,
-	### but convenient header when using UUID-keyed resources.
+	### specified +uuid+ if the 'attach' query argument exists.  As described in
+	### RFC 2183, this is an optional, but convenient header when using UUID-keyed 
+	### resources.
 	def add_content_disposition( request, response, uuid )
-
+		return unless request.query_args['attach']
+		
 		disposition = []
-		disposition << 'attachment' if request.query_args['attach']
+		disposition << 'attachment'
 
 		if (( filename = @metastore[ uuid ].title ))
-			disposition << "filename=\"%s\"" % [ filename ]
+			disposition << %{filename="%s"} % [ filename ]
 		end
 
-		if (( modified_time = @metastore[ uuid ].modified ))
-			modified_time = Time.parse( modified_time.to_s ) unless
-				modified_time.is_a?( Time )
-			disposition << "modification-date=\"%s\"" % [ modified_time.rfc822 ]
+		if (( modtime = @metastore[ uuid ].modified ))
+			modtime = Time.parse( modtime ) unless modtime.is_a?( Time )
+			disposition << %{modification-date="%s"} % [ modtime.rfc822 ]
 		end
 
 		response.headers[ :content_disposition ] = disposition.join('; ')

@@ -6,10 +6,10 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
 
-	<script src="<%= request.uri.path %>/js/jquery.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/jquery.js" type="text/javascript" charset="utf-8"></script>
 	<script src="<%= request.uri.path %>/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
 
-    <link rel="stylesheet" type="text/css" href="/default.css" media="screen,projection" />
+    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
   </head>
 
   <body>
@@ -26,47 +26,13 @@
 		<% if defined? files %>
 		<h2>Uploaded <%= files.length %> file(s)</h2>
 		<ul>
-		<% files.each do |file, meta| %>
+		<% files.sort_by { |mk, mv| mv[:title] }.each do |file, meta| %>
 			<li><a href="<%= meta[:uuid] %>" title="<%= meta[:uuid] %>"><%= meta[:title] %></a></li>
 		<% end %>
 		</ul>
 		<% end %>
 
-		<h2>Upload new content</h2>
-		<form action="<%= request.uri.path %>" method="POST" enctype="multipart/form-data">
-
-			<table border="0">
-				<th colspan="2">Select file(s) for upload:</th>
-				<tr>
-					<td>File: </td>
-					<td><input type="file" name="thingfish-upload" class="multi debug" /></td>
-				</tr>
-			</table>
-
-			<table border="0">
-				<th colspan="2">Optional metadata:</th>
-				<tr>
-					<td>Namespace:</td>
-					<td><input type="textfield" name="thingfish-metadata-namespace" /></td>
-				</tr>
-				<tr>
-					<td>Rating:</td>
-					<td>
-						<select name="thingfish-metadata-rating">
-							<option value="" selected="selected">Please select rating</option>
-							<option value="5">Frikkin sweet!</option>
-							<option value="4">Rad.</option>
-							<option value="3">Eh, take it or leave it</option>
-							<option value="2">I've seen better</option>
-							<option value="1">Totally lame ass</option>
-						</select>
-					</td>
-				</tr>
-			</table>
-
-			<input type="submit" value="Upload" />
-		</form>
-
+		<%= uploadform %>
 	</div>
 	<!-- content end -->
 

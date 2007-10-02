@@ -72,6 +72,16 @@ class ThingFish::MetaStore
 		end
 
 
+		### Adds the contents of +hash+ to the values for the referenced UUID, overwriting entries
+		### with duplicate keys.
+		def update( hash )
+			hash.each_pair do |key, value|
+				@store.set_property( @uuid, key.to_s, value )
+			end
+		end
+		alias_method :merge!, :update
+		
+
 		### Returns true if the +other+ object is equivalent to the receiver
 		### (they have the same UUID).
 		def ==( other )
@@ -163,21 +173,6 @@ class ThingFish::MetaStore
 		:delete_property,
 		:delete_properties,
 		:get_all_property_keys
-
-
-	### Extract a default set of metadata for the upload in the given +request+.
-	def extract_default_metadata( uuid, request )
-		metadata = self[ uuid ]
-		now      = Time.now
-
-		metadata.format        = request.params[ 'CONTENT_TYPE' ]
-		metadata.extent        = request.params[ 'CONTENT_LENGTH' ]
-		metadata.useragent     = request.params[ 'HTTP_USER_AGENT' ]
-		metadata.uploadaddress = request.params[ 'REMOTE_ADDR' ]
-		metadata.created       = now unless metadata.created
-		metadata.modified      = now
-	end
-	
 
 
 end # class ThingFish::MetaStore

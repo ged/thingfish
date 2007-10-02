@@ -13,6 +13,7 @@ begin
 	require 'spec/runner'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
+	require 'ipaddr'
 	require 'thingfish'
 	require 'thingfish/constants'
 	require 'thingfish/request'
@@ -44,6 +45,10 @@ describe ThingFish::Request do
 		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
 		@request = ThingFish::Request.new( @mongrel_request, config )
 		@request.stub!( :path_info ).and_return( '/a/test/path' )
+	end
+
+	after( :all ) do
+		ThingFish.reset_logger
 	end
 
 	
@@ -89,33 +94,39 @@ describe ThingFish::Request do
 		@request.should_not have_multipart_body()
 	end
 	
-	it "knows when it has a multipart/form-data body" do
+	
+	it "calls the block of the body iterator with the single body entity and merged metadata" do
 		params = {
-			'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary="greatgoatsofgerta"'
+			'HTTP_CONTENT_TYPE'   => 'application/x-bungtruck',
+			'HTTP_CONTENT_LENGTH' => 11111,
+			'HTTP_USER_AGENT'     => 'Hotdogs',
+			'REMOTE_ADDR'         => '127.0.0.1',
 		}
 
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		@request.should have_multipart_body()
+		# Set some keys that will collide with default and header-based value so we
+		# can test merge precedence
+		extracted_metadata = {
+			:extent => 2,
+			:useragent => 'Burritos',
+		}
+
+		@request.metadata[ :the_body_entity ].update( extracted_metadata )
+		@mongrel_request.should_receive( :params ).
+			at_least( :once ).
+			and_return( params )
+		@mongrel_request.should_receive( :body ).
+			at_least( :once ).
+			and_return( :the_body_entity )
+
+		@request.each_body do |body, metadata|
+			body.should == :the_body_entity
+			metadata.should have(4).members
+			metadata[:extent].should == 11111
+			metadata[:useragent].should == 'Hotdogs'
+		end
 	end
 	
 	
-	it "provides an interface to parse a multipart/form-data body" do
-		params = {
-			'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary="greatgoatsofgerta"'
-		}
-		parser = mock( "multipart parser", :null_object => true )
-
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
-		@mongrel_request.should_receive( :body ).once.and_return( :body )
-		parser.should_receive( :parse ).once.
-			with( :body, 'greatgoatsofgerta' ).
-			and_return( :parsed_stuff )
-
-		@request.parse_multipart_body.should == :parsed_stuff
-	end
-
-
 	it "provides a Hash for URI query arguments" do
 		params = {
 			'REQUEST_PATH' => '/876e30c4-56bd-11dc-88be-0016cba18fb9',
@@ -204,6 +215,12 @@ describe ThingFish::Request do
 		@request.accepts?( 'image/png' ).should be_true()
 		@request.accepts?( 'application/x-yaml' ).should be_true()
 	end
+	
+
+	it "knows that it's not an ajax request" do
+		@request.is_ajax_request?.should == false
+	end
+	
 end
 
 describe ThingFish::Request, " with cache headers" do
@@ -216,7 +233,7 @@ describe ThingFish::Request, " with cache headers" do
 	before( :each ) do
 		@config = stub( "config object" )
 		@request_headers = mock( "request headers", :null_object => true )
-		@request = ThingFish::Request.new( @mongrel_request, @config )
+		@request = ThingFish::Request.new( nil, @config )
 		@request.instance_variable_set( :@headers, @request_headers )
 		@request.stub!( :path_info ).and_return( '/a/test/path' )
 		
@@ -286,5 +303,128 @@ describe ThingFish::Request, " with cache headers" do
 	end
 	
 end
+
+describe ThingFish::Request, " with a multipart body" do
+
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
+	before( :each ) do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'multipart/form-data; boundary="greatgoatsofgerta"',
+			'HTTP_CONTENT_LENGTH' => 11111,
+			'HTTP_USER_AGENT'     => 'Hotdogs',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+		@mongrel_request = mock( "mongrel request", :null_object => true )
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+
+		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
+
+		@request = ThingFish::Request.new( @mongrel_request, config )
+		@request.stub!( :path_info ).and_return( '/a/test/path' )
+	end
+
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+	
+	
+	it "knows it has a multipart body" do
+		@request.should have_multipart_body()
+	end
+	
+	
+	it "provides an interface to extract the uploaded parts" do
+		parser = mock( "multipart parser", :null_object => true )
+
+		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+		@mongrel_request.should_receive( :body ).once.and_return( :body )
+		parser.should_receive( :parse ).once.
+			with( :body, 'greatgoatsofgerta' ).
+			and_return( :parsed_stuff )
+
+		@request.parse_multipart_body.should == :parsed_stuff
+	end
+
+
+	it "sends each body entity of the request and a copy of the merged metadata to " +
+		"the block of the body iterator" do
+		io1 = mock( "filehandle 1" )
+		io2 = mock( "filehandle 2" )
+
+		parser = mock( "multipart parser", :null_object => true )
+		entity_bodies = {
+			io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
+			io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
+		  }
+		form_metadata = {
+			'foo' => 1,
+			:title => "a bogus filename",
+			:useragent => 'Clumpy the Clown',
+		  }
+		extracted_metadata = {
+			io1 => { :format => "a bogus format" },
+			io2 => { :format => "another bogus format" },
+		  }
+
+		io1.should_receive( :closed? ).and_return( true )
+		io1.should_receive( :open )
+		io2.should_receive( :closed? ).and_return( true )
+		io2.should_receive( :open )
+
+		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+		@mongrel_request.should_receive( :body ).once.and_return( :body )
+		parser.should_receive( :parse ).once.
+			with( :body, 'greatgoatsofgerta' ).
+			and_return([ entity_bodies, form_metadata ])
+		
+		yielded_pairs = {}
+		@request.each_body do |body, parsed_metadata|
+			yielded_pairs[ body ] = parsed_metadata
+		end
+		
+		yielded_pairs.keys.should have(2).members
+		yielded_pairs.keys.should include( io1 )
+		yielded_pairs.keys.should include( io2 )
+
+		yielded_pairs[ io1 ][ :title ].should == 'filename1'
+		yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+		yielded_pairs[ io2 ][ :title ].should == 'filename2'
+		yielded_pairs[ io2 ][ :format ].should == "format2"
+		yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
+		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+	end
+	
+	it "raises an error if you try to fetch it as a single body" do
+		lambda {
+			@request.get_body_and_metadata
+		}.should raise_error( ArgumentError )
+	end
+	
+
+end
+
+describe ThingFish::Request, " sent via XMLHTTPRequest" do
+	before( :each ) do
+		@config = stub( "config object" )
+		@request_headers = mock( "request headers", :null_object => true )
+		@request = ThingFish::Request.new( nil, @config )
+		@request.instance_variable_set( :@headers, @request_headers )
+		@request.stub!( :path_info ).and_return( '/a/test/path' )
+		@request_headers.should_receive( :[] ).
+			at_least( :once ).
+			with( :x_requested_with ).
+			and_return( 'XmlHttpRequest' )
+	end
+	
+	it "knows that it's an ajax request" do
+		@request.is_ajax_request?.should == true
+	end
+end
+
 
 # vim: set nosta noet ts=4 sw=4:

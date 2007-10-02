@@ -161,6 +161,50 @@ module ThingFish # :nodoc:
 	end # module StaticResourcesHandler
 	
 	
+	### Add convenience methods for becoming a daemon and dropping privileges.
+	module Daemonizable
+		
+		private
+		
+		### Become a daemon, doing all the things a good daemon does.
+		### TODO:  Not sure how to adequately test anything involving fork()...
+		def daemonize( pidfile=nil )
+			if ! pidfile.nil? && File.exists?( pidfile )
+				self.log.warn "Stale pidfile found (%s)" % [ pidfile ]
+			end
+
+			self.log.info "Detaching from terminal and daemonizing..."
+			fork and exit
+			Process.setsid
+
+			if ( pid = fork )
+				# parent, write pidfile if required
+				unless pidfile.nil?
+					File.open( pidfile, 'w' ) do |pidfile|
+						pidfile.puts pid
+					end
+				end
+				exit
+			end
+
+			at_exit do
+				File.delete( pidfile ) if File.exist?( pidfile )
+			end
+				
+			Dir.chdir('/')
+			File.umask(0)
+			[ $stdin, $stdout, $stderr ].each { |io| io.send( :reopen, '/dev/null' ) }
+		end
+		
+		
+		### Attempt to set the effective +uid+ to +username+.
+		def become_user( username )
+			self.log.debug "Dropping privileges (user: %s)" % [ username ]
+			Process.euid = Etc.getpwnam( username ).uid
+		end
+	end
+	
+	
 	### Adds some methods that can be used to load content from files in a 
 	### resources directory.
 	module ResourceLoader

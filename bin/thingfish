@@ -33,6 +33,7 @@ require 'uri'
 
 
 class ThingFish::CommandLineClient
+	include ThingFish::Constants
 	
 	### Create a new ThingFish::CommandLineClient
 	def initialize
@@ -85,7 +86,7 @@ class ThingFish::CommandLineClient
 	def do_upload( uri, file=nil )
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh )
-		resource.format = self.get_mimetype( fh )
+		resource.format = self.get_mimetype( file, fh )
 
 		if file
 			resource.title  = File.basename( file )
@@ -107,7 +108,7 @@ class ThingFish::CommandLineClient
 
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
-		resource.format = self.get_mimetype( fh )
+		resource.format = self.get_mimetype( file, fh )
 
 		if file
 			resource.title  = File.basename( file )
@@ -149,7 +150,7 @@ class ThingFish::CommandLineClient
 	### Get an IO object for reading from the specified +filename+. If +filename+ is 
 	### +nil+, returns the IO for STDIN instead.
 	def get_reader_io( filename=nil )
-		return $defin unless filename
+		return $stdin unless filename
 		return File.open( filename, File::RDONLY )
 	end
 
@@ -200,9 +201,22 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Try to deduce a mimetype from the first 2k of data read from the given +io+ and 
-	### return it. The IO object will be rewound before returning.
-	def get_mimetype( io )
+	### Given a +file+ and an optional +io+, try to deduce a mimetype from the
+	### possible filename extension.  Failing that, use the first 2k of data
+	### read from the given +io+ and return it. The IO object will be rewound
+	### before returning.
+	def get_mimetype( file, io=nil )
+
+		io ||= self.get_reader_io( file )
+
+		if file
+			ext = File.extname( file )
+			if MIMETYPE_MAP.key?( ext )
+				$stderr.puts "Found an appropriate MIME for %s extensions" % [ ext ]
+				return MIMETYPE_MAP[ ext ]
+			end
+		end
+
 		data = io.read( 2048 )
 		io.rewind
 

@@ -44,9 +44,9 @@ plugins:
         - inspect:
             uris: /inspect
             resource_dir: /home/thingfish/plugins/thingfish-inspecthandler/resources
-        - upload:
+        - formupload:
             uris: /upload
-            resource_dir: /home/thingfish/plugins/thingfish-uploadhandler/resources
+            resource_dir: /home/thingfish/plugins/thingfish-formuploadhandler/resources
         - metadata:
             uris: /metadata
             resource_dir: /home/thingfish/var/www

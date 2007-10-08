@@ -103,7 +103,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 		@dbname = @root + 'metadata.db'
 		@schema = nil
 
-		@metadata = SQLite3::Database.new( @dbname )
+		@metadata = SQLite3::Database.new( @dbname.to_s )
 		self.init_db
 
 		# TODO:

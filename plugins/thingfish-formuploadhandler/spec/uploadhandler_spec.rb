@@ -18,7 +18,7 @@ begin
 	require 'spec/lib/handler_behavior'
 
 	require 'thingfish/constants'
-	require 'thingfish/handler/upload'
+	require 'thingfish/handler/formupload'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -33,7 +33,7 @@ include ThingFish::Constants,
 		ThingFish::TestHelpers
 
 
-class ThingFish::UploadHandler
+class ThingFish::FormUploadHandler
 	public :handle_get_request,
 		:handle_post_request
 		
@@ -50,7 +50,7 @@ unless defined?( SPECDIR )
 end
 
 
-describe ThingFish::UploadHandler do
+describe ThingFish::FormUploadHandler do
 
 	before( :all ) do
 		ThingFish.logger.level = Logger::FATAL
@@ -58,7 +58,7 @@ describe ThingFish::UploadHandler do
 	
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
+	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
 	end
 	
 	
@@ -80,7 +80,7 @@ describe ThingFish::UploadHandler do
 end
 
 
-describe ThingFish::UploadHandler, " (GET request)" do
+describe ThingFish::FormUploadHandler, " (GET request)" do
 	include ThingFish::Constants::Patterns
 
 	before( :all ) do
@@ -89,7 +89,7 @@ describe ThingFish::UploadHandler, " (GET request)" do
 	
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
+	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
 		@request = mock( "request object", :null_object => true )
 		@response = mock( "response object", :null_object => true )
 		@headers = mock( "response headers", :null_object => true )
@@ -120,7 +120,7 @@ describe ThingFish::UploadHandler, " (GET request)" do
 end
 
 
-describe ThingFish::UploadHandler, " (POST request)" do
+describe ThingFish::FormUploadHandler, " (POST request)" do
 	include ThingFish::Constants::Patterns
 
 	before( :all ) do
@@ -129,7 +129,7 @@ describe ThingFish::UploadHandler, " (POST request)" do
 	
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'upload', 'resource_dir' => resdir )
+	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
 		@parser = mock( "mpm parser", :null_object => true )
 		
 		@handler.parser = @parser

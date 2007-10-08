@@ -1,4 +1,4 @@
-== Thingfish::UploadHandler
+== Thingfish::FormUploadHandler
 
 A handler that accepts and unwraps multipart form uploads, as documented at
 http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
@@ -8,9 +8,9 @@ http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
 To run this handler in your ThingFish, add a 'upload' section to the 'plugins' 
 section of your config file:
 
-    - upload:
+    - formupload:
         uris: /upload
-        resource_dir: plugins/thingfish-uploadhandler/resources
+        resource_dir: plugins/thingfish-formuploadhandler/resources
 
 
 === Config Keys
@@ -19,18 +19,18 @@ section of your config file:
   The URIs to register the handler at.
 [+bufsize+]::
     The size of the buffer to use when reading incoming data (in bytes).	
-    Defaults to ThingFish::UploadHandler::DEFAULT_BUFSIZE
+    Defaults to ThingFish::FormUploadHandler::DEFAULT_BUFSIZE
 [+spooldir+]::
     The directory in which to store uploaded resources before they are injected
     into the filestore.
-    Defaults to ThingFish::UploadHandler::DEFAULT_SPOOLDIR
+    Defaults to ThingFish::FormUploadHandler::DEFAULT_SPOOLDIR
 [resource_dir]::
   The directory which contains the upload html template.
 
 === Resources
 
 This handler uses a template for its output, which installed by default in the
-'thingfish/uploadhandler' directory under your Ruby's datadir. If you wish to
+'thingfish/formuploadhandler' directory under your Ruby's datadir. If you wish to
 customize the output you can modify that file, or override the resource directory or
 the template name in the handler's options.
 
@@ -62,7 +62,5 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
 
 

@@ -9,20 +9,20 @@
 # 	#
 # 	plugins:
 # 		handlers:
-# 			- upload:
+# 			- formupload:
 # 				uris: /upload
-# 				resource_dir: plugins/thingfish-uploadhandler/resources
+# 				resource_dir: plugins/thingfish-formuploadhandler/resources
 # 
 # == Config Keys
 # 
 # 	[+bufsize+]
 # 		The size of the buffer to use when reading incoming data (in bytes).	
-# 		Defaults to ThingFish::UploadHandler::DEFAULT_BUFSIZE
+# 		Defaults to ThingFish::FormUploadHandler::DEFAULT_BUFSIZE
 # 
 # 	[+spooldir+]
 # 		The directory in which to store uploaded resources before they are injected
 # 		into the filestore.
-# 		Defaults to ThingFish::UploadHandler::DEFAULT_SPOOLDIR
+# 		Defaults to ThingFish::FormUploadHandler::DEFAULT_SPOOLDIR
 # 
 # == Version
 # 
@@ -49,7 +49,7 @@ require 'forwardable'
 require 'tempfile'
 require 'uuidtools'
 
-class ThingFish::UploadHandler < ThingFish::Handler
+class ThingFish::FormUploadHandler < ThingFish::Handler
 
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
@@ -140,6 +140,6 @@ class ThingFish::UploadHandler < ThingFish::Handler
 		response.body = content.result( binding() )
 	end
 
-end # class ThingFish::UploadHandler
+end # class ThingFish::FormUploadHandler
 
 # vim: set nosta noet ts=4 sw=4:

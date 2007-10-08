@@ -40,7 +40,7 @@ end
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_dir = 'docs/html'
-	rdoc.title    = "ThingFish-UploadHandler - Handler for multipart/form uploads"
+	rdoc.title    = "ThingFish-FormUploadHandler - Handler for multipart/form uploads"
 	rdoc.options += ['-w', '4', '-SHN', '-i', BASEDIR.to_s]
 
 	rdoc.rdoc_files.include TEXT_FILES

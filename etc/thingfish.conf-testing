@@ -34,9 +34,9 @@ plugins:
             uris: /status
             stat_uris: [/, /inspect, /upload]
             resource_dir: plugins/thingfish-statushandler/resources
-        - upload:
+        - formupload:
             uris: /upload
-            resource_dir: plugins/thingfish-uploadhandler/resources
+            resource_dir: plugins/thingfish-formuploadhandler/resources
         - metadata:
             uris: /metadata
             resource_dir: var/www

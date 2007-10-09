@@ -45,7 +45,6 @@ module ThingFish
 
 	# Need to require these here so some constants are already defined
 	require 'thingfish/constants'
-	require 'thingfish/exceptions'
 	require 'thingfish/mixins'
 
 

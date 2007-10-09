@@ -68,12 +68,15 @@ class ThingFish::Request
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
 	### The specified +spooldir+ will be used for spooling uploaded files, 
 	def initialize( mongrel_request, config )
-		@mongrel_request = mongrel_request
 		@config          = config
 		@headers         = nil
 		@query_args		 = nil
 		@accepted_types  = nil
 		@uri             = nil
+		@entity_bodies   = nil
+		@form_metadata   = nil
+
+		@mongrel_request = mongrel_request
 		@metadata        = Hash.new {|h,k| h[k] = {} }
 	end
 
@@ -184,30 +187,6 @@ class ThingFish::Request
 	alias_method :is_multipart?, :has_multipart_body?
 
 
-	### Parse the files and form parameters from a multipart (upload) form request 
-	### body. It throws ThingFish::RequestErrors on malformed input, or if you
-	### try to parse a multipart body from a non-multipart request.
-	def parse_multipart_body
-		content_type = self.headers[ :content_type ] or
-			raise ThingFish::RequestError, "No content-type header?!"
-
-		# Match explicitly here instead of calling has_multipart_body? so
-		# we aren't replying on $1 and $2 being set at a distance
-		unless content_type =~ MULTIPART_MIMETYPE_PATTERN
-			self.log.error "Tried to parse a multipart body for a '%s' request" %
-				[content_type]
-			raise ThingFish::RequestError, "not a multipart form request"
-		end
-		
-		mimetype, boundary = $1, $2
-		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
-		
-		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
-		
-		return parser.parse( @mongrel_request.body, boundary )
-	end
-
-
 	### Call the provided block once for each entity body of the request, which may
 	### be multiple times in the case of a multipart request.
 	###
@@ -228,54 +207,37 @@ class ThingFish::Request
 			:uploadaddress => self.remote_addr
 		}
 
-		if self.has_multipart_body?
-			bodies, form_metadata = self.parse_multipart_body
-			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
-				[bodies.length, form_metadata.length, form_metadata.keys]
-			
-			bodies.each do |body, body_metadata|
-				extracted_metadata = self.metadata[body] || {}
-
-				# Content metadata is determined per-multipart section
-				merged = extracted_metadata.merge( form_metadata )
-				merged.update( body_metadata )
-				merged.update( default_metadata )
-				
-				body.open if body.closed?
-				self.log.debug "Yielding body = %p, merged metadata = %p" %
-					[ body, merged ]
-				yield( body, merged )
+		# Parse the request's body parts if they aren't already
+		unless @entity_bodies
+			if self.has_multipart_body?
+				@entity_bodies, @form_metadata = self.parse_multipart_body
+			else
+				body, metadata = self.get_body_and_metadata
+				@entity_bodies = { body => metadata }
+				@form_metadata = {}
 			end
-		else
-			body, metadata = self.get_body_and_metadata
-			yield( body, metadata )
+
+			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
+				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
+		end
+
+		# Yield the entity body and merged metadata for each part
+		@entity_bodies.each do |body, body_metadata|
+			extracted_metadata = self.metadata[body] || {}
+
+			# Content metadata is determined per-multipart section
+			merged = extracted_metadata.merge( @form_metadata )
+			merged.update( body_metadata )
+			merged.update( default_metadata )
+			
+			body.open if body.closed?
+			self.log.debug "Yielding body = %p, merged metadata = %p" %
+				[ body, merged ]
+			yield( body, merged )
 		end
 	end
 
 
-	### Get the body IO and the merged hash of metadata
-	def get_body_and_metadata
-		raise ArgumentError, "Can't return a single body for a multipart request" if
-			self.has_multipart_body?
-		
-		default_metadata = {
-			:useragent     => self.headers[ :user_agent ],
-			:uploadaddress => self.remote_addr
-		}
-
-		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
-
-		# Content metadata is determined from http headers
-		merged = extracted_metadata.merge({
-			:format => self.headers[ :content_type ],
-			:extent => self.headers[ :content_length ],
-		})
-		merged.update( default_metadata )
-		
-		return @mongrel_request.body, merged
-	end
-	
-	
 	### Checks cache headers against the given etag and modification time.
 	### Returns boolean true if the client claims to have a valid copy.
 	def is_cached_by_client?( etag, modtime )
@@ -366,6 +328,53 @@ class ThingFish::Request
 	protected
 	#########
 
+	### Parse the files and form parameters from a multipart (upload) form request 
+	### body. It throws ThingFish::RequestErrors on malformed input, or if you
+	### try to parse a multipart body from a non-multipart request.
+	def parse_multipart_body
+		content_type = self.headers[ :content_type ] or
+			raise ThingFish::RequestError, "No content-type header?!"
+
+		# Match explicitly here instead of calling has_multipart_body? so
+		# we aren't replying on $1 and $2 being set at a distance
+		unless content_type =~ MULTIPART_MIMETYPE_PATTERN
+			self.log.error "Tried to parse a multipart body for a '%s' request" %
+				[content_type]
+			raise ThingFish::RequestError, "not a multipart form request"
+		end
+		
+		mimetype, boundary = $1, $2
+		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
+		
+		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
+		
+		return parser.parse( @mongrel_request.body, boundary )
+	end
+
+
+	### Get the body IO and the merged hash of metadata
+	def get_body_and_metadata
+		raise ArgumentError, "Can't return a single body for a multipart request" if
+			self.has_multipart_body?
+		
+		default_metadata = {
+			:useragent     => self.headers[ :user_agent ],
+			:uploadaddress => self.remote_addr
+		}
+
+		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
+
+		# Content metadata is determined from http headers
+		merged = extracted_metadata.merge({
+			:format => self.headers[ :content_type ],
+			:extent => self.headers[ :content_length ],
+		})
+		merged.update( default_metadata )
+		
+		return @mongrel_request.body, merged
+	end
+	
+	
 	### Parse the given +header+ and return a list of mimetypes in order of 
 	### specificity and q-value, with most-specific and highest q-values sorted
 	### first.

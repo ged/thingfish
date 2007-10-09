@@ -109,17 +109,18 @@ describe ThingFish::Request do
 			:extent => 2,
 			:useragent => 'Burritos',
 		}
+		body = StringIO.new( TEST_CONTENT )
 
-		@request.metadata[ :the_body_entity ].update( extracted_metadata )
+		@request.metadata[ body ].update( extracted_metadata )
 		@mongrel_request.should_receive( :params ).
 			at_least( :once ).
 			and_return( params )
 		@mongrel_request.should_receive( :body ).
 			at_least( :once ).
-			and_return( :the_body_entity )
+			and_return( body )
 
 		@request.each_body do |body, metadata|
-			body.should == :the_body_entity
+			body.should == body
 			metadata.should have(4).members
 			metadata[:extent].should == 11111
 			metadata[:useragent].should == 'Hotdogs'
@@ -338,19 +339,6 @@ describe ThingFish::Request, " with a multipart body" do
 	end
 	
 	
-	it "provides an interface to extract the uploaded parts" do
-		parser = mock( "multipart parser", :null_object => true )
-
-		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
-		@mongrel_request.should_receive( :body ).once.and_return( :body )
-		parser.should_receive( :parse ).once.
-			with( :body, 'greatgoatsofgerta' ).
-			and_return( :parsed_stuff )
-
-		@request.parse_multipart_body.should == :parsed_stuff
-	end
-
-
 	it "sends each body entity of the request and a copy of the merged metadata to " +
 		"the block of the body iterator" do
 		io1 = mock( "filehandle 1" )
@@ -399,13 +387,6 @@ describe ThingFish::Request, " with a multipart body" do
 		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 	end
 	
-	it "raises an error if you try to fetch it as a single body" do
-		lambda {
-			@request.get_body_and_metadata
-		}.should raise_error( ArgumentError )
-	end
-	
-
 end
 
 describe ThingFish::Request, " sent via XMLHTTPRequest" do

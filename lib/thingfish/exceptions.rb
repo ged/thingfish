@@ -25,6 +25,7 @@
 require 'thingfish'
 
 module ThingFish
+	require 'thingfish/constants'
 
 	# General ThingFish exception class
 	class Error < RuntimeError; end
@@ -47,6 +48,8 @@ module ThingFish
 
 	# Something was wrong with a request
 	class RequestError < ThingFish::Error
+		include ThingFish::Constants
+		
 		def initialize( *args )
 			super
 			@status = HTTP::BAD_REQUEST

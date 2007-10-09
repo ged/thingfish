@@ -63,7 +63,7 @@ gemspec = Gem::Specification.new do |gem|
 	gem.version 	= PKG_VERSION
 
 	gem.summary     = "thingfish-mp3filter"
-	gem.description = ""
+	gem.description = "An Mp3 metadata-extraction filter for ThingFish."
 
 	gem.authors  	= "LAIKA, Inc."
 	gem.homepage 	= "http://opensource.laika.com"

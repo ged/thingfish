@@ -180,7 +180,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 
 	
 	
-end # class ThingFish::JSONFilter
+end # class ThingFish::Mp3Filter
 
 # vim: set nosta noet ts=4 sw=4:
 

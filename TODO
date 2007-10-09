@@ -45,3 +45,4 @@ Do me straight away
 - Handle the HTTP::NOT_ACCEPTABLE case; currently this 404s if the body is set, but the status
   is still the default.
 
+- PUT/POST /metadata to upload metadata key/values pairs en masse.

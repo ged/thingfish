@@ -221,7 +221,6 @@ class ThingFish::MultipartMimeParser
 		size = 0
 	
 		until tmpfile.closed?
-			self.log.debug "buffering..."
 	
 			# look for end, store everything until boundary
 			if scanner.scan_until( state.boundary_pat )
@@ -233,8 +232,6 @@ class ThingFish::MultipartMimeParser
 	
 			# not at the end yet, buffer this chunker to disk
 			elsif scanner.rest_size >= state.boundary_size + @bufsize
-				self.log.debug "splicing..."
-	
 				# make sure we're never writing a portion of the boundary
 				# out while we're buffering
 				buf = scanner.string.slice!( 0, 

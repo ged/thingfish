@@ -62,6 +62,13 @@ class ExampleTag < Tags::DefaultTag
 	register_tag 'example'
 
 
+	### Figure out where Rcodetools' XMPFilter lives (this changed at around 0.7.0)
+	def initialize( *args )
+		super
+		@filter_mod = defined?( Rcodetools ) ? Rcodetools::XMPFilter : XMPFilter
+	end
+	
+
 	### Process the specified +tag+ in the given +chain+.
 	def process_tag( tag, chain )
 		@process_output = param( 'processOutput' )
@@ -137,9 +144,10 @@ class ExampleTag < Tags::DefaultTag
 		libdir = basedir + 'lib'
 		log( :debug ) { "Appending " + libdir + " to $LOAD_PATH" }
 
-		options = Rcodetools::XMPFilter::INITIALIZE_OPTS.dup
+		options = @filter_mod::INITIALIZE_OPTS.dup
+			
 		options[:include_paths] << libdir.to_s
-		return Rcodetools::XMPFilter.run( sourcefile.read, options )
+		return @filter_mod.run( sourcefile.read, options )
 		
 	rescue Exception => err
 		log( :error ) {

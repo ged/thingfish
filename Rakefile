@@ -103,15 +103,15 @@ end
 Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_dir = 'docs/api'
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
+
 	rdoc.options += [
 		'-w', '4',
 		'-SHN',
 		'-i', 'docs',
-		'-f', 'xhtml',
+		'-f', 'darkfish',
+		'-m', 'README',
 		'-W', 'http://opensource.laika.com/browser/thingfish/trunk/'
 	  ]
-	# rdoc.template = allison_template.to_s
-	#rdoc.template = tf_template.to_s
 	
 	rdoc.rdoc_files.include 'README'
 	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.relative_path_from(BASEDIR).to_s }
@@ -124,6 +124,9 @@ task :rdoc do
 
 	rmtree( targetdir )
 	cp_r( outputdir, targetdir, :verbose => true )
+end
+task :clobber_rdoc do
+	rmtree( STATICWWWDIR + 'api', :verbose => true )
 end
 
 
@@ -165,7 +168,7 @@ Rake::GemPackageTask.new( gemspec ) do |task|
 end
 
 
-desc "Build the ThingFish gem and gems for all the plugins in #{PLUGINS}"
+desc "Build the ThingFish gem and gems for all the standard plugins"
 task :gems => [:gem] do
 	log "Building gems for plugins in: %s" % [PLUGINS.join(', ')]
 	PLUGINS.each do |plugindir|
@@ -253,21 +256,34 @@ end
 ### Documentation generation tasks
 begin
 	gem 'webgen'
-	require 'webgen/rake/webgentask'
+	require 'webgen/website'
 	gem 'rcodetools', '>= 0.7.0.0'
 	gem 'coderay'
 	gem 'RedCloth'
 
-	Webgen::Rake::WebgenTask.new( :manual ) do |task|
-		task.directory = MANUALDIR
-		task.clobber_outdir = true
-	end
-	task :manual do
-		outputdir = MANUALDIR + 'output'
-		targetdir = STATICWWWDIR + 'manual'
+	OUTPUTDIR = MANUALDIR + 'output'
+	TARGETDIR = STATICWWWDIR + 'manual'
 
-		rmtree( targetdir )
-		cp_r( outputdir, targetdir, :verbose => true )
+	desc "Generate the manual with webgen"
+	task :manual do |task|
+
+		Dir.chdir( MANUALDIR ) do
+			log "Building the manual"
+			
+			config_file = Webgen::WebSite.load_config_file( MANUALDIR + 'src' )
+			website = Webgen::WebSite.new( MANUALDIR )
+			website.render
+
+			log "Webgen rendered to: #{OUTPUTDIR}"
+		end
+
+		rmtree( TARGETDIR )
+		cp_r( OUTPUTDIR, TARGETDIR, :verbose => true )
+	end
+	
+	task :clobber_manual do
+		rm_rf( OUTPUTDIR, :verbose => true )
+		rm_rf( TARGETDIR, :verbose => true )
 	end
 	
 rescue LoadError => err
@@ -276,7 +292,7 @@ rescue LoadError => err
 	end
 
 	task :manual => :no_webgen
-	task :clobber_generated_manual
+	task :clobber_manual
 end
 
 
@@ -365,6 +381,8 @@ begin
 	gem 'rcov'
 	gem 'rspec', '>= 1.0.4'
 
+	COVERAGE_TARGETDIR = STATICWWWDIR + 'coverage'
+
 	### Task: coverage (via RCov)
 	### Task: spec
 	desc "Build test coverage reports"
@@ -376,17 +394,13 @@ begin
 		task.rcov = true
 	end
 	task :coverage do
-		targetdir = STATICWWWDIR + 'coverage'
-
-		rmtree( targetdir )
-		cp_r( 'coverage', targetdir, :verbose => true )
+		rmtree( COVERAGE_TARGETDIR )
+		cp_r( 'coverage', COVERAGE_TARGETDIR, :verbose => true )
 	end
 
 
 	task :rcov => [:coverage] do; end
 	
-	
-
 	### Other coverage tasks
 	namespace :coverage do
 		desc "Generate a detailed text coverage report"
@@ -412,6 +426,9 @@ begin
 		end
 	end
 
+	task :clobber_coverage do
+		rmtree( COVERAGE_TARGETDIR )
+	end
 
 rescue LoadError => err
 	task :no_rcov do

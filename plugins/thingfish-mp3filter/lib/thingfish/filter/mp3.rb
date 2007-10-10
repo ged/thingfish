@@ -163,7 +163,6 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		metadata_hash.each do |k,v|
 			case v
 			when String
-				raise "WTF?!?!? (v is: #{v.inspect})" unless v.is_a?( String )
 				metadata_hash[k] = v.chomp(NULL).strip
 			when Array
 				metadata_hash[k] = v.collect {|vv| vv.chomp(NULL).strip }

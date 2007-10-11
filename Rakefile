@@ -447,3 +447,8 @@ rescue LoadError => err
 end
 
 
+### Convenience task for rebuilding dynamic docs, including coverage, api docs, and manual
+task :docs => [ :manual, :coverage, :rdoc ] do
+end
+
+

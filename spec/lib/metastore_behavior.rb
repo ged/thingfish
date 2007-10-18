@@ -119,5 +119,34 @@ describe "A MetaStore", :shared => true do
 		@store.get_all_property_keys.should include( TEST_PROP.to_sym )
 		@store.get_all_property_keys.should include( TEST_PROP2.to_sym )
 	end
+	
+	
+	# Searching APIs
+	
+	it "Should find UUID by single-property exact match" do
+		@store.set_property( TEST_UUID, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
+
+		found = @store.find_by_exact_properties( 'title' => TEST_TITLE )
+		
+		found.should have(1).members
+		found.first.should == TEST_UUID
+	end
+
+	it "Should find UUIDs by multi-property exact match" do
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+		found = @store.find_by_exact_properties(
+		 	'title'    => TEST_TITLE,
+			'namespace' => 'devlibrary'
+		  )
+		
+		found.should have(1).members
+		found.first.should == TEST_UUID
+	end
+
 end
 

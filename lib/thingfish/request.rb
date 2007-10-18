@@ -140,7 +140,7 @@ class ThingFish::Request
 	### Return a Hash of request query arguments.  This is a regular Hash, rather
 	### than a ThingFish::Table, because we can't arbitrarily normalize query
 	### arguments.
-	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => true}
+	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
 	### TODO: Parse query args for methods other than GET.
 	def query_args
 		return {} if @uri.query.nil?
@@ -148,7 +148,7 @@ class ThingFish::Request
 			key, val = arg.split('=')
 			case val
 			when NilClass
-				val = true
+				val = nil
 			when /^\d+$/
 				val = val.to_i
 			else
@@ -187,6 +187,29 @@ class ThingFish::Request
 	alias_method :is_multipart?, :has_multipart_body?
 
 
+	### Get the body IO and the merged hash of metadata
+	def get_body_and_metadata
+		raise ArgumentError, "Can't return a single body for a multipart request" if
+			self.has_multipart_body?
+		
+		default_metadata = {
+			:useragent     => self.headers[ :user_agent ],
+			:uploadaddress => self.remote_addr
+		}
+
+		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
+
+		# Content metadata is determined from http headers
+		merged = extracted_metadata.merge({
+			:format => self.headers[ :content_type ],
+			:extent => self.headers[ :content_length ],
+		})
+		merged.update( default_metadata )
+		
+		return @mongrel_request.body, merged
+	end
+	
+	
 	### Call the provided block once for each entity body of the request, which may
 	### be multiple times in the case of a multipart request.
 	###
@@ -234,7 +257,7 @@ class ThingFish::Request
 			self.log.debug "Yielding body = %p, merged metadata = %p" %
 				[ body, merged ]
 			yield( body, merged )
-		end
+ 		end
 	end
 
 
@@ -352,29 +375,6 @@ class ThingFish::Request
 	end
 
 
-	### Get the body IO and the merged hash of metadata
-	def get_body_and_metadata
-		raise ArgumentError, "Can't return a single body for a multipart request" if
-			self.has_multipart_body?
-		
-		default_metadata = {
-			:useragent     => self.headers[ :user_agent ],
-			:uploadaddress => self.remote_addr
-		}
-
-		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
-
-		# Content metadata is determined from http headers
-		merged = extracted_metadata.merge({
-			:format => self.headers[ :content_type ],
-			:extent => self.headers[ :content_length ],
-		})
-		merged.update( default_metadata )
-		
-		return @mongrel_request.body, merged
-	end
-	
-	
 	### Parse the given +header+ and return a list of mimetypes in order of 
 	### specificity and q-value, with most-specific and highest q-values sorted
 	### first.

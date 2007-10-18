@@ -30,8 +30,8 @@
 require 'pluginfactory'
 require 'thingfish'
 require 'thingfish/mixins'
-
-
+require 'thingfish/exceptions'
+	
 ### Base class for ThingFish MetaStore plugins
 class ThingFish::MetaStore
 	include PluginFactory,
@@ -172,7 +172,8 @@ class ThingFish::MetaStore
 		:get_properties,
 		:delete_property,
 		:delete_properties,
-		:get_all_property_keys
+		:get_all_property_keys,
+		:find_by_exact_properties
 
 
 end # class ThingFish::MetaStore

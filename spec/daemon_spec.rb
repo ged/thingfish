@@ -478,7 +478,7 @@ describe ThingFish::Daemon do
 		metadata_proxy.should_receive( :created= ).with an_instance_of( Time )
 		metadata_proxy.should_receive( :modified= ).with( an_instance_of(Time) )
 
-		metadata_proxy.stub!( :content_length ).and_return( 1 )
+		metadata_proxy.stub!( :extent ).and_return( 1 )
 
 		@daemon.store_resource( body, metadata ).should == TEST_UUID_OBJ
 	end
@@ -507,7 +507,7 @@ describe ThingFish::Daemon do
 		metadata_proxy.should_not_receive( :created= )
 		metadata_proxy.should_receive( :modified= ).with( an_instance_of(Time) )
 
-		metadata_proxy.stub!( :content_length ).and_return( 1 )
+		metadata_proxy.stub!( :extent ).and_return( 1 )
 
 		@daemon.store_resource( body, metadata, TEST_UUID_OBJ ).should == TEST_UUID_OBJ
 	end

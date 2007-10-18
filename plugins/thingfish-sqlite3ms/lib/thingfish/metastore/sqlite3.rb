@@ -265,6 +265,36 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	end
 	
 
+	### MetaStore API: Return an array of uuids whose metadata +key+ is
+	### exactly +value+.
+	def find_by_exact_properties( hash )
+		select_sql = %q{
+			SELECT uuid FROM resources AS r, metakey AS mk, metaval AS mv
+			WHERE
+				mk.key = :key AND
+				mk.id = mv.m_id AND
+				mv.val = :value AND
+				mv.r_id = r.id
+		}
+
+		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
+			key, value = *pair
+			key = key.to_s
+
+			matching_uuids = @metadata.execute( select_sql, key, value ).flatten
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []		
+	end
+
 
 	### Return the schema that describes the database as a String, loading
 	### it from the plugin resources if necessary

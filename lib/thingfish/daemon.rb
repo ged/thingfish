@@ -169,8 +169,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
 			uuid,
-			metadata.content_type,
-			Integer(metadata.content_length) / 1024.0,
+			metadata.format,
+			Integer(metadata.extent) / 1024.0,
 			metadata.checksum
 		  ]
 		

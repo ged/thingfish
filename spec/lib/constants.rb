@@ -36,6 +36,7 @@ module ThingFish::TestConstants
 		TEST_UUID_OBJ	      = UUID.parse( '60acc01e-cd82-11db-84d1-7ff059e49450' )
 		TEST_ACCEPT_HEADER    = 'application/x-yaml, application/json; q=0.2, text/xml; q=0.75'
 		TEST_RUBY_OBJECT	  = { 'pine cone' => 'sandwiches', 'olive oil' => 'pudding' }
+		TEST_TITLE            = 'Muffin the Panda Goes To School'
 
 		# Fixtured HTTP responses
 		TEST_OK_HTTP_RESPONSE = <<-'EOF'.gsub(/^\s*/, '')

@@ -147,9 +147,9 @@ describe ThingFish::Request do
 		args = @request.query_args
 		args.should have(3).members
 		args['wow ow wee wow'].should == 1
-		args['no-val'].should == true
+		args['no-val'].should be_nil()
 		args['semicolon-val'].should == 'jyes'
-		args['nonexistent'].should == nil
+		args.has_key?('nonexistent').should == false
 	end
 
 

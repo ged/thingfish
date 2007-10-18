@@ -97,11 +97,37 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 		return count
 	end
 
+
 	### MetaStore API: Return all property keys in store
 	def get_all_property_keys
 		return @metadata.collect do | uuid, props |
 			props.keys
 		end.flatten.uniq
+	end
+
+
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
+	### specified by +hash+. The criteria should be key-value pairs which describe
+	### exact metadata pairs.
+	def find_by_exact_properties( hash )
+		uuids = hash.inject(nil) do |ary, pair|
+			key, value = *pair
+			key = key.to_sym
+
+			matching_uuids = @metadata.keys.find_all do |uuid|
+				@metadata[ uuid ][ key ] == value
+			end
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []
 	end
 
 end # class ThingFish::MemoryMetaStore

@@ -183,6 +183,36 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 		end
 		return keys.flatten.uniq
 	end
+	
+	
+	### MetaStore API: Return an array of UUIDs whose metadata exactly matches the
+	### key-value pairs in +hash+.
+	def find_by_exact_properties( hash )
+		uuids = hash.inject(nil) do |ary, pair|
+			key, value = *pair
+			key = key.to_sym
+
+			matching_uuids = []
+			key = key.to_sym
+			@lock.lock do
+				@metadata.transaction(true) do
+					@metadata.roots.each do |uuid|
+						matching_uuids << uuid if @metadata[ uuid ][ key ] == value
+					end
+				end
+			end
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []
+	end
 		
 end # class ThingFish::MarshalledMetaStore
 

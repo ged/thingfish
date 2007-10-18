@@ -271,7 +271,7 @@ describe ThingFish::DefaultHandler do
 
 		query_args = mock( "uri query arguments", :null_object => true )
 		@request.stub!( :query_args ).and_return( query_args )
-		query_args.should_receive( :[] ).with( 'attach' ).and_return( nil )
+		query_args.should_receive( :has_key? ).with( 'attach' ).and_return( false )
 
 		@response_headers.
 			should_not_receive( :[]= ).
@@ -294,7 +294,7 @@ describe ThingFish::DefaultHandler do
 
 		query_args = mock( "uri query arguments", :null_object => true )
 		@request.stub!( :query_args ).and_return( query_args )
-		query_args.should_receive( :[] ).with( 'attach' ).and_return( true )
+		query_args.should_receive( :has_key? ).with( 'attach' ).and_return( true )
 	
 		@mockmetadata.stub!( :title ).and_return('potap.mp3')
 

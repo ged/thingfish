@@ -26,6 +26,10 @@ Planned Features
    * Metadata grid view
    * Result galleries
 
+ o Aggregate fetch
+   * /metadata/«uuid1»,«uuid2»,«uuidn»
+       * Maybe POST a list of uuids for metadata fetching
+   * /«uuid1»,«uuid2»,«uuidn»
 
 Do me straight away
 -------------------
@@ -39,6 +43,7 @@ Do me straight away
   performance of any future changes.
   * AutoBench? (http://www.xenoclast.org/autobench/)
   * Httperf? (http://www.hpl.hp.com/research/linux/httperf/)
+  * 'ab' with gnuplot output?
 
 - Update docs!  Fill in placeholders now that APIs are solid.
 
@@ -46,3 +51,24 @@ Do me straight away
   is still the default.
 
 - PUT/POST /metadata to upload metadata key/values pairs en masse.
+
+- Metadata transaction block
+
+- Spoolfile upload cleanup?
+
+
+Metastore search interface notes:
+---------------------------------
+exact        ( :find_by_exact_property )
+pattern      ( :find_by_matching_property )
+exist checks ( :find_by_exact_key )
+             ( :find_by_matching_key )
+type-specific 
+	- date operations ( :before, :after, :during )
+	  ( :find_by_date_property )
+	- numeric operations ( >, <, % )
+	  ( :find_by_numeric_property )
+	- set operations ( intersection, union, difference, exclusion )
+	  ( :find_by_membership_property )
+	
+

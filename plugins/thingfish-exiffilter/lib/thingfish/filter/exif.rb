@@ -78,11 +78,11 @@ class ThingFish::ExifFilter < ThingFish::Filter
 					  request.http_method == 'POST'
 
 		request.each_body do |body, metadata|
-			case metadata[:format]
+			case metadata[:format].downcase
 
 		    # JPEG image
 			#
-			when %r{image/jpeg}i
+			when 'image/jpeg'
 				parser = EXIFR::JPEG.new( body )
 
 				attributes = %w{ width height comment bits }
@@ -91,7 +91,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 
 		    # TIFF image
 			#
-			when %r{image/tiff}i
+			when 'image/tiff'
 				parser = EXIFR::TIFF.new( body )
 
 				attributes = %w{ width height size }

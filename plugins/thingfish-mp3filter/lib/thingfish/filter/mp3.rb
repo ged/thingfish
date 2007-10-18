@@ -82,7 +82,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 			request.http_method == 'POST'
 
 		request.each_body do |body, metadata|
-			if metadata[:format] =~ %r{audio/mpe?g}i
+			if metadata[:format].downcase == 'audio/mpeg'
 				mp3_metadata = self.extract_id3_metadata( body )
 				request.metadata[ body ].merge!( mp3_metadata )
 				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata ]

@@ -255,6 +255,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### data (POST to /)
 	def handle_create_request( request, response )
 
+		uuid = nil
+		
 		body, metadata = request.get_body_and_metadata
 		uuid = self.daemon.store_resource( body, metadata )
 
@@ -328,7 +330,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### RFC 2183, this is an optional, but convenient header when using UUID-keyed 
 	### resources.
 	def add_content_disposition( request, response, uuid )
-		return unless request.query_args['attach']
+		return unless request.query_args.has_key?('attach')
 		
 		disposition = []
 		disposition << 'attachment'

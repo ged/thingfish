@@ -81,6 +81,12 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 		}.should raise_error( NotImplementedError, /#get_all_property_keys/ )
 	end
 	
+	it "raises NotImplementedError for #find_by_exact_properties" do
+		lambda {
+			@metastore.find_by_exact_properties( :namespace => 'foo' )
+		}.should raise_error( NotImplementedError, /#find_by_exact_properties/ )
+	end
+	
 	it "returns a ResourceProxy to use when interacting with a resource's metadata set" do
 	    @metastore[ TEST_UUID ].
 			should be_a_kind_of( ThingFish::MetaStore::ResourceProxy )

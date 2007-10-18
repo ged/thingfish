@@ -3,6 +3,8 @@
 -- $Id$
 -- 
 PRAGMA default_cache_size = 7000;
+PRAGMA default_synchronous=OFF;
+PRAGMA count_changes=OFF;
 PRAGMA user_version = $Rev: 185 $; -- Transformed by the plugin before insertion
 
 CREATE TABLE

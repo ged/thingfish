@@ -104,6 +104,16 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 			props.keys
 		end.flatten.uniq
 	end
+	
+	
+	### MetaStore API: Return a uniquified Array of all values in the metastore for
+	### the specified +key+.
+	def get_all_property_values( key )
+		key = key.to_sym
+		return @metadata.collect do |uuid, props|
+			props[ key ]
+		end.compact.uniq
+	end
 
 
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria

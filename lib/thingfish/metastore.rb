@@ -173,6 +173,7 @@ class ThingFish::MetaStore
 		:delete_property,
 		:delete_properties,
 		:get_all_property_keys,
+		:get_all_property_values,
 		:find_by_exact_properties
 
 

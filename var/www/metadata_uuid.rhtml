@@ -21,24 +21,26 @@
 	<div id="contentwide">
 		<p class="textright">&nbsp;</p>
 
-		<h2>Existing MetaStore Keys</h2>
-
-		<% if metadata_keys.empty? %>
-		<p>There appears to be a severe lack of metadata!</p>
-		<% else %>
-		<ul>
-		<% metadata_keys.sort.each do |key| %>
-			<li><a href="<%= request.uri.path + '/' + key %>"><%= key %></a></li>
+		<h2>Metadata for '<%= uuid %>'</h2>
+		<table>
+			<tr>
+				<th>Attribute</th>
+				<th>Value</th>
+			</tr>
+		<% tuples.sort_by { |k,v| k.to_s }.each do |key, value| %>
+			<tr>
+				<td><%= key %></td>
+				<td><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></td>				
+			</tr>
 		<% end %>
-		</ul>
-		<% end %>
+		</table>		
 	</div>
 	<!-- content end -->
 
       <div id="footer">
         <p>Copyright &copy; 2007 LAIKA, Inc. | 
 			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id: index.html 237 2007-07-06 15:09:09Z mahlon $</p>
+			  <p>$Id$</p>
       </div>
     </div>
   </body>

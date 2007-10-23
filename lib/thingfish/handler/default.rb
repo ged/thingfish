@@ -62,9 +62,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	# SVN Id
 	SVNId = %q$Id$
 
-	# Pattern that matches requests to /ÇuuidÈ
-	UUID_URL = %r{^/(#{UUID_REGEXP})$}
-
 	# Config defaults
 	CONFIG_DEFAULTS = {
 		:html_index 	  => 'index.rhtml',

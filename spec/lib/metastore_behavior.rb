@@ -121,6 +121,17 @@ describe "A MetaStore", :shared => true do
 	end
 	
 	
+	it "can fetch all values for a given key in the store" do
+		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+		@store.set_property( TEST_UUID2, TEST_PROP, TEST_PROPVALUE2 )
+		@store.set_property( TEST_UUID3, TEST_PROP, TEST_PROPVALUE2 )
+		@store.set_property( TEST_UUID, TEST_PROP2, TEST_PROPVALUE2 )
+		@store.get_all_property_values( TEST_PROP ).should have(2).members
+		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE )
+		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE2 )
+	end
+	
+	
 	# Searching APIs
 	
 	it "Should find UUID by single-property exact match" do

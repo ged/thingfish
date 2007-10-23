@@ -155,6 +155,9 @@ module ThingFish::Constants
 
 		UUID_REGEXP = /#{HEX8}-#{HEX4}-#{HEX4}-#{HEX4}-#{HEX12}/
 
+		# Pattern that matches requests to /ÇuuidÈ
+		UUID_URL = %r{^/(#{UUID_REGEXP})$}
+
 		# Network IO patterns
 		CRLF = /\r?\n/
 		BLANK_LINE = /#{CRLF}#{CRLF}/

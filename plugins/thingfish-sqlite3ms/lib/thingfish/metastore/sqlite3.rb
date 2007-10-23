@@ -265,6 +265,20 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	end
 	
 
+	### MetaStore API: Return a uniquified Array of all values in the metastore for
+	### the specified +key+.
+	def get_all_property_values( key )
+		select_sql = %q{
+			SELECT DISTINCT mv.val FROM metaval AS mv, metakey AS mk
+			WHERE 
+				mv.m_id = mk.id AND 
+				mk.key  = :key
+		}
+		
+		return @metadata.execute( select_sql, key ).flatten.compact
+	end
+	
+	
 	### MetaStore API: Return an array of uuids whose metadata +key+ is
 	### exactly +value+.
 	def find_by_exact_properties( hash )

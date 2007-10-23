@@ -148,7 +148,7 @@ class ThingFish::Request
 			key, val = arg.split('=')
 			case val
 			when NilClass
-				val = nil
+				# no-op
 			when /^\d+$/
 				val = val.to_i
 			else

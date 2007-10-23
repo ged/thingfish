@@ -77,10 +77,16 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 
 	it "raises NotImplementedError for #get_all_property_keys" do
 		lambda {
-			@metastore.get_all_property_keys( TEST_UUID, TEST_PROP )
+			@metastore.get_all_property_keys()
 		}.should raise_error( NotImplementedError, /#get_all_property_keys/ )
 	end
-	
+
+	it "raises NotImplementedError for #get_all_property_values" do
+		lambda {
+			@metastore.get_all_property_values( TEST_PROP )
+		}.should raise_error( NotImplementedError, /#get_all_property_values/ )
+	end
+		
 	it "raises NotImplementedError for #find_by_exact_properties" do
 		lambda {
 			@metastore.find_by_exact_properties( :namespace => 'foo' )

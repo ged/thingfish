@@ -20,8 +20,27 @@
 	<!-- content start -->
 	<div id="contentwide">
 		<p class="textright">&nbsp;</p>
+		
+		<% unless request.query_args.empty? %>
+		<h2>Search results</h2>
+			<% if uuids.empty? %>
+				<p>No resources matched your query.</p>
+			<% else %>
+			<ul>
+				<!-- FIXME: sorting by... filename? -->
+				<% uuids.each do |uuid| %>
+					<% resource = @metastore[uuid] %>
+					<li>
+						<a href="<%= '/' + uuid + '?attach' %>"><%= resource.title %></a>
+						(<a href="/metadata/<%= uuid %>">more info</a>)
+					</li>
+				<% end %>
+			</ul>
+			<% end %>
+			<br />
+		<% end %>
+		
 		<h2>Search</h2>
-
 		<form action="<%= uri %>" method="GET">
 			<table border="0">
 				<th colspan="2">Search terms:</th>
@@ -51,22 +70,6 @@
 			<input type="submit" value="Search" />
 		</form>
 
-		<% unless request.query_args.empty? %>
-		<br />
-		<h2>Search results</h2>
-			<% if uuids.empty? %>
-				<p>No resources matched your query.</p>
-			<% else %>
-			<ul>
-				<!-- FIXME: sorting by... filename? -->
-				<% uuids.each do |uuid| %>
-					<% resource = @metastore[uuid] %>
-					<li><a href="<%= '/' + uuid + '?attach' %>"><%= resource.title %></a></li>
-				<% end %>
-			</ul>
-			<% end %>
-		<% end %>
-		
 	</div>
 	<!-- content end -->
 

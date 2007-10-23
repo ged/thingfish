@@ -27,6 +27,7 @@ module ThingFish::TestConstants
 		TEST_RESOURCE_CONTENT = 'porn'
 		TEST_UUID			  = '60acc01e-cd82-11db-84d1-7ff059e49450'
 		TEST_UUID2			  = '06363890-c67f-11db-84a0-b7f0d178e52d'
+		TEST_UUID3			  = '26A4EBA6-1264-4269-AC0A-82A80C0FDB4D'
 		TEST_PROP			  = 'format'
 		TEST_PROPVALUE		  = 'application/json'
 		TEST_PROP2			  = 'turn_ons'

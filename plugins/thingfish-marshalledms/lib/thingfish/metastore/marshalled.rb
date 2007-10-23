@@ -185,6 +185,23 @@ class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
 	end
 	
 	
+	### MetaStore API: Return a uniquified Array of all values in the metastore for
+	### the specified +key+.
+	def get_all_property_values( key )
+		values = []
+		key    = key.to_sym
+
+		@lock.lock do
+			@metadata.transaction(true) do
+				@metadata.roots.each do |uuid|
+					values << @metadata[ uuid ][ key ]
+				end
+			end
+		end
+		return values.compact.uniq
+	end
+	
+	
 	### MetaStore API: Return an array of UUIDs whose metadata exactly matches the
 	### key-value pairs in +hash+.
 	def find_by_exact_properties( hash )

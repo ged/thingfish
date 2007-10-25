@@ -171,7 +171,7 @@ class ThingFish::MultipartMimeParser
 					[state.scanner.pre_match]
 				param = state.scanner.pre_match
 			else
-				self.read_some_more( state.socket, scanner ) or
+				self.read_some_more( state.socket, state.scanner ) or
 					raise ThingFish::RequestError,
 						"EOF while scanning for a metadata parameter"
 			end

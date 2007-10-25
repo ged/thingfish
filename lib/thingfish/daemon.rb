@@ -158,21 +158,23 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		end
 
 		# Store some default metadata about the resource
-		now = Time.now
-		metadata = @metastore[ uuid ]
-		metadata.update( body_metadata )
+		@metastore.transaction do
+			now = Time.now
+			metadata = @metastore[ uuid ]
+			metadata.update( body_metadata )
 
-		# :BRANCH: Won't overwrite an existing creation date
-		metadata.checksum = checksum
-		metadata.created  = now unless metadata.created
-		metadata.modified = now
+			# :BRANCH: Won't overwrite an existing creation date
+			metadata.checksum = checksum
+			metadata.created  = now unless metadata.created
+			metadata.modified = now
 
-		self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
-			uuid,
-			metadata.format,
-			Integer(metadata.extent) / 1024.0,
-			metadata.checksum
-		  ]
+			self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
+				uuid,
+				metadata.format,
+				Integer(metadata.extent) / 1024.0,
+				metadata.checksum
+			  ]
+		end
 		
 		return uuid
 	end

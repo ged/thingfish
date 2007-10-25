@@ -57,6 +57,7 @@ class ThingFish::MetaStore
 			@store = store
 		end
 
+
 		######
 		public
 		######
@@ -165,6 +166,15 @@ class ThingFish::MetaStore
 	end
 
 
+	### Execute a block in the scope of a transaction, committing it when the block returns.
+	### If an exception is raised in the block, the transaction is aborted. This is a
+	### no-op by default, but left to specific metastores to provide a functional 
+	### implementation if it is useful/desired.
+	def transaction
+		yield
+	end
+	
+
 	### Mandatory MetaStore API
 	virtual :has_property?,
 		:set_property,
@@ -175,7 +185,6 @@ class ThingFish::MetaStore
 		:get_all_property_keys,
 		:get_all_property_values,
 		:find_by_exact_properties
-
 
 end # class ThingFish::MetaStore
 

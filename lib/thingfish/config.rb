@@ -298,6 +298,17 @@ class ThingFish::Config
 
 	end
 	
+	
+	### Return the first URI the specified +handler+ is installed at, if any. If
+	### there is no such handler installed, returns nil.
+	def find_handler_uri( handler )
+		handler_config = self.plugins.handlers.find {|plug| plug.key?(handler) } or
+			return nil
+		name, uris, options = self.parse_handler_config( handler_config )
+		return uris.first
+	end
+	
+
 	### Return the config object as a YAML hash
 	def dump
 		strhash = stringify_keys( self.to_h )

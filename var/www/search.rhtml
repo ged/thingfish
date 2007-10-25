@@ -21,6 +21,8 @@
 	<div id="contentwide">
 		<p class="textright">&nbsp;</p>
 		
+		<% metadata_uri = @config.find_handler_uri('metadata') %>
+		
 		<% unless request.query_args.empty? %>
 		<h2>Search results</h2>
 			<% if uuids.empty? %>
@@ -31,8 +33,10 @@
 				<% uuids.each do |uuid| %>
 					<% resource = @metastore[uuid] %>
 					<li>
-						<a href="<%= '/' + uuid + '?attach' %>"><%= resource.title %></a>
+						<a href="<%= '/' + uuid %>"><%= resource.title %></a>
+						<% if metadata_uri %>
 						(<a href="/metadata/<%= uuid %>">more info</a>)
+						<% end %>
 					</li>
 				<% end %>
 			</ul>

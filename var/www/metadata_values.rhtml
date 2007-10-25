@@ -21,10 +21,16 @@
 	<div id="contentwide">
 		<p class="textright">&nbsp;</p>
 
+		<% search_uri = @config.find_handler_uri('search') %>
+		
 		<h2>Values for '<%= key %>' property</h2>
 		<ul>
 		<% metadata_values.reject { |v| v == '' }.sort.each do |value| %>
-			<li><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></li>
+			<% if search_uri %> 
+			<li><a href="<%= search_uri %>?<%= key %>=<%= u value %>"><%= value %></a></li>
+			<% else %>
+			<li><%= value %></li>
+			<% end %>
 		<% end %>
 		</ul>		
 	</div>

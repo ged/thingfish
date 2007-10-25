@@ -134,7 +134,7 @@ describe "A MetaStore", :shared => true do
 	
 	# Searching APIs
 	
-	it "Should find UUID by single-property exact match" do
+	it "can find UUID by single-property exact match" do
 		@store.set_property( TEST_UUID, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
 
@@ -144,7 +144,7 @@ describe "A MetaStore", :shared => true do
 		found.first.should == TEST_UUID
 	end
 
-	it "Should find UUIDs by multi-property exact match" do
+	it "can find UUIDs by multi-property exact match" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
@@ -157,6 +157,18 @@ describe "A MetaStore", :shared => true do
 		
 		found.should have(1).members
 		found.first.should == TEST_UUID
+	end
+
+
+	# Transaction API
+	
+	it "can execute a block in the context of a transaction" do
+		ran_block = false
+		@store.transaction do
+			ran_block = true
+		end
+		
+		ran_block.should be_true()
 	end
 
 end

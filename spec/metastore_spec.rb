@@ -109,6 +109,7 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 			@metastore[ TEST_UUID ]
 		}.should raise_error( ThingFish::PluginError, /did not call.+initializer/ )
 	end
+
 end
 
 

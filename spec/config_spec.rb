@@ -196,7 +196,7 @@ describe ThingFish::Config do
 	it "is able to build a configured MetaStore object" do
 		@config.create_configured_metastore.should be_a_kind_of( ThingFish::MetaStore )
 	end
-	
+
 end
 
 
@@ -461,6 +461,45 @@ describe ThingFish::Config, " created without a filestore plugin section" do
 	end
 end
 
+
+TEST_HANDLER_URI_CONFIG =<<END
+---
+plugins:
+    handlers:
+        - dav: /mount
+        - admin: [/admin, /superuser]
+        - inspect: /admin/inspect
+END
+
+describe ThingFish::Config, " with configured handlers" do
+
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+	before(:each) do
+	    @config = ThingFish::Config.new( TEST_HANDLER_URI_CONFIG )
+	end
+
+
+	it "can find the uri of installed handler plugins" do
+		@config.find_handler_uri( 'dav' ).should == '/mount'
+	end
+
+	it "can find the first uri of handler plugins that are installed in more than one place" do
+		@config.find_handler_uri( 'admin' ).should == '/admin'
+	end
+
+	it "returns nil if asked for the uri of a handler that isn't installed" do
+		@config.find_handler_uri( 'moonlanding' ).should be_nil()
+	end
+
+end
 
 
 # vim: set nosta noet ts=4 sw=4:

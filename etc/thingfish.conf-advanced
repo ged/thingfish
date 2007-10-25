@@ -11,6 +11,7 @@
 #   - All data is stored under /home/thingfish/var.
 #	- Install some useful intropection and file upload handlers.
 #	- Install some basic response filters.
+#	- Install some basic extraction filters.
 #
 ---
 port: 80
@@ -40,6 +41,8 @@ plugins:
     filters:
         yaml: ~
         json: ~
+        mp3info: ~
+        exif: ~
     handlers:
         - inspect:
             uris: /inspect

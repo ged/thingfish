@@ -33,6 +33,7 @@
 # Please see the file LICENSE in the base directory for licensing details.
 #
 
+require 'forwardable'
 require 'pathname'
 require 'sqlite3'
 
@@ -73,6 +74,8 @@ end
 
 ### A metastore backend that stores metadata tuples in a SQLite3 database
 class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
+
+	extend Forwardable
 
 	include ThingFish::Loggable,
 	        ThingFish::ResourceLoader
@@ -120,6 +123,16 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 
 	# The name of the sqlite3 database that is backing the metastore
 	attr_reader :dbname
+
+	# Provide direct transactional control for ease of testing.
+	def_delegators :@metadata, :rollback, :commit, :transaction_active?
+
+
+    ### These transaction fallthrough methods are discouraged for regular use, 
+    ### in favor of the #transaction metastore API.
+	def begin_transaction #:nodoc:
+		@metadata.transaction
+	end
 	
 
 	### Returns +true+ if the metadata database needs to be created.
@@ -141,35 +154,13 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
-		set_sql = %q{
+		r_id = get_id( :resource, uuid )
+		m_id = get_id( :metakey, propname )
+		@metadata.execute(%q{
 			REPLACE INTO metaval
-				VALUES (
-					:id,
-					( SELECT id FROM metakey WHERE key= :propname ),
-					:value
-				)
-		}
-
-		@metadata.transaction
-		begin
-			r_id = get_resource_id( uuid )
-			self.log.debug "Executing %p for set_property(%p, %p, %p)" %
-				[ set_sql.gsub(/\s+/, ' '), uuid, propname, value ]
-			@metadata.execute( set_sql, r_id, propname, value )
-			self.log.debug "   no exception was raised."
-		rescue SQLite3::SQLException
-			self.log.debug "Creating new metadata property row: #{propname}"
-
-			propadd_sql = %q{
-				INSERT INTO metakey
-					VALUES ( NULL, :propname )
-			}
-
-			@metadata.execute( propadd_sql, propname )
-			@metadata.execute( set_sql, r_id, propname, value )
-		end
-		self.log.debug "Committing."
-		@metadata.commit
+				VALUES ( :r_id, :m_id, :value ) },
+			r_id, m_id, value
+		)
 	end
 	
 	### MetaStore API: Return the property associated with +uuid+ specified by 
@@ -185,12 +176,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 				m.key = :propname
 		}
 
-		results = nil
-		@metadata.transaction do
-			r_id = get_resource_id( uuid )
-			results = @metadata.get_first_value( get_sql, r_id, propname )
-		end
-		return results
+		r_id = get_id( :resource, uuid )
+		return @metadata.get_first_value( get_sql, r_id, propname )
 	end
 
 	
@@ -206,21 +193,17 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 				v.r_id = :id
 		}
 
-		results = {}
-		@metadata.transaction do
-			r_id = get_resource_id( uuid )
-			@metadata.execute( get_sql, r_id ) do | propname, propval |
-				results[ propname.to_sym ] = propval
-			end
+		r_id = get_id( :resource, uuid )
+		return @metadata.execute( get_sql, r_id ).inject({}) do |hash, row|
+			hash[ row.first.to_sym ] = row.last
+			hash
 		end
-		return results
 	end
 
 
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
-		results = get_property( uuid, propname )
-		return ! results.nil?
+		return get_property( uuid, propname ) != nil
 	end
 
 
@@ -269,10 +252,10 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	### the specified +key+.
 	def get_all_property_values( key )
 		select_sql = %q{
-			SELECT DISTINCT mv.val FROM metaval AS mv, metakey AS mk
+			SELECT DISTINCT v.val FROM metaval AS v, metakey AS k
 			WHERE 
-				mv.m_id = mk.id AND 
-				mk.key  = :key
+				v.m_id = k.id AND 
+				k.key  = :key
 		}
 		
 		return @metadata.execute( select_sql, key ).flatten.compact
@@ -283,12 +266,12 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	### exactly +value+.
 	def find_by_exact_properties( hash )
 		select_sql = %q{
-			SELECT uuid FROM resources AS r, metakey AS mk, metaval AS mv
+			SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
 			WHERE
-				mk.key = :key AND
-				mk.id = mv.m_id AND
-				mv.val = :value AND
-				mv.r_id = r.id
+				k.key  = :key AND
+				k.id   = v.m_id AND
+				v.val  = :value AND
+				v.r_id = r.id
 		}
 
 		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
@@ -345,11 +328,21 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	
 	### Delete all resources from the database, but preserve the keys
 	def clear
-		@metadata.transaction( :exclusive ) do
-			@metadata.execute( "delete from resources" )
-		end
+		@metadata.execute( 'DELETE FROM resources' )
 	end
 	
+	
+	### Execute a block in the scope of a transaction, committing it when the block returns.
+	### If an exception is raised in the block, the transaction is aborted.
+	def transaction( &block )
+		if @metadata.transaction_active?
+			block.call
+		else
+			@metadata.transaction( &block ) 
+		end
+	end
+
+
 
 	#########
 	protected
@@ -369,23 +362,30 @@ class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
 	end
 	
 
-	### Return the id of a given resource uuid, or if none exist,
+	### Return the id of a given resource or metakey, or if none exist,
 	### create a new row and return the id.
-	def get_resource_id( uuid )
-		r_id = @metadata.get_first_value(
-			'SELECT id FROM resources WHERE uuid = :uuid',
-			uuid
-		)
-		return r_id.to_i unless r_id.nil?
+	def get_id( key, value )
+		case key
+		when :resource
+			select_sql = 'SELECT id FROM resources WHERE uuid = :uuid'
+			insert_sql = 'INSERT into resources VALUES ( NULL, :uuid )'
+		when :metakey
+			select_sql = 'SELECT id FROM metakey WHERE key = :propname'
+			insert_sql = 'INSERT INTO metakey VALUES ( NULL, :propname )'
+		else
+			raise "Unknown ID type %p!" % [ key ]
+		end
 
-		# create a new row for this resource
-		self.log.debug "Creating new metadata row: #{uuid}"
-		@metadata.execute(
-			'INSERT into resources VALUES ( NULL, :uuid )',
-			uuid
-		)
+		# return a found ID.
+		#
+		id = @metadata.get_first_value( select_sql, value )
+		return id.to_i unless id.nil?
+
+		# create a new row for the requested object, and return the new ID.
+		#
+		self.log.debug "Creating new %s row: %s" % [ key, value ]
+		@metadata.execute( insert_sql, value )
 		return @metadata.last_insert_row_id
 	end
-
 end
 

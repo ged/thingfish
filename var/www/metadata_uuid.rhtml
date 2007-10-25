@@ -21,6 +21,8 @@
 	<div id="contentwide">
 		<p class="textright">&nbsp;</p>
 
+		<% search_uri = @config.find_handler_uri('search') %>
+
 		<h2>Metadata for '<%= uuid %>'</h2>
 		<table>
 			<tr>
@@ -30,7 +32,11 @@
 		<% tuples.sort_by { |k,v| k.to_s }.each do |key, value| %>
 			<tr>
 				<td><%= key %></td>
-				<td><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></td>				
+				<% if search_uri %>
+				<td><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></td>
+				<% else %>
+				<td><%= value %></td>
+				<% end %>
 			</tr>
 		<% end %>
 		</table>		

@@ -24,8 +24,12 @@ plugins:
         maxsize: 1073741824
         root: /tmp/thingfish
     metastore:
-        name: marshalled
+        name: sqlite3
         root: /tmp/thingfish
+        resource_dir: plugins/thingfish-sqlite3ms/resources
+        typemap:
+            tag: list
+            expires: date
     handlers:
         - inspect:
             uris: /inspect
@@ -40,7 +44,11 @@ plugins:
         - metadata:
             uris: /metadata
             resource_dir: var/www
+        - search:
+            uris: /search
+            resource_dir: var/www
     filters:
         yaml: {}
         json: {}
         mp3: {}
+        exif: {}

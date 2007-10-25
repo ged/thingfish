@@ -104,6 +104,7 @@ def which( program )
 		find {|path| path.exist? && path.executable? }
 end
 
+
 ### Create a string that contains the ANSI codes specified and return it
 def ansi_code( *attributes )
 	attributes.flatten!

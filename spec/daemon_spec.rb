@@ -470,6 +470,7 @@ describe ThingFish::Daemon do
 			and_return( :a_checksum )
 
 		metadata_proxy = mock( "metadata proxy", :null_object => true )
+		metastore.should_receive( :transaction ).and_yield
 		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
 		metadata_proxy.should_receive( :update ).with( metadata )
 
@@ -498,6 +499,7 @@ describe ThingFish::Daemon do
 			with( TEST_UUID_OBJ, body ).
 			and_return( :a_checksum )
 
+		metastore.should_receive( :transaction ).and_yield
 		metadata_proxy = mock( "metadata proxy", :null_object => true )
 		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
 		metadata_proxy.should_receive( :update ).with( metadata )

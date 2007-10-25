@@ -74,3 +74,11 @@ type-specific
 	  ( :find_by_membership_property )
 	
 
+Stuff to document
+-----------------
+
+ThingFish::Config
+ * Handler config: uri as single value vs. array of URIs vs. hash with uris key
+
+
+

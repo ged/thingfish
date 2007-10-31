@@ -57,7 +57,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	include ThingFish::Constants,
 		ThingFish::Loggable,
 		ThingFish::ResourceLoader,
-		ThingFish::Daemonizable
+		ThingFish::Daemonizable,
+		ThingFish::HtmlInspectableObject
 
 	# The subversion ID
 	SVNId = %q$Id$
@@ -241,7 +242,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		errtrace = debugtrace = ''
 
 		if err
-			errtrace = "Error while running %s: %s" % [
+			errtrace = "%s while running %s: %s" % [
+				err.class.name,
 				response.handlers.last,
 				err.message,
 			]

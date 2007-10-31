@@ -54,7 +54,8 @@ require 'thingfish/mixins'
 class ThingFish::FileStore
 	include PluginFactory,
 	        ThingFish::Loggable,
-	        ThingFish::AbstractClass
+	        ThingFish::AbstractClass,
+			ThingFish::HtmlInspectableObject
 
 	# SVN Revision
 	SVNRev = %q$Rev$

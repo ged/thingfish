@@ -38,7 +38,8 @@ require 'thingfish/acceptparam'
 class ThingFish::Filter
 	include PluginFactory,
 		ThingFish::Loggable,
-		ThingFish::AbstractClass
+		ThingFish::AbstractClass,
+		ThingFish::HtmlInspectableObject
 
 
 	# SVN Revision

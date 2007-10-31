@@ -36,7 +36,9 @@ require 'thingfish/utils'
 
 ### A parsed Accept-header parameter
 class ThingFish::AcceptParam
-	include ThingFish::Loggable, Comparable
+	include Comparable,
+		ThingFish::Loggable,
+		ThingFish::HtmlInspectableObject
 		
 	# SVN Revision
 	SVNRev = %q$Rev$

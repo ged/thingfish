@@ -42,7 +42,8 @@ class ThingFish::Handler
 		Mongrel::HttpHandlerPlugin,
 		ThingFish::Loggable,
 		ThingFish::ResourceLoader,
-		ThingFish::Constants
+		ThingFish::Constants,
+		ThingFish::HtmlInspectableObject
 
 
 	# SVN Revision

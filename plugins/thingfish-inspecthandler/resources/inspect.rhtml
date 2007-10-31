@@ -23,14 +23,18 @@
 
 		<h2>ThingFish Internals</h2>
 
-		<p class="server-software">Server software: <%= ThingFish::Daemon::SERVER_SOFTWARE %></p>
-
-		<% for object in inspected_objects %>
+		<% if inspected_object %>
 		<div class="inspected-object">
-		<h3><%= h object[:title] %></h3>
-		<pre><%= h object[:object] %></pre>
+		<%= inspected_object %>
 		</div>
-		
+		<% else %>
+		<% uri = @config.find_handler_uri('inspect') %>
+		<p>This is a list of the objects available for inspection:</p>
+		<ul>
+			<li><a href="/inspect/daemon">ThingFish::Daemon</a></li>
+			<li><a href="/inspect/request">ThingFish::Request</a></li>
+			<li><a href="/inspect/response">ThingFish::Response</a></li>
+		</ul>
 		<% end %>
 	</div>
 	<!-- content end -->

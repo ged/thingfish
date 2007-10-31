@@ -93,6 +93,13 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 	end
 
 
+	### Make the content for the handler section of the index page.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "metadata/index.rhtml" )
+		return tmpl.result( binding() )
+	end
+	
+	
 	#########
 	protected
 	#########
@@ -103,7 +110,7 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 
 		response.status = HTTP::OK
 		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata.rhtml' )
+			content = self.get_erb_resource( 'metadata/main.rhtml' )
 			response.body = content.result( binding() )
 			response.headers[:content_type] = 'text/html'
 		else
@@ -120,7 +127,7 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 		
 		response.status = HTTP::OK
 		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata_uuid.rhtml' )
+			content = self.get_erb_resource( 'metadata/uuid.rhtml' )
 			response.body = content.result( binding() )
 			response.headers[:content_type] = 'text/html'
 		else
@@ -136,7 +143,7 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 
 		response.status = HTTP::OK
 		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata_values.rhtml' )
+			content = self.get_erb_resource( 'metadata/values.rhtml' )
 			response.body = content.result( binding() )
 			response.headers[:content_type] = 'text/html'
 		else

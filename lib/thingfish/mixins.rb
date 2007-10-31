@@ -478,6 +478,137 @@ module ThingFish # :nodoc:
 	end # module NumericConstantMethods
 
 
+	### Add a #to_html method to the including object that is capable of dumping its 
+	### state as an HTML fragment.
+	module HtmlInspectableObject
+
+		### Return the receiver as an HTML fragment.
+		def html_inspect
+			return make_object_html_wrapper( self )
+		end
+
+
+		#######
+		private
+		#######
+
+		THREAD_DUMP_KEY = :__to_html_cache__
+
+		HASH_HTML_CONTAINER = %{<div class="hash-members">%s</div>}
+		HASH_PAIR_HTML = %{<div class="hash-pair"><div class="key">%s</div>} +
+			%{<div class="value">%s</div></div>\n}
+		ARRAY_HTML_CONTAINER = %{<ol class="array-members"><li>%s</li></ol>}
+		IMMEDIATE_OBJECT_HTML_CONTAINER = %{<span class="immediate-object">%s</span>}
+
+
+		### Return an HTML fragment describing the specified +object+. 
+		def make_html_for_object( object )
+			object_html = []
+
+			case object
+			when Hash
+				object_html << "\n<!-- Hash -->\n"
+				if object.empty?
+					object_html << '{}'
+				else
+					object_html << HASH_HTML_CONTAINER % [
+						object.collect {|k,v| 
+							HASH_PAIR_HTML % [make_html_for_object(k), make_html_for_object(v)]
+						}
+					]
+				end
+
+			when Array
+				object_html << "\n<!-- Array -->\n"
+				if object.empty?
+					object_html << '[]'
+				else
+					object_html << ARRAY_HTML_CONTAINER % [
+						object.collect {|o| make_html_for_object(o) }.join('</li><li>')
+					]
+				end
+
+			else
+				if object.instance_variables.empty?
+					return IMMEDIATE_OBJECT_HTML_CONTAINER % [ escape_html(object.inspect) ]
+				else
+					object_html << make_object_html_wrapper( object )
+				end
+			end
+
+			return object_html.join("\n")
+		end
+
+
+		OBJECT_HTML_CONTAINER = %{<div id="object-%d" class="object %s">%s</div>}
+		IVAR_HTML_FRAGMENT = %Q{
+		  <div class="instance-variable">
+			<div class="name">%s</div>
+			<div class="value">%s</div>
+		  </div>
+		}
+
+		### Wrap up the various parts of a complex object in an HTML fragment. If the
+		### object has already been wrapped, returns a link to the previous rendering
+		### instead.
+		def make_object_html_wrapper( object )
+
+			# If the object has been rendered already, just return a link to the previous
+			# HTML fragment
+			Thread.current[ THREAD_DUMP_KEY ] ||= {}
+			if Thread.current[ THREAD_DUMP_KEY ].key?( object.object_id )
+				return %Q{<a href="#object-%d" class="cache-link" title="jump to previous details">%s</a>} % [
+					object.object_id,
+					%{&rarr; %s #%d} % [ object.class.name, object.object_id ]
+				]
+			else
+				Thread.current[ THREAD_DUMP_KEY ][ object.object_id ] = true
+			end
+
+			# Assemble the innards as an array of parts
+			parts = [
+				%{<div class="object-header">},
+				%{<span class="object-class">#{object.class.name}</span>},
+				%{<span class="object-id">##{object.object_id}</span>},
+				%{</div>},
+				%{<div class="object-body">},
+			]
+
+			object.instance_variables.each do |ivar|
+				html = make_html_for_object( object.instance_variable_get(ivar) )
+				parts << IVAR_HTML_FRAGMENT % [ ivar, html ]
+			end
+
+			parts << %{</div>}
+
+			# Make HTML class names out of the object's namespaces
+			namespaces = object.class.name.downcase.split(/::/)
+			classes = []
+			namespaces.each_index do |i|
+				classes << namespaces[0..i].join('-') + '-object'
+			end
+
+			# Glue the whole thing together and return it
+			return OBJECT_HTML_CONTAINER % [
+				object.object_id,
+				classes.join(" "),
+				parts.join("\n")
+			]
+		end
+		
+
+
+		### Return the specifed +str+ with all HTML entities escaped.
+		def escape_html( str )
+			return str.
+				gsub( /&/, '&amp;' ).
+				gsub( /</, '&lt;' ).
+				gsub( />/, '&gt;' )
+		end
+
+	end # module HtmlInspectableObject
+
+
 end # module ThingFish
 
 # vim: set nosta noet ts=4 sw=4:

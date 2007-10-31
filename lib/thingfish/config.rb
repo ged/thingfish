@@ -43,7 +43,10 @@ require 'thingfish/metastore'
 ### The configuration reader/writer class for ThingFish::Daemon.
 class ThingFish::Config
 	extend Forwardable
-	include ThingFish::Constants, ThingFish::Loggable
+	
+	include ThingFish::Constants,
+	 	ThingFish::Loggable,
+		ThingFish::HtmlInspectableObject
 
 	# SVN Revision
 	SVNRev = %q$Rev$

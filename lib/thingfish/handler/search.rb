@@ -79,7 +79,7 @@ class ThingFish::SearchHandler < ThingFish::Handler
 
 		response.status = HTTP::OK
 		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'search.rhtml' )
+			content = self.get_erb_resource( 'search/main.rhtml' )
 			response.body = content.result( binding() )
 			response.headers[:content_type] = 'text/html'
 		else
@@ -88,6 +88,13 @@ class ThingFish::SearchHandler < ThingFish::Handler
 		end
 	end
 
+
+	### Make the content for the handler section of the index page.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "search/index.rhtml" )
+		return tmpl.result( binding() )
+	end
+	
 end # ThingFish::SearchHandler
 
 # vim: set nosta noet ts=4 sw=4:

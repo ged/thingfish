@@ -61,8 +61,10 @@ if __FILE__ == $0
 		
 		oparser = ARGV.options do |opts|
 
-			opts.banner = "Usage: #{program.basename} [OPTIONS] [CSVFILE]"
+			opts.banner = "Usage: #{program.basename} [OPTIONS] PLUGINTYPE PLUGINNAME"
 			opts.separator ""
+			opts.separator "PLUGINTYPE should be one of: "
+			opts.separator "  " + 
 			
 			opts.on( '--author=AUTHORNAME', '-a=AUTHORNAME', String, 
 			         "Use AUTHORNAME in the plugin files instead of '#{options.author}'") do |str|

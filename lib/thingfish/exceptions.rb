@@ -60,9 +60,21 @@ module ThingFish
 
 	# Upload exceeded quota
 	class RequestEntityTooLargeError < ThingFish::RequestError
+		include ThingFish::Constants
+
 		def initialize( *args )
 			super
 			@status = HTTP::REQUEST_ENTITY_TOO_LARGE
+		end
+	end
+	
+	# Client requested a mimetype we don't know how to convert to
+	class RequestNotAcceptableError < ThingFish::RequestError
+		include ThingFish::Constants
+
+		def initialize( *args )
+			super
+			@status = HTTP::NOT_ACCEPTABLE
 		end
 	end
 	

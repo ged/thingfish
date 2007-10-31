@@ -32,6 +32,7 @@ require 'pathname'
 require 'thingfish/mixins'
 require 'thingfish/handler'
 require 'thingfish/constants'
+require 'thingfish/exceptions'
 
 
 ### Output a quick inspection page
@@ -49,23 +50,32 @@ class ThingFish::InspectHandler < ThingFish::Handler
 
 	### Handler API: handle a GET request with an inspection page.
 	def handle_get_request( request, response )
-		self.log.debug "Handling inspection request"
-		# return unless request.path_info == ''
-
-		content = self.get_erb_resource( 'inspect.rhtml' )
-		inspected_objects = [
-			object_section( "Daemon", self.listener ),
-			object_section( "Request", request ),
-			object_section( "Request Body", request.body.read ),
-			object_section( "Request Body Size", request.body.length ),
-			object_section( "Headers", request.headers.to_h ),
-			object_section( "Response", response ),
-			object_section( "Handler", self ),
-		]
+		if request.accepts?( "text/html" )
+			requested_object = request.path_info
+			inspected_object = nil
 		
-		response.headers[ :content_type ] = 'text/html'
-		response.body = content.result( binding() )
-		response.status = HTTP::OK
+			# Set the `inspected_object`, which is referenced via the Binding by 
+			# the template
+			case requested_object
+			when /daemon/i
+				inspected_object = self.listener.html_inspect
+
+			when /request/i
+				inspected_object = request.html_inspect
+			
+			when /response/i
+				inspected_object = response.html_inspect
+
+			end
+
+			content = self.get_erb_resource( 'inspect.rhtml' )
+			response.headers[ :content_type ] = 'text/html'
+			response.body = content.result( binding() )
+			response.status = HTTP::OK
+		else
+			raise ThingFish::RequestNotAcceptableError,
+				"don't know how to satisfy a request for %p" % [ request.headers[:accept] ]
+		end
 	end
 	
 	
@@ -75,17 +85,6 @@ class ThingFish::InspectHandler < ThingFish::Handler
 		return tmpl.result( binding() )
 	end
 	
-
-	### Generated a prettyprinted inspect of the given +object+ and return it in
-	### a hash with the specified +title+.
-	def object_section( title, object )
-		buf = ''
-		PP.pp( object, buf )
-
-		return { :title => title, :object => buf }
-	end
-
-
 end # class ThingFish::InspectHandler
 
 # vim: set nosta noet ts=4 sw=4:

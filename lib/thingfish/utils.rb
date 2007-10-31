@@ -51,7 +51,8 @@ module ThingFish # :nodoc:
 	class Table
 		extend Forwardable
 		include ThingFish::Constants,
-			ThingFish::Loggable
+			ThingFish::Loggable,
+			ThingFish::HtmlInspectableObject
 
 		KEYED_METHODS = %w[ [] []= delete fetch has_key? include? member? store ]
 

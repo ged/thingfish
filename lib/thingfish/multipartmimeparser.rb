@@ -38,7 +38,8 @@ require 'thingfish/exceptions'
 class ThingFish::MultipartMimeParser
 	include ThingFish::Loggable,
 		ThingFish::Constants,
-		ThingFish::Constants::Patterns
+		ThingFish::Constants::Patterns,
+		ThingFish::HtmlInspectableObject
 
 
 	# Parser state struct

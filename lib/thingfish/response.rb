@@ -34,7 +34,8 @@ require 'forwardable'
 ### Response wrapper class
 class ThingFish::Response
 	include ThingFish::Loggable,
-	        ThingFish::Constants
+	        ThingFish::Constants,
+			ThingFish::HtmlInspectableObject
 	
 	extend Forwardable
 	

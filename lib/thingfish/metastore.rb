@@ -36,7 +36,8 @@ require 'thingfish/exceptions'
 class ThingFish::MetaStore
 	include PluginFactory,
 	        ThingFish::Loggable,
-	        ThingFish::AbstractClass
+	        ThingFish::AbstractClass,
+			ThingFish::HtmlInspectableObject
 
 
 	# SVN Revision

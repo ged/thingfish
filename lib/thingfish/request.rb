@@ -46,7 +46,8 @@ require 'ipaddr'
 class ThingFish::Request
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
-	        ThingFish::Constants::Patterns
+	        ThingFish::Constants::Patterns,
+			ThingFish::HtmlInspectableObject
 	
 	extend Forwardable
 	

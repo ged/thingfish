@@ -52,3 +52,4 @@ plugins:
         json: {}
         mp3: {}
         exif: {}
+        xml: ~

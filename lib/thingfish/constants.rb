@@ -163,7 +163,6 @@ module ThingFish::Constants
 		BLANK_LINE = /#{CRLF}#{CRLF}/
 	end
 
-
 end # module ThingFish::Constants
 
 

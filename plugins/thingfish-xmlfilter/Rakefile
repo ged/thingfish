@@ -1,0 +1,101 @@
+#!/usr/bin/env rake
+
+require 'rake'
+require 'rake/clean'
+require 'rake/gempackagetask'
+require 'rake/rdoctask'
+require 'spec/rake/spectask'
+require 'fileutils'
+
+
+BASEDIR			= Pathname.new( __FILE__ ).dirname.expand_path
+LIBDIR		  	= BASEDIR + 'lib'
+TF_DIR			= BASEDIR.parent.parent
+TF_LIBDIR		= TF_DIR + 'lib'
+
+PKG_NAME	  	= "thingfish-xmlfilter"
+PKG_VERSION	  	= "0.0.1"
+PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
+              	
+RELEASE_NAME  	= "REL #{PKG_VERSION}"
+              	
+TEXT_FILES	  	= %w( README LICENSE )
+SPEC_FILES	  	= Dir.glob('spec/*_spec.rb')
+LIB_FILES	  	= Dir.glob('lib/**/*.rb').delete_if { |item| item =~ /\.svn/ }
+
+RELEASE_FILES = TEXT_FILES + LIB_FILES + SPEC_FILES
+
+
+desc "Build package if tests pass"
+task :default => [:spec, :package]
+
+### Task: spec
+Spec::Rake::SpecTask.new(:spec) do |task|
+	task.libs += [TF_LIBDIR.to_s]
+	task.spec_files = SPEC_FILES
+	task.spec_opts = ['-c', '-f','s']
+end
+
+
+### Task: rdoc
+Rake::RDocTask.new do |rdoc|
+	rdoc.rdoc_dir = 'docs/html'
+	rdoc.title    = "ThingFish XML Filter Plugin"
+	rdoc.options += ['-w', '4', '-SHN', '-i', 'docs']
+
+	rdoc.rdoc_files.include TEXT_FILES
+	rdoc.rdoc_files.include LIB_FILES
+end
+
+
+### Task: clean
+desc "Clean pkg, coverage, and rdoc; remove .bak files"
+task :clean => [ :clobber_rdoc, :clobber_package, :clobber_coverage ] do
+	files = FileList['**/*.bak']
+	files.clear_exclude
+	File.rm( files ) unless files.empty?
+end
+
+
+### Task: gem
+gemspec = Gem::Specification.new do |gem|
+	gem.name    	= PKG_NAME
+	gem.version 	= PKG_VERSION
+
+	gem.summary     = "A filter plugin for ThingFish that allows for XML output"
+	gem.description = "This is a simple filter plugin for ThingFish which outputs " +
+		"XML formatted Ruby data structures."
+
+	gem.authors  	= "LAIKA, Inc."
+	gem.homepage 	= "http://opensource.laika.com"
+
+	gem.has_rdoc 	= true
+
+	gem.files      	= RELEASE_FILES
+	gem.test_files 	= SPEC_FILES
+
+	gem.autorequire	= '<%= package %>.rb'
+  	gem.files += Dir.glob( "resources/**/*" )
+
+        gem.requirements << "xmlserial"
+
+  	gem.add_dependency( 'thingfish', '>= 0.0.1' )
+end
+
+Rake::GemPackageTask.new(gemspec) do |task|
+	task.gem_spec = gemspec
+	task.need_tar = true
+	task.need_zip = true
+end
+
+
+task :install => [:test, :package] do
+	installer = Gem::Installer.new( %{pkg/#{name}-#{version}.gem} )
+	intaller.install
+end
+
+task :uninstall => [:clean] do
+	uninstaller = Gem::Uninstaller.new( name )
+	uninstaller.uninstall
+end
+

@@ -286,5 +286,13 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 		6.exabytes.should == BYTES_IN_AN_EXABYTE * 6
 	end
 
+	
+	it "can display integers as human readable filesize values" do
+		234.size_suffix.should == "234b"
+		3492.size_suffix.should == "3.4K"
+		3492425.size_suffix.should == "3.3M"
+		9833492425.size_suffix.should == "9.2G"
+	end
+
 end
 

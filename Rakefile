@@ -53,9 +53,12 @@ ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 
 TEXT_FILES    = %w( Rakefile README LICENSE ).
 	collect {|filename| BASEDIR + filename }
+
 SPECDIR       = BASEDIR + 'spec'
 SPEC_FILES    = Pathname.glob( SPECDIR + '*_spec.rb' ).
 	delete_if {|item| item =~ /\.svn/ }
+SPEC_EXCLUDES = 'spec,monkeypatches,/Library/Ruby'
+
 LIB_FILES     = Pathname.glob( LIBDIR + '**/*.rb').
 	delete_if {|item| item =~ /\.svn/ }
 
@@ -390,7 +393,7 @@ begin
 		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR] + PLUGIN_LIBS
 		task.spec_opts = ['-f', 'p', '-b']
-		task.rcov_opts = ['--exclude', 'spec,monkeypatches', '--xrefs', '--save' ]
+		task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--xrefs', '--save' ]
 		task.rcov = true
 	end
 	task :coverage do
@@ -407,7 +410,7 @@ begin
 		Spec::Rake::SpecTask.new( :text ) do |task|
 			task.spec_files = SPEC_FILES
 			task.libs += FileList['plugins/**/lib']
-			task.rcov_opts = ['--exclude', 'spec', '--text-report', '--save']
+			task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--text-report', '--save']
 			task.rcov = true
 		end
 
@@ -415,7 +418,7 @@ begin
 		Spec::Rake::SpecTask.new( :diff ) do |task|
 			task.spec_files = SPEC_FILES
 			task.libs += FileList['plugins/**/lib']
-			task.rcov_opts = ['--exclude', 'spec', '--text-coverage-diff']
+			task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--text-coverage-diff']
 			task.rcov = true
 		end
 

@@ -1,15 +1,6 @@
 Planned Features
 ----------------
 
- o Content negotiation:
-   * Accept: header handling
-   * Output filter plugin framework
-   * Metadata extraction plugin framework 
-
- o Metadata REST API:
-   * /search - Find resources via metadata search
-   * /metadata - Fetch/query metadata
-
  o Admin handler framework
 
  o Authentication/Authorization
@@ -27,17 +18,17 @@ Planned Features
    * Result galleries
 
  o Aggregate fetch
-   * /metadata/«uuid1»,«uuid2»,«uuidn»
-       * Maybe POST a list of uuids for metadata fetching
-   * /«uuid1»,«uuid2»,«uuidn»
+   * GET /metadata/«uuid1»,«uuid2»,«uuidn»
+   * GET /«uuid1»,«uuid2»,«uuidn»
+
+ * Duplicate checking via checksum comparison
+   * What if the user is uploading the same file but with additional metadata?
+
 
 Do me straight away
 -------------------
 
 - Metastore value format -- object/string serialization (use YAML's #taguri ?) 
-
-- Client -- use content disposition filename if none is specified, fallback to using
-  mime type mappings in constants
 
 - Write a benchmarking suite so we can establish a baseline of performance and track the impact on
   performance of any future changes.
@@ -51,8 +42,6 @@ Do me straight away
   is still the default.
 
 - PUT/POST /metadata to upload metadata key/values pairs en masse.
-
-- Metadata transaction block
 
 - Spoolfile upload cleanup?
 
@@ -79,6 +68,4 @@ Stuff to document
 
 ThingFish::Config
  * Handler config: uri as single value vs. array of URIs vs. hash with uris key
-
-
 

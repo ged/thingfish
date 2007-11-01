@@ -431,6 +431,11 @@ module ThingFish # :nodoc:
 
 		### Byte constants
 		module Bytes
+
+			# Constants for file sizes
+			KILOBYTE = 1024
+			MEGABYTE = 1024 ** 2
+			GIGABYTE = 1024 ** 3
 			
 			### Number of bytes (returns receiver unmodified)
 			def bytes
@@ -474,7 +479,19 @@ module ThingFish # :nodoc:
 			end
 			alias_method :exabyte, :exabytes
 
+			### Return a human readable file size.
+			def size_suffix
+				bytes = self.to_f
+				return case
+					when bytes >= GIGABYTE : sprintf( "%0.1fG", bytes / GIGABYTE )
+					when bytes >= MEGABYTE : sprintf( "%0.1fM", bytes / MEGABYTE )
+					when bytes >= KILOBYTE : sprintf( "%0.1fK", bytes / KILOBYTE )
+					else "%db" % [ self ]
+					end
+			end
+
 		end # module Bytes
+
 	end # module NumericConstantMethods
 
 

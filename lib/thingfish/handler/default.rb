@@ -294,6 +294,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	def handle_delete_uuid_request( request, response, uuid )
 		if @filestore.has_file?( uuid )
 			@filestore.delete( uuid )
+			@metastore.delete_properties( uuid )
 			response.status = HTTP::OK
 			response.body = "Resource '#{uuid}' deleted"
 		else

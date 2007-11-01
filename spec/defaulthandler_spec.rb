@@ -446,6 +446,9 @@ describe ThingFish::DefaultHandler do
 		@filestore.should_receive( :has_file? ).
 			with( TEST_UUID_OBJ ).
 			and_return( true )
+		@metastore.should_receive( :delete_properties ).
+			with( TEST_UUID_OBJ ).
+			and_return( true )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
 		@handler.handle_delete_request( @request, @response )

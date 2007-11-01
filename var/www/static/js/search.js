@@ -2,8 +2,28 @@
 $(document).ready(function() {
 
 	$("a.meta").click( viewMetaData );
+	$("a.delete").click( deleteResource );
 });
 
+function deleteResource()
+{
+	var uuid   = this.id.split(':')[1]
+	var uri    = '/' + uuid;
+
+	var doIt = confirm('Are you sure you want to delete this resource? (' + uuid + ')');
+	if ( ! doIt ) return false;			
+
+	$.ajax({
+		url:     uri,
+		type:    'DELETE',
+		success: function(response){
+			alert( response );
+
+			// refresh search results
+			window.location.reload();
+		}
+	});
+}
 
 function viewMetaData()
 {

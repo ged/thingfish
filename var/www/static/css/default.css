@@ -261,6 +261,31 @@ td {
 	background: #f4f4f4 url(/images/menubg.gif) bottom left repeat-x;
 	color: #303030;
 }
+
+table td .extrainfo {
+	font-size: 0.9em;
+}
+
+table.files td
+{
+	padding-bottom: 0;
+}
+
+/*
+#metarow {
+	display: none;
+}
+*/
+
+#metainfo {
+	width: 100%;
+}
+
+#metainfo td {
+	font-size: 1em;
+}
+
+
 /* @end */
 
 /* @group Form styles */

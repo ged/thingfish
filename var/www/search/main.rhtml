@@ -2,12 +2,14 @@
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
-    <title>ThingFish</title>
+    <title>ThingFish :: search</title>
 
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
 
     <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
+	<script src="/js/jquery.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/search.js" type="text/javascript" charset="utf-8"></script>
   </head>
 
   <body>
@@ -22,24 +24,46 @@
 		<p class="textright">&nbsp;</p>
 		
 		<% metadata_uri = @config.find_handler_uri('metadata') %>
+		<script type="text/javascript">
+			metadata_uri = '<%= metadata_uri %>';
+		</script>
 		
 		<% unless request.query_args.empty? %>
 		<h2>Search results</h2>
 			<% if uuids.empty? %>
 				<p>No resources matched your query.</p>
 			<% else %>
-			<ul>
-				<!-- FIXME: sorting by... filename? -->
-				<% uuids.each do |uuid| %>
+			<table class="files">
+				<th>Filename</th>
+				<th>Actions</th>
+
+				<% uuids.sort { |a,b|
+					@metastore[a].title <=> @metastore[b].title
+					}.each do |uuid| %>
+
 					<% resource = @metastore[uuid] %>
-					<li>
-						<a href="<%= '/' + uuid %>"><%= resource.title %></a>
-						<% if metadata_uri %>
-						(<a href="/metadata/<%= uuid %>">more info</a>)
-						<% end %>
-					</li>
+					<tr>
+						<td valign="top">
+							<a href="/<%= uuid %>" title="view in browser">
+								<%= resource.title %>
+							</a><br />
+							<span class="extrainfo"><%= resource.extent.to_i.size_suffix %></span>
+						</td>
+						<td>
+							<a href="/<%= uuid %>?attach" title="download resource">
+								<img src="/images/save.png" border="0" />
+							</a>
+							<% if metadata_uri %>
+							<a href="<%= metadata_uri %>/<%= uuid %>" class="meta"
+								id="i_button:<%= uuid %>" title="show metadata">
+								<img src="/images/info.png" border="0" />
+							</a>
+							<% end %>
+						</td>
+					</tr>
+
 				<% end %>
-			</ul>
+			</table>
 			<% end %>
 			<br />
 		<% end %>

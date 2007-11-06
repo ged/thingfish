@@ -1,23 +1,14 @@
-#!/usr/bin/env ruby
 
-begin
-	require 'thingfish/handler'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
+require 'thingfish/constants'
+require 'thingfish/handler'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants::HTTP
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+		response.body   = Time.now.to_s
+		response.status = OK
 	end
-	raise
 end
 
-class LocalTimeHandler < ThingFish::Handler
-
-	### Send the local time to the requester in plain text
-	def process( request, response )
-		response.start( 200, true ) do |headers, out|
-			headers['Content-type'] = 'text/plain'
-			out.print( Time.now.to_s )
-		end
-	end
-
-end

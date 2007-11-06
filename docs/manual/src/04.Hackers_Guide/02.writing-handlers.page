@@ -5,6 +5,10 @@ inMenu: true
 
 h2. Writing a ThingFish Handler
 
+h3. What does a handler look like?
+
+Glad you asked.  Here's a teeny one that we'll build upon.
+
 <notextile>
 {example: {
 	filename: examples/minimal-handler.rb, 
@@ -15,9 +19,118 @@ h2. Writing a ThingFish Handler
 	hint: debug,
 	line_numbers: inline,
 	testable: true,
-	caption: A minimal handler
+	caption: A minimal handler!
 	}}
 </notextile>
 
-&gt;&gt; Placeholder: Insert future content here &lt;&lt;
+Let's go over the interesting parts of this.
+
+|_. line number |_. what's it doing? |
+| 4 | All handlers inherit from the *ThingFish::Handler* parent class.
+The handler name needs to match the filename it is stored in -
+in this case, the file would be called _time.rb_, and stored in a _lib/handler_ directory. |
+| 8 | Actions are defined in special methods that match the naming convention
+<em>handle_<strong>METHOD</strong>_request</em>.  We're only going to accept *GET* methods for this example.
+These special methods receive a *ThingFish::Request* and a *ThingFish::Response* object to fiddle with as you see fit. |
+| 9 | We're just using a simple time string as the response here, but this could just as easily be an erb template,
+or even an IO object.  IO objects will automatically buffer out to the client. |
+| 10 | The default response code is a 404 (Not Found) - after we're sure we've generated
+the content we want, setting this to *OK* stops further processing, and lets the response through successfully.
+The *OK* constant is imported from *ThingFish::Constants::HTTP*. |
+
+h3. Installing the handler
+
+Alright, now that you've got this wicked cool Time handler, how do we tell ThingFish
+to actually use it?  So far, all we really need to do is to load it when a particular
+URI is requested.  This is done in the _thingfish.conf_ file, under the _handlers_
+section.  If you wanted to install it under a single URI called _/what-time-is-it_,
+here's how you'd do it.
+
+<pre class="example">
+plugins:
+    handlers:
+        - time: /what-time-is-it
+</pre>
+
+That's it!  If your daemon is logging messages at the _debug_ level or higher, you
+should see a message similar to this at startup, showing that the handler was found
+and installed under the proper URI:
+
+<pre class="example">
+Handler map is:
+    /: [ThingFish::DefaultHandler, ThingFish::StaticContentHandler]  
+	[...]
+    /what-time-is-it: [TimeHandler]
+</pre>
+
+Making the actual request should log the following:
+
+<pre class="example">
+Dispatching to 1 handlers
+TimeHandler: 127.0.0.1 GET /what-time-is-it
+Searching for a GET handler method: TimeHandler#handle_get_request
+Response: HTTP/1.1 200 OK
+</pre>
+
+
+h3. Building on top of this
+
+h4. Limiting URI space
+
+By default, you'll now get the time for every possible URI under the
+_/what-time-is-it_ path.  This is a feature that allows a handler installed within
+another handler's URI space to alter the request and response - adding http
+authentication, for example.
+
+At some point however, you'll probably want to limit the possible URIs the Time
+handler will respond to.  Let's do this by checking the current *request.path_info*,
+and make this handler a little bit smarter in the process.
+
+<notextile>
+{example: {
+	filename: examples/minimal-handler2.rb, 
+	escapeHTML: false,
+	processOutput: false,
+	language: ruby,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: A slightly less minimal handler!
+	}}
+</notextile>
+
+h4. Linking to other handlers
+
+search_uri = @config.find_handler_uri('search')
+
+h4. Providing different information based on Accept header checks
+
+request.accepts?( 'text/plain' )
+
+h4. Query arguments
+
+request.query_args.has_key?('text')
+
+h4. Index page content
+
+def make_index_content( uri )
+	return "Oh snap!  What <a href=\"#{uri}\">time</a> is it?<br />"
+end
+
+h4. Static content
+
+require 'thingfish/mixins'
+
+include ThingFish::StaticResourcesHandler,
+        ThingFish::ResourceLoader
+
+static_resources_dir "static"
+
+----------------------------------------------------------------------------------------
+
+* additional mixins?
+* handler globals (config, metastore, filestore)
+* handler inheritance, URI chaining
+* links to ThingFish::Request API (http://localhost:3474/api/ThingFish/Request.html)
 

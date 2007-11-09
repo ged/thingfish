@@ -255,6 +255,8 @@ class ThingFish::Request
 			merged.update( default_metadata )
 			
 			body.open if body.closed?
+			body.rewind
+
 			self.log.debug "Yielding body = %p, merged metadata = %p" %
 				[ body, merged ]
 			yield( body, merged )

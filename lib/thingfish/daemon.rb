@@ -221,9 +221,17 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Filter and potentially modify the incoming request.
 	def filter_request( request, response )
 		@filters.each do |filter|
-			response.filters << filter
-			filter.handle_request( request, response )
-			break if response.status != ThingFish::Response::DEFAULT_STATUS
+			begin
+				filter.handle_request( request, response )
+			rescue => err
+				self.log.error "Request filter raised a %s: %s" % 
+					[ err.class.name, err.message ]
+				self.log.debug "  " + err.backtrace.join("\n  ")
+			else
+				response.filters << filter
+			end
+			
+			break if response.handled?
 		end
 	end
 
@@ -232,7 +240,13 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### that were registered with it during the request-filtering stage
 	def filter_response( response, request )
 		response.filters.reverse.each do |filter|
-			filter.handle_response( response, request )
+			begin
+				filter.handle_response( response, request )
+			rescue => err
+				self.log.error "Response filter raised a %s: %s" % 
+					[ err.class.name, err.message ]
+				self.log.debug "  " + err.backtrace.join("\n  ")
+			end
 		end
 	end
 	

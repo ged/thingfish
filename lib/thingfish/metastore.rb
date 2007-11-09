@@ -32,7 +32,26 @@ require 'thingfish'
 require 'thingfish/mixins'
 require 'thingfish/exceptions'
 	
-### Base class for ThingFish MetaStore plugins
+# The base class for ThingFish MetaStore plugins. Concrete plugin implementations are required to
+# implement the following interface:
+# 
+# [<tt>set_property( uuid, propname, value )</tt>]
+#   Set the property associated with +uuid+ specified by +propname+ to the given +value+.
+# [<tt>get_property( uuid, propname )</tt>]
+#   Return the property associated with +uuid+ specified by +propname+. Returns +nil+ if no such 
+#   property exists.
+# [<tt>get_properties( uuid )</tt>]
+#   Get the set of properties associated with the given +uuid+ as a hash keyed by property names 
+#   as symbols.
+# [<tt>has_property?( uuid, propname )</tt>]
+#   Returns +true+ if the given +uuid+ has a property +propname+.
+# [<tt>delete_property( uuid, propname )</tt>]
+#   Removes the property +propname+ associated with the given +uuid+.
+# [<tt>delete_properties( uuid )</tt>]
+#   Removes all properties associated with the given +uuid+.
+# [<tt>get_all_property_keys()</tt>]
+#   Return an Array of all property keys in the store.
+#
 class ThingFish::MetaStore
 	include PluginFactory,
 	        ThingFish::Loggable,

@@ -192,6 +192,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### Handle a request to fetch the index (GET or HEAD to /)
 	def handle_index_fetch_request( request, response )
 
+		
+
 		if request.accepts?( 'text/html' )
 			self.log.debug "Loading index resource %p" % [@options[:html_index]]
 			content = self.get_erb_resource( @options[:html_index] )

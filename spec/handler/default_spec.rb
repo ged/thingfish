@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -44,7 +44,7 @@ describe ThingFish::DefaultHandler do
 	end
 	
 	before(:each) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'var/www'
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
 		@handler          = ThingFish::DefaultHandler.new( 'resource_dir' => resdir )
 		@listener         = mock( "thingfish daemon", :null_object => true )
 		@filestore        = mock( "thingfish filestore", :null_object => true )

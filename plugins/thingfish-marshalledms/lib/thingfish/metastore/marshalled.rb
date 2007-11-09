@@ -40,7 +40,7 @@ begin
 
 	require 'thingfish'
 	require 'thingfish/exceptions'
-	require 'thingfish/metastore'
+	require 'thingfish/metastore/simple'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -50,7 +50,7 @@ rescue LoadError
 end
 
 ### ThingFish::MarshalledMetaStore-- a metastore plugin for ThingFish
-class ThingFish::MarshalledMetaStore < ThingFish::MetaStore
+class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 	# SVN Revision
 	SVNRev = %q$Rev$

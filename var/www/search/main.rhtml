@@ -37,15 +37,12 @@
 				<th>Filename</th>
 				<th>Actions</th>
 
-				<% uuids.sort { |a,b|
-					@metastore[a].title <=> @metastore[b].title
-					}.each do |uuid| %>
-
+				<% uuids.each do |uuid| %>
 					<% resource = @metastore[uuid] %>
 					<tr>
 						<td valign="top">
 							<a href="/<%= uuid %>" title="view in browser">
-								<%= resource.title %>
+								<%= resource.title || resource.uuid %>
 							</a><br />
 							<span class="extrainfo"><%= resource.extent.to_i.size_suffix %></span>
 						</td>

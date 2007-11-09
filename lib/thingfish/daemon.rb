@@ -208,11 +208,16 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 			# Check to be sure we're providing a response which is acceptable to
 			# the client
-			unless response.body.nil? || ! response.status_is_successful? 
+			unless response.body.nil? || ! response.status_is_successful?
+				unless response.headers[:content_type]
+					self.log.warn "Response body set without a content type, using default."
+					response.headers[:content_type] = DEFAULT_CONTENT_TYPE
+				end
 				self.log.debug "Checking for acceptable mimetype in response"
+
 				unless request.accepts?( response.headers[:content_type] )
 					self.log.info "Can't create an acceptable response: " +
-						"Client accepts:\n  %p\nbut response is:\n  %s" %
+						"Client accepts:\n  %p\nbut response is:\n  %p" %
 						[ request.accepted_types, response.headers[:content_type] ]
 					return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client )
 				end

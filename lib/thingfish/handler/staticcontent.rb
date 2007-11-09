@@ -41,9 +41,6 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 	# SVN Id
 	SVNId = %q$Id$
 
-	# The default content type
-	DEFAULT_CONTENT_TYPE = 'application/octet-stream'
-	
 	# The name of an index file to look for should the request specify a directory
 	DEFAULT_INDEX_FILE = 'index.html'
 

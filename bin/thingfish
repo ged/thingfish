@@ -93,6 +93,7 @@ class ThingFish::CommandLineClient
 			resource.extent = File.size( file )
 		end
 
+		ThingFish.logger.level = Logger::DEBUG
 		@client.store( resource )
 		
 		$stderr.puts "Uploaded to: #{resource.uuid}"

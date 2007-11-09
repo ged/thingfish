@@ -16,6 +16,7 @@ begin
 	require 'thingfish'
 	require 'thingfish/constants'
 	require 'thingfish/response'
+	require 'thingfish/exceptions'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -68,6 +69,50 @@ describe ThingFish::Response do
 		@response.should_not be_handled()
 		@response.status = HTTP::OK
 		@response.should be_handled()
+	end
+
+
+	it "knows what category of response it is" do
+		@response.status = HTTP::CREATED
+		@response.status_category.should == 2
+
+		@response.status = HTTP::NOT_ACCEPTABLE
+		@response.status_category.should == 4
+	end
+
+
+	it "knows if its status indicates it is an informational response" do
+		@response.status = HTTP::PROCESSING
+		@response.status_category.should == 1
+		@response.status_is_informational?.should == true
+	end
+
+
+	it "knows if its status indicates it is a successful response" do
+		@response.status = HTTP::ACCEPTED
+		@response.status_category.should == 2
+		@response.status_is_successful?.should == true
+	end
+
+
+	it "knows if its status indicates it is a redirected response" do
+		@response.status = HTTP::SEE_OTHER
+		@response.status_category.should == 3
+		@response.status_is_redirect?.should == true
+	end
+
+
+	it "knows if its status indicates there was a client error" do
+		@response.status = HTTP::GONE
+		@response.status_category.should == 4
+		@response.status_is_clienterror?.should == true
+	end
+
+
+	it "knows if its status indicates there was a server error" do
+		@response.status = HTTP::VERSION_NOT_SUPPORTED
+		@response.status_category.should == 5
+		@response.status_is_servererror?.should == true
 	end
 
 

@@ -86,7 +86,7 @@ describe ThingFish::Daemon do
 	end
 	
 	
-	it "returns a not acceptable response if the content-type of the response " +
+	it "returns a not acceptable response if the body is set and the content-type " +
 	   "doesn't match a mimetype specified by the request's Accept header" do
 		headers = mock( "Response headers", :null_object => true )
 
@@ -100,10 +100,14 @@ describe ThingFish::Daemon do
 		tf_response.should_receive( :is_handled? ).
 			at_least( :once ).
 			and_return( true )
+		tf_response.should_receive( :body ).
+			at_least( :once ).
+			and_return( "something_other_than_nil" )
 		tf_response.should_receive( :headers ).
 			at_least( :once ).
 			and_return( headers )
 		headers.should_receive( :[] ).
+			at_least( :once ).
 			with( :content_type ).
 			and_return( RUBY_MIMETYPE )
 		
@@ -111,8 +115,39 @@ describe ThingFish::Daemon do
 			with( RUBY_MIMETYPE ).
 			and_return( false )
 
-		tf_response.stub!( :status ).and_return( HTTP::NOT_ACCEPTABLE )
+		tf_response.stub!( :status ).and_return( HTTP::OK )
 		tf_response.should_receive( :status= ).with( HTTP::NOT_ACCEPTABLE )
+
+		@daemon.dispatch_to_handlers( @client, [], @request, @response )
+	end
+	
+
+	it "doesn't do 'not acceptable' checking if the body is nil" do
+		headers = mock( "Response headers", :null_object => true )
+
+		tf_request  = mock( "ThingFish request",  :null_object => true )
+		tf_response = mock( "ThingFish response", :null_object => true )
+		tf_response.stub!( :headers ).and_return( headers )
+		
+		ThingFish::Request.stub!( :new ).and_return( tf_request )
+		ThingFish::Response.stub!( :new ).and_return( tf_response )
+		
+		tf_response.should_receive( :is_handled? ).
+			at_least( :once ).
+			and_return( true )
+		tf_response.should_receive( :body ).
+			at_least( :once ).
+			and_return( nil )
+
+		tf_response.stub!( :headers ).
+			and_return( headers )
+		headers.stub!( :[] ).
+			and_return( RUBY_MIMETYPE )
+		tf_request.stub!( :accepts? ).
+			and_return( false )
+
+		tf_response.stub!( :status ).and_return( HTTP::OK )
+		tf_response.should_not_receive( :status= ).with( HTTP::NOT_ACCEPTABLE )
 
 		@daemon.dispatch_to_handlers( @client, [], @request, @response )
 	end

@@ -20,18 +20,13 @@ logging:
 
 plugins:
     filestore:
-        name: memory
+        name: filesystem
         maxsize: 1073741824
         root: /tmp/thingfish
     metastore:
-         name: memory
-#    metastore:
-#        name: sqlite3
-#        root: /tmp/thingfish
-#        resource_dir: plugins/thingfish-sqlite3ms/resources
-#        typemap:
-#            tag: list
-#            expires: date
+        name: sqlite3
+        root: /tmp/thingfish
+        resource_dir: plugins/thingfish-sqlite3ms/resources
     handlers:
         - inspect:
             uris: /inspect

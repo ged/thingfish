@@ -99,6 +99,40 @@ class ThingFish::Response
 	alias_method :is_handled?, :handled?
 
 
+	### Return the numeric category of the response's status code (1-5)
+	def status_category
+		return (self.status / 100).ceil
+	end
+
+	### Return true if response is in the 1XX range
+	def status_is_informational?
+		return self.status_category == 1
+	end
+
+	### Return true if response is in the 2XX range
+	def status_is_successful?
+		return self.status_category == 2
+	end
+
+
+	### Return true if response is in the 3XX range
+	def status_is_redirect?
+		return self.status_category == 3
+	end
+
+
+	### Return true if response is in the 4XX range
+	def status_is_clienterror?
+		return self.status_category == 4
+	end
+
+
+	### Return true if response is in the 5XX range
+	def status_is_servererror?
+		return self.status_category == 5
+	end
+
+
 	### Clear any existing headers and body and restore them to their defaults
 	def reset
 		@headers.clear

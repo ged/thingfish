@@ -72,7 +72,7 @@ class ThingFish::MemoryMetaStore < ThingFish::MetaStore
 
 	
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
-	### a hashed keyed by property names as symbols.
+	### a hash keyed by property names as symbols.
 	def get_properties( uuid )
 		return @metadata[ uuid.to_s ].clone
 	end

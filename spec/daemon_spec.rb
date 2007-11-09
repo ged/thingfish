@@ -234,9 +234,9 @@ describe ThingFish::Daemon do
 		filter_dos = mock( "request filter number two", :null_object => true )
 		
 		@daemon.filters << filter_uno << filter_dos
-		@response.should_receive( :status ).
+		@response.should_receive( :handled? ).
 			at_least( :once ).
-			and_return( ThingFish::Response::DEFAULT_STATUS )
+			and_return( false )
 		
 		filter_uno.
 			should_receive( :handle_request ).
@@ -248,6 +248,31 @@ describe ThingFish::Daemon do
 			with( @request, @response )
 		
 		@daemon.filter_request( @request, @response )
+	end
+	
+
+	it "doesn't propagate exceptions raised from request filters" do
+		filter_uno = mock( "request filter number one", :null_object => true )
+		filter_dos = mock( "request filter number two", :null_object => true )
+		
+		@daemon.filters << filter_uno << filter_dos
+		@response.should_receive( :handled? ).
+			at_least( :once ).
+			and_return( false )
+		
+		filter_uno.
+			should_receive( :handle_request ).
+			once.
+			with( @request, @response ).
+			and_raise( StandardError.new("something went wrong") )
+		filter_dos.
+			should_receive( :handle_request ).
+			once.
+			with( @request, @response )
+		
+		lambda {
+			@daemon.filter_request( @request, @response )
+		}.should_not raise_error()
 	end
 	
 
@@ -270,6 +295,27 @@ describe ThingFish::Daemon do
 			should_not_receive( :handle_response )
 		
 		@daemon.filter_response( @response, @request )
+	end
+	
+	it "doesn't propagate exceptions raised from response filters" do
+		filter_uno = mock( "response filter number one", :null_object => true )
+		filter_dos = mock( "response filter number two", :null_object => true )
+		
+		@response.should_receive( :filters ).and_return([ filter_uno, filter_dos ])
+		
+		filter_uno.
+			should_receive( :handle_response ).
+			once.
+			with( @response, @request ).
+			and_raise( StandardError.new("something went wrong") )
+		filter_dos.
+			should_receive( :handle_response ).
+			once.
+			with( @response, @request )
+		
+		lambda {
+			@daemon.filter_response( @response, @request )
+		}.should_not raise_error()
 	end
 	
 
@@ -370,10 +416,9 @@ describe ThingFish::Daemon do
 		request   = mock( "mongrel request" )
 		response  = mock( "mongrel response" )
 
-		erroring_filter = mock( "buggy filter", :null_object => true )
-		@daemon.filters << erroring_filter
+		erroring_handler = mock( "erroring handler", :null_object => true )
 		
-		erroring_filter.should_receive( :handle_request ).
+		erroring_handler.should_receive( :process ).
 			and_raise( RuntimeError.new("some error") )
 		request.should_receive( :params ).at_least( :once ).
 			and_return( params )
@@ -388,7 +433,7 @@ describe ThingFish::Daemon do
 		client.should_receive( :closed? ).and_return( false )
 		
 		lambda {
-			@daemon.dispatch_to_handlers( client, [], request, response )
+			@daemon.dispatch_to_handlers( client, [erroring_handler], request, response )
 		}.should_not raise_error()
 	end
 	
@@ -400,10 +445,9 @@ describe ThingFish::Daemon do
 		request   = mock( "mongrel request" )
 		response  = mock( "mongrel response" )
 
-		erroring_filter = mock( "buggy filter", :null_object => true )
-		@daemon.filters << erroring_filter
+		erroring_handler = mock( "buggy filter", :null_object => true )
 		
-		erroring_filter.should_receive( :handle_request ).
+		erroring_handler.should_receive( :process ).
 			and_raise( RuntimeError.new("some error") )
 		request.should_receive( :params ).at_least( :once ).
 			and_return( params )
@@ -418,7 +462,7 @@ describe ThingFish::Daemon do
 		client.should_receive( :closed? ).and_return( false )
 		
 		lambda {
-			@daemon.dispatch_to_handlers( client, [], request, response )
+			@daemon.dispatch_to_handlers( client, [erroring_handler], request, response )
 		}.should_not raise_error()
 	end
 	
@@ -430,10 +474,9 @@ describe ThingFish::Daemon do
 		request   = mock( "mongrel request" )
 		response  = mock( "mongrel response" )
 
-		erroring_filter = mock( "buggy filter", :null_object => true )
-		@daemon.filters << erroring_filter
+		erroring_handler = mock( "buggy filter", :null_object => true )
 		
-		erroring_filter.should_receive( :handle_request ).
+		erroring_handler.should_receive( :process ).
 			and_raise( ThingFish::RequestError.new("bad client! no cupcake!") )
 		request.should_receive( :params ).at_least( :once ).
 			and_return( params )
@@ -447,7 +490,7 @@ describe ThingFish::Daemon do
 		client.should_receive( :closed? ).and_return( false )
 		
 		lambda {
-			@daemon.dispatch_to_handlers( client, [], request, response )
+			@daemon.dispatch_to_handlers( client, [erroring_handler], request, response )
 		}.should_not raise_error()
 	end
 	

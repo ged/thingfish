@@ -122,7 +122,7 @@ class ThingFish::AcceptParam
 
 	### Return a human-readable version of the object
 	def inspect
-		"#<%s:0x%07x '%s/%s' q=%0.3f %p>" % [
+		return "#<%s:0x%07x '%s/%s' q=%0.3f %p>" % [
 			self.class.name,
 			self.object_id * 2,
 			self.type || '*',
@@ -132,10 +132,11 @@ class ThingFish::AcceptParam
 		]
 	end
 	
+	
 	### Return the parameter as a String suitable for inclusion in an Accept 
 	### HTTP header
 	def to_s
-		[
+		return [
 			self.mediatype,
 			self.qvaluestring,
 			self.extension_strings
@@ -146,7 +147,7 @@ class ThingFish::AcceptParam
 	### The mediatype of the parameter, consisting of the type and subtype
 	### separated by '/'.
 	def mediatype
-		"%s/%s" % [ self.type || '*', self.subtype || '*' ]
+		return "%s/%s" % [ self.type || '*', self.subtype || '*' ]
 	end
 	alias_method :mimetype, :mediatype
 	alias_method :content_type, :mediatype
@@ -155,7 +156,7 @@ class ThingFish::AcceptParam
 	### The weighting or "qvalue" of the parameter in the form "q=<value>"
 	def qvaluestring
 		# 3 digit precision, trim excess zeros
-		sprintf( "q=%0.3f", self.qvalue ).gsub(/0{1,2}$/, '')
+		return sprintf( "q=%0.3f", self.qvalue ).gsub(/0{1,2}$/, '')
 	end
 	
 	
@@ -163,7 +164,7 @@ class ThingFish::AcceptParam
 	### with ';'
 	def extension_strings
 		return nil if @extensions.empty?
-		@extensions.compact.join('; ')
+		return @extensions.compact.join('; ')
 	end
 
 

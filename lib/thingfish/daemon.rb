@@ -208,8 +208,15 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 			# Check to be sure we're providing a response which is acceptable to
 			# the client
-			return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client ) \
-			 	unless request.accepts?( response.headers[:content_type] )
+			unless response.body.nil? || ! response.status_is_successful? 
+				self.log.debug "Checking for acceptable mimetype in response"
+				unless request.accepts?( response.headers[:content_type] )
+					self.log.info "Can't create an acceptable response: " +
+						"Client accepts:\n  %p\nbut response is:\n  %s" %
+						[ request.accepted_types, response.headers[:content_type] ]
+					return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client )
+				end
+			end
 
 			# Normal response
 			self.send_response( response ) unless client.closed?

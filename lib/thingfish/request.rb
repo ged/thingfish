@@ -198,6 +198,12 @@ class ThingFish::Request
 			:uploadaddress => self.remote_addr
 		}
 
+		# Read title out of the content-disposition
+		if self.headers[:content_disposition] &&
+			self.headers[:content_disposition] =~ /filename="(?:.*\\)?(.+?)"/i
+			default_metadata[ :title ] = $1
+		end
+		
 		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
 
 		# Content metadata is determined from http headers

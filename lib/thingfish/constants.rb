@@ -74,7 +74,9 @@ module ThingFish::Constants
 
 	# Pattern to match a valid multipart form upload 'Content-Type' header
 	MULTIPART_MIMETYPE_PATTERN = %r{(multipart/form-data).*boundary="?([^\";,]+)"?}
-	
+
+	# The default content type
+	DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 	# The format used to create the HTTP response's status line
 	STATUS_LINE_FORMAT = "HTTP/1.1 %d %s\r\n".freeze

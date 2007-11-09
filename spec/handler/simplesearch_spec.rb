@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -17,7 +17,7 @@ begin
 	require 'time'
 
 	require 'thingfish'
-	require 'thingfish/handler/search'
+	require 'thingfish/handler/simplesearch'
 	require 'thingfish/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -35,19 +35,19 @@ include ThingFish::TestConstants
 ###	C O N T E X T S
 #####################################################################
 
-describe ThingFish::SearchHandler do
+describe ThingFish::SimpleSearchHandler do
 	
 	before(:each) do
 		# ThingFish.logger.level = Logger::DEBUG
 		ThingFish.logger.level = Logger::FATAL
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'var/www'
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
 		
 		options = {
 			:uris         => ['/search'],
 			:resource_dir => resdir
 		}
 
-		@handler   = ThingFish::SearchHandler.new( options )
+		@handler   = ThingFish::SimpleSearchHandler.new( options )
 		@request   = mock( "request", :null_object => true )
 		@response  = mock( "response", :null_object => true )
 		@headers   = mock( "headers", :null_object => true )
@@ -56,7 +56,45 @@ describe ThingFish::SearchHandler do
 		
 		@response.stub!( :headers ).and_return( @headers )
 		@listener.stub!( :metastore ).and_return( @metastore )
+	end
 
+
+	it "raises an exception when the system is using a non-simple metastore" do
+		@metastore.
+			should_receive( :is_a? ).
+			with( ThingFish::SimpleMetaStore ).
+			and_return( false )
+
+		lambda {
+			@handler.listener = @listener
+		}.should raise_error( ThingFish::ConfigError, /simplemetastore/i )
+	end
+end
+
+
+describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
+	
+	before(:each) do
+		# ThingFish.logger.level = Logger::DEBUG
+		ThingFish.logger.level = Logger::FATAL
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
+		
+		options = {
+			:uris         => ['/search'],
+			:resource_dir => resdir
+		}
+
+		@handler   = ThingFish::SimpleSearchHandler.new( options )
+		@request   = mock( "request", :null_object => true )
+		@response  = mock( "response", :null_object => true )
+		@headers   = mock( "headers", :null_object => true )
+		@listener  = mock( "listener", :null_object => true )
+		@metastore = mock( "metastore", :null_object => true )
+		
+		@response.stub!( :headers ).and_return( @headers )
+		@listener.stub!( :metastore ).and_return( @metastore )
+		@metastore.stub!( :is_a? ).and_return( true )
+		
 		@handler.listener = @listener
 	end
 
@@ -137,4 +175,5 @@ describe ThingFish::SearchHandler do
 	end
 
 end
+
 

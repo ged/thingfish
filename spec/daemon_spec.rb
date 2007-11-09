@@ -47,8 +47,8 @@ end
 #####################################################################
 
 describe ThingFish::Daemon do
-
-	before(:each) do
+	
+	before( :each ) do
 		@stub_socket = stub( "Server listener socket" )
 		TCPServer.stub!( :new ).and_return( @stub_socket )
 
@@ -56,8 +56,8 @@ describe ThingFish::Daemon do
 		@config.defaulthandler.resource_dir = 'var/www'
 
 		@daemon = ThingFish::Daemon.new( @config )
-		@request = mock( "request", :null_object => true )
-		@response = mock( "response", :null_object => true )
+		@request = mock( "mongrel request", :null_object => true )
+		@response = mock( "mongrel response", :null_object => true )
 		@handler = mock( "handler", :null_object => true )
 		@client = stub( "client", :closed? => false )
 	end
@@ -78,26 +78,43 @@ describe ThingFish::Daemon do
 
 	### End-to-end
 	it "returns a valid http 404 response if no filter or handler sets the response status" do
-		filter = mock( "filter", :null_object => true )
-		
-		handlers = [ @handler ]
-		@daemon.filters << filter
-
-		filter.
-			should_receive( :handle_request ).
-			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
-		@handler.
-			should_receive( :process ).
-			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
-		filter.
-			should_receive( :handle_response ).
-			with( an_instance_of(ThingFish::Response), an_instance_of(ThingFish::Request) )
-
 		@response.should_receive( :write ).with( /404 not found/i )
 		@response.should_receive( :write ).with( /content-type:/i )
 		@response.should_receive( :write ).with( /<html/i )
 		
-		@daemon.dispatch_to_handlers( @client, handlers, @request, @response )
+		@daemon.dispatch_to_handlers( @client, [], @request, @response )
+	end
+	
+	
+	it "returns a not acceptable response if the content-type of the response " +
+	   "doesn't match a mimetype specified by the request's Accept header" do
+		headers = mock( "Response headers", :null_object => true )
+
+		tf_request  = mock( "ThingFish request",  :null_object => true )
+		tf_response = mock( "ThingFish response", :null_object => true )
+		tf_response.stub!( :headers ).and_return( headers )
+		
+		ThingFish::Request.stub!( :new ).and_return( tf_request )
+		ThingFish::Response.stub!( :new ).and_return( tf_response )
+		
+		tf_response.should_receive( :is_handled? ).
+			at_least( :once ).
+			and_return( true )
+		tf_response.should_receive( :headers ).
+			at_least( :once ).
+			and_return( headers )
+		headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+		
+		tf_request.should_receive( :accepts? ).
+			with( RUBY_MIMETYPE ).
+			and_return( false )
+
+		tf_response.stub!( :status ).and_return( HTTP::NOT_ACCEPTABLE )
+		tf_response.should_receive( :status= ).with( HTTP::NOT_ACCEPTABLE )
+
+		@daemon.dispatch_to_handlers( @client, [], @request, @response )
 	end
 	
 

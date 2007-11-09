@@ -27,12 +27,12 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'thingfish/metastore'
+require 'thingfish/metastore/simple'
 require 'thingfish/constants'
 require 'thingfish/mixins'
 
 ### In-memory metadata store
-class ThingFish::MemoryMetaStore < ThingFish::MetaStore
+class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Loggable
 
 	# SVN Revision

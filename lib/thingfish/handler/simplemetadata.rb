@@ -1,16 +1,15 @@
 #!/usr/bin/ruby
 #
-# The metadata handler for the thingfish daemon. This handler provides
-# a REST interface to metadata information.
-#
-#
+# A metadata handler for the thingfish daemon. This handler provides
+# a REST interface to metadata information when the daemon is configured
+# to use a ThingFish::SimpleMetaStore.
+# 
 # == Synopsis
 #
 #   # thingfish.conf
 #   plugins:
 #     handlers:
-#		- metadata:
-#           uris: /metadata
+#		- simplemetadata: /metadata
 # 
 # == Version
 #
@@ -34,8 +33,9 @@ require 'thingfish/handler'
 require 'thingfish/mixins'
 
 
-### The default metadata handler for the thingfish daemon
-class ThingFish::MetadataHandler < ThingFish::Handler
+### The default metadata handler for the thingfish daemon when configured with
+### a ThingFish::SimpleMetaStore.
+class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
@@ -100,6 +100,16 @@ class ThingFish::MetadataHandler < ThingFish::Handler
 	end
 	
 	
+	### Overridden: check to be sure the metastore used is a 
+	### ThingFish::SimpleMetaStore.
+	def listener=( listener )
+		raise ThingFish::ConfigError, 
+			"This handler must be used with a ThingFish::SimpleMetaStore." unless
+			listener.metastore.is_a?( ThingFish::SimpleMetaStore )
+		super
+	end
+	
+
 	#########
 	protected
 	#########

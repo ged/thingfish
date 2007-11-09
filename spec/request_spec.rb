@@ -369,6 +369,8 @@ describe ThingFish::Request, " with a multipart body" do
 		parser.should_receive( :parse ).once.
 			with( :body, 'greatgoatsofgerta' ).
 			and_return([ entity_bodies, form_metadata ])
+		io1.should_receive( :rewind )
+		io2.should_receive( :rewind )
 		
 		yielded_pairs = {}
 		@request.each_body do |body, parsed_metadata|

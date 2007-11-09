@@ -39,7 +39,7 @@ require 'sqlite3'
 
 require 'thingfish'
 require 'thingfish/exceptions'
-require 'thingfish/metastore'
+require 'thingfish/metastore/simple'
 
 
 ### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been 
@@ -73,7 +73,7 @@ end
 
 
 ### A metastore backend that stores metadata tuples in a SQLite3 database
-class ThingFish::SQLite3MetaStore < ThingFish::MetaStore
+class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 
 	extend Forwardable
 

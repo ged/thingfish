@@ -1,16 +1,15 @@
 #!/usr/bin/ruby
-#
-# The search handler for the thingfish daemon. This handler provides a REST
+# 
+# A search handler for the thingfish daemon. This handler provides a REST
 # interface to searching for resources which match criteria concerning their
-# associated metadata.
-#
-#
+# associated metadata in a ThingFish::SimpleMetastore.
+# 
 # == Synopsis
 #
 #   # thingfish.conf
 #   plugins:
 #     handlers:
-#		- search: ~
+#		- simplesearch: /search
 # 
 # == Version
 #
@@ -34,8 +33,9 @@ require 'thingfish/handler'
 require 'thingfish/mixins'
 
 
-### The default search handler for the thingfish daemon
-class ThingFish::SearchHandler < ThingFish::Handler
+### The search handler for the thingfish daemon when it's using a 
+### ThingFish::SimpleMetaStore.
+class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
@@ -93,6 +93,16 @@ class ThingFish::SearchHandler < ThingFish::Handler
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "search/index.rhtml" )
 		return tmpl.result( binding() )
+	end
+	
+	
+	### Overridden: check to be sure the metastore used is a 
+	### ThingFish::SimpleMetaStore.
+	def listener=( listener )
+		raise ThingFish::ConfigError, 
+			"This handler must be used with a ThingFish::SimpleMetaStore." unless
+			listener.metastore.is_a?( ThingFish::SimpleMetaStore )
+		super
 	end
 	
 end # ThingFish::SearchHandler

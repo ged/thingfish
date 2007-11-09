@@ -206,6 +206,11 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
 				unless response.is_handled?
 
+			# Check to be sure we're providing a response which is acceptable to
+			# the client
+			return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client ) \
+			 	unless request.accepts?( response.headers[:content_type] )
+
 			# Normal response
 			self.send_response( response ) unless client.closed?
 

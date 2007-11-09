@@ -3,7 +3,7 @@ require 'thingfish/constants'
 require 'thingfish/handler'
 
 class TimeHandler < ThingFish::Handler
-	include ThingFish::Constants::HTTP
+	include ThingFish::Constants
 
 	### Send the local time to the requester in plain text.
 	def handle_get_request( request, response )
@@ -15,11 +15,11 @@ class TimeHandler < ThingFish::Handler
 			case uri
 			when '', '/'
 				response.body   = time.to_s
-				response.status = OK
+				response.status = HTTP::OK
 			else
 				time_method     = uri.sub( %r{^/}, '')
 				response.body   = time.send( time_method.to_sym ).to_s
-				response.status = OK
+				response.status = HTTP::OK
 			end
 		rescue NoMethodError
 			# fall through to 404

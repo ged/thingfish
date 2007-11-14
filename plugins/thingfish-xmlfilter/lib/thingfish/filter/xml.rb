@@ -116,7 +116,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.accept?( 'application/xml' ) &&
+		return unless request.explicitly_accepts?( 'application/xml' ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue

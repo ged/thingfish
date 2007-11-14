@@ -137,7 +137,14 @@ class ThingFish::Handler
 		# return %{<a href="%s">%s</a>} % [uri, self.class.name] # For testing
 		return nil
 	end
+
 	
+	### Convert the given +body+ object to HTML for a text/html response. By default,
+	### this just hands back a pretty-printed HTML version of the body object --
+	### override this to do something fancier/more useful.
+	def make_html_content( body, request, response )
+		return body.html_inspect
+	end
 
 
 	#########

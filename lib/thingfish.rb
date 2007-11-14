@@ -28,8 +28,6 @@ rescue LoadError
 end
 
 require 'logger'
-require 'uuidtools'
-
 
 ### Toplevel namespace module
 module ThingFish
@@ -84,30 +82,8 @@ module ThingFish
 end # module ThingFish
 
 
-### Add convenience methods to Numerics
-class Numeric
-	include ThingFish::NumericConstantMethods::Time,
-	        ThingFish::NumericConstantMethods::Bytes
-end
+### Load all overrides after everything else has a chance to load.
+require 'monkeypatches'
 
 
-# Define an #== if none exists
-class UUID
-
-	### Only add an #== method if there's not already one defined
-	unless instance_methods( false ).include?( "==" )
-		
-		### Return +true+ if the given +other_uuid+ is the same as the
-		### receiver.
-		def ==( other_uuid )
-			other_uuid = self.class.parse( other_uuid.to_s ) unless
-				other_uuid.is_a?( self.class )
-			return (self <=> other_uuid).zero?
-		rescue ArgumentError
-			return false
-		end
-		alias_method :eql?, :==
-	end
-end
-
-
+# vim: set nosta noet ts=4 sw=4:

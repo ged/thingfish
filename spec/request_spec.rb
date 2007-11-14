@@ -204,7 +204,22 @@ describe ThingFish::Request do
 		@request.accepts?( 'image/png' ).should be_true()
 		@request.accepts?( 'application/x-yaml' ).should be_false()
 	end
-	
+
+
+	it "knows what mimetypes are explicitly acceptable responses" do
+		params = {
+			'HTTP_ACCEPT' => 'text/html, text/plain; q=0.5, image/*;q=0.1, */*',
+		}
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		
+		@request.explicitly_accepts?( 'text/html' ).should be_true()
+		@request.explicitly_accepts?( 'text/plain' ).should be_true()
+		@request.explicitly_accepts?( 'text/ascii' ).should be_false()
+
+		@request.explicitly_accepts?( 'image/png' ).should be_false()
+		@request.explicitly_accepts?( 'application/x-yaml' ).should be_false()
+	end
+		
 
 	it "accepts anything if the client doesn't provide an Accept header" do
 		params = {}

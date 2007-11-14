@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+:explicitly_accepts?#!/usr/bin/env ruby
 
 BEGIN {
 	require 'pathname'
@@ -105,7 +105,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 	it "converts Ruby-object responses to XML if the client accepts it" do
 		@ruby_obj = mock( "a ruby data structure" )
 
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -128,7 +128,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 	
 	
 	it "does no conversion if the client doesn't accept XML" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
 			and_return( false )
 
@@ -141,7 +141,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 	
 	
 	it "does no conversion if the response isn't a Ruby object" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -157,7 +157,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 
 
 	it "doesn't propagate errors during XML generation" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).

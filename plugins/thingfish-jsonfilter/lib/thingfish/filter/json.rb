@@ -74,7 +74,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.accept?( 'application/json' ) &&
+		return unless request.explicitly_accepts?( 'application/json' ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue

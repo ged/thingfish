@@ -251,6 +251,8 @@ plugins:
     filters:
         - json
         - xml
+        - something:
+              key: value
 
 mergekey: Yep.
 END
@@ -283,6 +285,17 @@ describe ThingFish::Config, " created with source" do
 		@config.dump.should =~ %r{^\s+- exif}
 	end
 
+
+	it "should know configured filter order" do
+		
+		ThingFish::Filter.should_receive( :create ).
+			exactly(3).times.
+			and_return {|name, opts| name.to_sym }
+
+		filters = @config.create_configured_filters
+		
+		filters.should == [:json, :xml, :something]
+	end
 end
 
 
@@ -448,6 +461,9 @@ plugins:
         - json
         - xml
         - rubymarshal
+        - something:
+              key: value
+
 END
 
 # Created with bad source

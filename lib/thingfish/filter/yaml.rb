@@ -74,7 +74,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.accept?( 'text/x-yaml' ) &&
+		return unless request.explicitly_accepts?( 'text/x-yaml' ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue

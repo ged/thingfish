@@ -79,7 +79,7 @@ class ThingFish::Config
 				:extractors => [],
 			},
 			:handlers => [],
-			:filters => {},
+			:filters => [],
 		},
 
 		:logging => {
@@ -230,11 +230,10 @@ class ThingFish::Config
 	### Instantiate, configure, and return the filter plugins specified by the
 	### configuration.
 	def create_configured_filters
-		filters = self.plugins.filters.to_hash
-		
-		return filters.collect do |name, options|
+		return self.plugins.filters.collect do |tuple|
+			name, options = *(tuple.to_a.first)
 			self.log.info "Loading '%s' filter with options: %p" % [ name, options ]
-			 ThingFish::Filter.create( name.to_s, options )
+			ThingFish::Filter.create( name.to_s, options )
 		end
 	end
 	

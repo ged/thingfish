@@ -218,9 +218,9 @@ describe ThingFish::Daemon do
 		@response.should_receive( :handlers ).
 			twice.
 			and_return( handler_list )
-		@response.should_receive( :status ).
+		@response.should_receive( :is_handled? ).
 			twice.
-			and_return( ThingFish::Response::DEFAULT_STATUS )
+			and_return( false )
 
 		second_handler.should_receive( :process )
 
@@ -240,9 +240,9 @@ describe ThingFish::Daemon do
 		@response.should_receive( :handlers ).
 			once.
 			and_return( handler_list )
-		@response.should_receive( :status ).
+		@response.should_receive( :is_handled? ).
 			once.
-			and_return( HTTP::OK )
+			and_return( true )
 
 		second_handler.should_not_receive( :process )
 
@@ -265,9 +265,9 @@ describe ThingFish::Daemon do
 		@response.should_receive( :handlers ).
 			once.
 			and_return( handler_list )
-		@response.should_receive( :status ).
+		@response.should_receive( :is_handled? ).
 			once.
-			and_return( ThingFish::Response::DEFAULT_STATUS )
+			and_return( false )
 
 		second_handler.should_not_receive( :process )
 

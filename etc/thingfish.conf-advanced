@@ -39,10 +39,12 @@ plugins:
         name: marshalled
         root: /home/thingfish/var
     filters:
-        yaml: ~
-        json: ~
-        mp3info: ~
-        exif: ~
+        - html
+        - xml
+        - yaml
+        - json
+        - mp3info
+        - exif
     handlers:
         - inspect:
             uris: /inspect

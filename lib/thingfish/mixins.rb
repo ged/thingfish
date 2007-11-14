@@ -501,7 +501,7 @@ module ThingFish # :nodoc:
 
 		### Return the receiver as an HTML fragment.
 		def html_inspect
-			return make_object_html_wrapper( self )
+			return make_html_for_object( self )
 		end
 
 
@@ -565,6 +565,7 @@ module ThingFish # :nodoc:
 		  </div>
 		}
 
+
 		### Wrap up the various parts of a complex object in an HTML fragment. If the
 		### object has already been wrapped, returns a link to the previous rendering
 		### instead.
@@ -613,7 +614,6 @@ module ThingFish # :nodoc:
 			]
 		end
 		
-
 
 		### Return the specifed +str+ with all HTML entities escaped.
 		def escape_html( str )

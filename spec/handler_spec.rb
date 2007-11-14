@@ -70,6 +70,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		@handler.plugin_name.should == 'testhandler'
 	end
 
+
 	it "outputs a consistent request log message" do
 		logfile = StringIO.new('')
 		ThingFish.logger = Logger.new( logfile )
@@ -95,6 +96,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		logfile.rewind
 		logfile.read.should =~ %r{\S+: 127.0.0.1 POST /poon}
 	end
+
 	
 	it "gets references to the metastore and filestore from the listener callback" do
 		mock_listener = mock( "listener", :null_object => true )
@@ -104,10 +106,18 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		@handler.listener = mock_listener
 	end
 
+
 	it "doesn't add to the index content by default" do
 		@handler.make_index_content( '/foo' ).should be_nil
 	end
-	
+
+
+	it "generates default HTML content" do
+		object = mock("a ruby object")
+		object.should_receive( :html_inspect ).and_return( :html )
+		
+		@handler.make_html_content( object, @request, @response ).should == :html
+	end
 end
 
 

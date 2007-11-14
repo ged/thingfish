@@ -45,8 +45,13 @@ describe ThingFish::HtmlFilter do
 
 		@request = mock( "request object" )
 		@response = mock( "response object" )
+
 		@response_headers = mock( "response headers" )
 		@response.stub!( :headers ).and_return( @response_headers )
+
+		@first_handler = mock( "first handler" )
+		@last_handler = mock( "last handler" )
+		@response.stub!( :handlers ).and_return([ @first_handler, @last_handler ])
 	end
 
 	after( :all ) do
@@ -54,11 +59,43 @@ describe ThingFish::HtmlFilter do
 	end
 
 
-
 	it_should_behave_like "A Filter"
+
 	
-	it "is tested"
-	it "is implemented"
+	it "converts Ruby-object responses to HTML if the client accepts it" do
+		@request.should_receive( :explicitly_accepts? ).
+			with( 'text/html' ).
+			and_return( true )
+		@response_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( RUBY_MIMETYPE )
+
+		body = mock( "response body" )
+		@response.should_receive( :body ).and_return( body )
+		@last_handler.should_receive( :make_html_content ).
+			with( body, @request, @response ).
+			and_return( :html )
+
+		@response.should_receive( :body= ).with( :html )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		
+		@filter.handle_response( @response, @request )
+	end
+	
+	
+	it "does no conversion if the client doesn't accept HTML" do
+		@request.should_receive( :explicitly_accepts? ).
+			with( 'text/html' ).
+			and_return( false )
+
+		@response.should_not_receive( :body= )
+		@response.should_not_receive( :status= )
+		@response_headers.should_not_receive( :[]= )
+		
+		@filter.handle_response( @response, @request )
+	end	
 end
 
 # vim: set nosta noet ts=4 sw=4:

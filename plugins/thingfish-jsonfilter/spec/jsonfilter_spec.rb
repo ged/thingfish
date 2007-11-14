@@ -60,7 +60,7 @@ describe ThingFish::JSONFilter do
 	
 	
 	it "converts Ruby-object responses to JSON if the client accepts it" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -79,7 +79,7 @@ describe ThingFish::JSONFilter do
 	
 	
 	it "does no conversion if the client doesn't accept JSON" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( false )
 
@@ -92,7 +92,7 @@ describe ThingFish::JSONFilter do
 	
 	
 	it "does no conversion if the response isn't a Ruby object" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -108,7 +108,7 @@ describe ThingFish::JSONFilter do
 
 
 	it "doesn't propagate errors during JSON generation" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).

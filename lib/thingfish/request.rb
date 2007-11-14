@@ -178,6 +178,15 @@ class ThingFish::Request
 	end
 	alias_method :accept?, :accepts?
 
+
+	### Returns boolean true/false if the requestor can handle the given
+	### +content_type+, not including mime wildcards.
+	def explicitly_accepts?( content_type )
+		self.accepted_types.reject { |param| param.subtype.nil? }.
+			find {|type| type =~ content_type } ? true : false
+	end
+	alias_method :explicitly_accept?, :explicitly_accepts?
+
 	
 	### Returns true if the request is of type 'multipart/form-request' and has
 	### a valid boundary.

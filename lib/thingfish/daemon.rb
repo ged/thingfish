@@ -39,8 +39,6 @@ require 'uuidtools'
 require 'etc'
 require 'logger'
 
-require 'monkeypatches'
-
 require 'thingfish/constants'
 require 'thingfish/config'
 require 'thingfish/exceptions'
@@ -238,6 +236,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Filter and potentially modify the incoming request.
 	def filter_request( request, response )
 		@filters.each do |filter|
+			self.log.debug "Passing request through %s" % [ filter.class.name ]
 			begin
 				filter.handle_request( request, response )
 			rescue => err
@@ -256,7 +255,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Filter (and potentially modify) the outgoing response with the filters
 	### that were registered with it during the request-filtering stage
 	def filter_response( response, request )
-		response.filters.reverse.each do |filter|
+		response.filters.each do |filter|
+			self.log.debug "Passing response through %s" % [ filter.class.name ]
 			begin
 				filter.handle_response( response, request )
 			rescue => err
@@ -341,8 +341,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			handler.process( request, response )
 			# BRANCH: Stops running handlers on status change
 			# BRANCH: Stops running handlers if client connection closes
-			break if response.status != ThingFish::Response::DEFAULT_STATUS ||
-				client.closed?
+			break if response.is_handled? || client.closed?
 		end
 	end
 	

@@ -79,8 +79,8 @@ h4. Limiting URI space
 
 By default, you'll now get the time for every possible URI under the
 _/what-time-is-it_ path.  This is a feature that allows a handler installed within
-another handler's URI space to alter the request and response - adding http
-authentication, for example.
+another handler's URI space to alter the request and response - the statistics
+handler uses this, for example.
 
 At some point however, you'll probably want to limit the possible URIs the Time
 handler will respond to.  Let's do this by checking the current *request.path_info*,

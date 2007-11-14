@@ -46,8 +46,9 @@ plugins:
             resource_dir: var/www
         - time: /what-time-is-it
     filters:
-        yaml: {}
-        json: {}
-        mp3: {}
-        exif: {}
-        xml: ~
+        - html
+        - yaml
+        - json
+        - mp3
+        - exif
+        - xml

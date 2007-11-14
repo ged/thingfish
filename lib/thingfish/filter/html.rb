@@ -70,7 +70,25 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 	### Convert outgoing ruby object responses into HTML.
 	def handle_response( response, request )
+		
+		# Only filter if the client wants what we can convert to, and the response
+		# body is something we know how to convert
+		return unless request.explicitly_accepts?( 'text/html' ) &&
+			self.accept?( response.headers[:content_type] )
+
+		handler = response.handlers.last
+		
+		self.log.debug "Converting a %s response to text/html" %
+			[ response.headers[:content_type] ]
+		
+		# title
+		# head injection
+		
+		response.body = handler.make_html_content( response.body, request, response )
+		response.headers[:content_type] = 'text/html'
+		response.status = HTTP::OK
 	end
+
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
 	### the filter is interested in. The default returns */*, which indicates that it is 
@@ -78,7 +96,13 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 	def handled_types
 		return HANDLED_TYPES
 	end
+
+	#########
+	protected
+	#########
 	
+	def poop
+	end
 	
 end # class ThingFish::HtmlFilter
 

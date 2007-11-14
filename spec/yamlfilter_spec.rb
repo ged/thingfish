@@ -55,13 +55,13 @@ describe ThingFish::YAMLFilter do
 		ThingFish.reset_logger
 	end
 
-
+ :explicitly_accepts?
 
 	it_should_behave_like "A Filter"
 	
 	
 	it "converts Ruby-object responses to YAML if the client accepts it" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -80,7 +80,7 @@ describe ThingFish::YAMLFilter do
 	
 	
 	it "does no conversion if the client doesn't accept YAML" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( false )
 
@@ -93,7 +93,7 @@ describe ThingFish::YAMLFilter do
 	
 	
 	it "does no conversion if the response isn't a Ruby object" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).
@@ -109,7 +109,7 @@ describe ThingFish::YAMLFilter do
 
 
 	it "doesn't propagate errors during YAML generation" do
-		@request.should_receive( :accept? ).
+		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
 		@response_headers.should_receive( :[] ).

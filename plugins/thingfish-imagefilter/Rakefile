@@ -19,7 +19,7 @@ PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
               	
 RELEASE_NAME  	= "REL #{PKG_VERSION}"
               	
-TEXT_FILES	  	= %w( README LICENSE COPYING )
+TEXT_FILES	  	= %w( README LICENSE )
 SPEC_FILES	  	= Dir.glob('spec/*_spec.rb')
 LIB_FILES	  	= Dir.glob('lib/**/*.rb').delete_if { |item| item =~ /\.svn/ }
 

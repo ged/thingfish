@@ -340,7 +340,7 @@ begin
                 %r{^lib/thingfish/(.*)/(.*)\.rb$} => proc {|_, m|
                     ["spec/#{m[2] + m[1]}_spec.rb"]
                 },
-                %r{^plugins/(.*)/lib.*/(.*)\.rb$} => proc {|_, m|
+                %r{^plugins/(.*?)/.*\.rb$} => proc {|_, m|
                     autotester.files_matching %r{plugins/#{m[1]}/spec/.*_spec.rb}
                 },
                 %r{^spec/lib/(.*)_behavior\.rb$} => proc {|_, m|

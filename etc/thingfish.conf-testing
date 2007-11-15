@@ -44,7 +44,6 @@ plugins:
         - simplesearch:
             uris: /search
             resource_dir: var/www
-        - time: /what-time-is-it
     filters:
         - html
         - yaml
@@ -52,3 +51,4 @@ plugins:
         - mp3
         - exif
         - xml
+        - image

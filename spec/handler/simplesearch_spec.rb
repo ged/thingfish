@@ -18,6 +18,7 @@ begin
 
 	require 'thingfish'
 	require 'thingfish/handler/simplesearch'
+	require 'thingfish/metastore/simple'
 	require 'thingfish/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -104,29 +105,6 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 	
 	# Examples
 
-	it "finds resources with equality matching on a single key (HTML accept)" do
-		search_terms = {
-			'namespace' => 'bangry'
-		}
-		
-		@request.should_receive( :query_args ).
-			at_least(:once).
-			and_return( search_terms )
-		@metastore.should_receive( :find_by_exact_properties ).
-			with( search_terms ).
-			and_return([ TEST_UUID ])
-		
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( true )
-
-		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :body= ).with( /<html/i )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-	
 	it "finds resources with equality matching on a single key" do
 		search_terms = {
 			'namespace' => 'bangry'
@@ -139,10 +117,6 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 			with( search_terms ).
 			and_return([ TEST_UUID ])
 		
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( false )
-
 		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :body= ).with([ TEST_UUID ])
@@ -163,10 +137,6 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 			with( search_terms ).
 			and_return([ TEST_UUID, TEST_UUID2 ])
 		
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( false )
-
 		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :body= ).with([ TEST_UUID, TEST_UUID2 ])

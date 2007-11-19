@@ -93,12 +93,12 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# If this is a request to the root, handle it ourselves
 		when '/'
-			self.log.debug "Index request"
+			self.log.debug "Handling an index request"
 			self.handle_index_fetch_request( request, response )
 
 		# Likewise for a request to /<a uuid>
 		when UUID_URL
-			self.log.debug "UUID request"
+			self.log.debug "Handling a UUID request"
 			uuid = parse_uuid( $1 )
 			self.handle_resource_fetch_request( request, response, uuid )
 
@@ -163,6 +163,16 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 	
 
+	### Make body content for an HTML response (HTML filter API)
+	def make_html_content( body, request, response )
+		self.log.debug "Loading index resource %p" % [@options[:html_index]]
+		content = self.get_erb_resource( @options[:html_index] )
+		handler_index_sections = self.get_handler_index_sections
+		
+		return content.result( binding() )
+	end
+	
+
 	#########
 	protected
 	#########
@@ -191,21 +201,14 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 	### Handle a request to fetch the index (GET or HEAD to /)
 	def handle_index_fetch_request( request, response )
-		if request.accepts?( 'text/html' )
-			self.log.debug "Loading index resource %p" % [@options[:html_index]]
-			content = self.get_erb_resource( @options[:html_index] )
-			
-			handler_index_sections = self.get_handler_index_sections
-			html = content.result( binding() )
-
-			response.headers[:content_type] = 'text/html'
-			response.status = HTTP::OK
-			response.body = html
-
-		else
-			# TODO: sweeeet
-			response.body = [:something_sweet_yet_undecided]
-		end
+		response.data[:title] = 'Version ' + ThingFish::VERSION
+		response.data[:tagline] = 'Feed me.'
+		
+		response.headers[:content_type] = RUBY_MIMETYPE
+		response.body = {
+			:version => ThingFish::VERSION,
+			:handlers => self.daemon.classifier.handler_map.collect {|uri,h| [uri,h.class.name] }
+		}
 	end
 
 

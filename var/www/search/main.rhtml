@@ -1,112 +1,75 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>ThingFish :: search</title>
+<% metadata_uri = @config.find_handler_uri('simplemetadata') %>
+<script type="text/javascript">
+	metadata_uri = '<%= metadata_uri %>';
+</script>
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
+<% unless request.query_args.empty? %>
+<h2>Search results</h2>
+	<% if uuids.empty? %>
+		<p>No resources matched your query.</p>
+	<% else %>
+	<table class="files">
+		<th>Filename</th>
+		<th>Actions</th>
 
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-	<script src="/js/jquery.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/search.js" type="text/javascript" charset="utf-8"></script>
-  </head>
+		<% uuids.each do |uuid| %>
+			<% resource = @metastore[uuid] %>
+			<tr>
+				<td valign="top">
+					<a href="/<%= uuid %>" title="view in browser">
+						<%= resource.title || resource.uuid %>
+					</a><br />
+					<span class="extrainfo"><%= resource.extent.to_i.size_suffix %></span>
+				</td>
+				<td>
+					<a href="/<%= uuid %>?attach" title="download resource">
+						<img src="/images/save.png" border="0" />
+					</a>
+					<% if metadata_uri %>
+					<a href="<%= metadata_uri %>/<%= uuid %>" class="meta"
+						id="i_button:<%= uuid %>" title="show metadata">
+						<img src="/images/info.png" border="0" />
+					</a>
+					<% end %>
+					<a href="#" class="delete" id="d_button:<%= uuid %>"
+						title="delete resource">
+						<img src="/images/delete.png" border="0" />
+					</a>
+				</td>
+			</tr>
 
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong>Interrogate me.</strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
-		<p class="textright">&nbsp;</p>
-		
-		<% metadata_uri = @config.find_handler_uri('simplemetadata') %>
-		<script type="text/javascript">
-			metadata_uri = '<%= metadata_uri %>';
-		</script>
-		
-		<% unless request.query_args.empty? %>
-		<h2>Search results</h2>
-			<% if uuids.empty? %>
-				<p>No resources matched your query.</p>
-			<% else %>
-			<table class="files">
-				<th>Filename</th>
-				<th>Actions</th>
-
-				<% uuids.each do |uuid| %>
-					<% resource = @metastore[uuid] %>
-					<tr>
-						<td valign="top">
-							<a href="/<%= uuid %>" title="view in browser">
-								<%= resource.title || resource.uuid %>
-							</a><br />
-							<span class="extrainfo"><%= resource.extent.to_i.size_suffix %></span>
-						</td>
-						<td>
-							<a href="/<%= uuid %>?attach" title="download resource">
-								<img src="/images/save.png" border="0" />
-							</a>
-							<% if metadata_uri %>
-							<a href="<%= metadata_uri %>/<%= uuid %>" class="meta"
-								id="i_button:<%= uuid %>" title="show metadata">
-								<img src="/images/info.png" border="0" />
-							</a>
-							<% end %>
-							<a href="#" class="delete" id="d_button:<%= uuid %>"
-								title="delete resource">
-								<img src="/images/delete.png" border="0" />
-							</a>
-						</td>
-					</tr>
-
-				<% end %>
-			</table>
-			<% end %>
-			<br />
 		<% end %>
-		
-		<h2>Search</h2>
-		<form action="<%= uri %>" method="GET">
-			<table border="0">
-				<th colspan="2">Search terms:</th>
-				<tr>
-					<td>Filename:</td>
-					<td><input type="textfield" name="title" value="<%= args['title'] %>"/></td>
-				</tr>
-				<tr>
-					<td>Namespace:</td>
-					<td><input type="textfield" name="namespace" value="<%= args['namespace'] %>"/></td>
-				</tr>
-				<tr>
-					<td>Rating:</td>
-					<td>
-						<select name="rating">
-							<option value="">Please select rating</option>
-							<option value="5">Frikkin sweet!</option>
-							<option value="4">Rad.</option>
-							<option value="3">Eh, take it or leave it</option>
-							<option value="2">I've seen better</option>
+	</table>
+	<% end %>
+	<br />
+<% end %>
 
-							<option value="1">Totally lame ass</option>
-						</select>
-					</td>
-				</tr>
-			</table>
-			<input type="submit" value="Search" />
-		</form>
+<h2>Search</h2>
+<form action="<%= uri %>" method="GET">
+	<table border="0">
+		<th colspan="2">Search terms:</th>
+		<tr>
+			<td>Filename:</td>
+			<td><input type="textfield" name="title" value="<%= args['title'] %>"/></td>
+		</tr>
+		<tr>
+			<td>Namespace:</td>
+			<td><input type="textfield" name="namespace" value="<%= args['namespace'] %>"/></td>
+		</tr>
+		<tr>
+			<td>Rating:</td>
+			<td>
+				<select name="rating">
+					<option value="">Please select rating</option>
+					<option value="5">Frikkin sweet!</option>
+					<option value="4">Rad.</option>
+					<option value="3">Eh, take it or leave it</option>
+					<option value="2">I've seen better</option>
 
-	</div>
-	<!-- content end -->
-
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id$</p>
-      </div>
-    </div>
-  </body>
-</html>
+					<option value="1">Totally lame ass</option>
+				</select>
+			</td>
+		</tr>
+	</table>
+	<input type="submit" value="Search" />
+</form>

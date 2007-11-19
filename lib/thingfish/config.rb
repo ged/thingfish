@@ -35,6 +35,7 @@ require 'logger'
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/mixins'
+require 'thingfish/utils'
 require 'thingfish/filter'
 require 'thingfish/filestore'
 require 'thingfish/metastore'
@@ -159,6 +160,7 @@ class ThingFish::Config
 			level = self.parsed_logging_level
 
 			ThingFish.logger = Logger.new( logoutput )
+			ThingFish.logger.formatter = ThingFish::LogFormatter.new( ThingFish.logger )
 			ThingFish.logger.level = level
 		end
 	end

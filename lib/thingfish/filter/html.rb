@@ -35,7 +35,8 @@ require 'thingfish/acceptparam'
 ### of responses to HTML if the client accepts 'text/html'.
 class ThingFish::HtmlFilter < ThingFish::Filter
 	include ThingFish::Loggable,
-		ThingFish::Constants
+		ThingFish::Constants,
+		ThingFish::ResourceLoader
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -55,7 +56,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
 		@config = nil
-		super()
+		super
 	end
 	
 
@@ -76,15 +77,26 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		return unless request.explicitly_accepts?( 'text/html' ) &&
 			self.accept?( response.headers[:content_type] )
 
-		handler = response.handlers.last
-		
 		self.log.debug "Converting a %s response to text/html" %
 			[ response.headers[:content_type] ]
 		
-		# title
-		# head injection
+		# Find the handlers that can make html
+		content = []
+		handlers = response.handlers.reverse.find_all {|h| h.respond_to?(:make_html_content) }
+
+		# Either ask the handlers for content, or just return the inspected body object
+		if handlers.empty?
+			content << response.body.html_inspect
+		else
+			handlers.each do |handler|
+				self.log.debug "Fetching HTML content from %s" % [ handler.class.name ]
+				content << handler.make_html_content( response.body, request, response )
+			end
+		end
+
+		template = self.get_erb_resource( 'template.rhtml' )
 		
-		response.body = handler.make_html_content( response.body, request, response )
+		response.body = template.result( binding() )
 		response.headers[:content_type] = 'text/html'
 		response.status = HTTP::OK
 	end
@@ -97,13 +109,6 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		return HANDLED_TYPES
 	end
 
-	#########
-	protected
-	#########
-	
-	def poop
-	end
-	
 end # class ThingFish::HtmlFilter
 
 # vim: set nosta noet ts=4 sw=4:

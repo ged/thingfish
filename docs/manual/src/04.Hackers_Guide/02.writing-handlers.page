@@ -30,7 +30,7 @@ Let's go over the interesting parts of this.
 The handler name needs to match the filename it is stored in -
 in this case, the file would be called _time.rb_, and stored in a _lib/handler_ directory. |
 | 8 | Actions are defined in special methods that match the naming convention
-<em>handle_<strong>METHOD</strong>_request</em>.  We're only going to accept *GET* methods for this example.
+@handle_<strong>METHOD</strong>_request@.  We're only going to accept *GET* methods for this example.
 These special methods receive a *ThingFish::Request* and a *ThingFish::Response* object to fiddle with as you see fit. |
 | 9 | We're just using a simple time string as the response here, but this could just as easily be an erb template,
 or even an IO object.  IO objects will automatically buffer out to the client. |

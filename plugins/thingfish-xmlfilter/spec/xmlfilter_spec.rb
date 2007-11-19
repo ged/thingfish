@@ -1,4 +1,4 @@
-:explicitly_accepts?#!/usr/bin/env ruby
+#!/usr/bin/env ruby
 
 BEGIN {
 	require 'pathname'
@@ -44,38 +44,6 @@ class ThingFish::XMLFilter
 	public :make_xml
 end
 
-describe ThingFish::XMLFilter, " with Tidy enabled" do
-
-	before( :each ) do
-		@request = mock( "request object" )
-		@response = mock( "response object" )
-		@response_headers = mock( "response headers" )
-		@response.stub!( :headers ).and_return( @response_headers )
-	end
-
-	it "cleans up XML output" do
-
-		File.should_receive( :exist? ).with( '/fakepath' ).and_return( true )
-		Tidy.should_receive( :path= ).with( '/fakepath' )
-		tidy = mock( "A Tidy object", :null_object => true )
-		tidyoptions = stub( 'Tidy option object',
-						   :output_xml= => true,
-						   :input_xml=  => true,
-						   :indent=     => true )
-
-		filter = ThingFish::Filter.create( 'xml', { :tidypath => '/fakepath' } )
-		Tidy.should_receive( :open ).and_yield( tidy )
-
-		body = mock( "Body content", :null_object => true )
-		body.should_receive( :to_xml ).and_return( :xml )
-		tidy.should_receive( :options ).at_least( :once ).and_return( tidyoptions )
-		tidy.should_receive( :clean ).with( :xml ).and_return( :clean_xml )
-
-		filter.make_xml( body ).should == :clean_xml
-	end
-
-end
-
 describe ThingFish::XMLFilter, " with Tidy disabled" do
 	
 	TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
@@ -86,7 +54,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 	end
 		
 	before( :each ) do
-		@filter = ThingFish::Filter.create( 'xml', { :tidypath => '/nonexistent' } )
+		@filter = ThingFish::Filter.create( 'xml' )
 
 		@request = mock( "request object" )
 		@response = mock( "response object" )
@@ -181,6 +149,78 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 			@filter.handle_response( @response, @request )
 		}.should_not raise_error()
 	end
+end
+
+# Fake a Tidy class if none is loaded
+if !defined?( Tidy )
+	module Tidy; end
+end
+
+describe ThingFish::XMLFilter, " with Tidy enabled" do
+
+	TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
+
+	before( :all ) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+		
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+
+	# Examples
+	
+	it "doesn't die if Tidy can't be loaded" do
+		Kernel.stub!( :require ).and_raise( LoadError.new("no such file to load -- tidy") )
+		
+		lambda {
+			ThingFish::Filter.create( 'xml', 'use_tidy' => true )
+		}.should_not raise_error()
+	end
+	
+	
+	it "doesn't die if the tidy shared library can't be found" do
+		Kernel.stub!( :require ).and_return( true )
+		
+		lambda {
+			ThingFish::Filter.create( 'xml',
+				'usetidy' => true,
+				'tidypath' => '/someplace/nonexistant' )
+		}.should_not raise_error()
+	end
+
+
+	it "cleans up XML output if Tidy loaded successfully" do
+		request = mock( "request object" )
+		response = mock( "response object" )
+		response_headers = mock( "response headers" )
+		response.stub!( :headers ).and_return( @response_headers )
+
+		Kernel.stub!( :require ).and_return( true )
+		File.should_receive( :exist? ).with( '/fakepath' ).and_return( true )
+		Tidy.should_receive( :path= ).with( '/fakepath' )
+		tidy = mock( "A Tidy object", :null_object => true )
+		tidyoptions = stub( 'Tidy option object',
+						   :output_xml= => true,
+						   :input_xml=  => true,
+						   :indent=     => true )
+
+		filter = ThingFish::Filter.create( 'xml',
+			'usetidy' => true,
+			'tidypath' => '/fakepath' )
+        
+		Tidy.should_receive( :open ).and_yield( tidy )
+
+		body = mock( "Body content", :null_object => true )
+		body.should_receive( :to_xml ).and_return( :xml )
+		tidy.should_receive( :options ).at_least( :once ).and_return( tidyoptions )
+		tidy.should_receive( :clean ).with( :xml ).and_return( :clean_xml )
+
+		filter.make_xml( body )
+	end
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

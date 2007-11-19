@@ -1,24 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>ThingFish</title>
-
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
-
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-  </head>
-
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong>Statify me.</strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
 
 		<h1>ThingFish Status</h1>
 		<p class="server-software">Server software: <%= ThingFish::Daemon::SERVER_SOFTWARE %></p>
@@ -43,13 +22,19 @@
 			<table id="handlers">
 				<thead><tr><th>URI</th><th>Handlers</th></tr></thead>
 				<tbody>
-				<% listener.classifier.handler_map.sort_by {|uri,h| uri }.each do |uri,handlers| %>
-				<% handlers = [handlers] if !handlers.is_a?(Array) %>
+				<% body.sort_by {|uri,_| uri }.each do |uri,info| %>
 				  <tr class="handler-map">
 					<th class="uri"><%= uri %></th>
-					<td class="handler-names"><%= handlers.collect {|h| h.class.name }.join( ', ' ) %></td>
+					<td class="handler-names"><%= info[:handlers].join( ', ' ) %></td>
 				  </tr>
-				<% if @filters.key?(uri) %>
+				<% if info[:stats].empty? %>
+				  <tr class="handler-statistics">
+				  	<th>&nbsp;</th>
+					<td>
+						<tt>(No stats filter attached)</tt>
+					</td>
+				  </tr>
+				<% else %>
 				  <tr class="handler-statistics">
 				  	<th>&nbsp;</th>
 					<td>
@@ -68,27 +53,20 @@
 							</tr>
 						  </thead>
 						  <tbody>
-						<% @filters[uri].each_stat do |stat| %>
+						<% info[:stats].each do |name, values| %>
 							<tr>
-								<th><%= stat.name %></th>
-								<td><%= "%0.2f" % stat.sum %></td>
-								<td><%= "%0.2f" % stat.sumsq %></td>
-								<td><%= "%0.2f" % stat.n %></td>
-								<td><%= "%0.2f" % stat.mean %></td>
-								<td><%= "%0.2f" % stat.sd %></td>
-								<td><%= "%0.2f" % stat.min %></td>
-								<td><%= "%0.2f" % stat.max %></td>
+								<th><%= name %></th>
+								<td><%= "%0.2f" % values[:sum] %></td>
+								<td><%= "%0.2f" % values[:sumsq] %></td>
+								<td><%= "%0.2f" % values[:n] %></td>
+								<td><%= "%0.2f" % values[:mean] %></td>
+								<td><%= "%0.2f" % values[:sd] %></td>
+								<td><%= "%0.2f" % values[:min] %></td>
+								<td><%= "%0.2f" % values[:max] %></td>
 							</tr>
 						<% end %>
 						  </tbody>
 						</table>
-					</td>
-				  </tr>
-				<% else %>
-				  <tr class="handler-statistics">
-				  	<th>&nbsp;</th>
-					<td>
-						<tt>(No stats filter attached)</tt>
 					</td>
 				  </tr>
 				<% end %>
@@ -97,14 +75,3 @@
 			</table>
 		</div>
 
-	</div>
-	<!-- content end -->
-
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id: index.html 194 2007-06-06 03:31:39Z mahlon $</p>
-      </div>
-    </div>
-  </body>
-</html>

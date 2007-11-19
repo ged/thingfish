@@ -100,6 +100,31 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	end
 	
 	
+	### Make content for an HTML response.
+	def make_html_content( values, request, response )
+		template_name = uuid = key = nil
+
+		case request.path_info
+		when '', '/'
+			template_name = 'main'
+
+		when UUID_URL
+			uuid = $1
+			template_name = 'uuid'
+
+		when %r{^/(\w+)$}
+			key = $1
+			template_name = 'values'
+
+		else
+			raise "Unable to build HTML content for %s" % [request.path_info]
+		end
+		
+		template = self.get_erb_resource( "metadata/#{template_name}.rhtml" )
+		return template.result( binding() )
+	end
+	
+	
 	### Overridden: check to be sure the metastore used is a 
 	### ThingFish::SimpleMetaStore.
 	def listener=( listener )
@@ -116,50 +141,25 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Return a list of a all metadata keys in the store
 	def handle_root_request( request, response )
-		metadata_keys = @metastore.get_all_property_keys.collect {|k| k.to_s }
-
 		response.status = HTTP::OK
-		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata/main.rhtml' )
-			response.body = content.result( binding() )
-			response.headers[:content_type] = 'text/html'
-		else
-			response.headers[:content_type] = RUBY_MIMETYPE
-			response.body = metadata_keys
-		end
+		response.headers[:content_type] = RUBY_MIMETYPE
+		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
 	end
 
 
 	### Return a list of all metadata tuples for a given resource
 	def handle_uuid_request( request, response, uuid )
-		
-		tuples = @metastore.get_properties( uuid )
-		
 		response.status = HTTP::OK
-		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata/uuid.rhtml' )
-			response.body = content.result( binding() )
-			response.headers[:content_type] = 'text/html'
-		else
-			response.headers[:content_type] = RUBY_MIMETYPE
-			response.body = tuples
-		end		
+		response.headers[:content_type] = RUBY_MIMETYPE
+		response.body = @metastore.get_properties( uuid )
 	end
 
 
 	### Return a list of all values for metadata property	
 	def handle_key_request( request, response, key )	
-		metadata_values = @metastore.get_all_property_values( key )
-
 		response.status = HTTP::OK
-		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'metadata/values.rhtml' )
-			response.body = content.result( binding() )
-			response.headers[:content_type] = 'text/html'
-		else
-			response.headers[:content_type] = RUBY_MIMETYPE
-			response.body = metadata_values
-		end		
+		response.headers[:content_type] = RUBY_MIMETYPE
+		response.body = @metastore.get_all_property_values( key )
 	end
 	
 end # ThingFish::MetadataHandler

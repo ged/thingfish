@@ -475,9 +475,9 @@ describe ThingFish::Daemon do
 		request.should_receive( :params ).at_least( :once ).
 			and_return( params )
 
-		response.should_receive( :write ).with( /500 internal server error/i )
-		response.should_receive( :write ).with( %r{content-type: text/html}i )
-		response.should_receive( :write ).with( /some error/i )
+		response.should_receive( :write ).at_least(:once).with( /500 internal server error/i )
+		response.should_receive( :write ).at_least(:once).with( %r{content-type: text/html}i )
+		response.should_receive( :write ).at_least(:once).with( /some error/i )
 		response.should_receive( :done= ).with( anything() )
 
 		client = mock( "client object", :null_object => true )

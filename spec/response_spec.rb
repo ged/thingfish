@@ -132,6 +132,11 @@ describe ThingFish::Response do
 			@response.get_content_length
 		}.should raise_error( ThingFish::ResponseError, /content length/i )
 	end
+
+
+	it "has a scratchspace for passing data between handlers and filters" do
+		@response.data.should be_an_instance_of( ThingFish::Table )
+	end
 	
 end
 

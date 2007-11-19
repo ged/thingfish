@@ -105,13 +105,38 @@ module ThingFish # :nodoc:
 	### Add logging to a ThingFish class
 	module Loggable
 
+		### A logging proxy class that wraps calls to the logger into calls that include
+		### the name of the calling class.
+		class ClassNameProxy
+
+			LEVEL = {
+				:debug => Logger::DEBUG,
+				:info  => Logger::INFO,
+				:warn  => Logger::WARN,
+				:error => Logger::ERROR,
+				:fatal => Logger::FATAL,
+			}
+
+			### Create a new proxy for the given +klass+.
+			def initialize( klass )
+				@classname = klass.name
+			end
+			
+			### Delegate calls the global logger with the class name as the 'progname' 
+			### argument.
+			def method_missing( sym, msg=nil, &block )
+				return super unless LEVEL.key?( sym )
+				ThingFish.logger.add( LEVEL[sym], msg, @classname, &block )
+			end
+		end # ClassNameProxy
+
 		#########
 		protected
 		#########
 
-		### Return the global logger.
+		### Return the proxied logger.
 		def log
-			ThingFish.logger
+			@log_proxy ||= ClassNameProxy.new( self.class )
 		end
 
 	end # module Loggable
@@ -285,7 +310,7 @@ module ThingFish # :nodoc:
 		### Load the specified +resource+ as an ERB template and return it.
 		def get_erb_resource( resource )
 			source = self.get_resource( resource )
-			self.log.debug "Making new ERB template from '%p' (%d bytes)" % 
+			self.log.debug "Making new ERB template from %p (%d bytes)" % 
 				[resource, source.length]
 			return ERB.new( source )
 		end

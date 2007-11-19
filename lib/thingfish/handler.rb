@@ -27,9 +27,18 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'pathname'
-require 'pluginfactory'
-require 'mongrel/handlers'
+begin
+	require 'pathname'
+	require 'pluginfactory'
+	require 'mongrel/handlers'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
 require 'thingfish'
 require 'thingfish/mixins'
 require 'thingfish/constants'
@@ -139,14 +148,6 @@ class ThingFish::Handler
 	end
 
 	
-	### Convert the given +body+ object to HTML for a text/html response. By default,
-	### this just hands back a pretty-printed HTML version of the body object --
-	### override this to do something fancier/more useful.
-	def make_html_content( body, request, response )
-		return body.html_inspect
-	end
-
-
 	#########
 	protected
 	#########
@@ -155,7 +156,7 @@ class ThingFish::Handler
 	### This hopefully will go away at a future date when/if mongrel supports a 
 	### hook for process_client()
 	def log_request( request )
-		self.log.info( self.class.name ) {
+		self.log.info {
 			"%s %s %s" % [ 
 				request.remote_addr,
 				request.http_method,

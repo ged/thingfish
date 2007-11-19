@@ -24,6 +24,9 @@ Planned Features
  * Duplicate checking via checksum comparison
    * What if the user is uploading the same file but with additional metadata?
 
+ * Move the default #make_html_content method into the HTML filter, then reverse over
+   the handlers that have run. If one of them implements #make_html_content itself,
+   delegate to it, otherwise just do the inspect in the filter itself.
 
 Do me straight away
 -------------------
@@ -38,14 +41,14 @@ Do me straight away
 
 - Update docs!  Fill in placeholders now that APIs are solid.
 
-- Handle the HTTP::NOT_ACCEPTABLE case; currently this 404s if the body is set, but the status
-  is still the default.
-
 - PUT/POST /metadata to upload metadata key/values pairs en masse.
 
 - Spoolfile upload cleanup?
 
-- HTML header/footer wrapping, with optional HEAD injection
+- HTML header/footer wrapping, with optional <head /> injection
+
+- Change the HEAD request path in ThingFish::Daemon to just use the GET path and then discard 
+  the body
 
 
 Metastore search interface notes:
@@ -68,4 +71,4 @@ Stuff to document
 
 ThingFish::Config
  * Handler config: uri as single value vs. array of URIs vs. hash with uris key
-
+ 

@@ -99,39 +99,10 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	
 	# Examples
 
-	it "returns a page describing all metadata keys for a text/html GET to /metadata" do
-		template = stub( "ERB template", :result => :rendered_output )
-
+	it "returns a data-structure describing all metadata keys for GET /{handler}" do
+		@request.should_receive( :path_info ).and_return( '/' )
 		@metastore.should_receive( :get_all_property_keys ).
 			and_return( TESTING_KEYS )
-
-		@request.should_receive( :path_info ).
-			and_return( '/' )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( true )
-
-		@handler.should_receive( :get_erb_resource ).and_return( template )
-		template.should_receive( :result ).and_return( :rendered_output )
-	
-		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		@response.should_receive( :body= ).with( :rendered_output )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "returns a data-structure describing all metadata keys for a non-html GET to /metadata" do
-		@metastore.should_receive( :get_all_property_keys ).
-			and_return( TESTING_KEYS )
-
-		@request.should_receive( :path_info ).
-			and_return( '/' )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( false )
-
-		@handler.should_not_receive( :get_erb_resource )
 
 		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( STRINGIFIED_TESTING_KEYS )
@@ -140,41 +111,12 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 
 
-	it "returns a page describing all values for a metadata key (text/html GET)" do
-		template = stub( "ERB template", :result => :rendered_output )
-
-		@request.should_receive( :path_info ).
-			and_return( '/invaders' )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( true )
-
+	it "returns a data-structure describing all values for a GET /{handler}/{key}" do
+		@request.should_receive( :path_info ).and_return( '/invaders' )
 		@metastore.should_receive( :get_all_property_values ).
 			with( 'invaders' ).
 			and_return( TESTING_VALUES )
 
-		@handler.should_receive( :get_erb_resource ).and_return( template )
-		template.should_receive( :result ).and_return( :rendered_output )
-	
-		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		@response.should_receive( :body= ).with( :rendered_output )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "returns a page describing all values for a metadata key (non-html GET)" do
-		@request.should_receive( :path_info ).
-			and_return( '/invaders' )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( false )
-
-		@metastore.should_receive( :get_all_property_values ).
-			with( 'invaders' ).
-			and_return( TESTING_VALUES )
-
-		@handler.should_not_receive( :get_erb_resource )
 		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TESTING_VALUES )
 		
@@ -182,45 +124,71 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 	
 	
-	it "returns a page describing all metadata for a given uuid (text/html GET)" do
-		template = stub( "ERB template", :result => :rendered_output )
-
-		@request.should_receive( :path_info ).
-			and_return( '/' + TEST_UUID )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( true )
-
+	it "returns a data-structure describing all metadata for a given uuid for GET /{handler}/{uuid}" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID )
 		@metastore.should_receive( :get_properties ).
 			with( TEST_UUID ).
 			and_return( TEST_RUBY_OBJECT )
 
-		@handler.should_receive( :get_erb_resource ).and_return( template )
-		template.should_receive( :result ).and_return( :rendered_output )
-	
-		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		@response.should_receive( :body= ).with( :rendered_output )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "returns a page describing all metadata for a given uuid (non-html GET)" do
-		@request.should_receive( :path_info ).
-			and_return( '/' + TEST_UUID )
-		@request.should_receive( :accepts? ).
-			with( 'text/html' ).
-			and_return( false )
-
-		@metastore.should_receive( :get_properties ).
-			with( TEST_UUID ).
-			and_return( TEST_RUBY_OBJECT )
-
-		@handler.should_not_receive( :get_erb_resource )
 		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TEST_RUBY_OBJECT )
 		
 		@handler.handle_get_request( @request, @response )
 	end	
+
+
+	# HTML filter interface
+	
+	it "renders HTML output for a GET /{handler}" do
+		template = stub( "ERB template", :result => :rendered_output )
+		body = stub( "Body data structure" )
+
+		@request.should_receive( :path_info ).and_return( '/' )
+		@handler.should_receive( :get_erb_resource ).and_return( template )
+		template.should_receive( :result ).and_return( :rendered_output )
+	
+		@handler.make_html_content( body, @request, @response ).should == :rendered_output
+	end
+
+	
+	it "renders HTML output for a GET /{handler}/{key}" do
+		template = stub( "ERB template", :result => :rendered_output )
+		body = stub( "Body data structure" )
+
+		@request.should_receive( :path_info ).and_return( '/invaders' )
+		@handler.should_receive( :get_erb_resource ).and_return( template )
+		template.should_receive( :result ).and_return( :rendered_output )
+	
+		@handler.make_html_content( body, @request, @response ).should == :rendered_output
+	end
+
+	
+	it "renders HTML output for a GET /{handler}/{uuid}" do
+		template = stub( "ERB template", :result => :rendered_output )
+		body = stub( "Body data structure" )
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID )
+		@handler.should_receive( :get_erb_resource ).and_return( template )
+		template.should_receive( :result ).and_return( :rendered_output )
+	
+		@handler.make_html_content( body, @request, @response ).should == :rendered_output
+	end
+
+
+	it "raises an error when asked to render HTML for any other path_info" do
+		template = stub( "ERB template", :result => :rendered_output )
+		body = stub( "Body data structure" )
+
+		@request.should_receive( :path_info ).
+			at_least( :once ).
+			and_return( '/zim/ger/tak' )
+	
+		lambda {
+			@handler.make_html_content( body, @request, @response )
+		}.should raise_error( RuntimeError, /unable to build html/i )
+	end
+
+
+	
 end
 

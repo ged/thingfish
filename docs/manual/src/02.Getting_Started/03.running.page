@@ -137,14 +137,13 @@ The meaning of the config values are as follows:
 				</dl>
 			</dd>
 			
-			<dt>metastore</dt>
-			<dd class="description">Configuration of the plugin which provides the
-				metastore implementation.</dd>
+			<dt>filters</dt>
+			<dd class="description">Configures which (optional) filters to load.</dd>
 			<dd class="subsection">
 				<dl>
 					<dt>name</dt>
-	                <dd class="description">The name of the plugin which provides the 
-						metastore implementation.</dd>
+					<dd class="description">The name of the plugin to load, e.g., 
+						the gemname.</dd>
 					<dd class="default">Defaults to @memory@</dd>
 
 					<dt class="placeholder">(Plugin-specific values)</dt>
@@ -152,7 +151,7 @@ The meaning of the config values are as follows:
 						plugin about what valid config values are.</dd>
 				</dl>
 			</dd>
-
+			
 			<dt>handlers</dt>
 			<dd class="description">Configuration of any handler plugins you wish to
 				be loaded to handle various part of the urispace of the server. This 
@@ -166,6 +165,23 @@ The meaning of the config values are as follows:
 			</dd>
 			<dd class="default">The default is to only handle requests via the default
 				handler.</dd>
+
+				<dt>metastore</dt>
+				<dd class="description">Configuration of the plugin which provides the
+					metastore implementation.</dd>
+				<dd class="subsection">
+					<dl>
+						<dt>name</dt>
+		                <dd class="description">The name of the plugin which provides the 
+							metastore implementation.</dd>
+						<dd class="default">Defaults to @memory@</dd>
+
+						<dt class="placeholder">(Plugin-specific values)</dt>
+						<dd class="description">See the documentation for your chosen 
+							plugin about what valid config values are.</dd>
+					</dl>
+				</dd>
+
 		</dl>		
 	</dd>
 </dl>

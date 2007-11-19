@@ -50,32 +50,53 @@ class ThingFish::InspectHandler < ThingFish::Handler
 
 	### Handler API: handle a GET request with an inspection page.
 	def handle_get_request( request, response )
-		if request.accepts?( "text/html" )
-			requested_object = request.path_info
-			inspected_object = nil
-		
-			# Set the `inspected_object`, which is referenced via the Binding by 
-			# the template
-			case requested_object
-			when /daemon/i
-				inspected_object = self.listener.html_inspect
-
-			when /request/i
-				inspected_object = request.html_inspect
+		requested_object = request.path_info
+		inspected_object = nil
+	
+		# Set the body of the response according to the path of the URI
+		case requested_object
+		when '', '/'
+			response.data[:title] = "ThingFish Introspection"
+			inspected_object = {
+				'daemon'   => 'ThingFish::Daemon',
+				'request'  => 'ThingFish::Request',
+				'response' => 'ThingFish::Response',
+				'config'   => 'ThingFish::Config',
+			}
 			
-			when /response/i
-				inspected_object = response.html_inspect
+		when /config/i
+			response.data[:title] = "The Server's Config (ThingFish::Config)"
+			inspected_object = self.listener.config
+			
+		when /daemon/i
+			response.data[:title] = "The Server Object (ThingFish::Daemon)"
+			inspected_object = self.listener
 
-			end
+		when /request/i
+			response.data[:title] = "The Current Request Object (ThingFish::Request)"
+			inspected_object = request
+		
+		when /response/i
+			response.data[:title] = "The Current Response Object (ThingFish::Response)"
+			inspected_object = response
 
-			content = self.get_erb_resource( 'inspect.rhtml' )
-			response.headers[ :content_type ] = 'text/html'
-			response.body = content.result( binding() )
-			response.status = HTTP::OK
 		else
-			raise ThingFish::RequestNotAcceptableError,
-				"don't know how to satisfy a request for %p" % [ request.headers[:accept] ]
+			self.log.error "Unsupported inspection request for: %p" % [requested_object]
+			return
 		end
+
+		response.status = HTTP::OK
+		response.data[:tagline] = 'Dissect me!'
+		response.body = inspected_object
+		response.headers[:content_type] = RUBY_MIMETYPE
+	end
+
+
+	### Make an HTML fragment for the body text/html response (HTML filter API).
+	def make_html_content( body, request, response )
+		content = self.get_erb_resource( 'inspect.rhtml' )
+		response.headers[ :content_type ] = 'text/html'
+		return content.result( binding() )
 	end
 	
 	

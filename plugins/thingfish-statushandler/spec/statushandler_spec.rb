@@ -52,10 +52,12 @@ describe "A status handler with no stats filters" do
 	before(:each) do
 		@request          = mock( "request", :null_object => true )
 		@response         = mock( "response", :null_object => true )
-		@response_headers = mock( "response headers", :null_object => true )
 		@listener         = mock( "listener", :null_object => true )
 
-		@request.stub!( :headers ).and_return( @headers )
+		@response_headers = mock( "response headers", :null_object => true )
+		@response.stub!( :headers ).and_return( @response_headers )
+		@request_headers = mock( "request headers", :null_object => true )
+		@request.stub!( :headers ).and_return( @request_headers )
 
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'status', 'resource_dir' => resdir )
@@ -75,37 +77,7 @@ describe "A status handler with no stats filters" do
 	end
 
 
-	it "doesn't return a body for a HEAD request" do
-		@request.should_receive( :path_info ).and_return( '' )
-		
-		@response.should_not_receive( :body= )
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@handler.handle_head_request( @request, @response )
-	end
-
-
-	it "returns a status page for a GET request" do
-		classifier = Mongrel::URIClassifier.new
-		classifier.register( '/status', @handler )
-		@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
-		@handler.listener = @listener
-	
-		@request.should_receive( :path_info ).and_return( '' )
-		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( true )
-		
-		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :headers ).at_least( :once ).
-			and_return( @response_headers )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		@response.should_receive( :body= ).with( /ThingFish Status/i )
-
-		@handler.handle_get_request( @request, @response )
-	end
-
-
-	it "returns a ruby data structure for a non-HTML GET request" do
-		
+	it "responds with a data structure describing the statistics gathered so far" do
 		filter = mock( "a filter" )
 		stat   = mock( "a Mongrel::Stats object", :null_object => true )
 
@@ -116,20 +88,25 @@ describe "A status handler with no stats filters" do
 		@handler.listener = @listener
 		@handler.filters[ '/status' ] = filter
 	
-		@request.should_receive( :path_info ).and_return( '' )
-		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( false )
-		
 		filter.should_receive( :each_stat ).and_yield( stat )
 		stat.should_receive( :name ).at_least( :once ).and_return('porkenheimer')
 				
 		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :headers ).at_least( :once ).
-			and_return( @response_headers )
 		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
 
 		@handler.handle_get_request( @request, @response )
 	end
+
+
+	it "can build an HTML fragment for the HTML filter" do
+		erb_template = ERB.new( "A template that refers to <%= body %>" )
+		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		
+		html = @handler.make_html_content( "the body", @request, @response )
+		html.should == "A template that refers to the body"
+	end
+
 
 	it "can build an HTML fragment for the index page" do
 		erb_template = ERB.new( "Some template that refers to <%= uri %>" )

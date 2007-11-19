@@ -4,7 +4,6 @@
 
 require 'yaml'
 require 'English'
-require 'thingfish'
 
 # Strftime format for tags/releases
 TAG_TIMESTAMP_FORMAT = '%Y%m%d-%H%M%S'
@@ -141,11 +140,11 @@ namespace :svn do
 	end
 
 
-	desc "Copy the most recent tag to releases/#{ThingFish::VERSION}"
+	desc "Copy the most recent tag to releases/#{PKG_VERSION}"
 	task :release do
 		last_tag    = get_latest_svn_timestamp_tag()
 		svninfo     = get_svn_info()
-		release     = ThingFish::VERSION
+		release     = PKG_VERSION
 		svnrel      = svninfo['Repository Root'] + '/thingfish/releases'
 		svnrelease  = svnrel + '/' + release
 

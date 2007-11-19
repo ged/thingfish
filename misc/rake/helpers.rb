@@ -203,6 +203,23 @@ def ask_for_confirmation( description )
 end
 
 
+### Search line-by-line in the specified +file+ for the given +regexp+, returning the
+### first match, or nil if no match was found. If the +regexp+ has any capture groups,
+### those will be returned in an Array, else the whole matching line is returned.
+def find_pattern_in_file( regexp, file )
+	rval = nil
+	
+	File.open( file, 'r' ).each do |line|
+		if (( match = regexp.match(line) ))
+			rval = match.captures.empty? ? match[0] : match.captures
+			break
+		end
+	end
+
+	return rval
+end
+
+
 ### Get a list of the file or files to run rspec on.
 def rspec_files
 	if ENV['class']

@@ -50,8 +50,9 @@ describe ThingFish::HtmlFilter do
 		@response.stub!( :headers ).and_return( @response_headers )
 
 		@first_handler = mock( "first handler" )
+		@middle_handler = mock( "middle handler" )
 		@last_handler = mock( "last handler" )
-		@response.stub!( :handlers ).and_return([ @first_handler, @last_handler ])
+		@response.stub!( :handlers ).and_return([ @first_handler, @middle_handler, @last_handler ])
 	end
 
 	after( :all ) do
@@ -62,7 +63,7 @@ describe ThingFish::HtmlFilter do
 	it_should_behave_like "A Filter"
 
 	
-	it "converts Ruby-object responses to HTML if the client accepts it" do
+	it "uses handler HTML API to convert Ruby-object responses to HTML if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/html' ).
 			and_return( true )
@@ -72,15 +73,79 @@ describe ThingFish::HtmlFilter do
 			and_return( RUBY_MIMETYPE )
 
 		body = mock( "response body" )
-		@response.should_receive( :body ).and_return( body )
+		@response.should_receive( :body ).twice.and_return( body )
+
+		@first_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( true )
+		@middle_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( false )
+		@last_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( true )
+
+		@first_handler.should_receive( :make_html_content ).
+			with( body, @request, @response ).
+			and_return( 'first_html' )
+		@middle_handler.should_not_receive( :make_html_content )
 		@last_handler.should_receive( :make_html_content ).
 			with( body, @request, @response ).
-			and_return( :html )
+			and_return( 'last_html' )
 
-		@response.should_receive( :body= ).with( :html )
+		erbtemplate = mock( "ERB wrapper template", :null_object => true )
+		@filter.stub!( :get_erb_resource ).and_return( erbtemplate )
+		erbtemplate.should_receive( :result ).
+			with( an_instance_of(Binding) ).
+			and_return( :wrapped_html_content )
+
+		@response.should_receive( :body= ).with( :wrapped_html_content )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
 		
+		@filter.handle_response( @response, @request )
+	end
+
+
+	it "uses the HtmlInspectableObject interface to convert responses to HTML if none of " +
+	   "the handlers implements the HTML filter API" do
+		@request.should_receive( :explicitly_accepts? ).
+			with( 'text/html' ).
+			and_return( true )
+		@response_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( RUBY_MIMETYPE )
+
+		body = mock( "response body" )
+		@response.should_receive( :body ).at_least( :once ).and_return( body )
+
+		@first_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( false )
+		@middle_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( false )
+		@last_handler.should_receive( :respond_to? ).
+			with( :make_html_content ).
+			and_return( false )
+
+		@first_handler.should_not_receive( :make_html_content )
+		@middle_handler.should_not_receive( :make_html_content )
+		@last_handler.should_not_receive( :make_html_content )
+
+		body.should_receive( :html_inspect ).and_return( "some html" )
+		
+		erbtemplate = mock( "ERB wrapper template", :null_object => true )
+		@filter.stub!( :get_erb_resource ).and_return( erbtemplate )
+		erbtemplate.should_receive( :result ).
+			with( an_instance_of(Binding) ).
+			and_return( :wrapped_html_content )
+
+		@response.should_receive( :body= ).with( :wrapped_html_content )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+
 		@filter.handle_response( @response, @request )
 	end
 	

@@ -56,6 +56,7 @@ class ThingFish::Response
 		@mongrel_response = mongrel_response
 
 		@headers  = ThingFish::Table.new
+		@data     = ThingFish::Table.new
 		@body     = nil
 		@status   = nil
 		@handlers = []
@@ -86,6 +87,9 @@ class ThingFish::Response
 
 	# The ThingFish::Handlers which have participated in satisfying this request so far
 	attr_reader :handlers
+
+	# A scratch-space area for passing data between handlers and filters
+	attr_reader :data
 
 	# The ThingFish::Filters which will be given the opportunity to modify the
 	# response

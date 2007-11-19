@@ -71,21 +71,15 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	
 	### Handle a GET request
 	def handle_get_request( request, response )
-
-		uri  = request.uri.path
 		args = request.query_args
 
 		uuids = @metastore.find_by_exact_properties( args )
 
+		response.data[:tagline] = 'Interrogate me.'
+		response.data[:title] = 'search'
 		response.status = HTTP::OK
-		if request.accepts?( 'text/html' )
-			content = self.get_erb_resource( 'search/main.rhtml' )
-			response.body = content.result( binding() )
-			response.headers[:content_type] = 'text/html'
-		else
-			response.headers[:content_type] = RUBY_MIMETYPE
-			response.body = uuids
-		end
+		response.headers[:content_type] = RUBY_MIMETYPE
+		response.body = uuids
 	end
 
 
@@ -93,6 +87,18 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "search/index.rhtml" )
 		return tmpl.result( binding() )
+	end
+	
+	
+	### Generate an HTML fragment for the uuids in the given +body+.
+	def make_html_content( uuids, request, response )
+		args = request.query_args
+		uri  = request.uri.path
+
+		template = self.get_erb_resource( 'search/main.rhtml' )
+		content = template.result( binding() )
+		
+		return content
 	end
 	
 	

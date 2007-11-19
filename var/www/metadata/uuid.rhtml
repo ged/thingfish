@@ -1,56 +1,23 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>ThingFish :: metadata</title>
+<% search_uri = @config.find_handler_uri('simplesearch') %>
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
-
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-  </head>
-
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong>Feed me.</strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
-		<p class="textright">&nbsp;</p>
-
-		<% search_uri = @config.find_handler_uri('simplesearch') %>
-
-		<h2>Metadata for '<%= uuid %>'</h2>
-		<table>
-			<tr>
-				<th>Attribute</th>
-				<th>Value</th>
-			</tr>
-		<% tuples.sort_by { |k,v| k.to_s }.each do |key, value| %>
-			<tr>
-				<td><%= key %></td>
-				<% if search_uri %>
-				<td><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></td>
-				<% else %>
-				<td><%= value %></td>
-				<% end %>
-			</tr>
+<h2>Metadata for '<%= uuid %>'</h2>
+<table>
+	<tr>
+		<th>Attribute</th>
+		<th>Value</th>
+	</tr>
+<% values.sort_by { |k,v| k.to_s }.each do |key, value| %>
+	<tr>
+		<td><%= key %></td>
+		<% if search_uri %>
+		<td><a href="/search?<%= key %>=<%= u value %>"><%= value %></a></td>
+		<% else %>
+		<td><%= value %></td>
 		<% end %>
-		</table>		
-						<a href="/<%= uuid %>?attach" title="download resource">
-							<img src="/images/save.png" border="0" />
-						</a>
-	</div>
-	<!-- content end -->
+	</tr>
+<% end %>
+</table>		
 
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id$</p>
-      </div>
-    </div>
-  </body>
-</html>
+<a href="/<%= uuid %>?attach" title="download resource">
+	<img src="/images/save.png" border="0" />
+</a>

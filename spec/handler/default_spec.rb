@@ -75,24 +75,12 @@ describe ThingFish::DefaultHandler do
 
 	### Index requests
 
-	it "handles GET / with HTML when HTML is accepted" do
+	it "handles GET / with a hash of server metadata" do
 		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( true )
 		
-		@response.should_receive( :body= ).with( /<html/i )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-
-	it "handles GET / with an array of handler metadata when HTML is not accepted" do
-		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		@request.should_receive( :accepts? ).with( 'text/html' ).and_return( false )
-		
-		@response.should_receive( :body= ).with( anything() )
-		@response_headers.should_not_receive( :[]= ).with( :content_type, anything() )
+		@response.should_receive( :body= ).with( an_instance_of(Hash) )
+		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		
 		@handler.handle_get_request( @request, @response )
 	end
@@ -468,5 +456,21 @@ describe ThingFish::DefaultHandler do
 		@handler.handle_delete_request( @request, @response )
 	end
 
+
+	### HTML filter interface
+	
+	it "builds an index of all the handlers when asked for HTML for /" do
+		template = mock( "template", :null_object => true )
+		body = stub( "body data-structure" )
+		
+		@handler.stub!( :get_erb_resource ).and_return( template )
+		template.should_receive( :result ).
+			with( an_instance_of(Binding) ).
+			and_return( :rendered_output )
+			
+		@handler.make_html_content( body, @request, @response ).
+			should == :rendered_output
+	end
+	
 end
 

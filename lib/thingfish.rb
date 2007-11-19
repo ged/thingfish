@@ -2,10 +2,6 @@
 #
 # Network-accessable searchable datastore
 #
-# == Synopsis
-#
-#
-#
 # == Version
 #
 #  $Id$
@@ -23,11 +19,17 @@
 #
 
 begin
-    require 'rubygems'
+	require 'logger'
+	require 'uuidtools'
 rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
 end
 
-require 'logger'
+
 
 ### Toplevel namespace module
 module ThingFish
@@ -44,6 +46,7 @@ module ThingFish
 	# Need to require these here so some constants are already defined
 	require 'thingfish/constants'
 	require 'thingfish/mixins'
+	require 'thingfish/utils'
 
 
 	# Add some method to core classes
@@ -52,6 +55,7 @@ module ThingFish
 	# Global logging object
 	@default_logger = Logger.new( $stderr )
 	@default_logger.level = Logger::WARN
+	@default_logger.formatter = ThingFish::LogFormatter.new( @default_logger )
 	@logger = @default_logger
 	class << self
 		attr_reader :default_logger

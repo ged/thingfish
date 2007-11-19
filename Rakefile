@@ -21,8 +21,6 @@ BEGIN {
 }
 
 
-require 'thingfish'
-
 require 'rubygems'
 require 'rake'
 require 'rake/rdoctask'
@@ -30,15 +28,11 @@ require 'rake/packagetask'
 require 'rake/gempackagetask'
 require 'pathname'
 
+require 'misc/rake/helpers'
+
 $dryrun = false
 
-### Config constants
-PKG_NAME      = 'thingfish'
-PKG_VERSION   = ThingFish::VERSION
-PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
-
-RELEASE_NAME  = "REL #{PKG_VERSION}"
-
+# Pathname constants
 BASEDIR       = Pathname.new( __FILE__ ).dirname.expand_path
 LIBDIR        = BASEDIR + 'lib'
 DOCSDIR       = BASEDIR + 'docs'
@@ -71,9 +65,17 @@ PLUGIN_LIBS      = PLUGINS.collect {|dir| dir + 'lib' }
 PLUGIN_RAKEFILES = PLUGINS.collect {|dir| dir + 'Rakefile' }
 PLUGIN_SPECFILES = PLUGINS.collect {|dir| Pathname.glob(dir + 'spec/*_spec.rb') }.flatten
 
+### Package constants
+PKG_NAME      = 'thingfish'
+PKG_VERSION   = find_pattern_in_file( /VERSION = '(\d+\.\d+\.\d+)'/, LIBDIR + 'thingfish.rb' ).first
+PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
+
+RELEASE_NAME  = "REL #{PKG_VERSION}"
+
 # Load task plugins
 RAKE_TASKDIR = MISCDIR + 'rake'
 Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
+	next if tasklib =~ %r{/helpers.rb$}
 	require tasklib
 end
 
@@ -102,6 +104,11 @@ task :clean => [ :clobber_rdoc, :clobber_package, :clobber_coverage, :clobber_ma
 end
 
 
+### Task: docs -- Convenience task for rebuilding dynamic docs, including coverage, api 
+### docs, and manual
+task :docs => [ :manual, :coverage, :rdoc ]
+
+
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_dir = 'docs/api'
@@ -118,8 +125,6 @@ Rake::RDocTask.new do |rdoc|
 	
 	rdoc.rdoc_files.include 'README'
 	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.relative_path_from(BASEDIR).to_s }
-	
-	trace "Option list is: %p" % [rdoc.option_list]
 end
 task :rdoc do
 	outputdir = DOCSDIR + 'api'
@@ -226,7 +231,7 @@ end
 #####################################################################
 
 ### Task: install gems for development tasks
-DEPENDENCIES = %w[webgen rspec rcov lockfile rcodetools coderay redcloth]
+DEPENDENCIES = %w[mongrel rcov uuidtools webgen rspec rcov lockfile rcodetools coderay redcloth]
 task :install_dependencies do
 	# Check for root
 	if Process.euid != 0
@@ -328,17 +333,35 @@ begin
 		desc "Run rspec every time there's a change to one of the files"
         task :autotest do
             require 'autotest/rspec'
+
+			### Mmmm... smells like monkeys
+			class Autotest::Rspec
+
+				### Search the path for 'spec' in addition to the simple included methods
+				### for finding it.
+				def spec_commands
+					path = ENV['PATH'].split( File::PATH_SEPARATOR )
+					return path.collect {|dir| File.join(dir, 'spec') } +
+					[
+						File.join('bin', 'spec'),
+						File.join(Config::CONFIG['bindir'], 'spec')
+					]
+				end
+
+			end
+
             autotester = Autotest::Rspec.new
+
 			autotester.exceptions = %r{\.svn|\.skel}
             autotester.test_mappings = {
                 %r{^spec/.*\.rb$} => proc {|filename, _|
                     filename
                 },
-                %r{^lib/thingfish/[^/]*\.rb$} => proc {|_, m|
+                %r{^lib/thingfish/([^/]*)\.rb$} => proc {|_, m|
                     ["spec/#{m[1]}_spec.rb"]
                 },
                 %r{^lib/thingfish/(.*)/(.*)\.rb$} => proc {|_, m|
-                    ["spec/#{m[2] + m[1]}_spec.rb"]
+                    ["spec/#{m[2] + m[1]}_spec.rb", "spec/#{m[1]}/#{m[2]}_spec.rb"]
                 },
                 %r{^plugins/(.*?)/.*\.rb$} => proc {|_, m|
                     autotester.files_matching %r{plugins/#{m[1]}/spec/.*_spec.rb}
@@ -450,7 +473,42 @@ rescue LoadError => err
 end
 
 
-### Convenience task for rebuilding dynamic docs, including coverage, api docs, and manual
-task :docs => [ :manual, :coverage, :rdoc ]
+
+### Coding style checks and fixes
+namespace :style do
+	
+	BLANK_LINE = /^\s*$/
+	GOOD_INDENT = /^(\t\s*)?\S/
+	
+	desc "Check source files for inconsistent indent and fix them"
+	task :fix_indent do
+		files = LIB_FILES + SPEC_FILES
+		badfiles = []
+		
+		trace "Checking files for indentation"
+		files.each do |file|
+			trace "  #{file}"
+			file.each_line do |line|
+				
+				# Skip blank lines
+				next if line =~ BLANK_LINE
+				
+				# If there's a line with incorrect indent, note it and skip to the 
+				# next file
+				if line !~ GOOD_INDENT
+					trace "    Bad line: %p" % [ line ]
+					badfiles << file
+					break
+				end
+			end
+		end
+
+		unless badfiles.empty?
+			log "Found incorrect indent in #{badfiles.length} files:\n  " +
+				badfiles.join("\n  ") + "\n"
+		end
+	end
+
+end
 
 

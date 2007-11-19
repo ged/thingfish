@@ -111,13 +111,6 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		@handler.make_index_content( '/foo' ).should be_nil
 	end
 
-
-	it "generates default HTML content" do
-		object = mock("a ruby object")
-		object.should_receive( :html_inspect ).and_return( :html )
-		
-		@handler.make_html_content( object, @request, @response ).should == :html
-	end
 end
 
 

@@ -15,7 +15,7 @@ defaulthandler:
     resource_dir: var/www
 
 logging:
-    level: debug
+    level: info
     logfile: stdout
 
 plugins:
@@ -45,10 +45,12 @@ plugins:
             uris: /search
             resource_dir: var/www
     filters:
-        - html
+        - html:
+            resource_dir: var/www
         - yaml
         - json
         - mp3
         - exif
-        - xml
-        - image
+        - xml:
+            usetidy: false
+            tidypath: /opt/local/lib/libtidy.dylib

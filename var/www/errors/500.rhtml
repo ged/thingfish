@@ -1,44 +1,11 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-	<title>ThingFish :: Error <%= statuscode %></title>
+<h2><%= HTTP::STATUS_NAME[ statuscode ] %> (<%= statuscode %>)</h2>
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
+<p>An error has occured.</p>
 
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-  </head>
+<p>Please contact the administrator of this ThingFish server with the following information:</p>
 
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong>Oh, crap!</strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
-		<p class="textright">&nbsp;</p>
-		<h2>An error has occured.</h2>
-		<h3>HTTP code <%= statuscode %> (<%= HTTP::STATUS_NAME[ statuscode ] %>)</h3>
-
-		<p>Please contact the administrator of this ThingFish server with the following information:</p>
-
-		<pre>
+<pre>
 Current URI: <%= request.path_info %>
 <%= h errtrace %>
 <%= h debugtrace %>
-		</pre>
-
-	</div>
-	<!-- content end -->
-
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id$</p>
-      </div>
-    </div>
-  </body>
-</html>
+</pre>

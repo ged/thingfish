@@ -33,11 +33,20 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'thingfish'
-require 'mongrel'
-require 'uuidtools'
-require 'etc'
-require 'logger'
+begin
+	require 'thingfish'
+	require 'mongrel'
+	require 'uuidtools'
+	require 'etc'
+	require 'logger'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
 
 require 'thingfish/constants'
 require 'thingfish/config'
@@ -236,7 +245,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### Filter and potentially modify the incoming request.
 	def filter_request( request, response )
 		@filters.each do |filter|
-			self.log.debug "Passing request through %s" % [ filter.class.name ]
+			# self.log.debug "Passing request through %s" % [ filter.class.name ]
 			begin
 				filter.handle_request( request, response )
 			rescue => err
@@ -256,7 +265,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### that were registered with it during the request-filtering stage
 	def filter_response( response, request )
 		response.filters.each do |filter|
-			self.log.debug "Passing response through %s" % [ filter.class.name ]
+			# self.log.debug "Passing response through %s" % [ filter.class.name ]
 			begin
 				filter.handle_response( response, request )
 			rescue => err
@@ -294,9 +303,14 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		if request.accepts?( 'text/html' )
 			template = self.get_error_response_template( statuscode ) or
 				raise "Can't find an error template"
+			content = [ template.result( binding() ) ]
 			
+			response.data[:tagline] = 'Oh, crap!'
+			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
 			response.headers[ :content_type ] = 'text/html'
-			response.body = template.result( binding() )
+
+			wrapper = self.get_erb_resource( 'template.rhtml' )
+			response.body = wrapper.result( binding() )
 		else
 			response.headers[ :content_type ] = 'text/plain'
 			response.body = "%d (%s)" % [ statuscode, HTTP::STATUS_NAME[statuscode] ]
@@ -365,6 +379,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 		# Send the buffered entity body
 		if body.respond_to?( :read )
+			self.log.debug "Writing response using buffered IO"
 			buf     = ''
 			bufsize = @config.bufsize
 
@@ -374,8 +389,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 					buf.slice!( 0, bytes )
 				end
 			end
+
+		# Send unbuffered -- body already in memory.
 		else
-			# Send unbuffered -- body already in memory.
+			self.log.debug "Writing response using unbuffered IO"
 			response.write( body.to_s )
 		end
 		

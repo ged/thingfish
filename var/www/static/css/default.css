@@ -486,12 +486,14 @@ dl.kvlist dd.subsection > dl dd {
 }
 
 .inspected-object .object {
-	background: rgb(188,204,150);
+	background: #ddd;
 	border: 2px solid #999;
 	overflow: hidden;
 	-webkit-border-radius: 5px;
 	-moz-border-radius: 5px;
 	border: 1px solid #333;
+	-webkit-box-shadow: 2px 2px 5px #888;
+	margin: 4px;
 }
 
 .inspected-object .object .object-header {
@@ -510,21 +512,34 @@ dl.kvlist dd.subsection > dl dd {
 	padding: 4px 8px;
 }
 
-.inspected-object .object .object-body .instance-variable > .name {
+.inspected-object .name {
 	font-weight: bold;
 	margin: 0;
 }
-.inspected-object .object .object-body .instance-variable > .value {
-	background: #d8e7b5;
+.inspected-object .name:after {
+	content: " = ";
+}
+.inspected-object .value {
 	margin-bottom: 8px;
 	margin-top: 0;
-	border: 1px solid #666;
-	padding: 2px 4px;
 }
-
+.inspected-object .value .immediate-object {
+	border: 1px solid #666;
+	background: #d8e7b5;
+	padding: 2px 4px;
+	font-family: Monaco, "Andale Mono", mono;
+}
+.inspected-object .hash-members {
+	border: 1px dotted #333;
+	background: #ddd;
+}
 .inspected-object .hash-pair > .key {
 	font-weight: bold;
+}	
+.inspected-object .hash-pair > .key:after {
+	content: " \21D2 ";
 }
+
 .inspected-object .hash-pair > .value {
 	margin-left: 12px;
 }
@@ -532,6 +547,13 @@ dl.kvlist dd.subsection > dl dd {
 .inspected-object .immediate-object {
 	background: #d6dec4;
 	font: Monaco, 'Andale Mono', monospace;
+}
+
+.inspected-object ol {
+	margin-left: 0 !important;
+}
+.inspected-object ol li {
+	margin-left: 0 !important;
 }
 
 /* @end */

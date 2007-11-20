@@ -275,7 +275,7 @@ class ThingFish::Request
 			self.log.debug "Yielding body = %p, merged metadata = %p" %
 				[ body, merged ]
 			yield( body, merged )
- 		end
+		end
 	end
 
 
@@ -318,7 +318,7 @@ class ThingFish::Request
 					return false
 				end
 
- 				self.log.debug "Cache hit (%s): wildcard If-None-Match" %
+				self.log.debug "Cache hit (%s): wildcard If-None-Match" %
 					[ path_info ]
 				return true
 			end
@@ -404,8 +404,8 @@ class ThingFish::Request
 		header = [header] unless header.is_a?( Array )
 		
 		# Accept         = "Accept" ":"
-        #                 #( media-range [ accept-params ] )
-        # 
+		#                 #( media-range [ accept-params ] )
+		# 
 		# media-range    = ( "*/*"
 		#                  | ( type "/" "*" )
 		#                  | ( type "/" subtype )

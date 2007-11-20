@@ -128,8 +128,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	def_delegators :@metadata, :rollback, :commit, :transaction_active?
 
 
-    ### These transaction fallthrough methods are discouraged for regular use, 
-    ### in favor of the #transaction metastore API.
+	### These transaction fallthrough methods are discouraged for regular use, 
+	### in favor of the #transaction metastore API.
 	def begin_transaction #:nodoc:
 		@metadata.transaction
 	end

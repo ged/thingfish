@@ -41,7 +41,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		ThingFish::Constants::Patterns,
 		ThingFish::Loggable,
 		ThingFish::StaticResourcesHandler,
-        ThingFish::ResourceLoader
+		ThingFish::ResourceLoader
 
 	static_resources_dir "static"
 

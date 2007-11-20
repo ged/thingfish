@@ -55,7 +55,6 @@ describe ThingFish::YAMLFilter do
 		ThingFish.reset_logger
 	end
 
- :explicitly_accepts?
 
 	it_should_behave_like "A Filter"
 	

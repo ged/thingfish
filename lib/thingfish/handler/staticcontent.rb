@@ -97,7 +97,7 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 
 		# Add cache headers
 		file_stat = file.stat
- 		etag = "%d-%d-%d" % [ file_stat.mtime.to_i, file_stat.size, file_stat.ino ]
+		etag = "%d-%d-%d" % [ file_stat.mtime.to_i, file_stat.size, file_stat.ino ]
 		response.headers[:etag] = %Q{"#{etag}"}
 		response.headers[:expires] = 1.year.from_now.httpdate
 

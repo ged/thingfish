@@ -76,14 +76,6 @@ class ThingFish::FileStore
 	end
 	
 
-	### PluginFactory interface: Return a sprintf string which describes the naming
-	### convention of plugin gems for this class. The results will be used as an
-	### argument to the 'Kernel::gem' function.
-	def self::rubygem_name_pattern
-		'thingfish-%sfs'
-	end
-
-
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################

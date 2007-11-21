@@ -187,8 +187,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			@handler.make_html_content( body, @request, @response )
 		}.should raise_error( RuntimeError, /unable to build html/i )
 	end
-
-
 	
 end
 

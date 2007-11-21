@@ -75,14 +75,6 @@ class ThingFish::Handler
 		['thingfish/handler']
 	end
 
-	
-	### PluginFactory interface: Return a sprintf string which describes the naming
-	### convention of plugin gems for this class. The results will be used as an
-	### argument to the 'Kernel::gem' function.
-	def self::rubygem_name_pattern
-		'thingfish-%shandler'
-	end
-
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -174,15 +166,12 @@ class ThingFish::Handler
 	### introspection.
 	def send_method_not_allowed_response( response, request_method, valid_methods=nil )
 	
+		# Build a list of valid methods based on introspection
 		valid_methods ||= self.methods.
 			select  {|name| name =~ HANDLER_PATTERN }.
 			collect {|name| name[HANDLER_PATTERN, 1].upcase }
 			
-		if valid_methods.respond_to?( :sort )
-			allowed_methods = valid_methods.sort.join(', ')
-		else
-			allowed_methods = valid_methods
-		end
+		allowed_methods = valid_methods.sort.join(', ')
 
 		self.log.debug "Allowed methods are: %p" % [allowed_methods]
 		response.status = HTTP::METHOD_NOT_ALLOWED

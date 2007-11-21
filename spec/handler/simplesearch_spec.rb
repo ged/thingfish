@@ -144,6 +144,27 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 		@handler.handle_get_request( @request, @response )
 	end
 
+	it "can build an HTML fragment for the HTML filter" do
+		erb_template = ERB.new( "A template that refers to <%= uri %>" )
+		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		
+		html = @handler.make_index_content( "/uri" )
+		html.should == "A template that refers to /uri"
+	end
+
+
+	it "can build an HTML fragment for the index page" do
+		erb_template = ERB.new(
+			"Some template that refers to <%= uuids %>, <%= args %>, and <%= uri %>"
+		  )
+
+		@request.should_receive( :query_args ).and_return( "args" )
+		@request.should_receive( :uri ).and_return( stub("fake uri", :path => 'uripath') )
+
+		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		@handler.make_html_content( "uuids", @request, @response ).
+			should == "Some template that refers to uuids, args, and uripath"
+	end
 end
 
 

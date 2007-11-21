@@ -104,7 +104,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		# Fall through to the static handler for GET requests
 		else
-			self.log.debug "No GET handler for %p, falling through to static" % request.uri
+			self.log.debug "No GET handler for %s, falling through to static" % request.path_info
 		end
 		
 	end

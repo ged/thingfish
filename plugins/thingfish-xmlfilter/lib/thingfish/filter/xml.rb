@@ -101,7 +101,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 		@use_tidy = false
 		configure_tidy( options ) if options['usetidy']
 
-		super()
+		super
 	end
 	
 

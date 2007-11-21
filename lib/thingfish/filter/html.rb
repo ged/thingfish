@@ -55,7 +55,6 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
-		@config = nil
 		super
 	end
 	
@@ -71,7 +70,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 	### Convert outgoing ruby object responses into HTML.
 	def handle_response( response, request )
-		
+
 		# Only filter if the client wants what we can convert to, and the response
 		# body is something we know how to convert
 		return unless request.explicitly_accepts?( 'text/html' ) &&

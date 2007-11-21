@@ -26,6 +26,12 @@ end
 
 include ThingFish::TestConstants
 
+# Expose some protected methods for testing
+class ThingFish::Handler
+	public :send_method_not_allowed_response
+end
+
+# Some subclasses just for testing
 class TestHandler < ThingFish::Handler
 	public :log_request
 end
@@ -119,6 +125,12 @@ describe ThingFish::Handler, " that handles GET and HEAD requests" do
 	before(:each) do
 		ThingFish.logger.level = Logger::FATAL
 
+		@request = mock( "request object", :null_object => true )
+		@response = mock( "response object", :null_object => true )
+		@response_headers = mock( "response headers", :null_object => true )
+
+		@response.stub!( :headers ).and_return( @response_headers )
+
 	    @handler = ThingFish::Handler.create( 'getheadtest' )
 		@datadir = Config::CONFIG['datadir']
 	end
@@ -131,43 +143,61 @@ describe ThingFish::Handler, " that handles GET and HEAD requests" do
 	### Specs
 	
 	it "should call its #handle_get_request method on a GET request" do
-		request = mock( "request object", :null_object => true )
-		response = stub( "response object", :headers => {} )
-
-		response.stub!( :handlers ).and_return( [] )
-		request.should_receive( :http_method ).
+		@response.stub!( :handlers ).and_return( [] )
+		@request.should_receive( :http_method ).
 			at_least(:once).
 			and_return( 'GET' )
 
-		@handler.process( request, response ).should == :get_response
+		@handler.process( @request, @response ).should == :get_response
 	end
 
 	
 	it "should respond with a METHOD_NOT_ALLOWED response on a POST request" do
-		request = mock( "request object", :null_object => true )
-		response = mock( "response object", :null_object => true )
-		headertable = mock( "response headers", :null_object => true )
 
-		request.should_receive( :http_method ).
+		@request.should_receive( :http_method ).
 			at_least(:once).
 			and_return( 'POST' )
 		@handler.stub!( :methods ).
 			and_return(['handle_get_request', 'handle_head_request'])
 		
-		response.should_receive( :status= ).
+		@response.should_receive( :status= ).
 			with( HTTP::METHOD_NOT_ALLOWED )
-		response.should_receive( :headers ).
-			at_least(:once).
-			and_return( headertable )
-		
-		headertable.should_receive( :[]= ).
+		@response_headers.should_receive( :[]= ).
 			with( :allow, 'GET, HEAD' )
-		response.should_receive( :body= ).
+		@response.should_receive( :body= ).
 			with( /POST.*not allowed/ )
 
-		@handler.process( request, response )
+		@handler.process( @request, @response )
 	end
 	
+	it "should respond with a METHOD_NOT_ALLOWED response on a POST request" do
+		@request.should_receive( :http_method ).
+			at_least(:once).
+			and_return( 'POST' )
+		@handler.stub!( :methods ).
+			and_return(['handle_get_request', 'handle_head_request'])
+		
+		@response.should_receive( :status= ).
+			with( HTTP::METHOD_NOT_ALLOWED )
+		@response_headers.should_receive( :[]= ).
+			with( :allow, 'GET, HEAD' )
+		@response.should_receive( :body= ).
+			with( /POST.*not allowed/ )
+
+		@handler.process( @request, @response )
+	end
+
+
+	it "should use a provided 'Allowed' header value when building a NOT_ACCEPTABLE response" do
+		@response.should_receive( :status= ).
+			with( HTTP::METHOD_NOT_ALLOWED )
+		@response_headers.should_receive( :[]= ).
+			with( :allow, 'GET, HEAD' )
+		@response.should_receive( :body= ).
+			with( /PUT.*not allowed/ )
+			
+		@handler.send_method_not_allowed_response( @response, 'PUT', %{GET, HEAD} )
+	end
 end
 
 # vim: set nosta noet ts=4 sw=4:

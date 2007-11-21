@@ -60,8 +60,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 	### Set up a new Filter object
 	###
 	def initialize( options={} ) # :notnew:
-		@config = nil
-		super()
+		super
 	end
 
 	

@@ -108,7 +108,6 @@ class ThingFish::ImageFilter < ThingFish::Filter
 
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
-		@config = nil
 		
 		# Transform the installed ImageMagick's list of formats into AcceptParams 
 		# for easy comparison later.
@@ -141,7 +140,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			select {|type, op| op.can_read? }.
 			collect {|type, op| ThingFish::AcceptParam.parse(type) }
 		
-		super()
+		super
 	end
 	
 

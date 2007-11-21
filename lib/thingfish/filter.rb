@@ -69,7 +69,6 @@ class ThingFish::Filter
 
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
-		@config = nil
 		super()
 	end
 	

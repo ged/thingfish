@@ -44,10 +44,10 @@ class ThingFish::XMLFilter
 	public :make_xml
 end
 
+TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
+
 describe ThingFish::XMLFilter, " with Tidy disabled" do
 	
-	TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
-
 	before( :all ) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
@@ -157,8 +157,6 @@ if !defined?( Tidy )
 end
 
 describe ThingFish::XMLFilter, " with Tidy enabled" do
-
-	TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
 
 	before( :all ) do
 		ThingFish.reset_logger

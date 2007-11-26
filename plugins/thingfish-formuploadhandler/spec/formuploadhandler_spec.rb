@@ -76,7 +76,21 @@ describe ThingFish::FormUploadHandler do
 		
 		@handler.make_index_content( "/" ).should == 'some index stuff'
 	end
-	
+
+
+	it "can build an HTML fragment for the index page" do
+		erb_template = ERB.new(
+			"Some template that refers to <%= files %> and <%= uri %>"
+		  )
+
+		response_scratch = mock( "Response scratch space", :null_object => true )
+		@response.stub!( :data ).and_return( response_scratch )
+		@request.should_receive( :uri ).and_return( stub("fake uri", :path => 'uripath') )
+
+		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		@handler.make_html_content( :files, @request, @response ).
+			should == "Some template that refers to files and uripath"
+	end
 end
 
 
@@ -99,20 +113,9 @@ describe ThingFish::FormUploadHandler, " (GET request)" do
 
 
 	it "returns an upload form" do
-		template = stub( "ERB template", :result => :rendered_output )
-		formtemplate = stub( "ERB form template", :result => :rendered_form_output )
-
 		@request.should_receive( :path_info ).and_return( '' )
-
-		@handler.should_receive( :get_erb_resource ).
-			with( 'upload.rhtml' ).
-			and_return( template )
-		@handler.should_receive( :get_erb_resource ).
-			with( 'uploadform.rhtml' ).
-			and_return( formtemplate )
-		@response.should_not_receive( :body= ).with( :rendered_form_output )
-		@response.should_receive( :body= ).with( :rendered_output )
-		@headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :status= ).with( HTTP::OK )
 		
 		@handler.handle_get_request( @request, @response )
 	end
@@ -157,10 +160,9 @@ describe ThingFish::FormUploadHandler, " (POST request)" do
 		
 		upload1 = mock( "upload tempfile 1", :null_object => true )
 		metadata = mock( "merged metadata hash", :null_object => true )
-		metadata.should_receive( :[] ).
-			with( :uuid ).
-			at_least( :once ).
-			and_return( TEST_UUID )
+		metadata.should_receive( :[]= ).
+			with( :uuid, TEST_UUID ).
+			at_least( :once )
 
 		@request.should_receive( :path_info ).
 			at_least(:once).
@@ -170,10 +172,11 @@ describe ThingFish::FormUploadHandler, " (POST request)" do
 
 		mockdaemon.should_receive( :store_resource ).
 			with( upload1, metadata ).
-			once
+			once.
+			and_return( TEST_UUID )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :body= ).with( /Uploaded \d+ file/ )
+		@response.should_receive( :body= ).with( [ [TEST_UUID, metadata] ] )
 	
 		@handler.handle_post_request( @request, @response )
 	end

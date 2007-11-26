@@ -94,6 +94,21 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	end
 
 
+	### HTML generation using the HTML filter.
+	def make_html_content( files, request, response )
+		uri = request.uri.path
+
+		response.data[:title] = 'upload'
+
+		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
+		uploadform = formtemplate.result( binding() )
+
+		# uploadform is rendered in-place in this template
+		content = self.get_erb_resource( 'upload.rhtml' )
+		return content.result( binding() )
+	end
+
+
 	#########
 	protected
 	#########
@@ -101,16 +116,8 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	### Handle a GET request
 	def handle_get_request( request, response )
 		return unless request.path_info == ''
-		
-		uri = request.uri.path
-		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
-		uploadform = formtemplate.result( binding() )
-
-		# uploadform is rendered in-place in this template
-		content = self.get_erb_resource( 'upload.rhtml' )
-		response.body = content.result( binding() )
-		
-		response.headers[ :content_type ] = 'text/html'
+		response.data[:tagline] = 'Feed me.'
+		response.headers[:content_type] = RUBY_MIMETYPE
 		response.status = HTTP::OK
 	end
 
@@ -120,6 +127,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		return unless request.path_info == ''
 
 		self.log.debug "Handling POSTed upload/s"
+		response.data[:tagline] = 'Yum!'
 
 		files = []
 		request.each_body do |body, metadata|
@@ -130,14 +138,9 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		end
 
 		# Return success with links to new files
-		uri = request.uri.path
-		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
-		uploadform = formtemplate.result( binding() )
-		content = self.get_erb_resource( 'upload.rhtml' )
-
+		response.headers[:content_type] = RUBY_MIMETYPE
 		response.status = HTTP::OK
-		response.headers[ :content_type ] = 'text/html'
-		response.body = content.result( binding() )
+		response.body   = files
 	end
 
 end # class ThingFish::FormUploadHandler

@@ -1,46 +1,10 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>ThingFish :: upload</title>
+<% unless files.empty? %>
+<h2>Uploaded <%= files.length %> file(s)</h2>
+<ul>
+<% files.sort_by { |mk, mv| mv[:title] }.each do |file, meta| %>
+        <li><a href="<%= meta[:uuid] %>" title="<%= meta[:uuid] %>"><%= meta[:title] %></a></li>
+<% end %>
+</ul>
+<% end %>
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
-
-	<script src="/js/jquery.js" type="text/javascript" charset="utf-8"></script>
-	<script src="<%= request.uri.path %>/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
-
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-  </head>
-
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong>Feed me.</strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
-		<p class="textright">&nbsp;</p>
-
-		<% if defined? files %>
-		<h2>Uploaded <%= files.length %> file(s)</h2>
-		<ul>
-		<% files.sort_by { |mk, mv| mv[:title] }.each do |file, meta| %>
-			<li><a href="<%= meta[:uuid] %>" title="<%= meta[:uuid] %>"><%= meta[:title] %></a></li>
-		<% end %>
-		</ul>
-		<% end %>
-
-		<%= uploadform %>
-	</div>
-	<!-- content end -->
-
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id$</p>
-      </div>
-    </div>
-  </body>
-</html>
+<%= uploadform %>

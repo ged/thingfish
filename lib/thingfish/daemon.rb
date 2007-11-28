@@ -159,6 +159,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		# Store the data, catching and cleaning up on error
 		begin
 			checksum = @filestore.store_io( uuid, body )
+			body.unlink if body.respond_to?( :unlink )
 		rescue => err
 			self.log.error "Error saving resource to filestore: %s" % [ err.message ]
 			@filestore.delete( uuid ) if new_resource

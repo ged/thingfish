@@ -580,6 +580,23 @@ describe ThingFish::Daemon do
 	end
 	
 	
+	it "removes spoolfiles on successful uploads" do
+		filestore = mock( "filestore", :null_object => true )
+		@daemon.instance_variable_set( :@filestore, filestore )
+		
+		spool = mock( "spoolfile", :null_object => true )
+		metadata = {}
+		
+		spool.should_receive( :respond_to? ).
+			with( :unlink ).
+			and_return( true )
+		
+		spool.should_receive( :unlink )
+		
+		@daemon.store_resource( spool, metadata )
+	end
+	
+	
 	it "knows how to update the data and metadata for an existing resource" do
 		body = mock( "body IO" )
 		metadata = mock( "metadata hash", :null_object => true )

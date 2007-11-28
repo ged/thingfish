@@ -21,31 +21,26 @@ Planned Features
    * GET /metadata/«uuid1»,«uuid2»,«uuidn»
    * GET /«uuid1»,«uuid2»,«uuidn»
 
- * Duplicate checking via checksum comparison
+ o Duplicate checking via checksum comparison
    * What if the user is uploading the same file but with additional metadata?
 
- * Move the default #make_html_content method into the HTML filter, then reverse over
+ o Move the default #make_html_content method into the HTML filter, then reverse over
    the handlers that have run. If one of them implements #make_html_content itself,
    delegate to it, otherwise just do the inspect in the filter itself.
 
-Do me straight away
--------------------
-
-- Metastore value format -- object/string serialization (use YAML's #taguri ?) 
-
-- Write a benchmarking suite so we can establish a baseline of performance and track the impact on
+o Write a benchmarking suite so we can establish a baseline of performance and track the impact on
   performance of any future changes.
   * AutoBench? (http://www.xenoclast.org/autobench/)
   * Httperf? (http://www.hpl.hp.com/research/linux/httperf/)
   * 'ab' with gnuplot output?
 
+
+Do me straight away
+-------------------
+
 - Update docs!  Fill in placeholders now that APIs are solid.
 
 - PUT/POST /metadata to upload metadata key/values pairs en masse.
-
-- Spoolfile upload cleanup?
-
-- HTML header/footer wrapping, with optional <head /> injection
 
 - Change the HEAD request path in ThingFish::Daemon to just use the GET path and then discard 
   the body

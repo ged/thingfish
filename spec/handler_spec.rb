@@ -36,13 +36,13 @@ class TestHandler < ThingFish::Handler
 	public :log_request
 end
 
-class GetHeadTestHandler < ThingFish::Handler
+class GetDeleteTestHandler < ThingFish::Handler
 	def handle_get_request( *args )
 		return :get_response
 	end
 	
-	def handle_head_request( *args )
-		return :head_response
+	def handle_delete_request( *args )
+		return :delete_response
 	end
 end
 
@@ -120,7 +120,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 end
 
 
-describe ThingFish::Handler, " that handles GET and HEAD requests" do
+describe ThingFish::Handler, " that handles GET and DELETE requests" do
 
 	before(:each) do
 		ThingFish.logger.level = Logger::FATAL
@@ -131,7 +131,7 @@ describe ThingFish::Handler, " that handles GET and HEAD requests" do
 
 		@response.stub!( :headers ).and_return( @response_headers )
 
-	    @handler = ThingFish::Handler.create( 'getheadtest' )
+	    @handler = ThingFish::Handler.create( 'getdeletetest' )
 		@datadir = Config::CONFIG['datadir']
 	end
 
@@ -152,51 +152,55 @@ describe ThingFish::Handler, " that handles GET and HEAD requests" do
 	end
 
 	
-	it "should respond with a METHOD_NOT_ALLOWED response on a POST request" do
-
+	it "should call its #handle_get_request method on a HEAD request" do
+		@response.stub!( :handlers ).and_return( [] )
 		@request.should_receive( :http_method ).
 			at_least(:once).
-			and_return( 'POST' )
-		@handler.stub!( :methods ).
-			and_return(['handle_get_request', 'handle_head_request'])
-		
-		@response.should_receive( :status= ).
-			with( HTTP::METHOD_NOT_ALLOWED )
-		@response_headers.should_receive( :[]= ).
-			with( :allow, 'GET, HEAD' )
-		@response.should_receive( :body= ).
-			with( /POST.*not allowed/ )
+			and_return( 'HEAD' )
 
-		@handler.process( @request, @response )
+		@handler.process( @request, @response ).should == :get_response
 	end
+
 	
 	it "should respond with a METHOD_NOT_ALLOWED response on a POST request" do
 		@request.should_receive( :http_method ).
 			at_least(:once).
 			and_return( 'POST' )
 		@handler.stub!( :methods ).
-			and_return(['handle_get_request', 'handle_head_request'])
+			and_return(['handle_get_request', 'handle_delete_request'])
 		
 		@response.should_receive( :status= ).
 			with( HTTP::METHOD_NOT_ALLOWED )
 		@response_headers.should_receive( :[]= ).
-			with( :allow, 'GET, HEAD' )
+			with( :allow, 'DELETE, GET, HEAD' )
 		@response.should_receive( :body= ).
 			with( /POST.*not allowed/ )
 
 		@handler.process( @request, @response )
 	end
+	
 
-
-	it "should use a provided 'Allowed' header value when building a NOT_ACCEPTABLE response" do
+	it "should use a list of valid methods if one is provided" do
 		@response.should_receive( :status= ).
 			with( HTTP::METHOD_NOT_ALLOWED )
 		@response_headers.should_receive( :[]= ).
-			with( :allow, 'GET, HEAD' )
+			with( :allow, 'DELETE, GET, HEAD' )
 		@response.should_receive( :body= ).
 			with( /PUT.*not allowed/ )
-			
-		@handler.send_method_not_allowed_response( @response, 'PUT', %{GET, HEAD} )
+		
+		@handler.send_method_not_allowed_response( @response, 'PUT', %w{DELETE GET HEAD} )
+	end
+
+
+	it "should add HEAD to a list of provided methods if it includes 'GET'" do
+		@response.should_receive( :status= ).
+			with( HTTP::METHOD_NOT_ALLOWED )
+		@response_headers.should_receive( :[]= ).
+			with( :allow, 'DELETE, GET, HEAD' )
+		@response.should_receive( :body= ).
+			with( /PUT.*not allowed/ )
+		
+		@handler.send_method_not_allowed_response( @response, 'PUT', %w{DELETE GET} )
 	end
 end
 

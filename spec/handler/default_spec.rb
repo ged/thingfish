@@ -168,33 +168,7 @@ describe ThingFish::DefaultHandler do
 
 	
 
-	### GET/HEAD /«UUID» request tests
-	
-	it "handles HEAD /{uuid}" do
-		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
-		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-
-		etag = %q{"%s"} % [ TEST_CHECKSUM ]
-
-		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
-
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@request.should_receive( :http_method ).and_return( 'HEAD' )
-		@request.should_receive( :is_cached_by_client? ).at_least(:once).and_return( false )
-		@response.should_not_receive( :body= )
-		@response_headers.should_receive( :[]= ).with( :etag, etag )
-		@response_headers.should_receive( :[]= ).with( :expires, an_instance_of(String) )
-		@response_headers.should_receive( :[]= ).with( :content_length, 1024 )
-
-		@filestore.should_receive( :size ).and_return( 1024 )
-
-		@mockmetadata.should_receive( :checksum ).
-			at_least(:once).and_return( TEST_CHECKSUM )
-
-		@handler.handle_head_request( @request, @response )
-	end
-	
+	### GET /«UUID» request tests
 	
 	it "normalizes the case of UUIDs" do
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID_OBJ.to_s.upcase}" )
@@ -205,8 +179,8 @@ describe ThingFish::DefaultHandler do
 			and_return( true )
 
 		@request_headers.stub!( :[] ).and_return( nil )
-		@request.stub!( :http_method ).and_return( "HEAD" )
-		@handler.handle_head_request( @request, @response )
+		@request.stub!( :http_method ).and_return( "GET" )
+		@handler.handle_get_request( @request, @response )
 	end
 
 

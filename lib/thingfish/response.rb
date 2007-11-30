@@ -108,6 +108,7 @@ class ThingFish::Response
 		return (self.status / 100).ceil
 	end
 
+
 	### Return true if response is in the 1XX range
 	def status_is_informational?
 		return self.status_category == 1

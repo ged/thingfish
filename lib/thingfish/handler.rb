@@ -104,6 +104,8 @@ class ThingFish::Handler
 		self.log_request( request )
 		
 		http_method = request.http_method
+		http_method = 'GET' if http_method == 'HEAD'
+		
 		handler_name = "handle_%s_request" % [ http_method.downcase ]
 		self.log.debug "Searching for a %s handler method: %s#%s" %
 			[ http_method, self.class.name, handler_name ]
@@ -160,8 +162,7 @@ class ThingFish::Handler
 
 	### Send a METHOD_NOT_ALLOWED response using the given +response+ object. 
 	### The +valid_methods+ parameter is used to build the 'Allow' header --
-	### it should be either a String (which is used as the content of the 
-	### header) or an Array of valid methods (which is concatenated to form
+	### it should be an Array of valid methods (which is concatenated to form
 	### the header). If it is +nil+, the valid methods are derived via
 	### introspection.
 	def send_method_not_allowed_response( response, request_method, valid_methods=nil )
@@ -170,8 +171,11 @@ class ThingFish::Handler
 		valid_methods ||= self.methods.
 			select  {|name| name =~ HANDLER_PATTERN }.
 			collect {|name| name[HANDLER_PATTERN, 1].upcase }
-			
-		allowed_methods = valid_methods.sort.join(', ')
+		
+		# Automatically handle HEAD requests if GET is allowed
+		valid_methods.push('HEAD') if valid_methods.include?('GET')
+		
+		allowed_methods = valid_methods.uniq.sort.join(', ')
 
 		self.log.debug "Allowed methods are: %p" % [allowed_methods]
 		response.status = HTTP::METHOD_NOT_ALLOWED

@@ -206,6 +206,40 @@ describe ThingFish::Daemon do
 	end
 	
 
+	it "sends a valid http response without an entity body if the request is a HEAD" do
+		filter = mock( "filter", :null_object => true )
+		
+		handlers = [ @handler ]
+		@daemon.filters << filter
+
+		filter.
+			should_receive( :handle_request ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
+		@handler.
+			should_receive( :process ).
+			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) ).
+			and_return do |req, res|
+				res.status = HTTP::OK
+				res.headers[:content_type] = 'text/html'
+				res.body = TEST_CONTENT
+			end
+		filter.
+			should_receive( :handle_response ).
+			with( an_instance_of(ThingFish::Response), an_instance_of(ThingFish::Request) )
+
+		@request.should_receive( :params ).
+			at_least( :once ).
+			and_return({ 'REQUEST_METHOD' => 'HEAD' })
+
+		@client.should_receive( :closed? ).at_least(:once).and_return( false )
+		@response.should_receive( :write ).with( /200 ok/i )
+		@response.should_receive( :write ).with( %r{content-type: text/html}i )
+		@response.should_not_receive( :write ).with( /<html/i )
+		
+		@daemon.dispatch_to_handlers( @client, handlers, @request, @response )
+	end
+	
+
 
 
 	### Handlers
@@ -385,7 +419,7 @@ describe ThingFish::Daemon do
 		@response.should_receive( :headers ).at_least( :once ).and_return( headers )
 		@response.should_receive( :status ).at_least( :once ).and_return( HTTP::OK )
 		@response.should_receive( :get_content_length ).and_return( 15 )
-		@daemon.send_response( @response )
+		@daemon.send_response( @response, @request )
 	end
 	
 
@@ -423,7 +457,7 @@ describe ThingFish::Daemon do
 			with( testdata ).
 			and_return( testdata.length )
 		
-		@daemon.send_response( @response )
+		@daemon.send_response( @response, @request )
 	end
 	
 	
@@ -454,7 +488,7 @@ describe ThingFish::Daemon do
 			with( testdata ).
 			and_return( testdata.length )
 		
-		@daemon.send_response( @response )
+		@daemon.send_response( @response, @request )
 	end
 	
 	

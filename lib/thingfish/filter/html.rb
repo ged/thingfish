@@ -81,7 +81,8 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		
 		# Find the handlers that can make html
 		content = []
-		handlers = response.handlers.reverse.find_all {|h| h.respond_to?(:make_html_content) }
+		handlers = response.handlers.reverse.
+			find_all {|h| h.respond_to?(:make_html_content) }
 
 		# Either ask the handlers for content, or just return the inspected body object
 		if handlers.empty?

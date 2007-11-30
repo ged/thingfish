@@ -232,7 +232,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			end
 
 			# Normal response
-			self.send_response( response ) unless client.closed?
+			self.send_response( response, request ) unless client.closed?
 
 		rescue ThingFish::RequestError => err
 			self.send_error_response( response, request, err.status, client, err )
@@ -320,7 +320,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 				debugtrace << "\n\n"
 		end
 
-		self.send_response( response ) unless client.closed?
+		self.send_response( response, request ) unless client.closed?
 	end
 
 
@@ -363,7 +363,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 	### Send the response on the socket, doing a buffered send if the response's 
 	### body responds to :read, or just writing it to the socket if not.
-	def send_response( response )
+	def send_response( response, request )
 		body = response.body
 
 		# Send the status line
@@ -378,23 +378,25 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		response.headers[:date] = Time.now.httpdate
 		response.write( response.headers.to_s + "\r\n" )
 
-		# Send the buffered entity body
-		if body.respond_to?( :read )
-			self.log.debug "Writing response using buffered IO"
-			buf     = ''
-			bufsize = @config.bufsize
+		# Send the buffered entity body unless the request method is a HEAD
+		unless request.http_method == 'HEAD'
+			if body.respond_to?( :read )
+				self.log.debug "Writing response using buffered IO"
+				buf     = ''
+				bufsize = @config.bufsize
 
-			while body.read( bufsize, buf )
-				until buf.empty?
-					bytes = response.write( buf )
-					buf.slice!( 0, bytes )
+				while body.read( bufsize, buf )
+					until buf.empty?
+						bytes = response.write( buf )
+						buf.slice!( 0, bytes )
+					end
 				end
-			end
 
-		# Send unbuffered -- body already in memory.
-		else
-			self.log.debug "Writing response using unbuffered IO"
-			response.write( body.to_s )
+			# Send unbuffered -- body already in memory.
+			else
+				self.log.debug "Writing response using unbuffered IO"
+				response.write( body.to_s )
+			end
 		end
 		
 		response.done = true

@@ -9,18 +9,7 @@
 #   4. Overwrite a resource by UUID <PUT /51a01b12-b706-11db-a0e3-cb820d1598b5>
 #   5. Delete a resource by UUID <DELETE /51a01b12-b706-11db-a0e3-cb820d1598b5>
 #
-# This constitutes the core of the data-storage piece of ThingFish.
-#
-# == Synopsis
-#
-#   require 'thingfish/handler/default'
-#   
-#   class Daemon < Mongrel::HTTPServer
-#     def initialize( host, port )
-#       super
-#       self.register '/', ThingFish::Handler.create( 'default' )
-#     end
-#   end # class Daemon
+# This constitutes the core of the data-storage functionality of ThingFish.
 #
 # == Version
 #
@@ -108,7 +97,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		end
 		
 	end
-	alias_method :handle_head_request, :handle_get_request
 
 
 	### Handler API: Handle a POST request
@@ -119,7 +107,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		when UUID_URL
 			self.send_method_not_allowed_response( response, 'POST',
-				%w{GET HEAD PUT DELETE} )
+				%w{GET PUT DELETE} )
 
 		else
 			self.log.debug "No POST handler for %p, falling through" % request.uri
@@ -132,7 +120,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		case request.uri.path
 		when '/'
 			self.send_method_not_allowed_response( response, 'PUT',
-				%w{GET HEAD POST} )
+				%w{GET POST} )
 
 		when UUID_URL
 			raise ThingFish::RequestError, "Multipart update not currently supported" if
@@ -151,7 +139,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		case request.uri.path
 		when '/'
 			self.send_method_not_allowed_response( response, 'DELETE',
-				%w{GET HEAD POST} )
+				%w{GET POST} )
 		
 		when UUID_URL
 			uuid = parse_uuid( $1 )
@@ -199,7 +187,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
-	### Handle a request to fetch the index (GET or HEAD to /)
+	### Handle a request to fetch the index (GET to /)
 	def handle_index_fetch_request( request, response )
 		response.data[:title] = 'Version ' + ThingFish::VERSION
 		response.data[:tagline] = 'Feed me.'
@@ -212,7 +200,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	end
 
 
-	### Handle fetching a file by UUID (GET or HEAD to /{uuid})
+	### Handle fetching a file by UUID (GET to /{uuid})
 	def handle_resource_fetch_request( request, response, uuid )
 		if @filestore.has_file?( uuid )
 
@@ -236,11 +224,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 				# size of the resource
 				response.headers[:content_length] = @filestore.size( uuid )
 				
-				# HEAD requests just get the header
-				unless request.http_method == 'HEAD'
-					self.log.info "Setting response body to the resource IO"
-					response.body = @filestore.fetch_io( uuid )
-				end
+				self.log.info "Setting response body to the resource IO"
+				response.body = @filestore.fetch_io( uuid )
 			end
 			
 		else

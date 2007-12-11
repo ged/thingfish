@@ -238,6 +238,7 @@ task :install_dependencies do
 		$stderr.puts "This probably won't work, as you aren't root, but I'll try anyway"
 	end
 
+	require 'rubygems/remote_installer'
 	installer = Gem::RemoteInstaller.new( :include_dependencies => true )
 	gemindex = Gem::SourceIndex.from_installed_gems
 
@@ -409,6 +410,8 @@ begin
 
 	COVERAGE_TARGETDIR = STATICWWWDIR + 'coverage'
 
+	RCOV_OPTS = ['--exclude', SPEC_EXCLUDES, '--xrefs', '--save']
+
 	### Task: coverage (via RCov)
 	### Task: spec
 	desc "Build test coverage reports"
@@ -416,15 +419,14 @@ begin
 		task.spec_files = SPEC_FILES + PLUGIN_SPECFILES
 		task.libs += [LIBDIR] + PLUGIN_LIBS
 		task.spec_opts = ['-f', 'p', '-b']
-		task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--xrefs', '--save' ]
+		task.rcov_opts = RCOV_OPTS
 		task.rcov = true
 	end
 	task :coverage do
 		rmtree( COVERAGE_TARGETDIR )
 		cp_r( 'coverage', COVERAGE_TARGETDIR, :verbose => true )
 	end
-
-
+	
 	task :rcov => [:coverage] do; end
 	
 	### Other coverage tasks
@@ -433,7 +435,7 @@ begin
 		Spec::Rake::SpecTask.new( :text ) do |task|
 			task.spec_files = SPEC_FILES
 			task.libs += FileList['plugins/**/lib']
-			task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--text-report', '--save']
+			task.rcov_opts = RCOV_OPTS + ['--text-report']
 			task.rcov = true
 		end
 
@@ -441,7 +443,7 @@ begin
 		Spec::Rake::SpecTask.new( :diff ) do |task|
 			task.spec_files = SPEC_FILES
 			task.libs += FileList['plugins/**/lib']
-			task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--text-coverage-diff']
+			task.rcov_opts = ['--text-coverage-diff']
 			task.rcov = true
 		end
 
@@ -449,6 +451,14 @@ begin
 		desc "Build coverage statistics"
 		VerifyTask.new( :verify => :rcov ) do |task|
 			task.threshold = 85.0
+		end
+		
+		desc "Run RCov in 'spec-only' mode to check coverage from specs"
+		Spec::Rake::SpecTask.new( :speconly ) do |task|
+			task.spec_files = SPEC_FILES
+			task.libs += FileList['plugins/**/lib']
+			task.rcov_opts = ['--exclude', SPEC_EXCLUDES, '--text-report', '--save']
+			task.rcov = true
 		end
 	end
 

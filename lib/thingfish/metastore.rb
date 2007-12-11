@@ -51,6 +51,12 @@ require 'thingfish/exceptions'
 #   Removes all properties associated with the given +uuid+.
 # [<tt>get_all_property_keys()</tt>]
 #   Return an Array of all property keys in the store.
+# [<tt>get_all_property_values()</tt>]
+#   Return a uniquified Array of all values in the metastore for the specified +key+.
+# [<tt>find_by_exact_property()</tt>]
+#   Return an array of uuids whose metadata matched the criteria
+#   specified by +hash+. The criteria should be key-value pairs which describe
+#   exact metadata pairs.
 #
 class ThingFish::MetaStore
 	include PluginFactory,

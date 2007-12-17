@@ -27,11 +27,21 @@ end
 #####################################################################
 
 describe "An instance of MemoryMetaStore" do
+
+	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::DEBUG
+	end
 	
 	before(:each) do
 		@store = ThingFish::MetaStore.create( 'memory' )
 	end
 
+	after(:all) do
+		ThingFish.reset_logger
+	end
+	
+	
 	it_should_behave_like "A MetaStore"	
 
 end

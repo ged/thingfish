@@ -71,9 +71,9 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	
 	### Handle a GET request
 	def handle_get_request( request, response )
-		args = request.query_args
+		args = request.query_args.reject { |k,v| v.nil? }
 
-		uuids = @metastore.find_by_exact_properties( args )
+		uuids = @metastore.find_by_matching_properties( args )
 
 		response.data[:tagline] = 'Interrogate me.'
 		response.data[:title] = 'search'

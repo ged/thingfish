@@ -53,10 +53,14 @@ require 'thingfish/exceptions'
 #   Return an Array of all property keys in the store.
 # [<tt>get_all_property_values()</tt>]
 #   Return a uniquified Array of all values in the metastore for the specified +key+.
-# [<tt>find_by_exact_property()</tt>]
+# [<tt>find_by_exact_properties()</tt>]
 #   Return an array of uuids whose metadata matched the criteria
 #   specified by +hash+. The criteria should be key-value pairs which describe
-#   exact metadata pairs.
+#   exact metadata pairs.  This is an exact match search.
+# [<tt>find_by_matching_properties()</tt>]
+#   Return an array of uuids whose metadata matched the criteria
+#   specified by +hash+. The criteria should be key-value pairs which describe
+#   exact metadata pairs.  This is a wildcard search.
 #
 class ThingFish::MetaStore
 	include PluginFactory,
@@ -202,7 +206,8 @@ class ThingFish::MetaStore
 		:delete_properties,
 		:get_all_property_keys,
 		:get_all_property_values,
-		:find_by_exact_properties
+		:find_by_exact_properties,
+		:find_by_matching_properties
 
 end # class ThingFish::MetaStore
 

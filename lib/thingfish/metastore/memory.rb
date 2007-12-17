@@ -140,6 +140,32 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 		return uuids ? uuids : []
 	end
 
+
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
+	### specified by +hash+. The criteria should be key-value pairs which describe
+	### wildcarded metadata pairs.
+	def find_by_matching_properties( hash )
+		uuids = hash.inject(nil) do |ary, pair|
+			key, pattern = *pair
+			key = key.to_sym
+			re = Regexp.new( '^' + pattern.gsub('*', '.*') + '$', Regexp::IGNORECASE )
+			
+			matching_uuids = @metadata.keys.find_all do |uuid|
+				re.match( @metadata[ uuid ][ key ] )
+			end
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []
+	end
+
 end # class ThingFish::MemoryMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

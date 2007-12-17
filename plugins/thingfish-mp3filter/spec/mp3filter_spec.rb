@@ -28,10 +28,10 @@ describe ThingFish::MP3Filter do
 	include ThingFish::Constants
 	include ThingFish::TestConstants
 
-	TEST_TITLE    = "Meatphone"
-	TEST_ARTIST   = "The Artist Formerly Known as Pork"
-	TEST_ALBUM    = "Lung Bacon"
-	TEST_COMMENTS = ["Frazzles", "3d glasses", "your face is stupid"]
+	TEST_MP3_TITLE = "Meatphone"
+	TEST_ARTIST    = "The Artist Formerly Known as Pork"
+	TEST_ALBUM     = "Lung Bacon"
+	TEST_COMMENTS  = ["Frazzles", "3d glasses", "your face is stupid"]
 
 	before( :each ) do
 	    @filter = ThingFish::Filter.create( 'mp3' )
@@ -66,7 +66,7 @@ describe ThingFish::MP3Filter do
 		@mp3info.should_receive( :bitrate ).and_return( 128 )
 		@mp3info.should_receive( :vbr ).and_return( true )
 		
-		@id3tag.should_receive( :title ).and_return( TEST_TITLE )
+		@id3tag.should_receive( :title ).and_return( TEST_MP3_TITLE )
 		@id3tag.should_receive( :artist ).and_return( TEST_ARTIST )
 		@id3tag.should_receive( :album ).and_return( TEST_ALBUM )
 		
@@ -74,7 +74,7 @@ describe ThingFish::MP3Filter do
 		
 		extracted_metadata.should have(10).members
 		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_TITLE
+		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
 		extracted_metadata[:mp3_album].should == TEST_ALBUM
 	end
 
@@ -99,7 +99,7 @@ describe ThingFish::MP3Filter do
 			at_least( :once ).
 			and_return( v2tag )
 		
-		v2tag.should_receive(:TT2).and_return( TEST_TITLE )
+		v2tag.should_receive(:TT2).and_return( TEST_MP3_TITLE )
 		v2tag.should_receive(:TP1).and_return( TEST_ARTIST )
 		v2tag.should_receive(:TAL).and_return( TEST_ALBUM )
 		
@@ -107,7 +107,7 @@ describe ThingFish::MP3Filter do
 		
 		extracted_metadata.should have(10).members
 		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_TITLE
+		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
 		extracted_metadata[:mp3_album].should == TEST_ALBUM
 	end
 	
@@ -129,7 +129,7 @@ describe ThingFish::MP3Filter do
 		@mp3info.should_receive( :bitrate ).and_return( 128 )
 		@mp3info.should_receive( :vbr ).and_return( true )
 		
-		@id3tag.should_receive( :title ).and_return( TEST_TITLE + "\x0" )
+		@id3tag.should_receive( :title ).and_return( TEST_MP3_TITLE + "\x0" )
 		@id3tag.should_receive( :artist ).and_return( "\n" + TEST_ARTIST + "   \n\n" )
 		@id3tag.should_receive( :album ).and_return( nil )
 		@id3tag.should_receive( :comments ).and_return([
@@ -142,7 +142,7 @@ describe ThingFish::MP3Filter do
 		
 		extracted_metadata.should have(10).members
 		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_TITLE
+		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
 		extracted_metadata[:mp3_album].should == "(unknown)"
 		extracted_metadata[:mp3_comments].should == TEST_COMMENTS
 	end

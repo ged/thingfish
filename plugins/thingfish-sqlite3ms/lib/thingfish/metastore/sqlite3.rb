@@ -293,6 +293,38 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	### MetaStore API: Return an array of uuids whose metadata +key+ is
+	### a wildcard match of +value+.
+	def find_by_matching_properties( hash )
+		select_sql = %q{
+			SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
+			WHERE
+				k.key  = :key AND
+				k.id   = v.m_id AND
+				v.val  like :value AND
+				v.r_id = r.id
+		}
+
+		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
+			key, pattern = *pair
+			key = key.to_s
+
+			value = pattern.gsub( '*', '%' )
+			matching_uuids = @metadata.execute( select_sql, key, value ).flatten
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []		
+	end
+
+
 	### Return the schema that describes the database as a String, loading
 	### it from the plugin resources if necessary
 	def schema

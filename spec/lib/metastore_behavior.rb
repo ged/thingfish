@@ -144,6 +144,7 @@ describe "A MetaStore", :shared => true do
 		found.first.should == TEST_UUID
 	end
 
+
 	it "can find UUIDs by multi-property exact match" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
@@ -160,6 +161,22 @@ describe "A MetaStore", :shared => true do
 	end
 
 
+	it "can find UUIDs by multi-property wildcard match" do
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+		found = @store.find_by_matching_properties(
+		 	'title'    => '*panda*',
+			'namespace' => 'dev*'
+		  )
+		
+		found.should have(1).members
+		found.first.should == TEST_UUID
+	end
+	
+	
 	# Transaction API
 	
 	it "can execute a block in the context of a transaction" do

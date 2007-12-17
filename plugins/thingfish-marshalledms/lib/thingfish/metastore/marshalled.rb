@@ -230,6 +230,38 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		
 		return uuids ? uuids : []
 	end
+
+
+	### MetaStore API: Return an array of UUIDs whose metadata wildcard matches the
+	### key-value pairs in +hash+.
+	def find_by_matching_properties( hash )
+		uuids = hash.inject(nil) do |ary, pair|
+			key, pattern = *pair
+			key = key.to_sym
+
+			matching_uuids = []
+			key = key.to_sym
+			re = Regexp.new( '^' + pattern.gsub('*', '.*') + '$', Regexp::IGNORECASE )
+						
+			@lock.lock do
+				@metadata.transaction(true) do
+					@metadata.roots.each do |uuid|
+						matching_uuids << uuid if re.match( @metadata[ uuid ][ key ] )
+					end
+				end
+			end
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids : []
+	end
 		
 end # class ThingFish::MarshalledMetaStore
 

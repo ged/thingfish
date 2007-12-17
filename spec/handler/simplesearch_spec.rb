@@ -113,7 +113,7 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 		@request.should_receive( :query_args ).
 			at_least(:once).
 			and_return( search_terms )
-		@metastore.should_receive( :find_by_exact_properties ).
+		@metastore.should_receive( :find_by_matching_properties ).
 			with( search_terms ).
 			and_return([ TEST_UUID ])
 		
@@ -133,7 +133,7 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 		@request.should_receive( :query_args ).
 			at_least(:once).
 			and_return( search_terms )
-		@metastore.should_receive( :find_by_exact_properties ).
+		@metastore.should_receive( :find_by_matching_properties ).
 			with( search_terms ).
 			and_return([ TEST_UUID, TEST_UUID2 ])
 		

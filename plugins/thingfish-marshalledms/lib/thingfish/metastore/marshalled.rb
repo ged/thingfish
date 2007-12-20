@@ -241,7 +241,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 			matching_uuids = []
 			key = key.to_sym
-			re = Regexp.new( '^' + pattern.gsub('*', '.*') + '$', Regexp::IGNORECASE )
+			re = Regexp.new( '^' + pattern.to_s.gsub('*', '.*') + '$', Regexp::IGNORECASE )
 						
 			@lock.lock do
 				@metadata.transaction(true) do

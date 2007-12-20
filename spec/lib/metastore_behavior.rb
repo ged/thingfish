@@ -163,13 +163,15 @@ describe "A MetaStore", :shared => true do
 
 	it "can find UUIDs by multi-property wildcard match" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :bitrate, '160' )
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
 		@store.set_property( TEST_UUID2, :namespace, 'private' )
 
 		found = @store.find_by_matching_properties(
-		 	'title'    => '*panda*',
-			'namespace' => 'dev*'
+		 	'title'     => '*panda*',
+			'namespace' => 'dev*',
+			'bitrate'   => 160
 		  )
 		
 		found.should have(1).members

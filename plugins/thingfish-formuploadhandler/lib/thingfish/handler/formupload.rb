@@ -99,7 +99,10 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		uri = request.uri.path
 
 		response.data[:title] = 'upload'
-
+		response.data[:head]  = %Q{
+	<script src="#{uri}/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
+		}
+		
 		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
 		uploadform = formtemplate.result( binding() )
 

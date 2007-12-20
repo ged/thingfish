@@ -309,7 +309,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			key, pattern = *pair
 			key = key.to_s
 
-			value = pattern.gsub( '*', '%' )
+			value = pattern.to_s.gsub( '*', '%' )
 			matching_uuids = @metadata.execute( select_sql, key, value ).flatten
 			
 			if ary

@@ -148,7 +148,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 		uuids = hash.inject(nil) do |ary, pair|
 			key, pattern = *pair
 			key = key.to_sym
-			re = Regexp.new( '^' + pattern.gsub('*', '.*') + '$', Regexp::IGNORECASE )
+			re = Regexp.new( '^' + pattern.to_s.gsub('*', '.*') + '$', Regexp::IGNORECASE )
 			
 			matching_uuids = @metadata.keys.find_all do |uuid|
 				re.match( @metadata[ uuid ][ key ] )

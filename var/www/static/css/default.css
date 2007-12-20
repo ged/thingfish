@@ -25,6 +25,10 @@ body {
 	color: #3a3a3a;
 }
 
+fieldset {
+	border: 0;
+}
+
 #wrap {
 	background-color: #ffffff;
 	color: #303030;

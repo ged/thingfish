@@ -75,8 +75,6 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 		uuids = @metastore.find_by_matching_properties( args )
 
-		response.data[:tagline] = 'Interrogate me.'
-		response.data[:title] = 'search'
 		response.status = HTTP::OK
 		response.headers[:content_type] = RUBY_MIMETYPE
 		response.body = uuids
@@ -94,6 +92,12 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	def make_html_content( uuids, request, response )
 		args = request.query_args
 		uri  = request.uri.path
+		
+		response.data[:tagline] = 'Interrogate me.'
+		response.data[:title] = 'search'
+		response.data[:head]  = %Q{
+	<script src="/js/search.js" type="text/javascript" charset="utf-8"></script>
+		}
 
 		template = self.get_erb_resource( 'search/main.rhtml' )
 		content = template.result( binding() )

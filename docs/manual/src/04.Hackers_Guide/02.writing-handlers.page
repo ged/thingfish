@@ -26,17 +26,20 @@ Glad you asked.  Here's a teeny one that we'll build upon.
 Let's go over the interesting parts of this.
 
 |_. line number |_. what's it doing? |
-| 4 | All handlers inherit from the *ThingFish::Handler* parent class.
+| 4 | All handlers inherit from the @ThingFish::Handler@ parent class.
 The handler name needs to match the filename it is stored in -
 in this case, the file would be called _time.rb_, and stored in a _lib/handler_ directory. |
+| 5 | Import some useful constants, like the @HTTP::OK@ a little further down |
 | 8 | Actions are defined in special methods that match the naming convention
-@handle_<strong>METHOD</strong>_request@.  We're only going to accept *GET* methods for this example.
-These special methods receive a *ThingFish::Request* and a *ThingFish::Response* object to fiddle with as you see fit. |
-| 9 | We're just using a simple time string as the response here, but this could just as easily be an erb template,
-or even an IO object.  IO objects will automatically buffer out to the client. |
-| 10 | The default response code is a 404 (Not Found) - after we're sure we've generated
-the content we want, setting this to *OK* stops further processing, and lets the response through successfully.
-The *OK* constant is imported from *ThingFish::Constants::HTTP*. |
+@handle_«METHOD»_request@.  We're only going to accept @GET@ methods for this example.
+These special methods receive a @ThingFish::Request@@ and a @ThingFish::Response@ object 
+to fiddle with as you see fit. |
+| 9 | We're just using a simple time string as the response here, but this could just as 
+easily be an erb template, or even an @IO@ object.  @IO@ objects will automatically buffer out 
+to the client. |
+| 10 | The default response code is a _404 (Not Found)_ – after we're sure we've generated
+the content we want, setting this to @OK@ stops further processing, and lets the response 
+through successfully. |
 
 h3. Installing the handler
 
@@ -99,6 +102,22 @@ and make this handler a little bit smarter in the process.
 	caption: A slightly less minimal handler!
 	}}
 </notextile>
+
+|_. line number |_. what's it doing? |
+| 11 | Like with Apache or other webservers, the request's @path_info@ is the parts of
+the URI that are left after trimming off the leading bits up to the current handler. E.g.,
+if the request was for:
+  /what-time-is-it/in/chicago
+the @path_info@ of the request would be:
+  /in/chicago
+|
+| 13 | We wrap the actual time-munging in a @begin/rescue@ for @NoMethodError@s so that 
+if the client requests a time operation that doesn't exist, we can just do nothing. If we 
+didn't do this, @ThingFish::Daemon@ would return a  _500 Server Error_ response, and that's 
+so 1996. |
+| 14 | We're going to do one of two things: just return the current time as a simple 
+region-appropriate string, or let the user ask for just a part of the @Time@ object.
+ |
 
 h4. Linking to other handlers
 

@@ -30,8 +30,8 @@
 #   
 #       def initialize( options )
 #           unless schema_installed?
-#               sql = get_resource( 'base_schema.sql' )
-#               install_schema( sql )
+#               sql = self.get_resource( 'base_schema.sql' )
+#               self.install_schema( sql )
 #           end
 #           ...
 #       end

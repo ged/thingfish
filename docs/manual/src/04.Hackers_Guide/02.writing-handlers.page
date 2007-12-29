@@ -7,7 +7,7 @@ h2. Writing a ThingFish Handler
 
 h3. What does a handler look like?
 
-Glad you asked.  Here's a teeny one that we'll build upon.
+Glad you asked.  Here's a teeny one that we'll build on.
 
 <notextile>
 {example: {
@@ -37,7 +37,8 @@ to fiddle with as you see fit. |
 | 9 | We're just using a simple time string as the response here, but this could just as 
 easily be an erb template, or even an @IO@ object.  @IO@ objects will automatically buffer out 
 to the client. |
-| 10 | The default response code is a _404 (Not Found)_ – after we're sure we've generated
+| 10 | Set the content type of the response. |
+| 11 | The default response code is a _404 (Not Found)_ – after we're sure we've generated
 the content we want, setting this to @OK@ stops further processing, and lets the response 
 through successfully. |
 
@@ -49,45 +50,55 @@ URI is requested.  This is done in the _thingfish.conf_ file, under the _handler
 section.  If you wanted to install it under a single URI called _/what-time-is-it_,
 here's how you'd do it.
 
-<pre class="example">
-plugins:
-    handlers:
-        - time: /what-time-is-it
-</pre>
+<notextile>
+{example: {
+	filename: examples/handler-config.yml, 
+	escapeHTML: true,
+	processOutput: false,
+	language: yaml,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: Our handler's config section
+	}}
+</notextile>
 
 That's it!  If your daemon is logging messages at the _debug_ level or higher, you
 should see a message similar to this at startup, showing that the handler was found
 and installed under the proper URI:
 
-<pre class="example">
+<div class="example">
+<div class="CodeRay">
+<pre>
 Handler map is:
     /: [ThingFish::DefaultHandler, ThingFish::StaticContentHandler]  
-	[...]
     /what-time-is-it: [TimeHandler]
 </pre>
+</div>
+</div>
 
 Making the actual request should log the following:
 
-<pre class="example">
+<div class="example">
+<div class="CodeRay">
+<pre>
 Dispatching to 1 handlers
 TimeHandler: 127.0.0.1 GET /what-time-is-it
 Searching for a GET handler method: TimeHandler#handle_get_request
 Response: HTTP/1.1 200 OK
 </pre>
-
+</div>
+</div>
 
 h3. Building on top of this
 
 h4. Limiting URI space
 
-By default, you'll now get the time for every possible URI under the
-_/what-time-is-it_ path.  This is a feature that allows a handler installed within
-another handler's URI space to alter the request and response - the statistics
-handler uses this, for example.
-
-At some point however, you'll probably want to limit the possible URIs the Time
-handler will respond to.  Let's do this by checking the current *request.path_info*,
-and make this handler a little bit smarter in the process.
+With the above implementation, you'd get the same response for every possible URI under the
+@/what-time-is-it@ path. But what if you want your handler to do more than just one simple
+thing?  Let's add some more functionality to our little handler by checking the request's
+@path_info@, and providing some different variations on the time:
 
 <notextile>
 {example: {
@@ -106,50 +117,177 @@ and make this handler a little bit smarter in the process.
 |_. line number |_. what's it doing? |
 | 11 | Like with Apache or other webservers, the request's @path_info@ is the parts of
 the URI that are left after trimming off the leading bits up to the current handler. E.g.,
-if the request was for:
-  /what-time-is-it/in/chicago
-the @path_info@ of the request would be:
-  /in/chicago
+if the request was for: @/what-time-is-it/in/chicago@ the @path_info@ of the request would 
+be: @/in/chicago@ |
+| 13-22 | Handle various requests with different returned content. Requesting 
+@/what-time-is-it@ still returns the default Ruby @Time#to_s@ representation, but if you 
+add @/epoch@ to the end, it returns the seconds-since-epoch version of the time. Adding 
+@/rfc822@ will get you the time in the standard MIME representation, @/xmlschema@ will
+return it in the XMLSchema format, etc. |
+| 24 | There weren't any recognized actions, so just return without doing anything.
+If a handler doesn't change the response's @status@, the daemon will look to any other 
+handlers that are installed at the same URI to satisfy the request. If no handlers are
+found that set the status, it will remain at its default, which is @HTTP::NOT_FOUND@ (404),
+and that is what will be returned to the client, along with an appropriate error page.
 |
-| 13 | We wrap the actual time-munging in a @begin/rescue@ for @NoMethodError@s so that 
-if the client requests a time operation that doesn't exist, we can just do nothing. If we 
-didn't do this, @ThingFish::Daemon@ would return a  _500 Server Error_ response, and that's 
-so 1996. |
-| 14 | We're going to do one of two things: just return the current time as a simple 
-region-appropriate string, or let the user ask for just a part of the @Time@ object.
- |
 
-h4. Linking to other handlers
+h4. Using Templates or Other Resources
 
-search_uri = @config.find_handler_uri('search')
+We've now got a pretty featureful time handler, albeit a pretty plain-looking one. Let's 
+say we want to make it pretty now, in anticipation of it becoming the next hot Web 2.0 
+application. We could just embed a big glob of HTML in the handler itself, and cram a 
+bunch of strings together for the output, but why repeat all those mistakes we made in 
+1995? As enlightened Rubyists, we'd rather keep all the static HTML outside our code, and 
+just mix in the tasty dynamic bits when needed.
 
-h4. Providing different information based on Accept header checks
+We'll do that by mixing in @ThingFish::ResourceLoader@, which adds a few methods to our
+handler class to make loading up static files easier. We'll use simple string 
+interpolation for our templating for now.
 
-request.accepts?( 'text/plain' )
+<notextile>
+{example: {
+	filename: examples/templated-handler.rb, 
+	escapeHTML: false,
+	processOutput: false,
+	language: ruby,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: A fancy handler!
+	}}
+</notextile>
 
-h4. Query arguments
+And the template we'll use looks like:
+
+<notextile>
+{example: {
+	filename: examples/timehandler.html, 
+	escapeHTML: true,
+	processOutput: false,
+	language: html,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: timehandler.html -- A template for our fancier handler!
+	}}
+</notextile>
+
+|_\2. Handler Code |
+| 8 | Including the @ThingFish::ResourceLoader@ mixin sets up the resource directory for
+this handler and adds a few methods for dealing with files contained in it. |
+| 15 | Load the HTML file we're going to use as a template. The resources directory for 
+each plugin is in a @thingfish@ directory under Ruby's @datadir@ by default. Each plugin 
+gets its own directory based on its name, so our TimeHandler plugin's resource directory
+is @#{datadir}/thingfish/timehandler/@. This can be changed by setting the @resource_dir@
+key in the handler's config. |
+| 33 | Interpolate the calculated @timestring@ into the template where the first @%s@ is. |
+|_\2. Template (@timehandler.html@) |
+| 13 | Really Big Fonts -- +10 pts on the Web 2.0 scorecard! |
+| 20 | This is where @timestring@ will be inserted. |
+
+When it's run it'll produce something that looks like this:
+
+!images/templated-timehandler.png(Templated TimeHandler screenshot)!
+
+If we wanted to insert some other stuff, we could insert a bunch of other @%s@
+placeholders, but that would get unmaintainable very quickly. We really need some better
+way of templating.
+
+h4. Using ERB Templates
+
+We can make more-complex templating situations a bit easier (albeit at the expense of a
+much higher degree of coupling) by using ERb. This will let us pass a @Binding@ object
+into the template and just grab values from the calling scope directly from within the
+output. While this isn't really what we would consider a clean solution[1], it certainly
+affords us more options than those inherent in @sprintf@-style interpolation, and it has
+the added advantage of being distributed with Ruby itself.
+
+We'll change the call from @#get_resource@ to @#get_erb_resource@ instead, which loads the 
+file and returns a new ERb object created from it instead of a String.
+
+<notextile>
+{example: {
+	filename: examples/erb-handler.rb, 
+	escapeHTML: false,
+	processOutput: false,
+	language: ruby,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: A fancy handler!
+	}}
+</notextile>
+
+And then we'll change the %s placeholders into ERb directives in the template:
+
+<notextile>
+{example: {
+	filename: examples/timehandler.rhtml, 
+	escapeHTML: true,
+	processOutput: false,
+	language: rhtml,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: timehandler.rhtml -- an ERb template
+	}}
+</notextile>
+
+|_\2. Handler Code |
+| 7 | Still including the @ThingFish::ResourceLoader@ mixin. |
+| 15-16 | Set the page's title as a simple variable that will be in the Binding; the 
+@timestring@ gets set as before, and is accessable from the template as well. |
+| 33 | Pass the Binding for the current scope into the ERb template and set the response's 
+body to the rendered output. |
+|_\2. Template (@timehandler.rhtml@) |
+| 7  | We'll set the @title@ dynamically too now. |
+| 20 | This will get the @timestring@ just like before. |
+
+
+
+h3. Fetching Query Arguments
 
 request.query_args.has_key?('text')
 
-h4. Index page content
+h3. Linking to Other Handlers
 
+<pre>
+search_uri = @config.find_handler_uri('search')
+</pre>
+
+h3. Index page content
+
+<pre>
 def make_index_content( uri )
 	return "Oh snap!  What <a href=\"#{uri}\">time</a> is it?<br />"
 end
+</pre>
 
-h4. Static content
+h3. Content Negotiation
 
-require 'thingfish/mixins'
+<pre>
+include ThingFish::Constants
+	
+def handle_get_request( req, res )
+	res.headers[:content_type] = RUBY_MIMETYPE
+	res.body = Time.now
+end
+</pre>
 
-include ThingFish::StaticResourcesHandler,
-        ThingFish::ResourceLoader
 
-static_resources_dir "static"
+fn1(footnote). We'd prefer a templating system that avoided coupling together the
+rendering of the output with the implementation details of the handler code (e.g.,
+variable names, scoping at the time of the @binding()@ call, etc.), but we chose to use
+ERb for ThingFish to avoid introducing further dependencies.
 
 ----------------------------------------------------------------------------------------
 
 * additional mixins?
-* handler globals (config, metastore, filestore)
+* handler instance variables (config, metastore, filestore)
 * handler inheritance, URI chaining
 * links to ThingFish::Request API (http://localhost:3474/api/ThingFish/Request.html)
 

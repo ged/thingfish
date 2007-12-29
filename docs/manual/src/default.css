@@ -488,6 +488,16 @@ img.framed {
 	border: 2px dotted #e99;
 }
 
+p.footnote {
+	margin-top: 5em;
+	font-size: 90%;
+	border-top: 1px solid #999;
+}
+p.footnote + p.footnote {
+	margin-top: 0.5em;
+	border: 0;
+}
+
 /* @end */
 
 

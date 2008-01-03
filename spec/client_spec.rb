@@ -34,7 +34,12 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Client do
-	
+
+	before( :all ) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+
 	before(:each) do
 		@mock_response = mock( "response object", :null_object => true )
 		@mock_request = mock( "request object", :null_object => true )
@@ -45,11 +50,13 @@ describe ThingFish::Client do
 		@client = ThingFish::Client.new( TEST_SERVER )
 	end
 
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+
 
 	it "fetches a resource from the server by UUID via HTTP" do
-		# ThingFish.logger = Logger.new( $stderr )
-		# ThingFish.logger.level = Logger::DEBUG
-
 		Net::HTTP::Get.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
 		@mock_request.should_receive( :method ).and_return( "GET" )
 

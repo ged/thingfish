@@ -191,6 +191,9 @@ describe ThingFish::XMLFilter, " with Tidy enabled" do
 
 
 	it "cleans up XML output if Tidy loaded successfully" do
+		# Simulate tidy having loaded successfully
+		$" << "tidy.rb"
+
 		request = mock( "request object" )
 		response = mock( "response object" )
 		response_headers = mock( "response headers" )

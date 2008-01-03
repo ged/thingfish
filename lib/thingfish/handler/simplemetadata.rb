@@ -104,6 +104,9 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	def make_html_content( values, request, response )
 		template_name = uuid = key = nil
 
+		response.data[:tagline] = 'Show me the goods, ThingFish!'
+		response.data[:title] = 'metadata'
+
 		case request.path_info
 		when '', '/'
 			template_name = 'main'

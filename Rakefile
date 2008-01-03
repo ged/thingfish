@@ -309,7 +309,7 @@ end
 
 ### RSpec tasks
 begin
-	gem 'rspec', '>= 1.0.5'
+	gem 'rspec', '>= 1.1.1'
 	require 'spec/rake/spectask'
 
 	COMMON_SPEC_OPTS = ['-c', '-f', 's']
@@ -406,7 +406,7 @@ end
 ### RCov (via RSpec) tasks
 begin
 	gem 'rcov'
-	gem 'rspec', '>= 1.0.4'
+	gem 'rspec', '>= 1.1.1'
 
 	COVERAGE_TARGETDIR = STATICWWWDIR + 'coverage'
 

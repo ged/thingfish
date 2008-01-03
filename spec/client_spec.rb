@@ -40,7 +40,7 @@ describe ThingFish::Client do
 		@mock_request = mock( "request object", :null_object => true )
 		@mock_conn = mock( "HTTP connection", :null_object => true )
 
-		Net::HTTP.stub!( :start ).and_yield( @mock_conn )
+		Net::HTTP.stub!( :start ).and_yield( @mock_conn ).and_return( @mock_response )
 
 		@client = ThingFish::Client.new( TEST_SERVER )
 	end

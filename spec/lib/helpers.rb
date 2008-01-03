@@ -74,38 +74,3 @@ module ThingFish::TestHelpers
 	end	
 end
 
-
-require 'spec/mocks/message_expectation'
-
-### Monkeypatch: RSpec doesn't allow for a mock that should both yield and return a value
-### different than the last value of the block that was yielded to.
-class Spec::Mocks::BaseExpectation
-
-	# Reset the return block and return self to allow chaining an #and_return after
-	# an #and_yield
-	def and_yield( *args )
-		@args_to_yield = args
-		@return_block = nil
-		return self
-	end
-
-	def invoke_with_yield(block)
-		if block.nil?
-			@error_generator.raise_missing_block_error @args_to_yield
-		end
-		if block.arity > -1 && @args_to_yield.length != block.arity
-			@error_generator.raise_wrong_arity_error @args_to_yield, block.arity
-		end
-		rval = block.call(*@args_to_yield)
-
-		if @return_block
-			return @return_block.call
-		else
-			return rval
-		end
-	end
-
-end
-
-
-

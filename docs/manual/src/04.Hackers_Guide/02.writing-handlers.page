@@ -248,16 +248,32 @@ body to the rendered output. |
 | 20 | This will get the @timestring@ just like before. |
 
 
-
-h3. Fetching Query Arguments
-
-request.query_args.has_key?('text')
-
 h3. Linking to Other Handlers
 
 <pre>
 search_uri = @config.find_handler_uri('search')
 </pre>
+
+
+h3. Fetching Query Arguments
+
+request.query_args.has_key?('text')
+
+<notextile>
+{example: {
+	filename: examples/queryarg-handler.rb, 
+	escapeHTML: false,
+	processOutput: false,
+	language: ruby,
+	tab_width: 4,
+	hint: debug,
+	line_numbers: inline,
+	testable: true,
+	caption: A handler example that checks query arguments.
+	}}
+</notextile>
+
+
 
 h3. Index page content
 

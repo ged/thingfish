@@ -26,20 +26,33 @@ file somewhere else with the @-f@ flag:
   caption: Starting the server with an alternate config file
   }}
 
-The config file is a YAML file, and a basic configuration should look something like 
-this:
 
-{example: {filename: examples/etc/thingfish.conf, 
+h3. Configuration File
+
+The config file is a YAML file, and chooses sane values as defaults.  An absolutely
+minimalistic configuration should look something like this:
+
+{example: {filename: examples/etc/tiny-thingfish.conf, 
 	escapeHTML: false,
 	processOutput: false,
 	language: yaml,
 	hint: debug,
 	testable: true,
-	caption: Example YAML config file
+	caption: Example minimalistic config file
 	 }}
 
+Because all default storage is in memory, it makes for a nice  "is it working?"
+test.  You'll probably want to get more elaborate with your configuration fairly 
+quickly, however.
 
-h3. Configuration File
+{example: {filename: examples/etc/big-thingfish.conf, 
+	escapeHTML: false,
+	processOutput: false,
+	language: yaml,
+	hint: debug,
+	testable: true,
+	caption: Example comprehensive config file
+	 }}
 
 The meaning of the config values are as follows:
 
@@ -127,8 +140,22 @@ The meaning of the config values are as follows:
 			<dd class="subsection">
 				<dl>
 					<dt>name</dt>
-					<dd class="description">The name of the plugin to load, e.g., 
-						the gemname.</dd>
+					<dd class="description">The name of the plugin to load.</dd>
+					<dd class="default">Defaults to @memory@</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+			
+			<dt>metastore</dt>
+			<dd class="description">Configuration of the plugin which provides the
+				metastore implementation.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+					<dd class="description">The name of the plugin to load.</dd>
 					<dd class="default">Defaults to @memory@</dd>
 
 					<dt class="placeholder">(Plugin-specific values)</dt>
@@ -142,9 +169,7 @@ The meaning of the config values are as follows:
 			<dd class="subsection">
 				<dl>
 					<dt>name</dt>
-					<dd class="description">The name of the plugin to load, e.g., 
-						the gemname.</dd>
-					<dd class="default">Defaults to @memory@</dd>
+					<dd class="description">The name of the plugin to load.</dd>
 
 					<dt class="placeholder">(Plugin-specific values)</dt>
 					<dd class="description">See the documentation for your chosen 
@@ -158,29 +183,32 @@ The meaning of the config values are as follows:
 				is in the form of a YAML array of hashes, one plugin per hash. Each 
 				hash has the name of the plugin to be loaded as the key, and any 
 				plugin-specific configuration is stored in the value. This 
-				plugin-specific configuration must contain at least a @uris@ pair, 
-				which should be an array of the URIs the handler should handle, 
-				relative to the root. See the documentation for the plugin itself for
-				additional values that can be set.
+				plugin-specific configuration must contain at least a uri mount
+				point. See the documentation for the plugin itself for additional
+				values that can be set.  For more information about writing handlers,
+				see the <a href="{relocatable:../04.Hackers_Guide/writing-handlers.page}">Handler</a>
+				documentation.
+			</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>Defining a URI mount point</dt>
+					<dd class="description">
+						<p>The following are all valid methods for defining URI mount
+						points for a handler:</p>
+						<pre>
+- handlername: /mount
+
+- handlername:
+    uris: /mount
+
+- handlername:
+    uris: [/mount, /mount2]
+						</pre>
+					</dd>
+				</dl>
 			</dd>
 			<dd class="default">The default is to only handle requests via the default
 				handler.</dd>
-
-				<dt>metastore</dt>
-				<dd class="description">Configuration of the plugin which provides the
-					metastore implementation.</dd>
-				<dd class="subsection">
-					<dl>
-						<dt>name</dt>
-		                <dd class="description">The name of the plugin which provides the 
-							metastore implementation.</dd>
-						<dd class="default">Defaults to @memory@</dd>
-
-						<dt class="placeholder">(Plugin-specific values)</dt>
-						<dd class="description">See the documentation for your chosen 
-							plugin about what valid config values are.</dd>
-					</dl>
-				</dd>
 
 		</dl>		
 	</dd>

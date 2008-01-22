@@ -115,6 +115,20 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
+
+	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### in the provided +propshash+.
+	def set_properties( uuid, propshash )
+		props = propshash.dup
+		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		
+		@lock.lock do
+			@metadata.transaction do
+				@metadata[ uuid.to_s ] = props
+			end
+		end
+	end
+	
 	
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.
@@ -141,6 +155,14 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		@metadata.transaction do
 			@metadata[ uuid.to_s ] ||= {}
 			return @metadata[ uuid.to_s ].key?( propname.to_sym )
+		end
+	end
+
+
+	### MetaStore API: Returns +true+ if the given +uuid+ has any properties.
+	def has_uuid?( uuid )
+		@metadata.transaction do
+			@metadata.root?( uuid.to_s )
 		end
 	end
 

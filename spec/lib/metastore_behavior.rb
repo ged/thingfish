@@ -39,6 +39,18 @@ describe "A MetaStore", :shared => true do
 		@store.get_property( TEST_UUID, TEST_PROP ).should == TEST_PROPVALUE
 	end
 
+	it "can set multiple properties for a UUID" do
+		@store.set_property( TEST_UUID, 'cake', 'is a lie' )
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+		@store.set_properties( TEST_UUID, props )
+		@store.get_property( TEST_UUID, TEST_PROP ).should  == TEST_PROPVALUE
+		@store.get_property( TEST_UUID, TEST_PROP2 ).should == TEST_PROPVALUE2
+		@store.get_property( TEST_UUID, 'cake' ).should be_nil()
+	end
+	
 	it "can get a property belonging to a UUID object" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.get_property( TEST_UUID_OBJ, TEST_PROP ).should == TEST_PROPVALUE
@@ -48,6 +60,18 @@ describe "A MetaStore", :shared => true do
 		@store.has_property?( TEST_UUID, TEST_PROP ).should be_false
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.has_property?( TEST_UUID, TEST_PROP ).should be_true
+	end
+
+	it "can test whether or not a UUID has any metadata stored" do
+		@store.has_uuid?( TEST_UUID ).should be_false
+		@store.set_property( TEST_UUID_OBJ, TEST_PROP, TEST_PROPVALUE )
+		@store.has_uuid?( TEST_UUID ).should be_true
+	end
+
+	it "can test whether or not a UUID (as an object) has any metadata stored" do
+		@store.has_uuid?( TEST_UUID_OBJ ).should be_false
+		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+		@store.has_uuid?( TEST_UUID_OBJ ).should be_true
 	end
 
 	it "can test whether or not a property exists for a UUID object" do
@@ -115,7 +139,6 @@ describe "A MetaStore", :shared => true do
 	it "can fetch all keys for all properties in the store" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.set_property( TEST_UUID, TEST_PROP2, TEST_PROPVALUE2 )
-		@store.get_all_property_keys.should have(2).members
 		@store.get_all_property_keys.should include( TEST_PROP.to_sym )
 		@store.get_all_property_keys.should include( TEST_PROP2.to_sym )
 	end
@@ -126,7 +149,6 @@ describe "A MetaStore", :shared => true do
 		@store.set_property( TEST_UUID2, TEST_PROP, TEST_PROPVALUE2 )
 		@store.set_property( TEST_UUID3, TEST_PROP, TEST_PROPVALUE2 )
 		@store.set_property( TEST_UUID, TEST_PROP2, TEST_PROPVALUE2 )
-		@store.get_all_property_values( TEST_PROP ).should have(2).members
 		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE )
 		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE2 )
 	end

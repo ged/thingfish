@@ -162,7 +162,20 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			r_id, m_id, value
 		)
 	end
+
 	
+	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### in the provided +propshash+.
+	def set_properties( uuid, propshash )
+		self.transaction do
+			self.delete_properties( uuid )
+			propshash.each do |prop, val|
+				self.set_property( uuid, prop, val )
+			end
+		end		
+	end
+	
+
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
@@ -201,6 +214,13 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	### MetaStore API: Returns +true+ if the given +uuid+ exists in the metastore.
+	def has_uuid?( uuid )
+		select_sql = 'SELECT id FROM resources WHERE uuid = :uuid'
+		return @metadata.get_first_value( select_sql, uuid ) ? true : false
+	end
+	
+	
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
 		return get_property( uuid, propname ) != nil

@@ -27,11 +27,19 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/handler'
-require 'thingfish/mixins'
-
+begin
+	require 'thingfish'
+	require 'thingfish/metastore/simple'
+	require 'thingfish/constants'
+	require 'thingfish/handler'
+	require 'thingfish/mixins'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 ### The default metadata handler for the thingfish daemon when configured with
 ### a ThingFish::SimpleMetaStore.
@@ -75,15 +83,39 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		case request.path_info
 			
 		when '/', ''
-			self.handle_root_request( request, response )
+			self.handle_get_root_request( request, response )
 	
 		when UUID_URL
 			uuid = $1
-			self.handle_uuid_request( request, response, uuid )
+			self.handle_get_uuid_request( request, response, uuid )
 		
 		when %r{^/(\w+)$}
 			key = $1
-			self.handle_key_request( request, response, key )
+			self.handle_get_key_request( request, response, key )
+			
+		else
+			self.log.error "Unable to handle metadata request: %p" % 
+				[ request.path_info ]
+			return			
+		end		
+	end
+
+
+	### Handle a PUT request
+	def handle_put_request( request, response )
+
+		case request.path_info
+			
+		when '/', ''
+			self.handle_update_root_request( request, response )
+	
+		when UUID_URL
+			uuid = $1
+			self.handle_update_uuid_request( request, response, uuid )
+
+		when %r{^/(#{UUID_REGEXP})/(\w+)$}
+			uuid, key = $1, $2
+			self.handle_update_key_request( request, response, uuid, key )
 			
 		else
 			self.log.error "Unable to handle metadata request: %p" % 
@@ -143,7 +175,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	#########
 
 	### Return a list of a all metadata keys in the store
-	def handle_root_request( request, response )
+	def handle_get_root_request( request, response )
 		response.status = HTTP::OK
 		response.headers[:content_type] = RUBY_MIMETYPE
 		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
@@ -151,7 +183,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 
 	### Return a list of all metadata tuples for a given resource
-	def handle_uuid_request( request, response, uuid )
+	def handle_get_uuid_request( request, response, uuid )
 		response.status = HTTP::OK
 		response.headers[:content_type] = RUBY_MIMETYPE
 		response.body = @metastore.get_properties( uuid )
@@ -159,10 +191,55 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 
 	### Return a list of all values for metadata property	
-	def handle_key_request( request, response, key )	
+	def handle_get_key_request( request, response, key )	
 		response.status = HTTP::OK
 		response.headers[:content_type] = RUBY_MIMETYPE
 		response.body = @metastore.get_all_property_values( key )
+	end
+
+
+	### Merge UUID metadata properties with values from the request body, which 
+	### should evaluate to be a hash of the form:
+	###   {
+	###     UUID1 => { property1 => value1, property2, value2 },
+	###     UUID2 => { property1 => value1, property2, value2 }
+	###   }
+	def handle_update_root_request( request, response )
+		response.status = HTTP::OK
+		response.headers[:content_type] = 'text/plain'
+		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
+	end
+
+
+	### Merge metadata properties for the specified +uuid+ with values from the
+	### request body, which should evaluate to be a hash of the form:
+	###   { property1 => value1, property2, value2 }
+	def handle_update_uuid_request( request, response, uuid )
+		prophash = request.body
+
+		if @metastore.has_uuid?( uuid )
+			@metastore[ uuid ].update( prophash )
+		
+			response.headers[:content_type] = 'text/plain'
+			response.status = HTTP::OK
+			response.body = 'Success.'
+		else
+			self.log.error "Request for metadata update to non-existant UUID #{uuid}"
+			# Fallthrough
+		end
+	end
+
+
+	### Set a UUID metadata property with the request body, which 
+	### should evaluate to a string.
+	def handle_update_key_request( request, response, uuid, key )	
+		new_property = ! @metastore.has_property?( uuid, key )
+
+		@metastore[ uuid ][ key ] = request.body
+		
+		response.headers[:content_type] = 'text/plain'
+		response.status = new_property ? HTTP::CREATED : HTTP::OK
+		response.body = 'Success.'
 	end
 	
 end # ThingFish::MetadataHandler

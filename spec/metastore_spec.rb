@@ -38,6 +38,12 @@ describe TestMetaStore, " (MetaStore derivative class)" do
 	end
 	
 	
+	it "raises NotImplementedError for #has_uuid?" do
+		lambda {
+			@metastore.has_uuid?( TEST_UUID )
+		}.should raise_error( NotImplementedError, /#has_uuid?/ )
+	end
+
 	it "raises NotImplementedError for #has_property?" do
 		lambda {
 			@metastore.has_property?( TEST_UUID, TEST_PROP )
@@ -155,9 +161,21 @@ describe ThingFish::MetaStore::ResourceProxy do
 	end
 	
 	it "can merge new data from a hash" do
-		@store.should_receive( :set_property ).with( TEST_UUID, 'format', TEST_PROPVALUE )
-		@store.should_receive( :set_property ).with( TEST_UUID, 'owner', 'perqualee' )
-		@proxy.update( :format => TEST_PROPVALUE, :owner => 'perqualee' )
+		oldprops = {
+			:untouched => 'oldvalue',
+			:owner     => 'plop'
+		}
+		prophash = {
+			TEST_PROP => TEST_PROPVALUE,
+			:owner    => 'perqualee'			
+		}
+		@store.should_receive( :get_properties ).
+			with( TEST_UUID ).
+			and_return( oldprops )
+		@store.should_receive( :set_properties ).
+			with( TEST_UUID, oldprops.merge(prophash) )
+
+		@proxy.update( TEST_PROP => TEST_PROPVALUE, :owner => 'perqualee' )
 	end
 
 end

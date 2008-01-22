@@ -37,12 +37,16 @@ require 'thingfish/exceptions'
 # 
 # [<tt>set_property( uuid, propname, value )</tt>]
 #   Set the property associated with +uuid+ specified by +propname+ to the given +value+.
+# [<tt>set_properties( uuid, hash )</tt>]
+#   Set the properties associated with the given +uuid+ to those in the provided +hash+.
 # [<tt>get_property( uuid, propname )</tt>]
 #   Return the property associated with +uuid+ specified by +propname+. Returns +nil+ if no such 
 #   property exists.
 # [<tt>get_properties( uuid )</tt>]
 #   Get the set of properties associated with the given +uuid+ as a hash keyed by property names 
 #   as symbols.
+# [<tt>has_uuid?( uuid )</tt>]
+#   Returns +true+ if the given +uuid+ exists in the metastore.
 # [<tt>has_property?( uuid, propname )</tt>]
 #   Returns +true+ if the given +uuid+ has a property +propname+.
 # [<tt>delete_property( uuid, propname )</tt>]
@@ -106,9 +110,8 @@ class ThingFish::MetaStore
 		### Adds the contents of +hash+ to the values for the referenced UUID, overwriting entries
 		### with duplicate keys.
 		def update( hash )
-			hash.each_pair do |key, value|
-				@store.set_property( @uuid, key.to_s, value )
-			end
+			merged = @store.get_properties( @uuid ).merge( hash )
+			@store.set_properties( @uuid, merged )
 		end
 		alias_method :merge!, :update
 		
@@ -198,8 +201,10 @@ class ThingFish::MetaStore
 	
 
 	### Mandatory MetaStore API
-	virtual :has_property?,
+	virtual :has_uuid?,
+		:has_property?,
 		:set_property,
+		:set_properties,
 		:get_property,
 		:get_properties,
 		:delete_property,

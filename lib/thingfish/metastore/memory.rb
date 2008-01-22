@@ -57,12 +57,27 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 
 	### Mandatory MetaStore API
 	
+	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
+	def has_uuid?( uuid )
+		return @metadata.key?( uuid.to_s )
+	end
+
+
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		@metadata[ uuid.to_s ][ propname.to_sym ] = value
 	end
 
+	
+	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### in the provided +propshash+.
+	def set_properties( uuid, propshash )
+		props = propshash.dup
+		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		@metadata[ uuid.to_s ] = props
+	end
+	
 	
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.

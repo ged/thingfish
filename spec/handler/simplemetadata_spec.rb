@@ -45,11 +45,6 @@ describe ThingFish::SimpleMetadataHandler do
 		}
 
 		@handler   = ThingFish::SimpleMetadataHandler.new( options )
-		@request   = mock( "request", :null_object => true )
-		@response  = mock( "response", :null_object => true )
-		@headers   = mock( "headers", :null_object => true )
-		@response.stub!( :headers ).and_return( @headers )
-		@listener  = mock( "listener", :null_object => true )
 		@metastore = mock( "metastore", :null_object => true )
 		
 		@listener.stub!( :metastore ).and_return( @metastore )
@@ -82,11 +77,16 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@handler   = ThingFish::SimpleMetadataHandler.new( options )
 		@request   = mock( "request", :null_object => true )
+		@request_headers   = mock( "request headers", :null_object => true )
+		@request.stub!( :headers ).and_return( @request_headers )
 		@response  = mock( "response", :null_object => true )
-		@headers   = mock( "headers", :null_object => true )
-		@response.stub!( :headers ).and_return( @headers )
+		@response_headers   = mock( "response headers", :null_object => true )
+		@response.stub!( :headers ).and_return( @response_headers )
 		@listener  = mock( "listener", :null_object => true )
 		@metastore = mock( "metastore", :null_object => true )
+		
+		@mockmetadata = mock( "metadata proxy", :null_object => true )
+		@metastore.stub!( :[] ).and_return( @mockmetadata )
 		
 		@listener.stub!( :metastore ).and_return( @metastore )
 		@metastore.stub!( :is_a? ).and_return( true )
@@ -94,17 +94,21 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 
 
-	# Shared behaviors
+	### Shared behaviors
 	it_should_behave_like "A Handler"
 	
-	# Examples
 
+	### Examples
+
+	# 
+	# GET
+	# 
 	it "returns a data-structure describing all metadata keys for GET /{handler}" do
 		@request.should_receive( :path_info ).and_return( '/' )
 		@metastore.should_receive( :get_all_property_keys ).
 			and_return( TESTING_KEYS )
 
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( STRINGIFIED_TESTING_KEYS )
 		
 		@handler.handle_get_request( @request, @response )
@@ -117,7 +121,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( 'invaders' ).
 			and_return( TESTING_VALUES )
 
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TESTING_VALUES )
 		
 		@handler.handle_get_request( @request, @response )
@@ -130,14 +134,119 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( TEST_UUID ).
 			and_return( TEST_RUBY_OBJECT )
 
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TEST_RUBY_OBJECT )
 		
 		@handler.handle_get_request( @request, @response )
 	end	
 
+	#
+	# PUT
+	#
+	it "updates a given uuid's metadata for a PUT to /{handler}/{uuid}/{key}" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
+		
+		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( true )
+		@mockmetadata.should_receive( :[]= ).with( TEST_PROP, TEST_PROPVALUE )
+		
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_put_request( @request, @response )
+	end
+	
+	
+	it "creates uuid's metadata property for a PUT to /{handler}/{uuid}/{key} if it " +
+		"didn't previously exist." do
+			
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
 
+		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( false )
+		@mockmetadata.should_receive( :[]= ).with( TEST_PROP, TEST_PROPVALUE )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::CREATED )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+	
+	it "responds with a 404 NOT FOUND response for a PUT to " +
+	   "/{handler}/{non-existant uuid}"  do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
+		@response.should_not_receive( :body= )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+	
+	it "updates a given uuid's metadata for a PUT to /{handler}/{uuid}"  do
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :body ).and_return( props )
+
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( true )
+		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
+		@mockmetadata.should_receive( :update ).with( props )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_put_request( @request, @response )		
+ 	end
+	
+	it "doesn't allow a resource's 'extent' attribute to be updated via PUT"
+
+	it "replies with a NOT_ACCEPTABLE response for PUT requests whose body isn't " +
+	   "transformed into a Ruby Hash by the filters"
+
+	#
+	# POST
+	#
+	
+	it "replaces a given UUID's metadata for a POST to /{handler}/{uuid}"	
+	# it "replaces a given UUID's metadata for a POST to /{handler}/{uuid}" do
+	# 	props = {
+	# 		TEST_PROP  => TEST_PROPVALUE,
+	# 		TEST_PROP2 => TEST_PROPVALUE2
+	# 	}
+	# 	@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+	# 	
+	# 	@request.should_receive( :headers )
+	# 	@request.should_receive( :body ).and_return( props )
+	# 	@metastore.should_receive( :set_properties ).
+	# 		with( TEST_UUID, props )
+	# 		
+	# 	@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+	# 	@response.should_receive( :body= ).with( /success/i )
+	# 	
+	# 	@handler.handle_put_request( @request, @response )
+	# end
+	
+	it "doesn't allow a resource's 'extent' attribute to be replaced"
+
+	
+
+	# 
 	# HTML filter interface
+	# 
 	
 	it "renders HTML output for a GET /{handler}" do
 		template = stub( "ERB template", :result => :rendered_output )

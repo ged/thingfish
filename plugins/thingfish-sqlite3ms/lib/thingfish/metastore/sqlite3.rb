@@ -164,11 +164,11 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 
 	
-	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### MetaStore API: Set the properties associated with the given +uuid+ to those
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		self.transaction do
-			self.delete_properties( uuid )
+			self.delete_resource( uuid )
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
@@ -176,6 +176,17 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 	
 
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the 
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		self.transaction do
+			propshash.each do |prop, val|
+				self.set_property( uuid, prop, val )
+			end
+		end		
+	end
+	
+	
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
@@ -246,8 +257,29 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
+	### MetaStore API: Removes the properties specified by +propnames+ from those associated with
+	### +uuid+.
+	def delete_properties( uuid, *propnames )
+		placeholders = ['?'] * propnames.length
+		delete_sql = %Q{
+			DELETE FROM metaval
+			WHERE
+				r_id = ( SELECT id FROM resources WHERE uuid = :uuid )
+				AND
+				m_id IN( SELECT id FROM metakey WHERE key IN( #{placeholders.join(',')} ) )
+		}
+
+		begin
+			@metadata.execute( delete_sql, uuid, *propnames )
+		rescue SQLite3::SQLException
+			# no-op - not being able to find the uuid or propname in SQL
+			# in this case is not a problem.
+		end
+	end
+	
+	
 	### MetaStore API: Removes all properties from given +uuid+
-	def delete_properties( uuid )
+	def delete_resource( uuid )
 		delete_sql = %q{
 			DELETE FROM resources
 			WHERE uuid = :uuid

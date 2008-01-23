@@ -116,7 +116,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### MetaStore API: Set the properties associated with the given +uuid+ to those
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		props = propshash.dup
@@ -125,6 +125,20 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		@lock.lock do
 			@metadata.transaction do
 				@metadata[ uuid.to_s ] = props
+			end
+		end
+	end
+	
+	
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the 
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		props = propshash.dup
+		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		
+		@lock.lock do
+			@metadata.transaction do
+				@metadata[ uuid.to_s ].merge!( props )
 			end
 		end
 	end
@@ -178,8 +192,22 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
+	### MetaStore API: Removes the properties specified by +propnames+ from those associated with
+	### +uuid+.
+	def delete_properties( uuid, *propnames )
+		@lock.lock do
+			@metadata.transaction do
+				@metadata[ uuid.to_s ] ||= {}
+				propnames.each do |propname|
+					@metadata[ uuid.to_s ].delete( propname.to_sym )
+				end
+			end
+		end
+	end
+	
+	
 	### MetaStore API: Removes all properties from given +uuid+
-	def delete_properties( uuid )
+	def delete_resource( uuid )
 		@lock.lock do
 			@metadata.transaction do
 				return 0 if @metadata[ uuid.to_s ].nil?

@@ -70,12 +70,21 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 
 	
-	### MetaStore API:Set the properties associated with the given +uuid+ to those
+	### MetaStore API: Set the properties associated with the given +uuid+ to those
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		props = propshash.dup
 		props.each_key {|key| props[key.to_sym] = props.delete(key) }
 		@metadata[ uuid.to_s ] = props
+	end
+	
+	
+	### MetaStore API: Merge the specified +propshash+ into the properties associated with the 
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		props = propshash.dup
+		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		@metadata[ uuid.to_s ] = @metadata[ uuid.to_s ].merge( props )
 	end
 	
 	
@@ -105,8 +114,21 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
-	### MetaStore API: Removes all properties from given +uuid+
-	def delete_properties( uuid )
+	### MetaStore API: Removes the values for the specified +keys+ from the metadata associated
+	### with the given +uuid+.
+	def delete_properties( uuid, *keys )
+		rval = []
+
+		keys.each do |key|
+			rval << @metadata[ uuid.to_s ].delete( key.to_sym )
+		end
+		
+		return rval
+	end
+	
+	
+	### MetaStore API: Removes all metadata for the given +uuid+.
+	def delete_resource( uuid )
 		count = @metadata[ uuid.to_s ].length
 		@metadata.delete( uuid.to_s )
 		return count

@@ -44,9 +44,6 @@ plugins:
         - simplesearch:
             uris: /search
             resource_dir: var/www
-        - time:
-            uris: /what-time-is-it
-            resource_dir: var/www
     filters:
         - html:
             resource_dir: var/www

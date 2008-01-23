@@ -38,7 +38,10 @@ require 'thingfish/exceptions'
 # [<tt>set_property( uuid, propname, value )</tt>]
 #   Set the property associated with +uuid+ specified by +propname+ to the given +value+.
 # [<tt>set_properties( uuid, hash )</tt>]
-#   Set the properties associated with the given +uuid+ to those in the provided +hash+.
+#   Set the properties associated with the given +uuid+ to those in the provided +hash+, 
+#   eliminating any others already set.
+# [<tt>update_properties( uuid, hash )</tt>]
+#   Merge the properties in the provided hash with those associated with the given +uuid+.
 # [<tt>get_property( uuid, propname )</tt>]
 #   Return the property associated with +uuid+ specified by +propname+. Returns +nil+ if no such 
 #   property exists.
@@ -51,8 +54,10 @@ require 'thingfish/exceptions'
 #   Returns +true+ if the given +uuid+ has a property +propname+.
 # [<tt>delete_property( uuid, propname )</tt>]
 #   Removes the property +propname+ associated with the given +uuid+.
-# [<tt>delete_properties( uuid )</tt>]
-#   Removes all properties associated with the given +uuid+.
+# [<tt>delete_properties( uuid, *properties )</tt>]
+#   Removes the specified +properties+ associated with the given +uuid+.
+# [<tt>delete_resource( uuid )</tt>]
+#   Removes all properties associated with the given +uuid+, as well as the entry itself.
 # [<tt>get_all_property_keys()</tt>]
 #   Return an Array of all property keys in the store.
 # [<tt>get_all_property_values()</tt>]
@@ -78,6 +83,9 @@ class ThingFish::MetaStore
 
 	# SVN Id
 	SVNId = %q$Id$
+
+	# Keys which should not be manually updated
+	SYSTEM_METADATA_KEYS = [ :extent, :checksum ]
 
 
 	### Proxy class for metadata operations for a given resource.
@@ -110,8 +118,7 @@ class ThingFish::MetaStore
 		### Adds the contents of +hash+ to the values for the referenced UUID, overwriting entries
 		### with duplicate keys.
 		def update( hash )
-			merged = @store.get_properties( @uuid ).merge( hash )
-			@store.set_properties( @uuid, merged )
+			@store.update_properties( @uuid,  hash )
 		end
 		alias_method :merge!, :update
 		
@@ -160,6 +167,7 @@ class ThingFish::MetaStore
 		['thingfish/metastore']
 	end
 	
+	
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -198,6 +206,43 @@ class ThingFish::MetaStore
 	def transaction
 		yield
 	end
+
+
+	### Set the properties associated with the specified +uuid+ to the given +props+ after
+	### eliminating any that are necessary for filestore consistency.
+	def update_safe_properties( uuid, props )
+		props = self.prune_system_properties( props )
+		self.update_properties( uuid, props )
+	end
+	
+
+	### Set the value of the metadata +key+ associated with the given +uuid+ to +value+, unless it's
+	### a property that is used by the system, in which case it is silently ignored.
+	def set_safe_property( uuid, key, value )
+		props = self.prune_system_properties( [key] )
+		raise ThingFish::MetaStoreError, 
+			"property '#{key}' cannot be updated, as it is used by the system" if props.empty?
+		self.set_property( uuid, key, value )
+	end
+	
+
+	### Delete the given +props+ associated with the specified +uuid+ after eliminating any 
+	### that are necessary for filestore consistency.
+	def delete_safe_properties( uuid, *props )
+		props = self.prune_system_properties( props )
+		self.delete_properties( uuid, *props )
+	end
+	
+
+	### Delete the given +key+ from the metadata associated with the specified +uuid+ unless it's
+	### one of the properties used by the system, in which case a ThingFish::MetaStoreError is
+	### raised.
+	def delete_safe_property( uuid, key )
+		props = self.prune_system_properties( key => nil )
+		raise ThingFish::MetaStoreError, 
+			"property '#{key}' cannot be deleted, as it is used by the system" if props.empty?
+		self.delete_property( uuid, key )
+	end
 	
 
 	### Mandatory MetaStore API
@@ -205,14 +250,35 @@ class ThingFish::MetaStore
 		:has_property?,
 		:set_property,
 		:set_properties,
+		:update_properties,
 		:get_property,
 		:get_properties,
 		:delete_property,
 		:delete_properties,
+		:delete_resource,
 		:get_all_property_keys,
 		:get_all_property_values,
 		:find_by_exact_properties,
 		:find_by_matching_properties
+
+
+	#########
+	protected
+	#########
+
+	### Return a copy of the specified +props+ hash after eliminating any used by the system (as 
+	### defined by SYSTEM_METADATA_KEYS).
+	def prune_system_properties( props )
+		props = props.dup
+
+		SYSTEM_METADATA_KEYS.each do |key|
+			props.delete( key )
+			props.delete( key.to_s )
+		end
+		
+		return props
+	end
+	
 
 end # class ThingFish::MetaStore
 

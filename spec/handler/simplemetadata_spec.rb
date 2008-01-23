@@ -212,7 +212,28 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@handler.handle_put_request( @request, @response )		
  	end
 	
-	it "doesn't allow a resource's 'extent' attribute to be updated via PUT"
+	it "doesn't allow a resource's 'checksum' attribute to be updated via PUT"
+	it "doesn't allow a resource's 'extent' attribute to be updated via PUT" do
+		props = {
+			'extent'  => 2,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :body ).and_return( props )
+
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( true )
+		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
+		@mockmetadata.should_receive( :update ).with( props )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_put_request( @request, @response )		
+	end
 
 	it "replies with a NOT_ACCEPTABLE response for PUT requests whose body isn't " +
 	   "transformed into a Ruby Hash by the filters"

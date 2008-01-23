@@ -27,99 +27,121 @@ include ThingFish::TestConstants;
 class TestMetaStore < ThingFish::MetaStore
 end
 
+
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe TestMetaStore, " (MetaStore derivative class)" do
-	
-	before(:each) do
-		@metastore = ThingFish::MetaStore.create( 'test' )
-	end
-	
-	
-	it "raises NotImplementedError for #has_uuid?" do
-		lambda {
-			@metastore.has_uuid?( TEST_UUID )
-		}.should raise_error( NotImplementedError, /#has_uuid?/ )
-	end
+describe ThingFish::MetaStore do
 
-	it "raises NotImplementedError for #has_property?" do
-		lambda {
-			@metastore.has_property?( TEST_UUID, TEST_PROP )
-		}.should raise_error( NotImplementedError, /#has_property?/ )
-	end
-
-	it "raises NotImplementedError for #set_property" do
-		lambda {
-			@metastore.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
-		}.should raise_error( NotImplementedError, /#set_property/ )
-	end
-
-	it "raises NotImplementedError for #get_property" do
-		lambda {
-			@metastore.get_property( TEST_UUID, TEST_PROP )
-		}.should raise_error( NotImplementedError, /#get_property/ )
-	end
-
-
-	it "raises NotImplementedError for #get_properties" do
-		lambda {
-			@metastore.get_properties( TEST_UUID )
-		}.should raise_error( NotImplementedError, /#get_properties/ )
-	end
-
-	it "raises NotImplementedError for #delete_property" do
-		lambda {
-			@metastore.delete_property( TEST_UUID, TEST_PROP )
-		}.should raise_error( NotImplementedError, /#delete_property/ )
-	end
-
-	it "raises NotImplementedError for #delete_properties" do
-		lambda {
-			@metastore.delete_properties( TEST_UUID, TEST_PROP )
-		}.should raise_error( NotImplementedError, /#delete_properties/ )
-	end
-
-	it "raises NotImplementedError for #get_all_property_keys" do
-		lambda {
-			@metastore.get_all_property_keys()
-		}.should raise_error( NotImplementedError, /#get_all_property_keys/ )
-	end
-
-	it "raises NotImplementedError for #get_all_property_values" do
-		lambda {
-			@metastore.get_all_property_values( TEST_PROP )
-		}.should raise_error( NotImplementedError, /#get_all_property_values/ )
-	end
+	describe " (derivative class that doesn't implement virtual methods)" do
 		
-	it "raises NotImplementedError for #find_by_exact_properties" do
-		lambda {
-			@metastore.find_by_exact_properties( :namespace => 'foo' )
-		}.should raise_error( NotImplementedError, /#find_by_exact_properties/ )
-	end
-
-	it "raises NotImplementedError for #find_by_matching_properties" do
-		lambda {
-			@metastore.find_by_matching_properties( :namespace => 'f*' )
-		}.should raise_error( NotImplementedError, /#find_by_matching_properties/ )
-	end
-		
-	it "returns a ResourceProxy to use when interacting with a resource's metadata set" do
-	    @metastore[ TEST_UUID ].
-			should be_a_kind_of( ThingFish::MetaStore::ResourceProxy )
-	end
+		before(:each) do
+			@metastore = ThingFish::MetaStore.create( 'test' )
+		end
 	
-	it "returns the same ResourceProxy for a string UUID as for the same UUID object" do
-		uuid_obj = UUID.parse( TEST_UUID )
-		@metastore[ TEST_UUID ].should == @metastore[ uuid_obj ]
-	end
+	
+		it "raises NotImplementedError for #has_uuid?" do
+			lambda {
+				@metastore.has_uuid?( TEST_UUID )
+			}.should raise_error( NotImplementedError, /#has_uuid?/ )
+		end
 
-	it "throws an exception if the proxy class isn't set in the index operator method [bug #2]" do
-		@metastore.instance_variable_set( :@proxy_class, nil )
-		lambda {
-			@metastore[ TEST_UUID ]
-		}.should raise_error( ThingFish::PluginError, /did not call.+initializer/ )
+		it "raises NotImplementedError for #has_property?" do
+			lambda {
+				@metastore.has_property?( TEST_UUID, TEST_PROP )
+			}.should raise_error( NotImplementedError, /#has_property?/ )
+		end
+
+		it "raises NotImplementedError for #set_property" do
+			lambda {
+				@metastore.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+			}.should raise_error( NotImplementedError, /#set_property/ )
+		end
+
+		it "raises NotImplementedError for #set_properties" do
+			lambda {
+				@metastore.set_properties( TEST_UUID, TEST_PROP => TEST_PROPVALUE )
+			}.should raise_error( NotImplementedError, /#set_properties/ )
+		end
+
+		it "raises NotImplementedError for #update_properties" do
+			lambda {
+				@metastore.update_properties( TEST_UUID, TEST_PROP => TEST_PROPVALUE )
+			}.should raise_error( NotImplementedError, /#update_properties/ )
+		end
+
+		it "raises NotImplementedError for #get_property" do
+			lambda {
+				@metastore.get_property( TEST_UUID, TEST_PROP )
+			}.should raise_error( NotImplementedError, /#get_property/ )
+		end
+
+
+		it "raises NotImplementedError for #get_properties" do
+			lambda {
+				@metastore.get_properties( TEST_UUID )
+			}.should raise_error( NotImplementedError, /#get_properties/ )
+		end
+
+		it "raises NotImplementedError for #delete_property" do
+			lambda {
+				@metastore.delete_property( TEST_UUID, TEST_PROP )
+			}.should raise_error( NotImplementedError, /#delete_property/ )
+		end
+
+		it "raises NotImplementedError for #delete_properties" do
+			lambda {
+				@metastore.delete_properties( TEST_UUID, TEST_PROP )
+			}.should raise_error( NotImplementedError, /#delete_properties/ )
+		end
+
+		it "raises NotImplementedError for #delete_resource" do
+			lambda {
+				@metastore.delete_resource( TEST_UUID )
+			}.should raise_error( NotImplementedError, /#delete_resource/ )
+		end
+
+		it "raises NotImplementedError for #get_all_property_keys" do
+			lambda {
+				@metastore.get_all_property_keys()
+			}.should raise_error( NotImplementedError, /#get_all_property_keys/ )
+		end
+
+		it "raises NotImplementedError for #get_all_property_values" do
+			lambda {
+				@metastore.get_all_property_values( TEST_PROP )
+			}.should raise_error( NotImplementedError, /#get_all_property_values/ )
+		end
+		
+		it "raises NotImplementedError for #find_by_exact_properties" do
+			lambda {
+				@metastore.find_by_exact_properties( :namespace => 'foo' )
+			}.should raise_error( NotImplementedError, /#find_by_exact_properties/ )
+		end
+
+		it "raises NotImplementedError for #find_by_matching_properties" do
+			lambda {
+				@metastore.find_by_matching_properties( :namespace => 'f*' )
+			}.should raise_error( NotImplementedError, /#find_by_matching_properties/ )
+		end
+		
+		it "returns a ResourceProxy to use when interacting with a resource's metadata set" do
+		    @metastore[ TEST_UUID ].
+				should be_a_kind_of( ThingFish::MetaStore::ResourceProxy )
+		end
+	
+		it "returns the same ResourceProxy for a string UUID as for the same UUID object" do
+			uuid_obj = UUID.parse( TEST_UUID )
+			@metastore[ TEST_UUID ].should == @metastore[ uuid_obj ]
+		end
+
+		it "throws an exception if the proxy class isn't set in the index operator method [bug #2]" do
+			@metastore.instance_variable_set( :@proxy_class, nil )
+			lambda {
+				@metastore[ TEST_UUID ]
+			}.should raise_error( ThingFish::PluginError, /did not call.+initializer/ )
+		end
 	end
 
 end
@@ -161,21 +183,13 @@ describe ThingFish::MetaStore::ResourceProxy do
 	end
 	
 	it "can merge new data from a hash" do
-		oldprops = {
-			:untouched => 'oldvalue',
-			:owner     => 'plop'
-		}
 		prophash = {
 			TEST_PROP => TEST_PROPVALUE,
 			:owner    => 'perqualee'			
 		}
-		@store.should_receive( :get_properties ).
-			with( TEST_UUID ).
-			and_return( oldprops )
-		@store.should_receive( :set_properties ).
-			with( TEST_UUID, oldprops.merge(prophash) )
+		@store.should_receive( :update_properties ).with( TEST_UUID, prophash )
 
-		@proxy.update( TEST_PROP => TEST_PROPVALUE, :owner => 'perqualee' )
+		@proxy.update( prophash )
 	end
 
 end

@@ -51,6 +51,18 @@ describe "A MetaStore", :shared => true do
 		@store.get_property( TEST_UUID, 'cake' ).should be_nil()
 	end
 	
+	it "can set update properties for a UUID" do
+		@store.set_property( TEST_UUID, 'cake', 'is a lie' )
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+		@store.update_properties( TEST_UUID, props )
+		@store.get_property( TEST_UUID, TEST_PROP ).should  == TEST_PROPVALUE
+		@store.get_property( TEST_UUID, TEST_PROP2 ).should == TEST_PROPVALUE2
+		@store.get_property( TEST_UUID, 'cake' ).should == 'is a lie'
+	end
+	
 	it "can get a property belonging to a UUID object" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.get_property( TEST_UUID_OBJ, TEST_PROP ).should == TEST_PROPVALUE
@@ -121,17 +133,33 @@ describe "A MetaStore", :shared => true do
 	end
 
 	it "can remove all properties for a UUID" do
+		@store.set_property( TEST_UUID_OBJ, TEST_PROP, TEST_PROPVALUE )
+		@store.set_property( TEST_UUID_OBJ, TEST_PROP2, TEST_PROPVALUE2 )
+		@store.delete_resource( TEST_UUID )
+		@store.has_property?( TEST_UUID_OBJ, TEST_PROP ).should be_false
+		@store.has_property?( TEST_UUID_OBJ, TEST_PROP2 ).should be_false
+	end
+
+	it "can remove a set of properties for a UUID" do
+		@store.set_property( TEST_UUID_OBJ, TEST_PROP, TEST_PROPVALUE )
+		@store.set_property( TEST_UUID_OBJ, TEST_PROP2, TEST_PROPVALUE2 )
+		@store.delete_properties( TEST_UUID, TEST_PROP )
+		@store.has_property?( TEST_UUID_OBJ, TEST_PROP ).should be_false
+		@store.has_property?( TEST_UUID_OBJ, TEST_PROP2 ).should be_true
+	end
+
+	it "can remove a set of properties for a UUID object" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.set_property( TEST_UUID, TEST_PROP2, TEST_PROPVALUE2 )
-		@store.delete_properties( TEST_UUID )
-		@store.has_property?( TEST_UUID, TEST_PROP ).should be_false
+		@store.delete_properties( TEST_UUID_OBJ, TEST_PROP2 )
+		@store.has_property?( TEST_UUID, TEST_PROP ).should be_true
 		@store.has_property?( TEST_UUID, TEST_PROP2 ).should be_false
 	end
 
 	it "can remove all properties for a UUID object" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.set_property( TEST_UUID, TEST_PROP2, TEST_PROPVALUE2 )
-		@store.delete_properties( TEST_UUID_OBJ )
+		@store.delete_resource( TEST_UUID_OBJ )
 		@store.has_property?( TEST_UUID, TEST_PROP ).should be_false
 		@store.has_property?( TEST_UUID, TEST_PROP2 ).should be_false
 	end
@@ -198,6 +226,53 @@ describe "A MetaStore", :shared => true do
 		
 		found.should have(1).members
 		found.first.should == TEST_UUID
+	end
+
+
+	describe " (safety methods)" do
+		
+		TEST_PROPSET = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2,
+			'extent'   => "213404",
+			'checksum' => '231c9a4500f2448e3bdec11c8baedc53',
+		}
+		
+		it "eliminates system attributes from properties passed through #update_safe_properties" do
+			@store.set_properties( TEST_UUID, TEST_PROPSET )
+			
+			@store.update_safe_properties( TEST_UUID, 
+				:extent => "0",
+				:checksum => '',
+				TEST_PROP => 'something else'
+			  )
+			
+			@store.get_property( TEST_UUID, 'extent' ).should == TEST_PROPSET['extent']
+			@store.get_property( TEST_UUID, 'checksum' ).should == TEST_PROPSET['checksum']
+			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
+		end
+
+		it "eliminates system attributes from properties passed through #delete_safe_properties" do
+			@store.set_properties( TEST_UUID, TEST_PROPSET )
+			
+			@store.delete_safe_properties( TEST_UUID, :extent, :checksum, TEST_PROP )
+			
+			@store.should have_property( TEST_UUID, 'extent' )
+			@store.should have_property( TEST_UUID, 'checksum' )
+			@store.should_not have_property( TEST_UUID, TEST_PROP )
+		end
+
+		it "refuses to update system properties via #set_safe_property" do
+			lambda {
+				@store.set_safe_property( TEST_UUID, 'extent', 0 )
+			}.should raise_error( ThingFish::MetaStoreError, /used by the system/ )
+		end
+
+		it "refuses to delete system properties via #delete_safe_property" do
+			lambda {
+				@store.delete_safe_property( TEST_UUID, 'extent' )
+			}.should raise_error( ThingFish::MetaStoreError, /used by the system/ )
+		end
 	end
 	
 	

@@ -43,6 +43,9 @@ module ThingFish
 	# its allotted quota.
 	class FileStoreQuotaError < ThingFish::FileStoreError; end
 
+	# Error in a metastore plugin
+	class MetaStoreError < ThingFish::PluginError; end
+	
 	# Something was wrong with a response
 	class ResponseError < ThingFish::Error; end
 

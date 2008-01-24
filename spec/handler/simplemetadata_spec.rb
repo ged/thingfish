@@ -140,18 +140,87 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@handler.handle_get_request( @request, @response )
 	end	
 
+
 	#
 	# PUT
 	#
+	
+	### PUT /
+	
+	it "responds with a 404 NOT FOUND response for a PUT to /{handler} if the " +
+	   "entity body contains a UUID that doesn't exist in the metastore"
+	
+	it "responds with a 404 NOT FOUND response for a PUT to " +
+	   "/{handler}/{non-existant uuid}"  do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
+		@response.should_not_receive( :body= )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+
+	
+	it "safely updates a given uuid's metadata for a PUT to /{handler}/{uuid}"  do
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :body ).and_return( props )
+
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( true )
+		@metastore.should_receive( :update_safe_properties ).with( TEST_UUID, props )	
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_put_request( @request, @response )		
+ 	end
+		
+	
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for PUT requests whose " +
+	   "body isn't transformed into a Ruby Hash by the filters" do
+		
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+
 	it "updates a given uuid's metadata for a PUT to /{handler}/{uuid}/{key}" do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
 		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
-		
-		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
+
 		@metastore.should_receive( :has_property? ).
 			with( TEST_UUID, TEST_PROP ).
-			and_return( true )
-		@mockmetadata.should_receive( :[]= ).with( TEST_PROP, TEST_PROPVALUE )
+			and_return( true )		
+		@metastore.should_receive( :set_safe_property ).
+			with( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
@@ -167,11 +236,9 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
 		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
 
-		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
 		@metastore.should_receive( :has_property? ).
 			with( TEST_UUID, TEST_PROP ).
 			and_return( false )
-		@mockmetadata.should_receive( :[]= ).with( TEST_PROP, TEST_PROPVALUE )
 
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
@@ -179,89 +246,13 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@handler.handle_put_request( @request, @response )		
 	end
+
 	
-	it "responds with a 404 NOT FOUND response for a PUT to " +
-	   "/{handler}/{non-existant uuid}"  do
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
 
-		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
-		@response.should_not_receive( :body= )
-
-		@handler.handle_put_request( @request, @response )		
-	end
-	
-	it "updates a given uuid's metadata for a PUT to /{handler}/{uuid}"  do
-		props = {
-			TEST_PROP  => TEST_PROPVALUE,
-			TEST_PROP2 => TEST_PROPVALUE2
-		}
-
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request.should_receive( :body ).and_return( props )
-
-		@metastore.should_receive( :has_uuid? ).
-			with( TEST_UUID ).
-			and_return( true )
-		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
-		@mockmetadata.should_receive( :update ).with( props )
-
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-		@response.should_receive( :body= ).with( /success/i )
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@handler.handle_put_request( @request, @response )		
- 	end
-	
-	it "doesn't allow a resource's 'checksum' attribute to be updated via PUT"
-	it "doesn't allow a resource's 'extent' attribute to be updated via PUT" do
-		props = {
-			'extent'  => 2,
-			TEST_PROP2 => TEST_PROPVALUE2
-		}
-
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request.should_receive( :body ).and_return( props )
-
-		@metastore.should_receive( :has_uuid? ).
-			with( TEST_UUID ).
-			and_return( true )
-		@metastore.should_receive( :[] ).with( TEST_UUID ).and_return( @mockmetadata )
-		@mockmetadata.should_receive( :update ).with( props )
-
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-		@response.should_receive( :body= ).with( /success/i )
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@handler.handle_put_request( @request, @response )		
-	end
-
-	it "replies with a NOT_ACCEPTABLE response for PUT requests whose body isn't " +
-	   "transformed into a Ruby Hash by the filters"
 
 	#
 	# POST
 	#
-	
-	it "replaces a given UUID's metadata for a POST to /{handler}/{uuid}"	
-	# it "replaces a given UUID's metadata for a POST to /{handler}/{uuid}" do
-	# 	props = {
-	# 		TEST_PROP  => TEST_PROPVALUE,
-	# 		TEST_PROP2 => TEST_PROPVALUE2
-	# 	}
-	# 	@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-	# 	
-	# 	@request.should_receive( :headers )
-	# 	@request.should_receive( :body ).and_return( props )
-	# 	@metastore.should_receive( :set_properties ).
-	# 		with( TEST_UUID, props )
-	# 		
-	# 	@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-	# 	@response.should_receive( :body= ).with( /success/i )
-	# 	
-	# 	@handler.handle_put_request( @request, @response )
-	# end
-	
-	it "doesn't allow a resource's 'extent' attribute to be replaced"
 
 	
 

@@ -38,6 +38,13 @@ module ThingFish::TestConstants
 		TEST_ACCEPT_HEADER    = 'application/x-yaml, application/json; q=0.2, text/xml; q=0.75'
 		TEST_RUBY_OBJECT	  = { 'pine cone' => 'sandwiches', 'olive oil' => 'pudding' }
 		TEST_TITLE            = 'Muffin the Panda Goes To School'
+		TEST_PROPSET 		  = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2,
+			'extent'   => "213404",
+			'checksum' => '231c9a4500f2448e3bdec11c8baedc53',
+		}
+		
 
 		# Fixtured HTTP responses
 		TEST_OK_HTTP_RESPONSE = <<-'EOF'.gsub(/^\s*/, '')

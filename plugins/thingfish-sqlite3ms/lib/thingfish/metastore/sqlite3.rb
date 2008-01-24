@@ -257,8 +257,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
-	### MetaStore API: Removes the properties specified by +propnames+ from those associated with
-	### +uuid+.
+	### MetaStore API: Removes the properties specified by +propnames+ from those
+	### associated with +uuid+.
 	def delete_properties( uuid, *propnames )
 		placeholders = ['?'] * propnames.length
 		delete_sql = %Q{

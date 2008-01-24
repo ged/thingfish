@@ -205,9 +205,14 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	###     UUID2 => { property1 => value1, property2, value2 }
 	###   }
 	def handle_update_root_request( request, response )
-		response.status = HTTP::OK
-		response.headers[:content_type] = 'text/plain'
-		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
+		if request.headers[:content_type] == RUBY_MIMETYPE
+			# Unimplemented
+		else
+			response.headers[:content_type] = 'text/plain'
+			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
+			response.body = "Don't know how to handle '%s' requests." %
+				[ request.headers[:content_type] ]
+		end
 	end
 
 
@@ -215,17 +220,24 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	### request body, which should evaluate to be a hash of the form:
 	###   { property1 => value1, property2, value2 }
 	def handle_update_uuid_request( request, response, uuid )
-		prophash = request.body
+		if request.headers[:content_type] == RUBY_MIMETYPE
+			prophash = request.body
 
-		if @metastore.has_uuid?( uuid )
-			@metastore[ uuid ].update( prophash )
+			if @metastore.has_uuid?( uuid )
+				@metastore.update_safe_properties( uuid, prophash )
 		
-			response.headers[:content_type] = 'text/plain'
-			response.status = HTTP::OK
-			response.body = 'Success.'
+				response.headers[:content_type] = 'text/plain'
+				response.status = HTTP::OK
+				response.body = 'Success.'
+			else
+				self.log.error "Request for metadata update to non-existant UUID #{uuid}"
+				# Fallthrough to 404
+			end
 		else
-			self.log.error "Request for metadata update to non-existant UUID #{uuid}"
-			# Fallthrough
+			response.headers[:content_type] = 'text/plain'
+			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
+			response.body = "Don't know how to handle '%s' requests." %
+				[ request.headers[:content_type] ]
 		end
 	end
 
@@ -235,11 +247,18 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	def handle_update_key_request( request, response, uuid, key )	
 		new_property = ! @metastore.has_property?( uuid, key )
 
-		@metastore[ uuid ][ key ] = request.body
-		
+		@metastore.set_safe_property( uuid, key, request.body )
+
 		response.headers[:content_type] = 'text/plain'
 		response.status = new_property ? HTTP::CREATED : HTTP::OK
 		response.body = 'Success.'
+
+	rescue ThingFish::MetaStoreError => err
+		msg = "%s while updating %s: %s" %
+		 	[ err.class.name, key, err.message ]
+		self.log.error( msg )
+		response.body   = msg
+		response.status	= HTTP::FORBIDDEN
 	end
 	
 end # ThingFish::MetadataHandler

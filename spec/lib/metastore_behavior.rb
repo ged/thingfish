@@ -231,13 +231,6 @@ describe "A MetaStore", :shared => true do
 
 	describe " (safety methods)" do
 		
-		TEST_PROPSET = {
-			TEST_PROP  => TEST_PROPVALUE,
-			TEST_PROP2 => TEST_PROPVALUE2,
-			'extent'   => "213404",
-			'checksum' => '231c9a4500f2448e3bdec11c8baedc53',
-		}
-		
 		it "eliminates system attributes from properties passed through #update_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
 			

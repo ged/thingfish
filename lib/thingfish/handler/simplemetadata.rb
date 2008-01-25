@@ -94,7 +94,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			self.handle_get_key_request( request, response, key )
 			
 		else
-			self.log.error "Unable to handle metadata request: %p" % 
+			self.log.error "Unable to handle metadata GET request: %p" % 
 				[ request.path_info ]
 			return			
 		end		
@@ -118,13 +118,37 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			self.handle_update_key_request( request, response, uuid, key )
 			
 		else
-			self.log.error "Unable to handle metadata request: %p" % 
+			self.log.error "Unable to handle metadata PUT request: %p" % 
 				[ request.path_info ]
 			return			
 		end		
 	end
 
 
+	### Handle a POST request
+	def handle_post_request( request, response )
+
+		case request.path_info
+			
+		when '/', ''
+			self.handle_update_root_request( request, response )
+	
+		when UUID_URL
+			uuid = $1
+			self.handle_update_uuid_request( request, response, uuid )
+
+		when %r{^/(#{UUID_REGEXP})/(\w+)$}
+			uuid, key = $1, $2
+			self.handle_update_key_request( request, response, uuid, key )
+			
+		else
+			self.log.error "Unable to handle metadata POST request: %p" % 
+				[ request.path_info ]
+			return			
+		end		
+	end
+	
+	
 	### Make the content for the handler section of the index page.
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "metadata/index.rhtml" )
@@ -206,7 +230,25 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	###   }
 	def handle_update_root_request( request, response )
 		if request.headers[:content_type] == RUBY_MIMETYPE
-			# Unimplemented
+			uuidhash = request.body
+
+			# check uuids sent to us are valid			
+			unknown_uuids = 
+				uuidhash.find_all { |uuid, _| ! @metastore.has_uuid?( uuid ) }
+			
+			if unknown_uuids.empty?
+				uuidhash.each do |uuid, prophash|
+					self.update_metastore( request, uuid, prophash )
+				end
+				response.headers[:content_type] = 'text/plain'
+				response.status = HTTP::OK
+				response.body = 'Success.'
+				
+			else
+				response.status = HTTP::CONFLICT
+				response.body   = unknown_uuids
+			end
+			
 		else
 			response.headers[:content_type] = 'text/plain'
 			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
@@ -224,7 +266,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			prophash = request.body
 
 			if @metastore.has_uuid?( uuid )
-				@metastore.update_safe_properties( uuid, prophash )
+				self.update_metastore( request, uuid, prophash )
 		
 				response.headers[:content_type] = 'text/plain'
 				response.status = HTTP::OK
@@ -260,7 +302,22 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		response.body   = msg
 		response.status	= HTTP::FORBIDDEN
 	end
+
 	
+	### Set or update the given +uuid+'s properties from the given +prophash+
+	### based on the http_method of the specified +request+.
+	def update_metastore( request, uuid, prophash )
+		case request.http_method
+		when 'POST'
+			@metastore.set_safe_properties( uuid, prophash )
+		when 'PUT'
+			@metastore.update_safe_properties( uuid, prophash )
+		else
+			raise "Unable to update metadata: Unknown method %s" % 
+				[ request.http_method ]
+		end
+	end
+
 end # ThingFish::MetadataHandler
 
 # vim: set nosta noet ts=4 sw=4:

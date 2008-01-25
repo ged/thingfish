@@ -147,8 +147,92 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	
 	### PUT /
 	
-	it "responds with a 404 NOT FOUND response for a PUT to /{handler} if the " +
-	   "entity body contains a UUID that doesn't exist in the metastore"
+	it "responds with a 200 SUCCESS response for a PUT to /{handler}" do
+		body = {
+			TEST_UUID => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			},
+			TEST_UUID2 => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			}
+		}
+
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'PUT' )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( true )
+
+		@metastore.should_receive( :update_safe_properties ).
+			with( TEST_UUID, body[TEST_UUID] )
+		@metastore.should_receive( :update_safe_properties ).
+			with( TEST_UUID2, body[TEST_UUID2] )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_put_request( @request, @response )		
+	end
+	
+	
+	it "responds with a 409 CONFLICT response for a PUT to /{handler} if the " +
+	   "entity body contains a UUID that doesn't exist in the metastore"  do
+		body = {
+			TEST_UUID => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			},
+			TEST_UUID2 => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			}
+		}
+
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( false )
+
+		@response.should_receive( :body= ).with an_instance_of( Array )
+		@response.should_receive( :status= ).with( HTTP::CONFLICT )
+		
+		@handler.handle_put_request( @request, @response )		
+	end
+
+
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for PUT requests to / " +
+	   "whose body isn't transformed into a Ruby Hash by the filters" do
+		@request.should_receive( :path_info ).and_return( '/' )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+
+
+	
+	### PUT /uuid
 	
 	it "responds with a 404 NOT FOUND response for a PUT to " +
 	   "/{handler}/{non-existant uuid}"  do
@@ -171,6 +255,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		}
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :http_method ).and_return( 'PUT' )
 		@request_headers.should_receive( :[] ).
 			with( :content_type ).
 			and_return( RUBY_MIMETYPE )
@@ -191,11 +276,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	
 	it "replies with an UNSUPPORTED_MEDIA_TYPE response for PUT requests whose " +
 	   "body isn't transformed into a Ruby Hash by the filters" do
-		
-		props = {
-			TEST_PROP  => TEST_PROPVALUE,
-			TEST_PROP2 => TEST_PROPVALUE2
-		}
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
 		@request_headers.should_receive( :[] ).
@@ -212,6 +292,9 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@handler.handle_put_request( @request, @response )		
 	end
 
+
+	### PUT /uuid/key
+	
 	it "updates a given uuid's metadata for a PUT to /{handler}/{uuid}/{key}" do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
 		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
@@ -247,13 +330,200 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@handler.handle_put_request( @request, @response )		
 	end
 
-	
-
 
 	#
 	# POST
 	#
+	
+	### POST /
+	
+	it "responds with a 200 SUCCESS response for a POST to /{handler}" do
+		body = {
+			TEST_UUID => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			},
+			TEST_UUID2 => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			}
+		}
 
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'POST' )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( true )
+
+		@metastore.should_receive( :set_safe_properties ).
+			with( TEST_UUID, body[TEST_UUID] )
+		@metastore.should_receive( :set_safe_properties ).
+			with( TEST_UUID2, body[TEST_UUID2] )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_post_request( @request, @response )		
+	end
+	
+	
+	it "responds with a 409 CONFLICT response for a POST to /{handler} if the " +
+	   "entity body contains a UUID that doesn't exist in the metastore"  do
+		body = {
+			TEST_UUID => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			},
+			TEST_UUID2 => {
+				TEST_PROP => TEST_PROPVALUE,
+				TEST_PROP2 => TEST_PROPVALUE2,
+			}
+		}
+
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( false )
+
+		@response.should_receive( :body= ).with an_instance_of( Array )
+		@response.should_receive( :status= ).with( HTTP::CONFLICT )
+		
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for POST requests to / " +
+	   "whose body isn't transformed into a Ruby Hash by the filters" do
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+	
+	### POST /uuid
+	
+	it "responds with a 404 NOT FOUND response for a POST to " +
+	   "/{handler}/{non-existant uuid}"  do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
+		@response.should_not_receive( :body= )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+
+	
+	it "safely updates a given uuid's metadata for a POST to /{handler}/{uuid}"  do
+		props = {
+			TEST_PROP  => TEST_PROPVALUE,
+			TEST_PROP2 => TEST_PROPVALUE2
+		}
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :http_method ).and_return( 'POST' )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :body ).and_return( props )
+
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( true )
+		@metastore.should_receive( :set_safe_properties ).with( TEST_UUID, props )	
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_post_request( @request, @response )		
+ 	end
+		
+	
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for POST requests whose " +
+	   "body isn't transformed into a Ruby Hash by the filters" do
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request_headers.should_receive( :[] ).
+			with( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+	### POST /uuid/key
+	
+	it "updates a given uuid's metadata for a POST to /{handler}/{uuid}/{key}" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
+
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( true )		
+		@metastore.should_receive( :set_safe_property ).
+			with( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+		
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_post_request( @request, @response )
+	end
+	
+	
+	it "creates uuid's metadata property for a POST to /{handler}/{uuid}/{key} if it " +
+		"didn't previously exist." do
+			
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
+
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( false )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::CREATED )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+	#
+	# DELETE
+	#
 	
 
 	# 

@@ -141,6 +141,15 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end	
 
 
+	it "responds with a a default (404) response for a GET to an unknown URI" do
+		@request.should_receive( :path_info ).
+			at_least( :once ).
+			and_return( '/wicka-wicka-pow-pow' )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+		@handler.handle_get_request( @request, @response )		
+	end
+	
+	
 	#
 	# PUT
 	#
@@ -164,9 +173,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@request.should_receive( :http_method ).
 			at_least( :once ).
 			and_return( 'PUT' )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( true )
@@ -199,10 +206,8 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@request.should_receive( :path_info ).and_return( '/'  )
 		@request.should_receive( :body ).and_return( body )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
-
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( false )
 
@@ -216,10 +221,10 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	it "replies with an UNSUPPORTED_MEDIA_TYPE response for PUT requests to / " +
 	   "whose body isn't transformed into a Ruby Hash by the filters" do
 		@request.should_receive( :path_info ).and_return( '/' )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
+		@request.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'application/something-bizarre' )
+		
 		@request.should_not_receive( :body )
 
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
@@ -237,10 +242,8 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	it "responds with a 404 NOT FOUND response for a PUT to " +
 	   "/{handler}/{non-existant uuid}"  do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
-
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
 		@response.should_not_receive( :body= )
 
@@ -256,9 +259,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
 		@request.should_receive( :http_method ).and_return( 'PUT' )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 		@request.should_receive( :body ).and_return( props )
 
 		@metastore.should_receive( :has_uuid? ).
@@ -272,25 +273,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@handler.handle_put_request( @request, @response )		
  	end
-		
-	
-	it "replies with an UNSUPPORTED_MEDIA_TYPE response for PUT requests whose " +
-	   "body isn't transformed into a Ruby Hash by the filters" do
-
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			at_least( :once ).
-			and_return( 'application/something-bizarre' )
-		@request.should_not_receive( :body )
-
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-		@response.should_receive( :body= ).
-			with( %r{application/something-bizarre}i )
-		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
-
-		@handler.handle_put_request( @request, @response )		
-	end
 
 
 	### PUT /uuid/key
@@ -331,6 +313,37 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 
 
+	it "replies with a FORBIDDEN for a PUT to /{handler}/{uuid}/{key} if it " +
+		"is a system reserved property" do
+			
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' +  'extent' )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
+
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, 'extent' ).
+			and_return( true )
+
+		@metastore.should_receive( :set_safe_property ).
+			with( TEST_UUID, 'extent', TEST_PROPVALUE ).
+			and_raise( ThingFish::MetaStoreError.new( 'used by the system' ) )
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /metastoreerror/i )
+		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
+
+		@handler.handle_put_request( @request, @response )		
+	end
+
+
+	it "responds with a a default (404) response for a PUT to an unknown URI" do
+		@request.should_receive( :path_info ).
+			at_least( :once ).
+			and_return( '/wicka-wicka-pow-pow' )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+		@handler.handle_put_request( @request, @response )		
+	end
+
+
+	
 	#
 	# POST
 	#
@@ -354,10 +367,8 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@request.should_receive( :http_method ).
 			at_least( :once ).
 			and_return( 'POST' )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
-
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( true )
 
@@ -389,10 +400,8 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@request.should_receive( :path_info ).and_return( '/'  )
 		@request.should_receive( :body ).and_return( body )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
-
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( false )
 
@@ -405,9 +414,8 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 	it "replies with an UNSUPPORTED_MEDIA_TYPE response for POST requests to / " +
 	   "whose body isn't transformed into a Ruby Hash by the filters" do
-		@request.should_receive( :path_info ).and_return( '/'  )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
+		@request.should_receive( :path_info ).and_return( '/' )
+		@request.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'application/something-bizarre' )
 		@request.should_not_receive( :body )
@@ -427,12 +435,27 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	it "responds with a 404 NOT FOUND response for a POST to " +
 	   "/{handler}/{non-existant uuid}"  do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 
 		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
 		@response.should_not_receive( :body= )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for POST requests to /{uuid} " +
+	   "whose body isn't transformed into a Ruby Hash by the filters" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
 		@handler.handle_post_request( @request, @response )		
 	end
@@ -446,9 +469,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
 		@request.should_receive( :http_method ).and_return( 'POST' )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( RUBY_MIMETYPE )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 		@request.should_receive( :body ).and_return( props )
 
 		@metastore.should_receive( :has_uuid? ).
@@ -462,25 +483,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 
 		@handler.handle_post_request( @request, @response )		
  	end
-		
-	
-	it "replies with an UNSUPPORTED_MEDIA_TYPE response for POST requests whose " +
-	   "body isn't transformed into a Ruby Hash by the filters" do
-
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
-			at_least( :once ).
-			and_return( 'application/something-bizarre' )
-		@request.should_not_receive( :body )
-
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-		@response.should_receive( :body= ).
-			with( %r{application/something-bizarre}i )
-		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
-
-		@handler.handle_post_request( @request, @response )		
-	end
 
 
 	### POST /uuid/key
@@ -521,10 +523,212 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 
 
+	it "replies with a FORBIDDEN for a POST to /{handler}/{uuid}/{key} if it " +
+		"is a system reserved property" do
+			
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' +  'extent' )
+		@request.should_receive( :body ).and_return( TEST_PROPVALUE )
+
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, 'extent' ).
+			and_return( true )
+
+		@metastore.should_receive( :set_safe_property ).
+			with( TEST_UUID, 'extent', TEST_PROPVALUE ).
+			and_raise( ThingFish::MetaStoreError.new( 'used by the system' ) )
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /metastoreerror/i )
+		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
+
+		@handler.handle_post_request( @request, @response )		
+	end
+	
+	
+	it "responds with a a default (404) response for a POST to an unknown URI" do
+		@request.should_receive( :path_info ).
+			at_least( :once ).
+			and_return( '/wicka-wicka-pow-pow' )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+		@handler.handle_post_request( @request, @response )		
+	end
+
+
+
 	#
 	# DELETE
 	#
 	
+	### DELETE /
+	
+	it "responds with a 200 SUCCESS response for a DELETE to /{handler}" do
+		body = {
+			TEST_UUID  => [ TEST_PROP, TEST_PROP2 ],
+			TEST_UUID2 => [ TEST_PROP, TEST_PROP2 ]
+		}
+
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'DELETE' )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( true )
+
+		@metastore.should_receive( :delete_safe_properties ).
+			with( TEST_UUID, body[TEST_UUID] )
+		@metastore.should_receive( :delete_safe_properties ).
+			with( TEST_UUID2, body[TEST_UUID2] )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+	
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for DELETE requests to / " +
+	   "whose body isn't transformed into a Ruby Hash by the filters" do
+		@request.should_receive( :path_info ).and_return( '/' )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+
+	it "responds with a 409 CONFLICT response for a DELETE to /{handler} if the " +
+	   "entity body contains a UUID that doesn't exist in the metastore"  do
+		body = {
+			TEST_UUID  => [ TEST_PROP, TEST_PROP2 ],
+			TEST_UUID2 => [ TEST_PROP, TEST_PROP2 ]
+		}
+
+		@request.should_receive( :path_info ).and_return( '/'  )
+		@request.should_receive( :body ).and_return( body )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID2 ).and_return( false )
+
+		@response.should_receive( :body= ).with an_instance_of( Array )
+		@response.should_receive( :status= ).with( HTTP::CONFLICT )
+		
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+	
+	### DELETE /uuid
+	
+	it "responds with a 404 NOT FOUND response for a DELETE to " +
+	   "/{handler}/{non-existant uuid}"  do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+
+		@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
+		@response.should_not_receive( :body= )
+
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+	
+	it "safely removes a given uuid's metadata for a DELETE to /{handler}/{uuid}"  do
+		props = [ TEST_PROP, TEST_PROP2 ]
+
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :http_method ).and_return( 'DELETE' )
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		@request.should_receive( :body ).and_return( props )
+
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( true )
+		@metastore.should_receive( :delete_safe_properties ).with( TEST_UUID, props )	
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_delete_request( @request, @response )		
+ 	end
+
+
+	it "replies with an UNSUPPORTED_MEDIA_TYPE response for DELETE requests to /{uuid} " +
+	   "whose body isn't transformed into a Ruby Hash by the filters" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'application/something-bizarre' )
+		@request.should_not_receive( :body )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).
+			with( %r{application/something-bizarre}i )
+		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
+
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+
+	### DELETE /uuid/key
+	
+	it "removes a given uuid's metadata for a DELETE to /{handler}/{uuid}/{key}" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'DELETE' )
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( true )		
+		@metastore.should_receive( :delete_safe_property ).
+			with( TEST_UUID, TEST_PROP )
+		
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+		
+		@handler.handle_delete_request( @request, @response )
+	end
+	
+	
+	it "no-ops for a DELETE to /{handler}/{uuid}/{key} if the property doesn't exist." do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'DELETE' )
+		@metastore.should_receive( :has_property? ).
+			with( TEST_UUID, TEST_PROP ).
+			and_return( false )
+
+		@metastore.should_not_receive( :delete_safe_property ).
+			with( TEST_UUID, TEST_PROP )
+
+		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :status= ).with( HTTP::OK )
+
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+
+	it "responds with a a default (404) response for a DELETE to an unknown URI" do
+		@request.should_receive( :path_info ).
+			at_least( :once ).
+			and_return( '/wicka-wicka-pow-pow' )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+		@handler.handle_delete_request( @request, @response )		
+	end
+
+
 
 	# 
 	# HTML filter interface
@@ -579,5 +783,25 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		}.should raise_error( RuntimeError, /unable to build html/i )
 	end
 	
+	
+	#
+	# Misc
+	#
+	
+	it "raises a error on update_metastore() with an unhandled http method" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
+		@request.should_receive( :body ).and_return( {} )
+
+		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'TRACE' )
+
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+
+		lambda {
+			@handler.handle_put_request( @request, @response )
+		}.should raise_error( RuntimeError, /unknown method/i )
+	end
 end
 

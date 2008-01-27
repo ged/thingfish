@@ -245,6 +245,7 @@ describe "A MetaStore", :shared => true do
 			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
 		end
 
+
 		it "eliminates system attributes from properties passed through #delete_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
 			
@@ -255,11 +256,26 @@ describe "A MetaStore", :shared => true do
 			@store.should_not have_property( TEST_UUID, TEST_PROP )
 		end
 
+
+		it "sets properties safely via #set_safe_property" do
+			@store.set_safe_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+			@store.get_property( TEST_UUID, TEST_PROP ).should == TEST_PROPVALUE			
+		end
+		
+		
 		it "refuses to update system properties via #set_safe_property" do
 			lambda {
 				@store.set_safe_property( TEST_UUID, 'extent', 0 )
 			}.should raise_error( ThingFish::MetaStoreError, /used by the system/ )
 		end
+
+		
+		it "deletes properties safely via #set_safe_property" do
+			@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
+			@store.delete_safe_property( TEST_UUID, TEST_PROP )
+			@store.has_property?( TEST_UUID, TEST_PROP ).should be_false			
+		end
+		
 
 		it "refuses to delete system properties via #delete_safe_property" do
 			lambda {

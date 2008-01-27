@@ -149,6 +149,30 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	end
 	
 	
+	### Handle a DELETE request
+	def handle_delete_request( request, response )
+
+		case request.path_info
+			
+		when '/', ''
+			self.handle_update_root_request( request, response )
+	
+		when UUID_URL
+			uuid = $1
+			self.handle_update_uuid_request( request, response, uuid )
+
+		when %r{^/(#{UUID_REGEXP})/(\w+)$}
+			uuid, key = $1, $2
+			self.handle_update_key_request( request, response, uuid, key )
+			
+		else
+			self.log.error "Unable to handle metadata DELETE request: %p" % 
+				[ request.path_info ]
+			return			
+		end		
+	end
+	
+	
 	### Make the content for the handler section of the index page.
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "metadata/index.rhtml" )
@@ -229,16 +253,15 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	###     UUID2 => { property1 => value1, property2, value2 }
 	###   }
 	def handle_update_root_request( request, response )
-		if request.headers[:content_type] == RUBY_MIMETYPE
+		if request.content_type == RUBY_MIMETYPE
 			uuidhash = request.body
 
-			# check uuids sent to us are valid			
-			unknown_uuids = 
-				uuidhash.find_all { |uuid, _| ! @metastore.has_uuid?( uuid ) }
-			
+			# check uuids sent to us are valid
+			unknown_uuids = uuidhash.find_all { |uuid, _| ! @metastore.has_uuid?( uuid ) }
+
 			if unknown_uuids.empty?
-				uuidhash.each do |uuid, prophash|
-					self.update_metastore( request, uuid, prophash )
+				uuidhash.each do |uuid, props|
+					self.update_metastore( request, uuid, props )
 				end
 				response.headers[:content_type] = 'text/plain'
 				response.status = HTTP::OK
@@ -253,7 +276,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			response.headers[:content_type] = 'text/plain'
 			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
 			response.body = "Don't know how to handle '%s' requests." %
-				[ request.headers[:content_type] ]
+				[ request.content_type ]
 		end
 	end
 
@@ -262,11 +285,10 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	### request body, which should evaluate to be a hash of the form:
 	###   { property1 => value1, property2, value2 }
 	def handle_update_uuid_request( request, response, uuid )
-		if request.headers[:content_type] == RUBY_MIMETYPE
-			prophash = request.body
+		if request.content_type == RUBY_MIMETYPE
 
 			if @metastore.has_uuid?( uuid )
-				self.update_metastore( request, uuid, prophash )
+				self.update_metastore( request, uuid, request.body )
 		
 				response.headers[:content_type] = 'text/plain'
 				response.status = HTTP::OK
@@ -279,45 +301,59 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			response.headers[:content_type] = 'text/plain'
 			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
 			response.body = "Don't know how to handle '%s' requests." %
-				[ request.headers[:content_type] ]
+				[ request.content_type ]
 		end
 	end
-
+	
 
 	### Set a UUID metadata property with the request body, which 
-	### should evaluate to a string.
+	### should evaluate to a string for PUT and POST.
+	### On DELETE, ignores the request body.
 	def handle_update_key_request( request, response, uuid, key )	
-		new_property = ! @metastore.has_property?( uuid, key )
-
-		@metastore.set_safe_property( uuid, key, request.body )
-
+		property_exists = @metastore.has_property?( uuid, key )
+		delete_request  = request.http_method == 'DELETE'
+		
+		if delete_request
+			@metastore.delete_safe_property( uuid, key ) if property_exists
+		else
+			@metastore.set_safe_property( uuid, key, request.body )
+		end
+		
 		response.headers[:content_type] = 'text/plain'
-		response.status = new_property ? HTTP::CREATED : HTTP::OK
 		response.body = 'Success.'
+		if property_exists
+			response.status = HTTP::OK
+		else
+			response.status = delete_request ? HTTP::OK : HTTP::CREATED
+		end
 
 	rescue ThingFish::MetaStoreError => err
+		# catch attempts to update system properties
 		msg = "%s while updating %s: %s" %
 		 	[ err.class.name, key, err.message ]
 		self.log.error( msg )
+		response.headers[:content_type] = 'text/plain'
 		response.body   = msg
 		response.status	= HTTP::FORBIDDEN
 	end
 
 	
-	### Set or update the given +uuid+'s properties from the given +prophash+
+	### Set or update the given +uuid+'s properties from the given +props+
 	### based on the http_method of the specified +request+.
-	def update_metastore( request, uuid, prophash )
+	def update_metastore( request, uuid, props )
 		case request.http_method
 		when 'POST'
-			@metastore.set_safe_properties( uuid, prophash )
+			@metastore.set_safe_properties( uuid, props )  # FIXME: set_safe_properties() doesn't actually exist yet #
 		when 'PUT'
-			@metastore.update_safe_properties( uuid, prophash )
+			@metastore.update_safe_properties( uuid, props )
+		when 'DELETE'
+			@metastore.delete_safe_properties( uuid, props )
 		else
 			raise "Unable to update metadata: Unknown method %s" % 
 				[ request.http_method ]
 		end
 	end
-
+	
 end # ThingFish::MetadataHandler
 
 # vim: set nosta noet ts=4 sw=4:

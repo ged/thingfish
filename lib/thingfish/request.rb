@@ -191,8 +191,8 @@ class ThingFish::Request
 	### Returns true if the request is of type 'multipart/form-request' and has
 	### a valid boundary.
 	def has_multipart_body?
-		content_type = self.headers[:content_type] or return false
-		return content_type =~ MULTIPART_MIMETYPE_PATTERN ? true : false
+		return false unless self.content_type
+		return self.content_type =~ MULTIPART_MIMETYPE_PATTERN ? true : false
 	end
 	alias_method :is_multipart?, :has_multipart_body?
 
@@ -363,6 +363,10 @@ class ThingFish::Request
 		return IPAddr.new( self.params['REMOTE_ADDR'] )
 	end
 	
+	### Returns the current request's Content-Type.
+	def content_type
+		return self.headers[ :content_type ]
+	end
 	
 	
 	#########
@@ -373,14 +377,13 @@ class ThingFish::Request
 	### body. It throws ThingFish::RequestErrors on malformed input, or if you
 	### try to parse a multipart body from a non-multipart request.
 	def parse_multipart_body
-		content_type = self.headers[ :content_type ] or
-			raise ThingFish::RequestError, "No content-type header?!"
+		raise ThingFish::RequestError, "No content-type header?!" unless self.content_type
 
 		# Match explicitly here instead of calling has_multipart_body? so
 		# we aren't replying on $1 and $2 being set at a distance
-		unless content_type =~ MULTIPART_MIMETYPE_PATTERN
+		unless self.content_type =~ MULTIPART_MIMETYPE_PATTERN
 			self.log.error "Tried to parse a multipart body for a '%s' request" %
-				[content_type]
+				[ self.content_type ]
 			raise ThingFish::RequestError, "not a multipart form request"
 		end
 		

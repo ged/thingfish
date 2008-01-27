@@ -48,6 +48,10 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
 	
+	# The YAML mime type.
+	YAML_MIMETYPE = 'text/x-yaml'
+	YAML_MIMETYPE.freeze
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -63,8 +67,28 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	public
 	######
 
-	### Filter incoming requests (no-op currently)
+	### Filter incoming requests
 	def handle_request( request, response )
+
+###
+### FIXME:  request.body= doesn't exist (yet).
+###
+=begin		
+		# Only filter if the client sends what we can convert from.
+		return unless request.content_type.downcase == YAML_MIMETYPE
+		
+		# Absorb errors so filters can continue
+		begin
+			self.log.debug "Converting a %s request to %s" %
+				[ YAML_MIMETYPE, RUBY_MIMETYPE ]
+			request.body = YAML.load( request.body )
+		rescue => err
+			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
+				[ err.class.name, request.body, err.message ]
+		else
+			request.headers[ :content_type ] = RUBY_MIMETYPE
+		end
+=end
 	end
 
 
@@ -73,7 +97,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.explicitly_accepts?( 'text/x-yaml' ) &&
+		return unless request.explicitly_accepts?( YAML_MIMETYPE ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue
@@ -85,7 +109,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 			self.log.error "%s while attempting to convert %p to YAML: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = 'text/x-yaml'
+			response.headers[:content_type] = YAML_MIMETYPE
 			response.status = HTTP::OK
 		end
 

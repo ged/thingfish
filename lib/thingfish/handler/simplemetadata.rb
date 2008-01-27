@@ -232,9 +232,13 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Return a list of all metadata tuples for a given resource
 	def handle_get_uuid_request( request, response, uuid )
-		response.status = HTTP::OK
-		response.headers[:content_type] = RUBY_MIMETYPE
-		response.body = @metastore.get_properties( uuid )
+		if @metastore.has_uuid?( uuid )
+			response.status = HTTP::OK
+			response.headers[:content_type] = RUBY_MIMETYPE
+			props = @metastore.get_properties( uuid )
+			props.each_pair {|prop, _| props[prop.to_s] = props.delete( prop ) }
+			response.body = props
+		end
 	end
 
 

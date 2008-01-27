@@ -141,6 +141,16 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end	
 
 
+	it "responds with a a default (404) response for a GET to an unknown {uuid}" do
+		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID )
+		@metastore.should_receive( :has_uuid? ).
+			with( TEST_UUID ).
+			and_return( false )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
+		@handler.handle_get_request( @request, @response )		
+	end
+	
+
 	it "responds with a a default (404) response for a GET to an unknown URI" do
 		@request.should_receive( :path_info ).
 			at_least( :once ).

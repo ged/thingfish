@@ -45,6 +45,7 @@ plugins:
             uris: /search
             resource_dir: var/www
     filters:
+        - ruby
         - html:
             resource_dir: var/www
         - yaml

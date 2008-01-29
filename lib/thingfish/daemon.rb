@@ -148,6 +148,24 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	end
 
 
+	### Returns a Hash of handler information of the form:
+	### {
+	###    '<handlerclass>' => ['<installed uris>']
+	### }
+	def handler_info
+		info = {}
+
+		self.classifier.handler_map.each do |uri,handlers|
+			handlers.each do |h|
+				info[ h.plugin_name ] ||= []
+				info[ h.plugin_name ] << uri
+			end
+		end
+		
+		return info
+	end
+	
+
 	### Store the data from the uploaded entity +body+ in the filestore; 
 	### create/update any associated metadata.
 	def store_resource( body, body_metadata, uuid=nil )

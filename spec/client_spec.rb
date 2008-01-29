@@ -35,6 +35,10 @@ include ThingFish::Constants
 
 describe ThingFish::Client do
 
+	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
+	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )
+
+
 	before( :all ) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
@@ -140,6 +144,28 @@ describe ThingFish::Client do
 			@client = ThingFish::Client.new( TEST_SERVER )
 		end
 
+
+		# 
+		# GET
+		# 
+
+		### GET /
+		it "fetches a Hash of server information via HTTP when asked for server info" do
+			Net::HTTP::Get.should_receive( :new ).
+				with( '/' ).
+				and_return( @mock_request )
+			@mock_request.should_receive( :method ).and_return( "GET" )
+
+			@mock_conn.should_receive( :request ).
+				with( @mock_request ).
+				and_return( @mock_response )
+			@mock_response.should_receive( :body ).and_return( TEST_MARSHALLED_DATASTRUCTURE )
+
+			@client.server_info.should == TEST_DATASTRUCTURE
+		end
+		
+
+		### GET /{uuid}
 		it "fetches a resource from the server by UUID via HTTP" do
 			Net::HTTP::Get.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
 			@mock_request.should_receive( :method ).and_return( "GET" )
@@ -171,6 +197,7 @@ describe ThingFish::Client do
 		end
 	
 	
+		### HEAD /{uuid}
 		it "returns true when asked if it has a uuid that corresponds to a resource it has" do
 			Net::HTTP::Head.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @mock_request )
 			@mock_request.should_receive( :method ).and_return( "HEAD" )
@@ -199,36 +226,114 @@ describe ThingFish::Client do
 		end
 	
 	
-		it "stores a resource by uploading it to the server" do
-			resource = ThingFish::Resource.new( TEST_CONTENT, :format => 'gel/pudding' )
+		### POST /
+		it "converts a non-resource to a ThingFish::Resource before uploading"
+		it ""
 		
-			Net::HTTP::Post.should_receive( :new ).with( '/' ).and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "POST" )
+		it "stores a new resource by uploading it to the server via HTTP POST" do
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::CREATED )
-			@mock_response.should_receive( :[] ).with( 'Location' ).and_return( '/' + TEST_UUID )
+			# Branch: conversion to resource object
+			resource = mock( "Mock Resource" )
+			resource.should_receive( :is_a? ).
+				with( ThingFish::Resource ).
+				any_number_of_times.
+				and_return( true )
+			resource.should_receive( :uuid ).
+				and_return( nil )
+
+			Net::HTTP::Post.should_receive( :new ).
+				with( '/' ).
+				and_return( @mock_request )
+			@mock_request.stub!( :method ).and_return( "POST" )
+
+			resource.should_receive( :io ).
+				at_least( :once ).
+				and_return( :an_io_object )
+			@mock_request.should_receive( :body_stream= ).
+				at_least( :once ).
+			 	with( :an_io_object )
+			
+			# Branch: no extent
+			resource.should_receive( :extent ).
+				at_least( :once ).
+				and_return( :number_of_bytes )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-length/i, :number_of_bytes )
+			
+			# Branch: no mimetype
+			resource.should_receive( :format ).
+				at_least( :once ).
+				and_return( :a_mimetype )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-type/i, :a_mimetype )
+			
+			# Branch: no title
+			resource.should_receive( :title ).
+				at_least( :once ).
+				and_return( 'a title' )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
-			rval = @client.store( resource )
-			rval.should be_an_instance_of( ThingFish::Resource )
-			resource.uuid.should == TEST_UUID
+			@mock_conn.should_receive( :request ).
+				with( @mock_request ).
+				and_yield( @mock_response )
+		
+			@client.store( resource ).should == resource
 		end
 	
 
+		### PUT /{uuid}
 		it "updates a resource by uploading it to the server" do
-			resource = ThingFish::Resource.new( TEST_CONTENT, :format => 'gel/pudding' )
-			resource.uuid = TEST_UUID
+			# Branch: conversion to resource object
+			resource = mock( "Mock Resource" )
+			resource.should_receive( :is_a? ).
+				with( ThingFish::Resource ).
+				any_number_of_times().
+				and_return( true )
+			resource.should_receive( :uuid ).
+				and_return( TEST_UUID )
 
-			Net::HTTP::Put.should_receive( :new ).with( "/#{TEST_UUID}" ).and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "PUT" )
+			Net::HTTP::Put.should_receive( :new ).
+				with( '/' + TEST_UUID ).
+				and_return( @mock_request )
+			@mock_request.should_receive( :method ).and_return( "POST" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			resource.should_receive( :io ).
+				at_least( :once ).
+				and_return( :an_io_object )
+			@mock_request.should_receive( :body_stream= ).
+				at_least( :once ).
+			 	with( :an_io_object )
+
+			# Branch: no extent
+			resource.should_receive( :extent ).
+				at_least( :once ).
+				and_return( :number_of_bytes )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-length/i, :number_of_bytes )
+			
+			# Branch: no mimetype
+			resource.should_receive( :format ).
+				at_least( :once ).
+				and_return( :a_mimetype )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-type/i, :a_mimetype )
+			
+			# Branch: no title
+			resource.should_receive( :title ).
+				at_least( :once ).
+				and_return( 'a title' )
+			@mock_request.should_receive( :[]= ).
+			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
-			rval = @client.store( resource )
-			rval.should be_an_instance_of( ThingFish::Resource )
-			resource.uuid.should == TEST_UUID
+			@mock_conn.should_receive( :request ).
+				with( @mock_request ).
+				and_yield( @mock_response )
+		
+			@client.store( resource ).should == resource
 		end
+
+
 	end # REST API
 
 end

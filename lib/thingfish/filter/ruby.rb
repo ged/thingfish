@@ -1,12 +1,12 @@
 #!/usr/bin/ruby
 # 
-# A YAML conversion filter for ThingFish
+# A Marshalled Ruby object filter for ThingFish
 # 
 # == Synopsis
 # 
 #   plugins:
 #       filters:
-#          yaml: ~
+#          ruby: ~
 # 
 # == Version
 #
@@ -24,7 +24,6 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'yaml'
 
 require 'thingfish'
 require 'thingfish/mixins'
@@ -32,9 +31,10 @@ require 'thingfish/constants'
 require 'thingfish/acceptparam'
 
 
-### A YAML-conversion filter for ThingFish. It converts Ruby objects in the body of responses 
-### to YAML if the client accepts 'text/x-yaml'.
-class ThingFish::YAMLFilter < ThingFish::Filter
+### A Ruby marshalled-object filter for ThingFish. It marshals and unmarshals Ruby objects in the 
+### body of responses if the client sends a request with an `Accept:` header that includes 
+### ThingFish::RUBY_MARSHALLED_MIMETYPE.
+class ThingFish::RubyFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
@@ -48,10 +48,6 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
 	
-	# The YAML mime type.
-	YAML_MIMETYPE = 'text/x-yaml'
-	YAML_MIMETYPE.freeze
-
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -70,25 +66,22 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	### Filter incoming requests
 	def handle_request( request, response )
 
-###
-### FIXME:  request.body= doesn't exist (yet).
-###
-=begin		
-		# Only filter if the client sends what we can convert from.
-		return unless request.content_type.downcase == YAML_MIMETYPE
+		# Only filter if the body of the request is a marshalled Ruby object
+		return unless request.headers[:content_type] == RUBY_MARSHALLED_MIMETYPE
 		
 		# Absorb errors so filters can continue
 		begin
-			self.log.debug "Converting a %s request to %s" %
-				[ YAML_MIMETYPE, RUBY_MIMETYPE ]
-			request.body = YAML.load( request.body )
-		rescue => err
-			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
+			self.log.debug "Unmarshalling a ruby object in the entity body"
+			obj = Marshal.load( request.body )
+			request.body = obj
+			self.log.debug "Successfully unmarshalled entity body: %p" % [ obj ]
+		rescue TypeError => err
+			self.log.error "%s while attempting to unmarshal %p: %s" %
 				[ err.class.name, request.body, err.message ]
 		else
-			request.headers[ :content_type ] = RUBY_MIMETYPE
+			request.headers[:content_type] = RUBY_MIMETYPE
 		end
-=end
+
 	end
 
 
@@ -97,19 +90,19 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.explicitly_accepts?( YAML_MIMETYPE ) &&
+		return unless request.explicitly_accepts?( RUBY_MARSHALLED_MIMETYPE ) &&
 			self.accept?( response.headers[:content_type] )
 		
 		# Absorb errors so filters can continue
 		begin
-			self.log.debug "Converting a %s response to text/x-yaml" %
-				[ response.headers[:content_type] ]
-			response.body = response.body.to_yaml
-		rescue => err
-			self.log.error "%s while attempting to convert %p to YAML: %s" %
+			self.log.debug "Converting a %s response to %s" %
+				[ response.headers[:content_type], RUBY_MARSHALLED_MIMETYPE ]
+			response.body = Marshal.dump( response.body )
+		rescue TypeError => err
+			self.log.error "%s while attempting to marshal %p: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = YAML_MIMETYPE
+			response.headers[:content_type] = RUBY_MARSHALLED_MIMETYPE
 		end
 
 	end

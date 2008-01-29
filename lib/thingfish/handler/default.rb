@@ -195,8 +195,9 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		response.headers[:content_type] = RUBY_MIMETYPE
 		response.body = {
 			:version => ThingFish::VERSION,
-			:handlers => self.daemon.classifier.handler_map.collect {|uri,h| [uri,h.class.name] }
+			:handlers => self.daemon.handler_info,
 		}
+		response.status = HTTP::OK
 	end
 
 

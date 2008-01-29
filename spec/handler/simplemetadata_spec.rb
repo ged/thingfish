@@ -37,9 +37,6 @@ include ThingFish::TestConstants
 
 describe ThingFish::SimpleMetadataHandler do
 	before(:each) do
-		# ThingFish.logger.level = Logger::DEBUG
-		ThingFish.logger.level = Logger::FATAL
-		
 		options = {
 			:uris => ['/metadata']
 		}

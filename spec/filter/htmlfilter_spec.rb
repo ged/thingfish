@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -100,7 +100,8 @@ describe ThingFish::HtmlFilter do
 			and_return( :wrapped_html_content )
 
 		@response.should_receive( :body= ).with( :wrapped_html_content )
-		@response.should_receive( :status= ).with( HTTP::OK )
+		# Transform filters shouldn't change the status of the response
+		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
 		
 		@filter.handle_response( @response, @request )
@@ -143,7 +144,8 @@ describe ThingFish::HtmlFilter do
 			and_return( :wrapped_html_content )
 
 		@response.should_receive( :body= ).with( :wrapped_html_content )
-		@response.should_receive( :status= ).with( HTTP::OK )
+		# Transform filters shouldn't change the status of the response
+		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
 
 		@filter.handle_response( @response, @request )

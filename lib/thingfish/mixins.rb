@@ -273,6 +273,7 @@ module ThingFish # :nodoc:
 		def plugin_name
 			return self.class.name.
 				sub( /ThingFish::/, '' ).
+				sub( /handler$/i, '' ).
 				gsub( /\W+/, '-' ).
 				downcase
 		end
@@ -638,7 +639,7 @@ module ThingFish # :nodoc:
 				parts.join("\n")
 			]
 		end
-		
+
 
 		### Return the specifed +str+ with all HTML entities escaped.
 		def escape_html( str )

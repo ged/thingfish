@@ -70,7 +70,7 @@ describe ThingFish::DefaultHandler do
 
 
 	### Shared behaviors
-	# it_should_behave_like "A Handler"
+	it_should_behave_like "A Handler"
 
 
 	### Index requests
@@ -78,7 +78,8 @@ describe ThingFish::DefaultHandler do
 	it "handles GET / with a hash of server metadata" do
 		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
-		
+
+		@listener.should_receive( :handler_info ).and_return( :a_hash_of_info )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
 		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
 		

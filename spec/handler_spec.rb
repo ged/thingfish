@@ -73,7 +73,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 
 	### Specs
 	it "knows what its normalized name is" do
-		@handler.plugin_name.should == 'testhandler'
+		@handler.plugin_name.should == 'test'
 	end
 
 

@@ -129,6 +129,9 @@ end
 describe "A class which has mixed in ThingFish::ResourceLoader" do
 	
 	before(:all) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+
 		@resdir = make_tempdir()
 		@resdir.mkpath
 		
@@ -145,10 +148,10 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 	
 	after(:all) do
 		@resdir.rmtree
+		ThingFish.reset_logger
 	end
 
 	before(:each) do
-		ThingFish.logger.level = Logger::DEBUG
 		@obj = @klass.new( :resource_dir => @resdir )
 	end
 

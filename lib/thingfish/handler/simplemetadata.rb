@@ -163,7 +163,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 		when %r{^/(#{UUID_REGEXP})/(\w+)$}
 			uuid, key = $1, $2
-			self.handle_update_key_request( request, response, uuid, key )
+			self.handle_delete_key_request( request, response, uuid, key )
 			
 		else
 			self.log.error "Unable to handle metadata DELETE request: %p" % 
@@ -312,24 +312,14 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Set a UUID metadata property with the request body, which 
 	### should evaluate to a string for PUT and POST.
-	### On DELETE, ignores the request body.
 	def handle_update_key_request( request, response, uuid, key )	
 		property_exists = @metastore.has_property?( uuid, key )
-		delete_request  = request.http_method == 'DELETE'
 		
-		if delete_request
-			@metastore.delete_safe_property( uuid, key ) if property_exists
-		else
-			@metastore.set_safe_property( uuid, key, request.body )
-		end
+		@metastore.set_safe_property( uuid, key, request.body )
 		
 		response.headers[:content_type] = 'text/plain'
 		response.body = 'Success.'
-		if property_exists
-			response.status = HTTP::OK
-		else
-			response.status = delete_request ? HTTP::OK : HTTP::CREATED
-		end
+		response.status = property_exists ? HTTP::OK : HTTP::CREATED
 
 	rescue ThingFish::MetaStoreError => err
 		# catch attempts to update system properties
@@ -341,13 +331,32 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		response.status	= HTTP::FORBIDDEN
 	end
 
+		
+	### Remove a UUID metadata property.
+	def handle_delete_key_request( request, response, uuid, key )	
+		@metastore.delete_safe_property( uuid, key )
+		
+		response.headers[:content_type] = 'text/plain'
+		response.body = 'Success.'
+		response.status = HTTP::OK
+
+	rescue ThingFish::MetaStoreError => err
+		# catch attempts to update system properties
+		msg = "%s while deleting %s: %s" %
+		 	[ err.class.name, key, err.message ]
+		self.log.error( msg )
+		response.headers[:content_type] = 'text/plain'
+		response.body   = msg
+		response.status	= HTTP::FORBIDDEN
+	end
+	
 	
 	### Set or update the given +uuid+'s properties from the given +props+
 	### based on the http_method of the specified +request+.
 	def update_metastore( request, uuid, props )
 		case request.http_method
 		when 'POST'
-			@metastore.set_safe_properties( uuid, props )  # FIXME: set_safe_properties() doesn't actually exist yet #
+			@metastore.set_safe_properties( uuid, props )
 		when 'PUT'
 			@metastore.update_safe_properties( uuid, props )
 		when 'DELETE'

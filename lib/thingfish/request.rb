@@ -76,6 +76,7 @@ class ThingFish::Request
 		@uri             = nil
 		@entity_bodies   = nil
 		@form_metadata   = nil
+		@body            = nil
 
 		@mongrel_request = mongrel_request
 		@metadata        = Hash.new {|h,k| h[k] = {} }
@@ -97,6 +98,25 @@ class ThingFish::Request
 	# of the uploaded file.
 	attr_reader :metadata
 	
+	
+	### Return either the original Mongrel request's body, or if the body has been
+	### overridden, return that one.
+	def body
+		return @body || self.original_body
+	end
+
+	
+	### Replace the body data of the request with +object+.
+	def body=( object )
+		@body = object
+	end
+
+
+	### Return the original Mongrel request object's body.
+	def original_body
+		@mongrel_request.body
+	end
+
 	
 	### Return a URI object for the requested URI.
 	def uri

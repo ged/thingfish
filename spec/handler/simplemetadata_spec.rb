@@ -690,12 +690,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	
 	it "removes a given uuid's metadata for a DELETE to /{handler}/{uuid}/{key}" do
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
-		@request.should_receive( :http_method ).
-			at_least( :once ).
-			and_return( 'DELETE' )
-		@metastore.should_receive( :has_property? ).
-			with( TEST_UUID, TEST_PROP ).
-			and_return( true )		
 		@metastore.should_receive( :delete_safe_property ).
 			with( TEST_UUID, TEST_PROP )
 		
@@ -707,26 +701,6 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	end
 	
 	
-	it "no-ops for a DELETE to /{handler}/{uuid}/{key} if the property doesn't exist." do
-		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID + '/' + TEST_PROP  )
-		@request.should_receive( :http_method ).
-			at_least( :once ).
-			and_return( 'DELETE' )
-		@metastore.should_receive( :has_property? ).
-			with( TEST_UUID, TEST_PROP ).
-			and_return( false )
-
-		@metastore.should_not_receive( :delete_safe_property ).
-			with( TEST_UUID, TEST_PROP )
-
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
-		@response.should_receive( :body= ).with( /success/i )
-		@response.should_receive( :status= ).with( HTTP::OK )
-
-		@handler.handle_delete_request( @request, @response )		
-	end
-
-
 	it "responds with a a default (404) response for a DELETE to an unknown URI" do
 		@request.should_receive( :path_info ).
 			at_least( :once ).

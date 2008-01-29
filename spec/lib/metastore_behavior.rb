@@ -231,6 +231,22 @@ describe "A MetaStore", :shared => true do
 
 	describe " (safety methods)" do
 		
+		it "eliminates system attributes from properties passed through #set_safe_properties" do
+			@store.set_properties( TEST_UUID, TEST_PROPSET )
+			
+			@store.set_safe_properties( TEST_UUID, 
+				:extent => "0",
+				:checksum => '',
+				TEST_PROP => 'something else'
+			  )
+			
+			@store.get_property( TEST_UUID, 'extent' ).should == TEST_PROPSET['extent']
+			@store.get_property( TEST_UUID, 'checksum' ).should == TEST_PROPSET['checksum']
+			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
+			@store.get_property( TEST_UUID, TEST_PROP2 ).should be_nil()
+		end
+
+
 		it "eliminates system attributes from properties passed through #update_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
 			
@@ -244,8 +260,8 @@ describe "A MetaStore", :shared => true do
 			@store.get_property( TEST_UUID, 'checksum' ).should == TEST_PROPSET['checksum']
 			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
 		end
-
-
+		
+		
 		it "eliminates system attributes from properties passed through #delete_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
 			

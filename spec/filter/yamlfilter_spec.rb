@@ -63,20 +63,20 @@ describe ThingFish::YAMLFilter do
 	
 	it "converts a request body into a Ruby object if the content-type indicates " +
 	   "it's YAML" #do
-	# 	@request_headers.should_receive( :[] ).
-	# 		with( :content_type ).
-	# 		at_least( :once ).
-	# 		and_return( 'text/x-yaml' )
-	# 	@request.should_receive( :body ).
-	# 		with( no_args() ).
-	# 		and_return( TEST_YAML_CONTENT )
-	# 
-	# 	@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
-	# 	@request_headers.should_receive( :[]= ).
-	# 		with( :content_type, RUBY_MIMETYPE )
-	# 
-	# 	@filter.handle_request( @request, @response )
-	# end
+		# @request.should_receive( :content_type ).
+		# 	at_least( :once ).
+		# 	and_return( 'text/x-yaml' )
+		# @request.should_receive( :body ).
+		# 	at_least( :once ).
+		# 	with( no_args() ).
+		# 	and_return( TEST_YAML_CONTENT )
+		# 	
+		# @request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
+		# @request_headers.should_receive( :[]= ).
+		# 	with( :content_type, RUBY_MIMETYPE )
+		# 	
+		# @filter.handle_request( @request, @response )
+#	end
 
 
 	it "converts Ruby-object responses to YAML if the client accepts it" do

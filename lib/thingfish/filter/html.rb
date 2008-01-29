@@ -98,7 +98,6 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		
 		response.body = template.result( binding() )
 		response.headers[:content_type] = 'text/html'
-		response.status = HTTP::OK
 	end
 
 

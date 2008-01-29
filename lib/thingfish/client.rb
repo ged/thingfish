@@ -172,10 +172,25 @@ class ThingFish::Client
 
 
 	#################################################################
+	###	I N T R O S P E C T I O N   F U N C T I O N S
+	#################################################################
+
+	### Returns a Hash of information about the server
+	def server_info
+		request = Net::HTTP::Get.new( '/' )
+		request['Accept'] = RUBY_MARSHALLED_MIMETYPE
+		
+		response = send_request( request )
+		
+		return Marshal.load( response.body )
+	end
+	
+
+	#################################################################
 	###	F E T C H   F U N C T I O N S
 	#################################################################
 
-	### Look up and return the resource keyed by the given +uuid+.
+	### Fetch the resource with the given +uuid+ as a ThingFish::Resource object.
 	def fetch( uuid, head=nil )
 		fetchuri = self.uri + uuid.to_s
 
@@ -227,20 +242,36 @@ class ThingFish::Client
 		# If it's an existing resource (i.e., has a UUID), update it, otherwise
 		# create it
 		request = nil
-		if resource.uuid
-			request = Net::HTTP::Put.new( @uri.path + resource.uuid )
+		if uuid = resource.uuid
+			self.log.debug "Creating an update PUT request for resource %p" % [ uuid ]
+			request = Net::HTTP::Put.new( @uri.path + uuid )
 		else
+			self.log.debug "Creating a creation POST request for a new resource" 
 			request = Net::HTTP::Post.new( @uri.path )
 		end
 
+        self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
 		request.body_stream = resource.io
-		request['Content-Length']      = resource.extent if resource.extent
-		request['Content-Type']        = resource.format if resource.format
+		request['Content-Length']      = resource.extent
+		request['Content-Type']        = resource.format
 		request['Content-Disposition'] = 'attachment;filename="%s"' %
 		 	[ resource.title ] if resource.title
 
-		response = self.send_request( request )
-		resource.set_attributes_from_http_response( response )
+		self.send_request( request ) do |response|
+			case response
+			when Net::HTTPSuccess
+									
+				# :TODO: Set metadata for the resource from the response (multipart?)
+				self.log.debug "Updating resource %p from %p" % [ resource, response ]
+				resource.set_attributes_from_http_response( response )
+				return true
+
+			# TODO: Handle redirect/auth/etc.
+			# when Net::HTTPRedirect
+			else
+				response.error!
+			end
+		end
 
 		return resource
 	end

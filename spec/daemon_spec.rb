@@ -841,9 +841,24 @@ describe ThingFish::Daemon, " with one or more handlers in its configuration" do
 	it "registers its configured handlers" do
 		@daemon.classifier.uris.length.should == 2
 	end
+
+	it "can describe its handlers for the server info hash" do
+		@daemon.handler_info.should have(3).members
+
+		@daemon.handler_info.should have_key( 'default' )
+		@daemon.handler_info.should have_key( 'staticcontent' )
+
+		@daemon.handler_info.should have_key( 'test' )
+		@daemon.handler_info['test'].should have(1).members
+		@daemon.handler_info['test'].should include('/test')
+	end
+	
 	
 end
 
+
+### This is testing outside our purview -- it's up to our superclass to correctly shut 
+### down -- but it's here for coverage of the path around the call to shutdown.
 describe ThingFish::Daemon, " (while running)" do
 
 	before(:each) do

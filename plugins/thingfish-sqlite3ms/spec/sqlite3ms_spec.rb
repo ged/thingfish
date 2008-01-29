@@ -38,8 +38,8 @@ include ThingFish::TestConstants
 describe "A SQLite3 MetaStore" do
 	
 	before(:all) do
-#		ThingFish.logger = Logger.new( $stderr )
-#		ThingFish.logger.level = Logger::DEBUG
+		ThingFish.logger = Logger.new( $stderr )
+		ThingFish.logger.level = Logger::FATAL
 
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 		@tmpdir = make_tempdir()
@@ -57,6 +57,7 @@ describe "A SQLite3 MetaStore" do
 	after(:all) do
 		@store.commit
 		@tmpdir.rmtree
+		ThingFish.reset_logger
 	end
 
 	it_should_behave_like "A MetaStore"

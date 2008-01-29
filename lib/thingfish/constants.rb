@@ -69,8 +69,11 @@ module ThingFish::Constants
 	# section of this file
 	MIMETYPE_MAP = YAML.load( File.read(__FILE__).split(/^__END__/, 2).last )
 
-	# A MIME type that indicates a response.body is a Ruby data structure. 
+	# A MIME type that indicates an entity body is a Ruby data structure. 
 	RUBY_MIMETYPE = 'x-ruby/data'
+	
+	# A MIME type that indicates an entity body contains a marshalled Ruby data structure.
+	RUBY_MARSHALLED_MIMETYPE = 'x-ruby/marshalled-data'
 
 	# Pattern to match a valid multipart form upload 'Content-Type' header
 	MULTIPART_MIMETYPE_PATTERN = %r{(multipart/form-data).*boundary="?([^\";,]+)"?}

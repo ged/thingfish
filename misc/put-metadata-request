@@ -1,0 +1,12 @@
+PUT /metadata/9ad3c478-cc86-11dc-964d-0016cba18fb9 HTTP/1.0
+Accept: */*
+Content-Type: text/x-yaml
+Content-Length: 127
+
+---
+image_depth: 20000
+test_property: wicked
+great: success
+checksum: this shouldn't be set
+high: five
+cheese: not sure

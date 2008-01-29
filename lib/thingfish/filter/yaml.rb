@@ -70,25 +70,22 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	### Filter incoming requests
 	def handle_request( request, response )
 
-###
-### FIXME:  request.body= doesn't exist (yet).
-###
-=begin		
 		# Only filter if the client sends what we can convert from.
-		return unless request.content_type.downcase == YAML_MIMETYPE
+		return unless request.content_type &&
+			request.content_type.downcase == YAML_MIMETYPE
 		
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Converting a %s request to %s" %
 				[ YAML_MIMETYPE, RUBY_MIMETYPE ]
-			request.body = YAML.load( request.body )
+			request.body = YAML.load( request.body.read )
 		rescue => err
 			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
 				[ err.class.name, request.body, err.message ]
+			self.log.debug err.backtrace.join("\n")	
 		else
 			request.headers[ :content_type ] = RUBY_MIMETYPE
 		end
-=end
 	end
 
 

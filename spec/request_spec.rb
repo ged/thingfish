@@ -52,9 +52,24 @@ describe ThingFish::Request do
 	end
 
 	
-	it "wraps and delegates to a mongrel request object" do
+	it "wraps and delegates requests for the body to the mongrel request's body " +
+	   "if we haven't replaced it" do
 		@mongrel_request.should_receive( :body ).and_return( :the_body )
 		@request.body.should == :the_body
+	end
+	
+	
+	it "returns the new body if the body has been replaced" do
+		@request.body = :new_body
+		@mongrel_request.should_not_receive( :body )
+		@request.body.should == :new_body
+	end
+	
+	
+	it "knows how to return the original body even if the body has been replaced" do
+		@request.body = :new_body
+		@mongrel_request.should_receive( :body ).and_return( :original_body )
+		@request.original_body.should == :original_body
 	end
 	
 	

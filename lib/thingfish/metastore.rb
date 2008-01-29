@@ -208,13 +208,23 @@ class ThingFish::MetaStore
 	end
 
 
-	### Set the properties associated with the specified +uuid+ to the given +props+ after
-	### eliminating any that are necessary for filestore consistency.
+	### Merge the properties associated with the specified +uuid+ with the given +props+
+	### after eliminating any that are necessary for filestore consistency.
 	def update_safe_properties( uuid, props )
 		props = self.prune_system_properties( props )
 		self.update_properties( uuid, props )
 	end
+
 	
+	### Set the properties associated with the specified +uuid+ to the given +props+
+	### after eliminating any that are necessary for filestore consistency.
+	def set_safe_properties( uuid, props )
+		props = self.prune_system_properties( props )
+		safekeys = self.prune_system_properties( self.get_all_property_keys )
+		self.delete_properties( uuid, *safekeys )
+		self.update_properties( uuid, props )
+	end
+
 
 	### Set the value of the metadata +key+ associated with the given +uuid+ to +value+, unless it's
 	### a property that is used by the system, in which case it is silently ignored.
@@ -266,8 +276,8 @@ class ThingFish::MetaStore
 	protected
 	#########
 
-	### Return a copy of the specified +props+ hash after eliminating any used by the system (as 
-	### defined by SYSTEM_METADATA_KEYS).
+	### Return a copy of the specified +props+ hash after eliminating any used by the 
+	### system (as defined by SYSTEM_METADATA_KEYS).
 	def prune_system_properties( props )
 		props = props.dup
 

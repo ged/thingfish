@@ -73,8 +73,7 @@ describe ThingFish::YAMLFilter do
    			and_return( bodyio )
    			
    		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
-   		@request_headers.should_receive( :[]= ).
-   			with( :content_type, RUBY_MIMETYPE )
+   		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
    			
    		@filter.handle_request( @request, @response )
    	end
@@ -84,8 +83,7 @@ describe ThingFish::YAMLFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
@@ -94,8 +92,8 @@ describe ThingFish::YAMLFilter do
 		@response.should_receive( :body= ).with( TEST_YAML_CONTENT )
 		# Conversion filters shouldn't change the status of the response even when successful.
 		@response.should_not_receive( :status= )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/x-yaml' )
-		
+		@response.should_receive( :content_type= ).with( 'text/x-yaml' )
+   		
 		@filter.handle_response( @response, @request )
 	end
 	
@@ -117,8 +115,8 @@ describe ThingFish::YAMLFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
+			at_least( :once ).
 			and_return( 'text/html' )
 
 		@response.should_not_receive( :body= )
@@ -133,8 +131,7 @@ describe ThingFish::YAMLFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 

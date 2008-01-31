@@ -138,6 +138,18 @@ class ThingFish::Response
 	end
 
 
+	### Return the current response Content-Type.
+	def content_type
+		return self.headers[ :content_type ]
+	end
+	
+	
+	### Set the current response Content-Type.
+	def content_type=( type )
+		return self.headers[ :content_type ] = type
+	end
+	
+
 	### Clear any existing headers and body and restore them to their defaults
 	def reset
 		@headers.clear

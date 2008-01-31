@@ -37,8 +37,8 @@ describe ThingFish::Response do
 	include ThingFish::Constants
 
 	before( :each ) do
-		mongrel_response = stub( "mongrel response" )
-		@response = ThingFish::Response.new( mongrel_response )
+		@mongrel_response = stub( "mongrel response" )
+		@response = ThingFish::Response.new( @mongrel_response )
 	end
 	
 
@@ -116,6 +116,29 @@ describe ThingFish::Response do
 	end
 
 
+	it "knows what the response content type is" do
+		headers = mock( 'headers' )
+		@response.stub!( :headers ).and_return( headers )
+
+		headers.should_receive( :[] ).
+			with( :content_type ).
+			and_return( 'text/erotica' )
+			
+		@response.content_type.should == 'text/erotica'
+	end
+
+	
+	it "can modify the response content type" do
+		headers = mock( 'headers' )
+		@response.stub!( :headers ).and_return( headers )
+
+		headers.should_receive( :[]= ).
+			with( :content_type, 'image/nude' )
+			
+		@response.content_type = 'image/nude'
+	end
+
+	
 	it "can find the length of its body if it's an IO" do
 		test_body_content = 'A string with some stuff in it'
 		test_body = StringIO.new( test_body_content )

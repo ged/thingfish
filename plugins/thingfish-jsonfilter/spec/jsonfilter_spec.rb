@@ -66,8 +66,7 @@ describe ThingFish::JSONFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
@@ -75,7 +74,7 @@ describe ThingFish::JSONFilter do
 		
 		@response.should_receive( :body= ).with( TEST_JSON_CONTENT )
 		@response.should_receive( :status= ).with( HTTP::OK )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'application/json' )
+		@response.should_receive( :content_type= ).with( 'application/json' )
 		
 		@filter.handle_response( @response, @request )
 	end
@@ -98,8 +97,8 @@ describe ThingFish::JSONFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
+			at_least( :once ).
 			and_return( 'text/html' )
 
 		@response.should_not_receive( :body= )
@@ -114,8 +113,7 @@ describe ThingFish::JSONFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 

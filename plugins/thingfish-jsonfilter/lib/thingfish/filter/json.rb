@@ -48,7 +48,11 @@ class ThingFish::JSONFilter < ThingFish::Filter
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
 	
-
+	# The JSON mime type.
+	JSON_MIMETYPE = 'application/json'
+	JSON_MIMETYPE.freeze
+	
+	
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -63,8 +67,25 @@ class ThingFish::JSONFilter < ThingFish::Filter
 	public
 	######
 
-	### Filter incoming requests (no-op currently)
+	### Filter incoming requests, converting from JSON to a native ruby object.
 	def handle_request( request, response )
+		
+		# Only filter if the client sends what we can convert from.
+		return unless request.content_type &&
+			request.content_type.downcase == JSON_MIMETYPE
+		
+		# Absorb errors so filters can continue
+		begin
+			self.log.debug "Converting a %s request to %s" %
+				[ JSON_MIMETYPE, RUBY_MIMETYPE ]
+			request.body = JSON.parse( request.body.read )
+		rescue => err
+			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
+				[ err.class.name, request.body, err.message ]
+			self.log.debug err.backtrace.join("\n")	
+		else
+			request.content_type = RUBY_MIMETYPE
+		end
 	end
 
 
@@ -73,19 +94,19 @@ class ThingFish::JSONFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.explicitly_accepts?( 'application/json' ) &&
-			self.accept?( response.headers[:content_type] )
+		return unless request.explicitly_accepts?( JSON_MIMETYPE ) &&
+			self.accept?( response.content_type )
 		
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Converting a %s response to application/json" %
-				[ response.headers[:content_type] ]
+				[ response.content_type ]
 			response.body = response.body.to_json
 		rescue => err
 			self.log.error "%s while attempting to convert %p to JSON: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = 'application/json'
+			response.content_type = JSON_MIMETYPE
 			response.status = HTTP::OK
 		end
 	end

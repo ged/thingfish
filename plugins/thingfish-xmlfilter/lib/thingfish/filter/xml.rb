@@ -6,6 +6,11 @@
 #      http://clabs.org/clxmlserial.htm 
 #      http://rubyforge.org/projects/tidy/
 # 
+# *** This was originally created for demonstration purposes.  It isn't especially
+#     useful for any practical purpose.  If you really want to use XML instead of
+#     YAML, JSON, or another decent serialization library, you should probably
+#     subclass this and modify to taste.
+#
 # == Synopsis
 # 
 #   plugins:
@@ -82,7 +87,11 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
-
+	
+	# The XML mime type.
+	XML_MIMETYPE = 'application/xml'
+	XML_MIMETYPE.freeze
+	
 	# The default path to libtidy to try in case the user doesn't configure one
 	DEFAULT_TIDYLIB_PATH = "%s/libtidy.%s" % Config::CONFIG.values_at( 'libdir', 'DLEXT' )
 	
@@ -109,7 +118,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	public
 	######
 
-	### Filter incoming requests (no-op currently)
+	### Filter incoming requests (currently unsupported for XML)
 	def handle_request( request, response )
 	end
 
@@ -119,19 +128,19 @@ class ThingFish::XMLFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
-		return unless request.explicitly_accepts?( 'application/xml' ) &&
-			self.accept?( response.headers[:content_type] )
+		return unless request.explicitly_accepts?( XML_MIMETYPE ) &&
+			self.accept?( response.content_type )
 		
 		# Absorb errors so filters can continue
 		begin
-			self.log.debug "Converting a %s response to application/xml" %
-				[ response.headers[:content_type] ]
+			self.log.debug "Converting a %s response to %s" %
+				[ response.content_type, XML_MIMETYPE ]
 			response.body = self.make_xml( response.body )
 		rescue => err
 			self.log.error "%s while attempting to convert %p to XML: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = 'application/xml'
+			response.content_type = XML_MIMETYPE
 			response.status = HTTP::OK
 		end
 	end

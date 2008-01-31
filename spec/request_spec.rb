@@ -206,6 +206,26 @@ describe ThingFish::Request do
 	end
 
 
+	it "knows what the request content type is" do
+		params = {
+			'HTTP_CONTENT_TYPE' => 'text/erotica',
+		}
+		
+		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@request.content_type.should == 'text/erotica'
+	end
+
+	
+	it "can modify the request content type" do
+		params = {
+			'HTTP_CONTENT_TYPE' => 'text/erotica',
+		}
+		
+		@request.content_type = 'image/nude'
+		@request.content_type.should == 'image/nude'
+	end
+	
+	
 	it "knows what mimetypes are acceptable responses" do
 		params = {
 			'HTTP_ACCEPT' => 'text/html, text/plain; q=0.5, image/*;q=0.1',

@@ -65,9 +65,9 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 
 	######
 	public
-	######
+	######w
 
-	### Filter incoming requests
+	### Filter incoming requests, converting YAML to native ruby objects.
 	def handle_request( request, response )
 
 		# Only filter if the client sends what we can convert from.
@@ -84,7 +84,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 				[ err.class.name, request.body, err.message ]
 			self.log.debug err.backtrace.join("\n")	
 		else
-			request.headers[ :content_type ] = RUBY_MIMETYPE
+			request.content_type = RUBY_MIMETYPE
 		end
 	end
 
@@ -95,20 +95,19 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
 		return unless request.explicitly_accepts?( YAML_MIMETYPE ) &&
-			self.accept?( response.headers[:content_type] )
+			self.accept?( response.content_type )
 		
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Converting a %s response to text/x-yaml" %
-				[ response.headers[:content_type] ]
+				[ response.content_type ]
 			response.body = response.body.to_yaml
 		rescue => err
 			self.log.error "%s while attempting to convert %p to YAML: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = YAML_MIMETYPE
+			response.content_type = YAML_MIMETYPE
 		end
-
 	end
 
 

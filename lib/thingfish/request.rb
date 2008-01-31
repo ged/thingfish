@@ -383,9 +383,16 @@ class ThingFish::Request
 		return IPAddr.new( self.params['REMOTE_ADDR'] )
 	end
 	
+	
 	### Returns the current request's Content-Type.
 	def content_type
 		return self.headers[ :content_type ]
+	end
+	
+	
+	### Sets the current request's Content-Type.
+	def content_type=( type )
+		return self.headers[ :content_type ] = type
 	end
 	
 	

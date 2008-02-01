@@ -186,7 +186,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			return
 		end
 
-		response_mimetype = response.headers[:content_type] or return
+		response_mimetype = response.content_type or return
 		return unless client_wants_transform( request, response_mimetype )
 		return unless target_type = find_supported_transform( request, response_mimetype )
 
@@ -197,7 +197,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		data = source_image.to_blob {|img| img.format = target_ext }
 		
 		response.body = data
-		response.headers[:content_type] = target_type.mediatype
+		response.content_type = target_type.mediatype
 		response.headers[:content_length] = data.length
 	end
 

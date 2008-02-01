@@ -237,7 +237,7 @@ class ThingFish::Request
 
 		# Content metadata is determined from http headers
 		merged = extracted_metadata.merge({
-			:format => self.headers[ :content_type ],
+			:format => self.content_type,
 			:extent => self.headers[ :content_length ],
 		})
 		merged.update( default_metadata )

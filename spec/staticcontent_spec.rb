@@ -103,9 +103,7 @@ describe ThingFish::StaticContentHandler do
 		@handler.stub!( :get_safe_path ).and_return( @pathname )
 
 		@pathname.should_receive( :extname ).and_return( '.html' )
-		@response_headers.
-			should_receive( :[]= ).
-			with( :content_type, 'text/html' )
+		@response.should_receive( :content_type= ).with( 'text/html' )
 
 		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
 		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
@@ -128,9 +126,8 @@ describe ThingFish::StaticContentHandler do
 		@handler.stub!( :get_safe_path ).and_return( @pathname )
 
 		@pathname.should_receive( :extname ).and_return( '.floop' )
-		@response_headers.
-			should_receive( :[]= ).
-			with( :content_type, ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
+		@response.should_receive( :content_type= ).
+			with( ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
 
 		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
 		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
@@ -165,9 +162,8 @@ describe ThingFish::StaticContentHandler do
 		@indexpath.should_receive( :readable? ).and_return( true )
 
 		@indexpath.should_receive( :extname ).and_return( '.floop' )
-		@response_headers.
-			should_receive( :[]= ).
-			with( :content_type, ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
+		@response.should_receive( :content_type= ).
+			with( ThingFish::StaticContentHandler::DEFAULT_CONTENT_TYPE )
 
 		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
 		@indexpath.should_receive( :stat ).at_least( :once ).and_return( stat )

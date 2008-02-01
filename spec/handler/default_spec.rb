@@ -81,7 +81,7 @@ describe ThingFish::DefaultHandler do
 
 		@listener.should_receive( :handler_info ).and_return( :a_hash_of_info )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		
 		@handler.handle_get_request( @request, @response )
 	end
@@ -92,7 +92,7 @@ describe ThingFish::DefaultHandler do
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 		
 		@response.should_not_receive( :body= )
-		@response_headers.should_not_receive( :[]= ).with( :content_type=, anything() )
+		@response.should_not_receive( :content_type= )
 
 		@handler.handle_get_request( @request, @response )
 	end

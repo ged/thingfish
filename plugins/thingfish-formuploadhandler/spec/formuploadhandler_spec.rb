@@ -117,7 +117,7 @@ describe ThingFish::FormUploadHandler, " (GET request)" do
 
 	it "returns an upload form" do
 		@request.should_receive( :path_info ).and_return( '' )
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
 		@handler.handle_get_request( @request, @response )

@@ -172,8 +172,7 @@ describe ThingFish::ImageFilter do
 	it "doesn't try to convert responses that are already handled" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
 		@request.should_receive( :accepts? ).and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'text/xml' )
 
@@ -189,8 +188,7 @@ describe ThingFish::ImageFilter do
 	it "doesn't try to convert formats it doesn't know about" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
 		@request.should_receive( :accepts? ).and_return( false )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'text/xml' )
 
@@ -202,8 +200,7 @@ describe ThingFish::ImageFilter do
 	
 	it "doesn't try to convert if the request doesn't have any explicitly accepted image types" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
 
@@ -219,8 +216,7 @@ describe ThingFish::ImageFilter do
 
 	it "doesn't try to convert if the request doesn't explicitly accept any formats it knows about" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
 
@@ -239,8 +235,7 @@ describe ThingFish::ImageFilter do
 
 	it "converts image entity bodies from the source format to a format the client prefers" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
 
@@ -268,7 +263,7 @@ describe ThingFish::ImageFilter do
 		
 		@response.should_receive( :body= ).with( new_image_data )
 		@response_headers.should_receive( :[]= ).with( :content_length, 4096 )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'image/png' )
+		@response.should_receive( :content_type= ).with( 'image/png' )
 		
 		@filter.handle_response( @response, @request )
 	end

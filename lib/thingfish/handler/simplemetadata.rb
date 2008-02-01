@@ -225,7 +225,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	### Return a list of a all metadata keys in the store
 	def handle_get_root_request( request, response )
 		response.status = HTTP::OK
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
 	end
 
@@ -234,7 +234,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	def handle_get_uuid_request( request, response, uuid )
 		if @metastore.has_uuid?( uuid )
 			response.status = HTTP::OK
-			response.headers[:content_type] = RUBY_MIMETYPE
+			response.content_type = RUBY_MIMETYPE
 			props = @metastore.get_properties( uuid )
 			props.each_pair {|prop, _| props[prop.to_s] = props.delete( prop ) }
 			response.body = props
@@ -245,7 +245,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	### Return a list of all values for metadata property	
 	def handle_get_key_request( request, response, key )	
 		response.status = HTTP::OK
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.body = @metastore.get_all_property_values( key )
 	end
 
@@ -267,7 +267,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 				uuidhash.each do |uuid, props|
 					self.update_metastore( request, uuid, props )
 				end
-				response.headers[:content_type] = 'text/plain'
+				response.content_type = 'text/plain'
 				response.status = HTTP::OK
 				response.body = 'Success.'
 				
@@ -277,7 +277,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			end
 			
 		else
-			response.headers[:content_type] = 'text/plain'
+			response.content_type = 'text/plain'
 			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
 			response.body = "Don't know how to handle '%s' requests." %
 				[ request.content_type ]
@@ -294,7 +294,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			if @metastore.has_uuid?( uuid )
 				self.update_metastore( request, uuid, request.body )
 		
-				response.headers[:content_type] = 'text/plain'
+				response.content_type = 'text/plain'
 				response.status = HTTP::OK
 				response.body = 'Success.'
 			else
@@ -302,7 +302,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 				# Fallthrough to 404
 			end
 		else
-			response.headers[:content_type] = 'text/plain'
+			response.content_type = 'text/plain'
 			response.status = HTTP::UNSUPPORTED_MEDIA_TYPE
 			response.body = "Don't know how to handle '%s' requests." %
 				[ request.content_type ]
@@ -317,7 +317,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		
 		@metastore.set_safe_property( uuid, key, request.body )
 		
-		response.headers[:content_type] = 'text/plain'
+		response.content_type = 'text/plain'
 		response.body = 'Success.'
 		response.status = property_exists ? HTTP::OK : HTTP::CREATED
 
@@ -326,7 +326,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		msg = "%s while updating %s: %s" %
 		 	[ err.class.name, key, err.message ]
 		self.log.error( msg )
-		response.headers[:content_type] = 'text/plain'
+		response.content_type = 'text/plain'
 		response.body   = msg
 		response.status	= HTTP::FORBIDDEN
 	end
@@ -336,7 +336,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	def handle_delete_key_request( request, response, uuid, key )	
 		@metastore.delete_safe_property( uuid, key )
 		
-		response.headers[:content_type] = 'text/plain'
+		response.content_type = 'text/plain'
 		response.body = 'Success.'
 		response.status = HTTP::OK
 
@@ -345,7 +345,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		msg = "%s while deleting %s: %s" %
 		 	[ err.class.name, key, err.message ]
 		self.log.error( msg )
-		response.headers[:content_type] = 'text/plain'
+		response.content_type = 'text/plain'
 		response.body   = msg
 		response.status	= HTTP::FORBIDDEN
 	end

@@ -235,16 +235,16 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			# Check to be sure we're providing a response which is acceptable to
 			# the client
 			unless response.body.nil? || ! response.status_is_successful?
-				unless response.headers[:content_type]
+				unless response.content_type
 					self.log.warn "Response body set without a content type, using default."
-					response.headers[:content_type] = DEFAULT_CONTENT_TYPE
+					response.content_type = DEFAULT_CONTENT_TYPE
 				end
 				self.log.debug "Checking for acceptable mimetype in response"
 
-				unless request.accepts?( response.headers[:content_type] )
+				unless request.accepts?( response.content_type )
 					self.log.info "Can't create an acceptable response: " +
 						"Client accepts:\n  %p\nbut response is:\n  %p" %
-						[ request.accepted_types, response.headers[:content_type] ]
+						[ request.accepted_types, response.content_type ]
 					return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client )
 				end
 			end
@@ -326,12 +326,12 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			
 			response.data[:tagline] = 'Oh, crap!'
 			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
-			response.headers[ :content_type ] = 'text/html'
+			response.content_type = 'text/html'
 
 			wrapper = self.get_erb_resource( 'template.rhtml' )
 			response.body = wrapper.result( binding() )
 		else
-			response.headers[ :content_type ] = 'text/plain'
+			response.content_type = 'text/plain'
 			response.body = "%d (%s)" % [ statuscode, HTTP::STATUS_NAME[statuscode] ]
 			response.body << "\n\n" << 
 				errtrace << "\n\n" <<

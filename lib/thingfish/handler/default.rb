@@ -192,7 +192,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		response.data[:title] = 'Version ' + ThingFish::VERSION
 		response.data[:tagline] = 'Feed me.'
 		
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.body = {
 			:version => ThingFish::VERSION,
 			:handlers => self.daemon.handler_info,
@@ -215,7 +215,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			else
 				self.log.info "Sending resource %s" % [uuid]
 				response.status = HTTP::OK
-				response.headers[:content_type] = @metastore[ uuid ].format
+				response.content_type = @metastore[ uuid ].format
 				self.add_cache_headers( response, uuid )
 
 				# Add content disposition headers
@@ -223,7 +223,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 				
 				# Send an OK status with the Content-length set to the 
 				# size of the resource
-				response.headers[:content_length] = @filestore.size( uuid )
+				response.headers[ :content_length ] = @filestore.size( uuid )
 				
 				self.log.info "Setting response body to the resource IO"
 				response.body = @filestore.fetch_io( uuid )

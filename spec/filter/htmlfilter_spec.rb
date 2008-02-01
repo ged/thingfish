@@ -67,8 +67,7 @@ describe ThingFish::HtmlFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/html' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
@@ -102,7 +101,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_receive( :body= ).with( :wrapped_html_content )
 		# Transform filters shouldn't change the status of the response
 		@response.should_not_receive( :status= ).with( HTTP::OK )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@response.should_receive( :content_type= ).with( 'text/html' )
 		
 		@filter.handle_response( @response, @request )
 	end
@@ -113,8 +112,7 @@ describe ThingFish::HtmlFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/html' ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
@@ -146,7 +144,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_receive( :body= ).with( :wrapped_html_content )
 		# Transform filters shouldn't change the status of the response
 		@response.should_not_receive( :status= ).with( HTTP::OK )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/html' )
+		@response.should_receive( :content_type= ).with( 'text/html' )
 
 		@filter.handle_response( @response, @request )
 	end

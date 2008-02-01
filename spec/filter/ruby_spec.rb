@@ -64,8 +64,7 @@ describe ThingFish::RubyFilter do
 	it "unmarshals Ruby-object requests if the content-type indicates it's a marshalled " +
 	   "ruby object" do
 
-		@request_headers.should_receive( :[] ).
-			with( :content_type ).
+		@request.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MARSHALLED_MIMETYPE )
 		@request.should_receive( :body ).
@@ -73,8 +72,7 @@ describe ThingFish::RubyFilter do
 			and_return( TEST_MARSHALLED_CONTENT )
 
 		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
-		@request_headers.should_receive( :[]= ).
-			with( :content_type, RUBY_MIMETYPE )
+		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 
 		@filter.handle_request( @request, @response )
 	end
@@ -83,15 +81,14 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
 		@response.should_receive( :body ).and_return( TEST_RUBY_OBJECT )
 		
 		@response.should_receive( :body= ).with( TEST_MARSHALLED_CONTENT )
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MARSHALLED_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MARSHALLED_MIMETYPE )
 		
 		@filter.handle_response( @response, @request )
 	end
@@ -113,9 +110,7 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
-			and_return( 'text/html' )
+		@response.should_receive( :content_type ).and_return( 'text/html' )
 
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
@@ -128,8 +123,7 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
 			and_return( true )
-		@response_headers.should_receive( :[] ).
-			with( :content_type ).
+		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 

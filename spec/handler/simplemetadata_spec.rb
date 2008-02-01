@@ -105,7 +105,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :get_all_property_keys ).
 			and_return( TESTING_KEYS )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( STRINGIFIED_TESTING_KEYS )
 		
 		@handler.handle_get_request( @request, @response )
@@ -118,7 +118,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( 'invaders' ).
 			and_return( TESTING_VALUES )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TESTING_VALUES )
 		
 		@handler.handle_get_request( @request, @response )
@@ -131,7 +131,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( TEST_UUID ).
 			and_return( TEST_RUBY_OBJECT )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( TEST_RUBY_OBJECT )
 		
 		@handler.handle_get_request( @request, @response )
@@ -190,7 +190,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :update_safe_properties ).
 			with( TEST_UUID2, body[TEST_UUID2] )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
@@ -234,7 +234,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		
 		@request.should_not_receive( :body )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).
 			with( %r{application/something-bizarre}i )
 		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
@@ -274,7 +274,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( true )
 		@metastore.should_receive( :update_safe_properties ).with( TEST_UUID, props )	
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -294,7 +294,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :set_safe_property ).
 			with( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
@@ -312,7 +312,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( TEST_UUID, TEST_PROP ).
 			and_return( false )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::CREATED )
 
@@ -333,7 +333,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :set_safe_property ).
 			with( TEST_UUID, 'extent', TEST_PROPVALUE ).
 			and_raise( ThingFish::MetaStoreError.new( 'used by the system' ) )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /metastoreerror/i )
 		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
 
@@ -384,7 +384,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :set_safe_properties ).
 			with( TEST_UUID2, body[TEST_UUID2] )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
@@ -427,7 +427,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( 'application/something-bizarre' )
 		@request.should_not_receive( :body )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).
 			with( %r{application/something-bizarre}i )
 		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
@@ -459,7 +459,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( 'application/something-bizarre' )
 		@request.should_not_receive( :body )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).
 			with( %r{application/something-bizarre}i )
 		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
@@ -484,7 +484,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( true )
 		@metastore.should_receive( :set_safe_properties ).with( TEST_UUID, props )	
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -504,7 +504,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :set_safe_property ).
 			with( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
@@ -522,7 +522,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( TEST_UUID, TEST_PROP ).
 			and_return( false )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::CREATED )
 
@@ -543,7 +543,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :set_safe_property ).
 			with( TEST_UUID, 'extent', TEST_PROPVALUE ).
 			and_raise( ThingFish::MetaStoreError.new( 'used by the system' ) )
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /metastoreerror/i )
 		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
 
@@ -588,7 +588,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :delete_safe_properties ).
 			with( TEST_UUID2, body[TEST_UUID2] )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		
@@ -604,7 +604,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( 'application/something-bizarre' )
 		@request.should_not_receive( :body )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).
 			with( %r{application/something-bizarre}i )
 		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
@@ -661,7 +661,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( true )
 		@metastore.should_receive( :delete_safe_properties ).with( TEST_UUID, props )	
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
@@ -677,7 +677,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( 'application/something-bizarre' )
 		@request.should_not_receive( :body )
 
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).
 			with( %r{application/something-bizarre}i )
 		@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
@@ -693,7 +693,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		@metastore.should_receive( :delete_safe_property ).
 			with( TEST_UUID, TEST_PROP )
 		
-		@response_headers.should_receive( :[]= ).with( :content_type, 'text/plain' )
+		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /success/i )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		

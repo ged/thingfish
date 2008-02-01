@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This is a little wrapper that starts thingfishd with the config in
 # etc/thingfish.conf-testing, like run did originally.

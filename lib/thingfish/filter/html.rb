@@ -74,10 +74,9 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		# Only filter if the client wants what we can convert to, and the response
 		# body is something we know how to convert
 		return unless request.explicitly_accepts?( 'text/html' ) &&
-			self.accept?( response.headers[:content_type] )
+			self.accept?( response.content_type )
 
-		self.log.debug "Converting a %s response to text/html" %
-			[ response.headers[:content_type] ]
+		self.log.debug "Converting a %s response to text/html" % [ response.content_type ]
 		
 		# Find the handlers that can make html
 		content = []
@@ -97,7 +96,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		template = self.get_erb_resource( 'template.rhtml' )
 		
 		response.body = template.result( binding() )
-		response.headers[:content_type] = 'text/html'
+		response.content_type = 'text/html'
 	end
 
 

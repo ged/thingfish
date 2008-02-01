@@ -76,7 +76,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 		uuids = @metastore.find_by_matching_properties( args )
 
 		response.status = HTTP::OK
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.body = uuids
 	end
 

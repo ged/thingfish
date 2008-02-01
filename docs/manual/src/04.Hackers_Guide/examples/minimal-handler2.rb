@@ -24,7 +24,7 @@ class TimeHandler < ThingFish::Handler
 			return
 		end
 
-		response.headers[:content_type] = 'text/plain'
+		response.content_type = 'text/plain'
 		response.status = HTTP::OK
 	end
 end

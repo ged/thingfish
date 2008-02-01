@@ -79,7 +79,7 @@ describe "The inspection handler" do
 		@request.should_receive( :path_info ).and_return( "" )
 
 		@response.should_receive( :status= ).with( HTTP::OK )
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
 		@response_data.should_receive( :[]= ).with( :tagline, an_instance_of(String) )
 		@response_data.should_receive( :[]= ).with( :title, an_instance_of(String) )

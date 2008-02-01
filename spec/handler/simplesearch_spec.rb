@@ -117,7 +117,7 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 			with( search_terms ).
 			and_return([ TEST_UUID ])
 		
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :body= ).with([ TEST_UUID ])
 		
@@ -137,7 +137,7 @@ describe ThingFish::SimpleSearchHandler, " set up with a simple metastore" do
 			with( search_terms ).
 			and_return([ TEST_UUID, TEST_UUID2 ])
 		
-		@headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :body= ).with([ TEST_UUID, TEST_UUID2 ])
 		

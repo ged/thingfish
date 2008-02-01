@@ -110,16 +110,16 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 		# Set Content-Type and Content-Length headers.
 		extension = file.extname.downcase
 		if MIMETYPE_MAP.key?( extension )
-			response.headers[:content_type] = MIMETYPE_MAP[ extension ]
+			response.content_type = MIMETYPE_MAP[ extension ]
 			self.log.debug {
 				"Setting content-type to %p for %p" %
 					[ MIMETYPE_MAP[extension], file.to_s ]
 			}
 		else
 			self.log.warn "No MIME mapping for %p" % [ extension ]
-			response.headers[:content_type] = DEFAULT_CONTENT_TYPE
+			response.content_type = DEFAULT_CONTENT_TYPE
 		end
-		response.headers[:content_length] = file_stat.size
+		response.headers[ :content_length ] = file_stat.size
 				
 		response.status = HTTP::OK
 		response.body = file.open('r')

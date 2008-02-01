@@ -95,7 +95,7 @@ describe "A status handler with no stats filters" do
 		stat.should_receive( :name ).at_least( :once ).and_return('porkenheimer')
 				
 		@response.should_receive( :status= ).with( HTTP::OK )
-		@response_headers.should_receive( :[]= ).with( :content_type, RUBY_MIMETYPE )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
 
 		@handler.handle_get_request( @request, @response )

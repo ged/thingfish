@@ -88,14 +88,14 @@ class ThingFish::InspectHandler < ThingFish::Handler
 		response.status = HTTP::OK
 		response.data[:tagline] = 'Dissect me!'
 		response.body = inspected_object
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 	end
 
 
 	### Make an HTML fragment for the body text/html response (HTML filter API).
 	def make_html_content( body, request, response )
 		content = self.get_erb_resource( 'inspect.rhtml' )
-		response.headers[ :content_type ] = 'text/html'
+		response.content_type = 'text/html'
 		return content.result( binding() )
 	end
 	

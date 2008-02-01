@@ -124,7 +124,7 @@ class ThingFish::StatusHandler < ThingFish::Handler
 		response.status = HTTP::OK
 		response.data[:tagline] = "What do you mean you don't know what standard deviation is?!?"
 		response.data[:title] = 'Handler Statistics'
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.body = self.extract_statistics
 	end
 

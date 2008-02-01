@@ -106,9 +106,8 @@ describe ThingFish::Daemon do
 		tf_response.should_receive( :headers ).
 			at_least( :once ).
 			and_return( headers )
-		headers.should_receive( :[] ).
+		tf_response.should_receive( :content_type ).
 			at_least( :once ).
-			with( :content_type ).
 			and_return( RUBY_MIMETYPE )
 		
 		tf_request.should_receive( :accepts? ).

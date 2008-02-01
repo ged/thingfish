@@ -120,7 +120,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	def handle_get_request( request, response )
 		return unless request.path_info == ''
 		response.data[:tagline] = 'Feed me.'
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.status = HTTP::OK
 	end
 
@@ -141,7 +141,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		end
 
 		# Return success with links to new files
-		response.headers[:content_type] = RUBY_MIMETYPE
+		response.content_type = RUBY_MIMETYPE
 		response.status = HTTP::OK
 		response.body   = files
 	end

@@ -67,7 +67,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	def handle_request( request, response )
 
 		# Only filter if the body of the request is a marshalled Ruby object
-		return unless request.headers[:content_type] == RUBY_MARSHALLED_MIMETYPE
+		return unless request.content_type == RUBY_MARSHALLED_MIMETYPE
 		
 		# Absorb errors so filters can continue
 		begin
@@ -79,7 +79,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 			self.log.error "%s while attempting to unmarshal %p: %s" %
 				[ err.class.name, request.body, err.message ]
 		else
-			request.headers[:content_type] = RUBY_MIMETYPE
+			request.content_type = RUBY_MIMETYPE
 		end
 
 	end
@@ -91,18 +91,18 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		# Only filter if the client wants what we can convert to, and the response body
 		# is something we know how to convert
 		return unless request.explicitly_accepts?( RUBY_MARSHALLED_MIMETYPE ) &&
-			self.accept?( response.headers[:content_type] )
+			self.accept?( response.content_type )
 		
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Converting a %s response to %s" %
-				[ response.headers[:content_type], RUBY_MARSHALLED_MIMETYPE ]
+				[ response.content_type, RUBY_MARSHALLED_MIMETYPE ]
 			response.body = Marshal.dump( response.body )
 		rescue TypeError => err
 			self.log.error "%s while attempting to marshal %p: %s" %
 				[ err.class.name, response.body, err.message ]
 		else
-			response.headers[:content_type] = RUBY_MARSHALLED_MIMETYPE
+			response.content_type = RUBY_MARSHALLED_MIMETYPE
 		end
 
 	end

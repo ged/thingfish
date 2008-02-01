@@ -92,8 +92,27 @@ describe ThingFish::RubyFilter do
 		
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
+	it "doesn't modify the request if there was a problem unmarshalling" do
+   		@request.should_receive( :content_type ).
+   			at_least( :once ).
+   			and_return( RUBY_MARSHALLED_MIMETYPE )
+		bodyio = StringIO.new( TEST_MARSHALLED_CONTENT )
+   		@request.should_receive( :body ).
+   			at_least( :once ).
+   			with( no_args() ).
+   			and_return( bodyio )
+
+		Marshal.stub!( :load ).and_raise( TypeError.new("error parsing") )
+   	
+		@request.should_not_receive( :body= )
+   		@request.should_not_receive( :content_type= )
+   			
+   		@filter.handle_request( @request, @response )
+   	end
+
+
 	it "does no conversion if the client doesn't accept marshalled Ruby object" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).

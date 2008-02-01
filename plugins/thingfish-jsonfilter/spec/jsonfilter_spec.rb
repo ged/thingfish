@@ -60,6 +60,43 @@ describe ThingFish::JSONFilter do
 
 
 	it_should_behave_like "A Filter"
+
+
+	it "converts a request body into a Ruby object if the content-type indicates " +
+	   "it's JSON" do
+   		@request.should_receive( :content_type ).
+   			at_least( :once ).
+   			and_return( 'application/json' )
+		bodyio = StringIO.new( TEST_JSON_CONTENT )
+   		@request.should_receive( :body ).
+   			at_least( :once ).
+   			with( no_args() ).
+   			and_return( bodyio )
+   			
+   		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
+   		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+   			
+   		@filter.handle_request( @request, @response )
+   	end
+	
+
+	it "doesn't modify the request if there was a problem parsing JSON" do
+   		@request.should_receive( :content_type ).
+   			at_least( :once ).
+   			and_return( 'application/json' )
+		bodyio = StringIO.new( TEST_JSON_CONTENT )
+   		@request.should_receive( :body ).
+   			at_least( :once ).
+   			with( no_args() ).
+   			and_return( bodyio )
+
+		JSON.stub!( :parse ).and_raise( TypeError.new("error parsing") )
+   	
+		@request.should_not_receive( :body= )
+   		@request.should_not_receive( :content_type= )
+   			
+   		@filter.handle_request( @request, @response )
+   	end
 	
 	
 	it "converts Ruby-object responses to JSON if the client accepts it" do

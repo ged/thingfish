@@ -76,8 +76,7 @@ class ThingFish::Config
 				:name => 'memory',
 			},
 			:metastore => {
-				:name => 'memory',
-				:extractors => [],
+				:name => 'memory'
 			},
 			:handlers => [],
 			:filters => [],

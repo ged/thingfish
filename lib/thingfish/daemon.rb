@@ -195,6 +195,13 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			metadata.created  = now unless metadata.created
 			metadata.modified = now
 
+			# Always store a reasonable format.
+			# Try and guess from our static extension -> mime map
+			if metadata.format.nil?
+				extension = $1 if metadata.title =~ /(\.\w+)$/
+				metadata.format = MIMETYPE_MAP[ extension ] || DEFAULT_CONTENT_TYPE
+			end
+
 			self.log.info "Created new resource %s (%s, %0.2f KB), checksum is %s" % [
 				uuid,
 				metadata.format,

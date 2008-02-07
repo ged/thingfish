@@ -257,6 +257,7 @@ describe ThingFish::DefaultHandler do
 		query_args = mock( "uri query arguments", :null_object => true )
 		@request.stub!( :query_args ).and_return( query_args )
 		query_args.should_receive( :has_key? ).with( 'attach' ).and_return( true )
+		query_args.should_receive( :[] ).with( 'attach' ).and_return( nil )
 	
 		@mockmetadata.stub!( :title ).and_return('potap.mp3')
 
@@ -265,6 +266,35 @@ describe ThingFish::DefaultHandler do
 			with( :content_disposition,
 				'attachment; ' +
 				'filename="potap.mp3"; ' + 
+				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
+
+		@request.stub!( :http_method ).and_return( 'GET' )
+		@handler.handle_get_request( @request, @response )
+	end
+
+
+	it "sets the content disposition filename of the requested resource" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
+		@request.should_receive( :uri ).
+			at_least( :once ).
+			and_return( uri )
+
+		@request.should_receive( :is_cached_by_client? ).
+			at_least( :once ).
+			and_return( false )
+
+		query_args = mock( "uri query arguments", :null_object => true )
+		@request.stub!( :query_args ).and_return( query_args )
+		query_args.should_receive( :has_key? ).with( 'attach' ).and_return( true )
+		query_args.should_receive( :[] ).with( 'attach' ).and_return( 'ukraine_rapper.mp3' )
+	
+		@mockmetadata.stub!( :title ).and_return('potap.mp3')
+
+		@response_headers.
+			should_receive( :[]= ).
+			with( :content_disposition,
+				'attachment; ' +
+				'filename="ukraine_rapper.mp3"; ' + 
 				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
 
 		@request.stub!( :http_method ).and_return( 'GET' )

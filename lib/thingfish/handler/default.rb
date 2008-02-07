@@ -326,7 +326,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		disposition = []
 		disposition << 'attachment'
 
-		if (( filename = @metastore[ uuid ].title ))
+		if (( filename = request.query_args['attach'] || @metastore[ uuid ].title ))
 			disposition << %{filename="%s"} % [ filename ]
 		end
 

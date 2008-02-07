@@ -226,7 +226,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	def handle_get_root_request( request, response )
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
-		response.body = @metastore.get_all_property_keys.collect {|k| k.to_s }
+		response.body = @metastore.get_all_property_keys
 	end
 
 
@@ -235,9 +235,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		if @metastore.has_uuid?( uuid )
 			response.status = HTTP::OK
 			response.content_type = RUBY_MIMETYPE
-			props = @metastore.get_properties( uuid )
-			props.each_pair {|prop, _| props[prop.to_s] = props.delete( prop ) }
-			response.body = props
+			response.body = @metastore.get_properties( uuid )
 		end
 	end
 

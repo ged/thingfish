@@ -75,7 +75,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 			obj = Marshal.load( request.body )
 			request.body = obj
 			self.log.debug "Successfully unmarshalled entity body: %p" % [ obj ]
-		rescue TypeError => err
+		rescue ArgumentError => err
 			self.log.error "%s while attempting to unmarshal %p: %s" %
 				[ err.class.name, request.body, err.message ]
 		else
@@ -92,19 +92,12 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		# is something we know how to convert
 		return unless request.explicitly_accepts?( RUBY_MARSHALLED_MIMETYPE ) &&
 			self.accept?( response.content_type )
-		
-		# Absorb errors so filters can continue
-		begin
-			self.log.debug "Converting a %s response to %s" %
-				[ response.content_type, RUBY_MARSHALLED_MIMETYPE ]
-			response.body = Marshal.dump( response.body )
-		rescue TypeError => err
-			self.log.error "%s while attempting to marshal %p: %s" %
-				[ err.class.name, response.body, err.message ]
-		else
-			response.content_type = RUBY_MARSHALLED_MIMETYPE
-		end
 
+		# Errors marshalling should result in a 500.
+		self.log.debug "Converting a %s response to %s" %
+			[ response.content_type, RUBY_MARSHALLED_MIMETYPE ]
+		response.body = Marshal.dump( response.body )
+		response.content_type = RUBY_MARSHALLED_MIMETYPE
 	end
 
 

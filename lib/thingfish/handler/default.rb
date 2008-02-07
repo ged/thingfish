@@ -231,6 +231,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			
 		else
 			response.status = HTTP::NOT_FOUND
+			response.content_type = 'text/plain'
 			response.body = "UUID '#{uuid}' not found in the filestore"
 		end
 	end
@@ -247,7 +248,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 
 		response.status = HTTP::CREATED
 		response.headers[:location] = '/' + uuid.to_s
-		response.body = "Uploaded with ID #{uuid}"
+		response.content_type = RUBY_MIMETYPE
+		response.body = metadata
 
 	rescue ThingFish::FileStoreQuotaError => err
 		self.log.error "Quota error while creating a resource: %s" % [ err.message ]
@@ -264,13 +266,14 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		body, metadata = request.get_body_and_metadata
 		self.daemon.store_resource( body, metadata, uuid )
 		
+		response.content_type = RUBY_MIMETYPE
+		response.body = metadata
+
 		if new_resource
 			response.status = HTTP::CREATED
 			response.headers[:location] = '/' + uuid.to_s
-			response.body = "Uploaded with ID #{uuid}"
 		else
 			response.status = HTTP::OK
-			response.body = "UUID '#{uuid}' updated"
 		end
 	rescue ThingFish::FileStoreQuotaError => err
 		self.log.error "Quota error while updating a resource: %s" % [ err.message ]
@@ -284,9 +287,11 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			@filestore.delete( uuid )
 			@metastore.delete_resource( uuid )
 			response.status = HTTP::OK
+			response.content_type = 'text/plain'
 			response.body = "Resource '#{uuid}' deleted"
 		else
 			response.status = HTTP::NOT_FOUND
+			response.content_type = 'text/plain'
 			response.body = "Resource '#{uuid}' not found"
 		end
 	end

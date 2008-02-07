@@ -61,7 +61,6 @@ end
 
 describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 	TESTING_KEYS = [ :some, :keys, :for, :testing ]
-	STRINGIFIED_TESTING_KEYS = TESTING_KEYS.collect {|k| k.to_s }
 	TESTING_VALUES = %w{ zim ger dib }
 	
 	before(:each) do
@@ -106,7 +105,7 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			and_return( TESTING_KEYS )
 
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
-		@response.should_receive( :body= ).with( STRINGIFIED_TESTING_KEYS )
+		@response.should_receive( :body= ).with( TESTING_KEYS )
 		
 		@handler.handle_get_request( @request, @response )
 	end

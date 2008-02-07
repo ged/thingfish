@@ -104,7 +104,7 @@ describe ThingFish::RubyFilter do
    			with( no_args() ).
    			and_return( bodyio )
 
-		Marshal.stub!( :load ).and_raise( TypeError.new("error parsing") )
+		Marshal.stub!( :load ).and_raise( ArgumentError.new("error parsing") )
    	
 		@request.should_not_receive( :body= )
    		@request.should_not_receive( :content_type= )
@@ -138,7 +138,7 @@ describe ThingFish::RubyFilter do
 	end
 
 
-	it "doesn't propagate errors during marshalling" do
+	it "propagates errors during marshalling" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
 			and_return( true )
@@ -152,14 +152,14 @@ describe ThingFish::RubyFilter do
 			and_return( erroring_object )
 		
 		erroring_object.should_receive( :_dump ).
-			and_raise( TypeError.new("Can't dump mock object") )
+			and_raise( ArgumentError.new("Can't dump mock object") )
 		
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
 
 		lambda {
 			@filter.handle_response( @response, @request )
-		}.should_not raise_error()
+		}.should raise_error()
 	end
 	
 

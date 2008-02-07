@@ -47,7 +47,8 @@
 begin
 	require 'rbconfig'
 	require 'cl/xmlserial'
-
+	require 'ipaddr'
+	
 	require 'thingfish'
 	require 'thingfish/mixins'
 	require 'thingfish/constants'
@@ -60,15 +61,16 @@ rescue LoadError
 	raise
 end
 
-
 ### Allow some additional base classes to be XML serialized.
-class NilClass; include XmlSerialization; end
-class Symbol
-	include XmlSerialization
-
+module XmlStringifiable
 	def instance_data_to_xml( element )
 		element.add_text( self.to_s )
 	end
+end
+
+[ NilClass, Symbol, IPAddr ].each do |klass|
+	XmlSerialization.send( :append_features, klass )
+	XmlStringifiable.send( :append_features, klass )
 end
 
 
@@ -131,18 +133,11 @@ class ThingFish::XMLFilter < ThingFish::Filter
 		return unless request.explicitly_accepts?( XML_MIMETYPE ) &&
 			self.accept?( response.content_type )
 		
-		# Absorb errors so filters can continue
-		begin
-			self.log.debug "Converting a %s response to %s" %
-				[ response.content_type, XML_MIMETYPE ]
-			response.body = self.make_xml( response.body )
-		rescue => err
-			self.log.error "%s while attempting to convert %p to XML: %s" %
-				[ err.class.name, response.body, err.message ]
-		else
-			response.content_type = XML_MIMETYPE
-			response.status = HTTP::OK
-		end
+		# Errors converting to XML should result in a 500.
+		self.log.debug "Converting a %s response to %s" %
+			[ response.content_type, XML_MIMETYPE ]
+		response.body = self.make_xml( response.body )
+		response.content_type = XML_MIMETYPE
 	end
 
 

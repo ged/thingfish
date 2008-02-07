@@ -90,7 +90,7 @@ describe ThingFish::JSONFilter do
    			with( no_args() ).
    			and_return( bodyio )
 
-		JSON.stub!( :parse ).and_raise( TypeError.new("error parsing") )
+		JSON.stub!( :parse ).and_raise( JSON::ParserError.new("error parsing") )
    	
 		@request.should_not_receive( :body= )
    		@request.should_not_receive( :content_type= )
@@ -110,7 +110,7 @@ describe ThingFish::JSONFilter do
 		@response.should_receive( :body ).and_return( TEST_RUBY_OBJECT )
 		
 		@response.should_receive( :body= ).with( TEST_JSON_CONTENT )
-		@response.should_receive( :status= ).with( HTTP::OK )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( 'application/json' )
 		
 		@filter.handle_response( @response, @request )
@@ -146,7 +146,7 @@ describe ThingFish::JSONFilter do
 	end
 
 
-	it "doesn't propagate errors during JSON generation" do
+	it "propagates errors during JSON generation" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
 			and_return( true )
@@ -168,7 +168,7 @@ describe ThingFish::JSONFilter do
 
 		lambda {
 			@filter.handle_response( @response, @request )
-		}.should_not raise_error()
+		}.should raise_error()
 	end
 	
 

@@ -35,7 +35,16 @@ include ThingFish::Constants
 #####################################################################
 describe ThingFish::YAMLFilter do
 	
-	TEST_YAML_CONTENT = TEST_RUBY_OBJECT.to_yaml
+	TEST_YAML_CONTENT = <<-EO_YAML
+	--- 
+	- ip_address: 127.0.0.1
+	- pine_cone: sandwiches
+	- olive_oil: pudding
+	EO_YAML
+
+	TEST_YAML_CONTENT.gsub!( /^\s+/, '' )
+	TEST_UNYAMLIFIED_CONTENT = YAML.load(TEST_YAML_CONTENT)
+
 
 	before( :all ) do
 		ThingFish.reset_logger
@@ -72,7 +81,7 @@ describe ThingFish::YAMLFilter do
    			with( no_args() ).
    			and_return( bodyio )
    			
-   		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
+   		@request.should_receive( :body= ).with( TEST_UNYAMLIFIED_CONTENT )
    		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
    			
    		@filter.handle_request( @request, @response )
@@ -108,7 +117,7 @@ describe ThingFish::YAMLFilter do
    			with( no_args() ).
    			and_return( bodyio )
 
-		YAML.stub!( :load ).and_raise( TypeError.new("error parsing") )
+		YAML.stub!( :load ).and_raise( YAML::ParseError.new("error parsing") )
    	
 		@request.should_not_receive( :body= )
    		@request.should_not_receive( :content_type= )
@@ -146,7 +155,7 @@ describe ThingFish::YAMLFilter do
 	end
 
 
-	it "doesn't propagate errors during YAML generation" do
+	it "propagates errors during YAML generation" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
 			and_return( true )
@@ -154,13 +163,14 @@ describe ThingFish::YAMLFilter do
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
-		erroring_object = mock( "ruby object that raises an error when converted to YAML" )
+		# This way of raising is really lame, as it's not really simulating
+		# an error thrown from the YAML generation itself, but since that happens
+		# on a stringified object, we can't really simulate this without doing
+		# some nasty partial stub on the object under test, which is (IMO)
+		# even more lame.
 		@response.should_receive( :body ).
-			at_least( :once ).
-			and_return( erroring_object )
-		
-		erroring_object.should_receive( :to_yaml ).
-			and_raise( "Oops, couldn't convert to YAML for some reason!" )
+			once.
+			and_raise( YAML::ParseError.new("couldn't parse it!") )
 		
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
@@ -168,7 +178,7 @@ describe ThingFish::YAMLFilter do
 
 		lambda {
 			@filter.handle_response( @response, @request )
-		}.should_not raise_error()
+		}.should raise_error()
 	end
 	
 

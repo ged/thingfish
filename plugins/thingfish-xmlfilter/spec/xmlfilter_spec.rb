@@ -16,6 +16,7 @@ begin
 	require 'rbconfig'
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'ipaddr'
 	require 'thingfish'
 	require 'thingfish/filter'
 	require 'thingfish/filter/xml'
@@ -35,9 +36,14 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe Symbol, " with XMLFilter extensions" do
-
 	it "is XMLSerializable" do
 		:blah.to_xml.to_s.should =~ /<Symbol>/
+	end
+end
+
+describe IPAddr, " with XMLFilter extensions" do
+	it "is XMLSerializable" do
+		IPAddr.new('127.0.0.1').to_xml.to_s.should =~ /<IPAddr>127/
 	end
 end
 
@@ -90,7 +96,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 			and_return( TEST_XML_CONTENT )
 		
 		@response.should_receive( :body= ).with( TEST_XML_CONTENT )
-		@response.should_receive( :status= ).with( HTTP::OK )
+		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( 'application/xml' )
 		
 		@filter.handle_response( @response, @request )
@@ -126,7 +132,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 	end
 
 
-	it "doesn't propagate errors during XML generation" do
+	it "propagates errors during XML generation" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
 			and_return( true )
@@ -148,7 +154,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 
 		lambda {
 			@filter.handle_response( @response, @request )
-		}.should_not raise_error()
+		}.should raise_error()
 	end
 end
 

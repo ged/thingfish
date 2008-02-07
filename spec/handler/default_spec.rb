@@ -108,11 +108,10 @@ describe ThingFish::DefaultHandler do
 
 		@response_headers.should_receive( :[]= ).
 			with( :location, %r{/#{TEST_UUID}} )
-		@response.should_receive( :body= ).
-			once.with( /Uploaded with ID #{TEST_UUID}/ )
-		@response.should_receive( :status= ).
-			once.with( HTTP::CREATED )
-
+		@response.should_receive( :body= ).with( metadata )
+		@response.should_receive( :status= ).once.with( HTTP::CREATED )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+		
 		@listener.should_receive( :store_resource ).
 			with( body, metadata ).
 			and_return( TEST_UUID )

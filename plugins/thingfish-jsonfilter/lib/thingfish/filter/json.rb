@@ -79,7 +79,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 			self.log.debug "Converting a %s request to %s" %
 				[ JSON_MIMETYPE, RUBY_MIMETYPE ]
 			request.body = JSON.parse( request.body.read )
-		rescue => err
+		rescue JSON::ParserError => err
 			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
 				[ err.class.name, request.body, err.message ]
 			self.log.debug err.backtrace.join("\n")	
@@ -97,18 +97,11 @@ class ThingFish::JSONFilter < ThingFish::Filter
 		return unless request.explicitly_accepts?( JSON_MIMETYPE ) &&
 			self.accept?( response.content_type )
 		
-		# Absorb errors so filters can continue
-		begin
-			self.log.debug "Converting a %s response to application/json" %
-				[ response.content_type ]
-			response.body = response.body.to_json
-		rescue => err
-			self.log.error "%s while attempting to convert %p to JSON: %s" %
-				[ err.class.name, response.body, err.message ]
-		else
-			response.content_type = JSON_MIMETYPE
-			response.status = HTTP::OK
-		end
+		# Errors converting to JSON should result in a 500.
+		self.log.debug "Converting a %s response to application/json" %
+			[ response.content_type ]
+		response.body = response.body.to_json
+		response.content_type = JSON_MIMETYPE
 	end
 
 

@@ -79,7 +79,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 			self.log.debug "Converting a %s request to %s" %
 				[ YAML_MIMETYPE, RUBY_MIMETYPE ]
 			request.body = YAML.load( request.body.read )
-		rescue => err
+		rescue RuntimeError, YAML::ParseError => err
 			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
 				[ err.class.name, request.body, err.message ]
 			self.log.debug err.backtrace.join("\n")	
@@ -97,17 +97,11 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		return unless request.explicitly_accepts?( YAML_MIMETYPE ) &&
 			self.accept?( response.content_type )
 		
-		# Absorb errors so filters can continue
-		begin
-			self.log.debug "Converting a %s response to text/x-yaml" %
-				[ response.content_type ]
-			response.body = response.body.to_yaml
-		rescue => err
-			self.log.error "%s while attempting to convert %p to YAML: %s" %
-				[ err.class.name, response.body, err.message ]
-		else
-			response.content_type = YAML_MIMETYPE
-		end
+		# Errors converting to yaml should result in a 500.
+		self.log.debug "Converting a %s response to text/x-yaml" %
+			[ response.content_type ]				
+		response.body = self.stringify_members( response.body ).to_yaml
+		response.content_type = YAML_MIMETYPE
 	end
 
 
@@ -118,6 +112,24 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		return HANDLED_TYPES
 	end
 	
+	
+	#########
+	protected
+	#########
+	
+	### Walk over the contents of +data+, stringifying contents.
+	def stringify_members( data )
+		case data
+		when Hash
+			data.each_key {|k| data[ k.to_s ] = stringify_members(data.delete(k)) }
+			
+		when Array
+			data.collect {|obj| stringify_members(obj) }
+			
+		else
+			data.to_s
+		end
+	end
 	
 end # class ThingFish::YAMLFilter
 

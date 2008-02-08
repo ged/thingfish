@@ -37,7 +37,14 @@ include ThingFish::Constants
 #####################################################################
 describe ThingFish::JSONFilter do
 	
-	TEST_JSON_CONTENT = TEST_RUBY_OBJECT.to_json
+	TEST_JSON_CONTENT = <<-EO_JSON
+		[{"ip_address":"127.0.0.1"},
+		{"pine_cone":"sandwiches"},
+		{"olive_oil":"pudding"}]
+	EO_JSON
+
+	TEST_JSON_CONTENT.gsub!( /(^\s+|\n)/, '' )
+	TEST_UNJSONIFIED_CONTENT = JSON.parse(TEST_JSON_CONTENT)
 
 	before( :all ) do
 		ThingFish.reset_logger
@@ -73,7 +80,7 @@ describe ThingFish::JSONFilter do
    			with( no_args() ).
    			and_return( bodyio )
    			
-   		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
+   		@request.should_receive( :body= ).with( TEST_UNJSONIFIED_CONTENT )
    		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
    			
    		@filter.handle_request( @request, @response )
@@ -107,7 +114,7 @@ describe ThingFish::JSONFilter do
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
-		@response.should_receive( :body ).and_return( TEST_RUBY_OBJECT )
+		@response.should_receive( :body ).and_return( TEST_UNJSONIFIED_CONTENT )
 		
 		@response.should_receive( :body= ).with( TEST_JSON_CONTENT )
 		@response.should_not_receive( :status= ).with( HTTP::OK )

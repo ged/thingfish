@@ -121,7 +121,9 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	def stringify_members( data )
 		case data
 		when Hash
-			data.each_key {|k| data[ k.to_s ] = stringify_members(data.delete(k)) }
+			newhash = {}
+			data.each_key {|k| newhash[ k.to_s ] = stringify_members(data[k]) }
+			return newhash
 			
 		when Array
 			data.collect {|obj| stringify_members(obj) }

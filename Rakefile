@@ -47,7 +47,7 @@ TEXT_FILES    = %w( Rakefile README LICENSE ).
 	collect {|filename| BASEDIR + filename }
 
 SPECDIR       = BASEDIR + 'spec'
-SPEC_FILES    = Pathname.glob( SPECDIR + '**/*_spec.rb' ).
+SPEC_FILES    = Pathname.glob( (SPECDIR + '**/*_spec.rb').to_s ).
 	delete_if {|item| item =~ /\.svn/ }
 # Ideally, this should be automatically generated.
 SPEC_EXCLUDES = 'spec,monkeypatches,/Library/Ruby,/var/lib,/usr/local/lib'

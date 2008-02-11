@@ -41,7 +41,7 @@ module ThingFish
 	SVNId = %q$Id$
 
 	# Package version
-	VERSION = '0.1.0'
+	VERSION = '0.2.0'
 
 	# Need to require these here so some constants are already defined
 	require 'thingfish/constants'
@@ -53,6 +53,8 @@ module ThingFish
 	Numeric.extend( ThingFish::NumericConstantMethods )
 
 	# Global logging object
+	require 'thingfish/utils'
+
 	@default_logger = Logger.new( $stderr )
 	@default_logger.level = Logger::WARN
 	@default_logger.formatter = ThingFish::LogFormatter.new( @default_logger )
@@ -67,6 +69,7 @@ module ThingFish
 	def self::reset_logger
 		self.logger = self.default_logger
 		self.logger.level = Logger::WARN
+		self.logger.formatter = ThingFish::LogFormatter.new( @default_logger )
 	end
 	
 

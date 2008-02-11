@@ -49,6 +49,9 @@ module ThingFish
 	# Something was wrong with a response
 	class ResponseError < ThingFish::Error; end
 
+	# Error in a resource
+	class ResourceError < ThingFish::Error; end
+
 	# Something was wrong with a request
 	class RequestError < ThingFish::Error
 		include ThingFish::Constants

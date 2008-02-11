@@ -102,13 +102,17 @@ describe ThingFish::DefaultHandler do
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
 		body = StringIO.new( TEST_CONTENT )
-		metadata = stub( "metadata hash" )
+		metadata = stub( "metadata hash from client" )
+
+		full_metadata = mock( "metadata fetched from the store", :null_object => true )
+		@metastore.should_receive( :get_properties ).
+			and_return( full_metadata )
 
 		@request.should_receive( :get_body_and_metadata ).and_return([ body, metadata ])
 
 		@response_headers.should_receive( :[]= ).
 			with( :location, %r{/#{TEST_UUID}} )
-		@response.should_receive( :body= ).with( metadata )
+		@response.should_receive( :body= ).with( full_metadata )
 		@response.should_receive( :status= ).once.with( HTTP::CREATED )
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		

@@ -249,7 +249,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		response.status = HTTP::CREATED
 		response.headers[:location] = '/' + uuid.to_s
 		response.content_type = RUBY_MIMETYPE
-		response.body = metadata
+		response.body = @metastore.get_properties( uuid )
 
 	rescue ThingFish::FileStoreQuotaError => err
 		self.log.error "Quota error while creating a resource: %s" % [ err.message ]
@@ -267,7 +267,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		self.daemon.store_resource( body, metadata, uuid )
 		
 		response.content_type = RUBY_MIMETYPE
-		response.body = metadata
+		response.body = @metastore.get_properties( uuid )
 
 		if new_resource
 			response.status = HTTP::CREATED

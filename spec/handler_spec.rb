@@ -86,6 +86,7 @@ describe ThingFish::Handler, " concrete subclass instance" do
 			'REMOTE_ADDR'    => '127.0.0.1',
 			'REQUEST_URI'    => '/poon',
 		}
+		mockheaders = mock( "Mock Headers" )
 		
 		request = mock( "request object" )
 		request.should_receive( :remote_addr ).
@@ -97,10 +98,16 @@ describe ThingFish::Handler, " concrete subclass instance" do
 		request.should_receive( :uri ).
 			at_least(:once).
 			and_return( URI.parse('/poon')	)
+		request.should_receive( :headers ).
+			at_least(:once).
+			and_return( mockheaders )
+
+		mockheaders.should_receive( :user_agent ).
+			and_return( "rspec/1.0" )
 		
 		@handler.log_request( request )
 		logfile.rewind
-		logfile.read.should =~ %r{\S+: 127.0.0.1 POST /poon}
+		logfile.read.should =~ %r<\S+: 127.0.0.1 POST /poon \{rspec/1.0\}>
 	end
 
 	

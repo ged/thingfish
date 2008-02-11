@@ -194,8 +194,8 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		
 		response.content_type = RUBY_MIMETYPE
 		response.body = {
-			:version => ThingFish::VERSION,
-			:handlers => self.daemon.handler_info,
+			'version'  => ThingFish::VERSION,
+			'handlers' => self.daemon.handler_info,
 		}
 		response.status = HTTP::OK
 	end

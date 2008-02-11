@@ -1,19 +1,5 @@
 #!/usr/bin/env ruby
 # 
-# thingfish - a command-line interface to ThingFish servers
-# 
-# == Usage
-# 
-#   $ thingfish URL upload FILE
-#   $ thingfish URL check  UUID
-#   $ thingfish URL fetch  UUID FILE
-#   $ thingfish URL update UUID FILE
-# 
-# == Version
-#
-#  $Id$
-# 
-# 
 
 BEGIN {
 	require 'pathname'
@@ -29,15 +15,115 @@ BEGIN {
 require 'thingfish'
 require 'thingfish/client'
 require 'uri'
+require 'optparse'
+require 'ostruct'
 
 
-
+# thingfish - a command-line interface to ThingFish servers
+# 
+# == Usage
+# 
+#   $ thingfish OPTIONS COMMAND ARGS
+# 
+# == Version
+#
+#  $Id$
+# 
+# 
 class ThingFish::CommandLineClient
 	include ThingFish::Constants
+
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Get the options struct filled with defaults
+	def self::get_default_options
+		options = OpenStruct.new
+
+		options.debug_mode = false
+		options.verbose_mode = false
+		options.host = 'localhost'
+		options.port = DEFAULT_PORT
+
+		return options
+	end
+
+
+	### Given the specified +argv+, return a ostruct that describes the command-line options
+	### that were parsed from it. This method can also exit on an invalid option specification
+	### or when the '-h' option is given.
+	def self::parse_options( argv )
+		progname = Pathname.new( $0 ).basename
+		opts = self.get_default_options
+
+		oparser = OptionParser.new do |oparser|
+			oparser.accept( Pathname ) {|path| Pathname.new(path) }
+
+			oparser.banner = "Usage: #{progname.basename} OPTIONS ACTION [ARGS]"
+
+			oparser.separator 'Actions:'
+			oparser.separator '  upload, update, download, check, info'
+
+			oparser.separator ''
+			oparser.separator 'Options:'
+			oparser.on( '--host HOSTNAME', '-H', String, 
+				"Specify the host to connect to" ) do |hostname|
+				opts.host = hostname
+			end
+
+			oparser.on( '--port PORTNUMBER', '-p', Integer,
+				"Specify the port to connect to" ) do |hostname|
+				opts.port = hostname
+			end
+
+
+			oparser.separator ''
+			oparser.separator 'Other Options:'
+			oparser.on( '--debug', '-d', FalseClass, "Turn on debugging" ) do
+				$DEBUG = true
+				$stderr.puts "Debugging enabled."
+				opts.debugmode = true
+			end
+
+			oparser.on( '--verbose', '-v', FalseClass, "Turn on verbose output" ) do
+				opts.verbosemode = true
+			end
+
+			oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
+				$stderr.puts oparser
+				exit!
+	        end
+
+			# Another typical switch to print the version.
+			oparser.on_tail( '--version', '-V', "Show ThingFish version" ) do
+				$stderr.puts ThingFish.version_string( true )
+				exit!
+			end
+		end
+
+		oparser.parse!
+
+		return opts
+	end
+	
+	
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 	
 	### Create a new ThingFish::CommandLineClient
-	def initialize
-		@client = nil
+	def initialize( options )
+		uri = URI.parse( "http://%s:%d/" % [options.host, options.port] )
+		@client = ThingFish::Client.new( uri )
+		
+		if options.debugmode
+			ThingFish.reset_logger
+			ThingFish.logger.level = Logger::DEBUG
+		elsif options.verbosemode
+			ThingFish.reset_logger
+			ThingFish.logger.level = Logger::INFO
+		end
 	end
 	
 	
@@ -46,28 +132,32 @@ class ThingFish::CommandLineClient
 	######
 
 	### Main logic
-	def main( uri, verb, *args )
-		@client = ThingFish::Client.new( uri )
+	def main( verb, *args )
 	
 		until args.empty?
-			case verb
-			when /^(upload|post)$/i
+			case verb.downcase
+			when 'upload', 'post'
 				file = args.shift
-				do_upload( uri, file )
+				do_upload( file )
 		
-			when /^(update|put)$/i
+			when 'update', 'put'
 				uuid = args.shift or raise "no UUID specified for update"
 				file = args.shift
-				do_update( uri, uuid, file )
+				do_update( uuid, file )
 		
-			when /^(download|get|fetch)$/
+			when 'download', 'get', 'fetch'
 				uuid = args.shift or raise "no UUID specified for fetch"
 				file = args.shift
-				do_download( uri, uuid, file )
+				do_download( uuid, file )
 		
-			when /^(check|head|info)$/
+			when 'check', 'head'
 				uuid = args.shift or raise "no UUID specified for check"
-				do_check( uri, uuid )
+				do_check( uuid )
+		
+			when 'info'
+				self.log.debug "Fetching server info"
+				info = @client.server_info or raise "couldn't fetch server info"
+				$stderr.puts "%s is running ThingFish %s" % [ @client.uri, info['version'] ]
 		
 			else
 				raise "Don't know how to '#{verb}' yet."
@@ -83,7 +173,7 @@ class ThingFish::CommandLineClient
 
 	### Upload the contents of the specified +file+ to the ThingFish at the given +uri+. 
 	### If +file+ is nil, the content will be read from STDIN instead.
-	def do_upload( uri, file=nil )
+	def do_upload( file=nil )
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh )
 		resource.format = self.get_mimetype( file, fh )
@@ -93,7 +183,6 @@ class ThingFish::CommandLineClient
 			resource.extent = File.size( file )
 		end
 
-		ThingFish.logger.level = Logger::DEBUG
 		@client.store( resource )
 		
 		$stderr.puts "Uploaded to: #{resource.uuid}"
@@ -103,7 +192,7 @@ class ThingFish::CommandLineClient
 	### Update the resource at the specified +uuid+ on the ThingFish at the given +uri+
 	### with the content from the specified +file+. If +file+ is nil, the content will
 	### be read from STDIN instead.
-	def do_update( uri, uuid, file=nil )
+	def do_update( uuid, file=nil )
 		@client.has?( uuid ) or
 			raise "No such resource #{uuid}"
 
@@ -124,7 +213,7 @@ class ThingFish::CommandLineClient
 
 	### Verify that a resource with the specified +uuid+ exists on the ThingFish at 
 	### the given +uri+.
-	def do_check( uri, uuid )
+	def do_check( uuid )
 		if @client.has?( uuid )
 			$stderr.puts "%s has resource %s" % [ @client.uri, uuid ]
 		else
@@ -136,7 +225,7 @@ class ThingFish::CommandLineClient
 	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
 	### and write it to the specified +file+. If +file+ is nil, the content will be
 	### written to STDOUT instead.
-	def do_download( uri, uuid, file )
+	def do_download( uuid, file )
 		resource = @client.fetch( uuid ) or
 			raise "No such resource #{uuid}"
 			
@@ -169,7 +258,7 @@ class ThingFish::CommandLineClient
 		unless @mime_analyzer
 			begin
 				require 'mahoro'
-				$stderr.puts "Using Mahoro for MIME analysis"
+				self.log.info "Using Mahoro for MIME analysis"
 				flags = Mahoro::SYMLINK|Mahoro::MIME
 				@mime_analyzer = Mahoro.new( flags )
 			rescue LoadError
@@ -178,7 +267,7 @@ class ThingFish::CommandLineClient
 			unless @mime_analyzer
 				begin
 					require 'filemagic'
-					$stderr.puts "Using Filemagic for MIME analysis"
+					self.log.info "Using Filemagic for MIME analysis"
 					flags = FileMagic::MAGIC_SYMLINK|FileMagic::MAGIC_MIME
 					@mime_analyzer = FileMagic.new( flags )
 				rescue LoadError
@@ -186,9 +275,11 @@ class ThingFish::CommandLineClient
 			end
 	
 			unless @mime_analyzer
+				self.log.info "Using mime map for mimetype analysis"
 				@mime_analyzer = Class.new do
-					def file( ignored )
-						return 'application/octet-stream'
+					def file( filename )
+						ext = File.extname( filename )
+						return MIMETYPE_MAP[ ext ] || 'application/octet-stream'
 					end
 					def buffer( ignored )
 						return 'application/octet-stream'
@@ -206,49 +297,29 @@ class ThingFish::CommandLineClient
 	### possible filename extension.  Failing that, use the first 2k of data
 	### read from the given +io+ and return it. The IO object will be rewound
 	### before returning.
-	def get_mimetype( file, io=nil )
-
-		io ||= self.get_reader_io( file )
-
-		if file
-			ext = File.extname( file )
-			if MIMETYPE_MAP.key?( ext )
-				$stderr.puts "Found an appropriate MIME for %s extensions" % [ ext ]
-				return MIMETYPE_MAP[ ext ]
-			end
-		end
-
-		data = io.read( 2048 )
-		io.rewind
-
-		analyzer = get_mime_analyzer or
+	def get_mimetype( file )
+		analyzer = self.get_mime_analyzer or
 			raise "Ack. None of the strategies for deriving mimetype worked."
 
-		return analyzer.buffer( data )
+		if file.respond_to?( :extname )
+			return analyzer.file( file )
+		else	
+			io ||= self.get_reader_io( file )
+
+			data = io.read( 2048 )
+			io.rewind
+
+			return analyzer.buffer( data )
+		end
 	end
 end
 
 
 if __FILE__ == $0
-	$DEBUG = true
-	progname = Pathname.new( $0 ).basename
-	
 	begin
-		unless ARGV.length >= 2
-			usage = <<-USAGE
-			Usage:
-				#{progname} THINGFISH_URL upload FILE
-				#{progname} THINGFISH_URL check  UUID
-				#{progname} THINGFISH_URL fetch  UUID FILE
-				#{progname} THINGFISH_URL update UUID FILE
-			USAGE
-			usage.gsub!(/^\t{3}/, '').gsub!(/\t/, '  ')
-			puts usage
-			exit 1
-		end
-		client = ThingFish::CommandLineClient.new
-
-		client.main( *ARGV )
+		opts, verb, *args = ThingFish::CommandLineClient.parse_options( ARGV )
+		client = ThingFish::CommandLineClient.new( opts )
+		client.main( verb, *args )
 	rescue => err
 		$stderr.puts "ERROR: #{err.message}"
 		$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG

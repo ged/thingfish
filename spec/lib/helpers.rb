@@ -74,3 +74,28 @@ module ThingFish::TestHelpers
 	end	
 end
 
+require 'spec/runner/formatter/html_formatter'
+class Spec::Runner::Formatter::HtmlFormatter
+
+	def example_failed(example, counter, failure)
+		extra = extra_failure_content(failure)
+		failure_style = failure.pending_fixed? ? 'pending_fixed' : 'failed'
+
+		@output.puts "    <script type=\"text/javascript\">makeRed('rspec-header');</script>" unless @header_red
+		@header_red = true
+		@output.puts "    <script type=\"text/javascript\">makeRed('example_group_#{current_example_group_number}');</script>" unless @example_group_red
+		@example_group_red = true
+		move_progress
+		@output.puts "    <dd class=\"spec #{failure_style}\">"
+		@output.puts "      <span class=\"failed_spec_name\">#{h(example.description)}</span>"
+		@output.puts "      <div class=\"failure\" id=\"failure_#{counter}\">"
+		@output.puts "        <div class=\"message\"><code>#{h(failure.exception.message)}</code></div>" unless failure.exception.nil?
+		@output.puts "        <div class=\"backtrace\"><pre>#{format_backtrace(failure.exception.backtrace)}</pre></div>" unless failure.exception.nil?
+		@output.puts extra unless extra == ""
+		@output.puts "      </div>"
+		@output.puts "    </dd>"
+		@output.flush
+	end
+
+end
+

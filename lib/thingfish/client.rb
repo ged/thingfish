@@ -48,14 +48,21 @@
 #   resource.data # => (DXF data)
 #
 #   # Fetch a GIF resource as a PNG if the server supports that transformation:  #TODO#
-#   resource = client.fetch( uuid, :accept => ['image/png'] )
+#   resource = client.fetch( uuid, :as => 'image/png' )
 #
 #   # Fetch a TIFF resource as either a JPEG or a PNG, preferring the former:  #TODO#
-#   resource = client.fetch( uuid, :accept => ['image/jpeg', 'image/png;q=0.5'] )
+#   resource = client.fetch( uuid, :as => ['image/jpeg', 'image/png'] )
 #
 #   # Check to see if a UUID is a valid resource
 #   client.has?( uuid ) # => true
 #
+#   
+#   ### Deleting
+#   
+#   client.delete( uuid )
+#   # -or-
+#   client.delete( resource )
+#   
 #
 #   ### Searching
 # 
@@ -65,11 +72,6 @@
 #   # =>  [ '7602813e-dc77-11db-837f-0017f2004c5e', ... ]
 #
 #
-#   ### Streaming data
-#
-#	# Export to an IO object for buffered write   #TODO#
-#	resource.export( socket )
-#   
 # == Version
 #
 #  $Id$
@@ -92,6 +94,7 @@ require 'uri'
 require 'forwardable'
 require 'date'
 require 'set'
+require 'tmpdir'
 
 require 'thingfish'
 require 'thingfish/constants'
@@ -118,6 +121,20 @@ class ThingFish::Client
 	SVNId = %q$Id$
 
 
+	# Accept header sent with HTTP requests: prefer directly-marshalled Ruby
+	# objects, but fall back to YAML
+	ACCEPT_HEADER = "%s;version=%d.%d, text/x-yaml;q=0.9" %
+		[ RUBY_MARSHALLED_MIMETYPE, Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION ]
+
+	# The content of the User-Agent header send with all requests
+	USER_AGENT_HEADER = "%s/%s.%d" %
+		[ self.name.downcase.gsub(/\W+/, '-'), ThingFish::VERSION, SVNRev[/\d+/] ]
+
+	# Maximum size of a resource reponse that's kept in-memory. Anything larger
+	# gets buffered to a tempfile.
+	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes 
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -127,6 +144,7 @@ class ThingFish::Client
 	### the IP address, or the URI of the server. Also set any options
 	### specified as attributes on the client.
 	def initialize( endpoint=DEFAULT_HOST, options={} )
+		@server_info = nil
 		
 		# If it contains a '/', assume it's a URI
 		if endpoint =~ %r{/}
@@ -163,11 +181,17 @@ class ThingFish::Client
 		:scheme=, :userinfo=, :user=, :password=, :host=, :port=
 
 
+	### Return a stringified version of the client's URI with the password elided.
+	def politeuri
+		newuri = self.uri.dup
+		newuri.password = newuri.password.gsub(/./, 'x') if newuri.password
+		return newuri
+	end
+	
+
 	### Return a human-readable 
 	def inspect
-		politeuri = self.uri.dup
-		politeuri.password = politeuri.password.gsub(/./, 'x') if politeuri.password
-		"<%s:0x%08x %s>" % [ self.class.name, self.object_id * 2, politeuri ]
+		"<%s:0x%08x %s>" % [ self.class.name, self.object_id * 2, self.politeuri ]
 	end
 
 
@@ -177,12 +201,38 @@ class ThingFish::Client
 
 	### Returns a Hash of information about the server
 	def server_info
-		request = Net::HTTP::Get.new( '/' )
-		request['Accept'] = RUBY_MARSHALLED_MIMETYPE
+		unless @server_info
+			self.log.info "Fetching server info from %s" % [ self.politeuri ]
+			request = Net::HTTP::Get.new( '/' )
+			request['Accept'] = ACCEPT_HEADER
+
+			send_request( request ) do |response|
+				case response
+				when Net::HTTPSuccess
+					@server_info = self.extract_response_body( response )
+				else
+					response.error!
+				end
+			end
+			
+			self.log.debug "Server info is: %p" % [ @server_info ]
+		end
 		
-		response = send_request( request )
+		return @server_info
+	end
+	
+
+	### Return the server URI for the given +handler+ (as mapped in the #server_info :handlers 
+	### hash)
+	def server_uri( handler )
+		info = self.server_info
+		path = info[:handlers][ handler.to_s ] or
+			raise ThingFish::ClientError, "server does not support the '#{handler}' service"
 		
-		return Marshal.load( response.body )
+		self.log.debug "Server URI for the '%s' service is: %s" %
+			[ handler, self.uri + path.first ]
+		
+		return self.uri + path.first.chomp('/')
 	end
 	
 
@@ -191,43 +241,77 @@ class ThingFish::Client
 	#################################################################
 
 	### Fetch the resource with the given +uuid+ as a ThingFish::Resource object.
-	def fetch( uuid, head=nil )
-		fetchuri = self.uri + uuid.to_s
-
-		request = head ?
-			Net::HTTP::Head.new( fetchuri.path ) :
-			Net::HTTP::Get.new(  fetchuri.path )
-			
-		request['Accept'] = '*/*'
+	def fetch( uuid )
 		resource = nil
+		fetchuri = self.server_uri( :simplemetadata )
+		fetchuri.path += "/#{uuid}"
 
+		self.log.debug "Fetching data for a resource object from: %s" % [ fetchuri ]
+		request = Net::HTTP::Get.new( fetchuri.path )
+		request['Accept'] = ACCEPT_HEADER
+			
 		send_request( request ) do |response|
 			case response
 			when Net::HTTPOK
-									
-				# :TODO: Set metadata for the resource from the response (multipart?)
 				self.log.debug "Creating a ThingFish::Resource from %p" % [response]
-				resource = ThingFish::Resource.from_http_response( response, :uuid => uuid )
-				resource.client = self
+				
+				resource = self.create_resource_for_response( uuid, response )
 
-			# TODO: Handle redirect/auth/etc.
-			# when Net::HTTPRedirect
+			when Net::HTTPSuccess
+				raise ThingFish::ClientError,
+					"Unexpected %d response to %s" % [ response.status, request.to_s ]
+
 			else
-				resource = nil
+				response.error!
 			end
-			
-			response
 		end
 
-		self.log.debug "Returning resource: %p" % [resource]
+		self.log.debug { "Returning resource: %p" % [resource] }
 		return resource
 	end
 
 
+	### Fetch the raw data for the specified +uuid+ from the ThingFish server and
+	### return it as an IO object.
+	def fetch_data( uuid )
+		fetchuri = self.server_uri( :default )
+		fetchuri.path += "/#{uuid}"
+
+		self.log.debug "Fetching resource data from: %s" % [ fetchuri ]
+		request = Net::HTTP::Get.new( fetchuri.path )
+		request['Accept'] = '*/*'
+		
+		io = nil
+		send_request( request ) do |response|
+			case response
+			when Net::HTTPOK
+				io = self.create_io_from_response( uuid, response )
+
+			when Net::HTTPSuccess
+				raise ThingFish::ClientError,
+					"Unexpected %d response to %s" % [ response.status, request.to_s ]
+
+			else
+				response.error!
+			end
+		end
+
+		self.log.debug { "Returning IO: %p" % [io] }
+		return io
+	end
+	
+
 	### Check the validity of a uuid by doing a HEAD, and return
 	### a boolean.
 	def has?( uuid )
-		return self.fetch( uuid, true ) ? true : false
+		fetchuri = self.server_uri( 'simplemetadata' )
+		fetchuri.path += "/#{uuid}"
+		resource = nil
+
+		request = Net::HTTP::Head.new( fetchuri.path )
+			
+		res = send_request( request )
+		return res.is_a?( Net::HTTPSuccess )
 	end
 	
 	
@@ -236,7 +320,7 @@ class ThingFish::Client
 	### the server. The optional +metadata+ hash can be used to set metadata values
 	### for the resource.
 	def store( resource, metadata={} )
-		resource = ThingFish::Resource.new( resource, metadata ) unless
+		resource = ThingFish::Resource.new( resource, self, metadata ) unless
 			resource.is_a?( ThingFish::Resource )
 
 		# If it's an existing resource (i.e., has a UUID), update it, otherwise
@@ -252,10 +336,11 @@ class ThingFish::Client
 
         self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
 		request.body_stream = resource.io
-		request['Content-Length']      = resource.extent
-		request['Content-Type']        = resource.format
+		request['Content-Length'] = resource.extent
+		request['Content-Type'] = resource.format
 		request['Content-Disposition'] = 'attachment;filename="%s"' %
 		 	[ resource.title ] if resource.title
+		request['Accept'] = ACCEPT_HEADER
 
 		self.send_request( request ) do |response|
 			case response
@@ -277,14 +362,90 @@ class ThingFish::Client
 	end
 
 
+	### Delete the given +resource+ from the server. The +resource+ argument can be either
+	### a ThingFish::Resource or a UUID.
+	def delete( resource )
+		uuid = nil
+		if resource.is_a?( ThingFish::Resource )
+			uuid = resource.uuid or return nil
+		else
+			uuid = UUID.parse( resource )
+		end
+		
+		uri = self.server_uri( :default )
+		request = Net::HTTP::Delete.new( uri.path + "#{uuid}" )
+		
+		send_request( request ) do |response|
+			response.error! unless response.is_a?( Net::HTTPSuccess )
+		end
+		
+		return true
+	end
+
+	
+
 	#########
 	protected
 	#########
+
+	### Extract the necessary values from the specified HTTP +response+ (a Net::HTTPResponse) 
+	### as a ThingFish::Resource associated with the given +uuid+ and return it.
+	def create_resource_for_response( uuid, response )
+		metadata = self.extract_response_body( response )
+		return ThingFish::Resource.new( nil, self, uuid, metadata )
+	end
+
+
+	### Extract the serialized object in the given +response+'s entity body and return it.
+	def extract_response_body( response )
+		
+		case response['Content-Type']
+		when /#{RUBY_MARSHALLED_MIMETYPE}/i
+			self.log.debug "Unmarshalling a marshalled-ruby-object response body."
+            return Marshal.load( response.body )
+
+		when %r{text/x-yaml}i
+			self.log.debug "Deserializing a YAML-encoded response body."
+			return YAML.load( response.body )
+
+		else
+			self.log.warn "Response body was %p instead of serialized Ruby or YAML" %
+				[ response['Content-Type'] ]
+			return body
+		end
+
+	end
+	
+	
+	### Read the data from the given +response+ and either return an IO (if it's
+	### larger than MAX_INMEMORY_RESPONSE_SIZE), or an in-memory StringIO.
+	def create_io_from_response( uuid, response )
+		len = Integer( response['Content-length'] )
+
+		if len > MAX_INMEMORY_RESPONSE_SIZE
+			file = Pathname.new( Dir.tmpdir ) + "tf-#{uuid}.data.0"
+			file = file.sub(/.*/, file.to_s.succ ) while file.exist?
+			
+			fh = file.open( File::CREAT|File::RDWR|File::EXCL, 0600 )
+			file.delete
+			response.read_body do |chunk|
+				fh.write( chunk )
+			end
+			fh.rewind
+			
+			return fh
+		else
+			return StringIO.new( response.body )
+		end
+	end
+	
 
 	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
 	### object). The +limit+ specifies how many redirects will be followed before giving 
 	### up.
 	def send_request( req, limit=10, &block )
+		req['User-Agent'] = USER_AGENT_HEADER
+
 		self.log.debug "Request: " + dump_request_object( req )
 		
 		response = Net::HTTP.start( uri.host, uri.port ) do |conn|

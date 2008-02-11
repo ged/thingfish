@@ -151,10 +151,11 @@ class ThingFish::Handler
 	### hook for process_client()
 	def log_request( request )
 		self.log.info {
-			"%s %s %s" % [ 
+			"%s %s %s {%s}" % [ 
 				request.remote_addr,
 				request.http_method,
-				request.uri.path
+				request.uri.path,
+				request.headers.user_agent || 'unknown',
 			]
 		}
 	end

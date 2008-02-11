@@ -52,6 +52,7 @@
 #
 
 require 'thingfish'
+require 'thingfish/exceptions'
 require 'thingfish/mixins'
 
 require 'tempfile'
@@ -87,44 +88,30 @@ class ThingFish::Resource
 	end
 	
 
-	### Create a new ThingFish::Resource object from the data in the specified
-	### +response+ (a Net::HTTPOK object). 
-	def self::from_http_response( response, metadata={} )
-		raise ArgumentError, "cannot create a resource from a '%d %s' response" %
-			[response.code, response.message] unless response.is_a?( Net::HTTPOK )
-
-		resource = nil
-		if response['Content-Length'].to_i > MAX_INMEMORY_BODY
-			io = Tempfile.open( 'thingfish-resource' )
-			response.read_body do |chunk|
-				io.write( chunk )
-			end
-			io.rewind
-			
-			resource = new( io, metadata )
-		else
-			resource = new( response.body, metadata )
-		end
-		
-		resource.set_attributes_from_http_response( response )
-		return resource
-	end
-	
-
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 	
-	### Create a new ThingFish::Resource from the specified +datasource+, which can 
-	### be either a String containing the data or an IO object from which the 
-	### resource can be read.
-	def initialize( datasource, metadata={} )
-		@client = nil
-		@uuid = nil
-		@metadata = {}
+	### Create a new ThingFish::Resource, optionally from the data in the given +datasource+, which 
+	### can be a String containing the data, or any object that responds to #read (e.g., an IO). 
+	### If the optional +client+ argument is set, it will be used as the ThingFish::Client instance 
+	### which should be used to load and store the resource on the server. If the +uuid+ argument
+	### is given, it will be used as the resource's Universally Unique IDentifier when 
+	### communicating with the server. The +metadata+ Hash may include one or more metadata 
+	### key-value pairs which will be set on the resource.
+	def initialize( datasource=nil, client=nil, uuid=nil, metadata={} )
+		metadata ||= {}
 
-		@io = normalize_io_obj( datasource )
-		
+		metadata, datasource = datasource, nil if datasource.is_a?( Hash )
+		metadata, client = client, nil if client.is_a?( Hash )
+		metadata, uuid = uuid, nil if uuid.is_a?( Hash )
+
+		@io     = normalize_io_obj( datasource )
+		@client = client
+		@uuid   = uuid
+
+		# Use the accessor to set all remaining pairs
+        @metadata = {}
 		metadata.each do |key, val|
 			self.send( "#{key}=", val )
 		end
@@ -142,7 +129,7 @@ class ThingFish::Resource
 	# is saved)
 	attr_accessor :client
 
-	# The IO object containing the resource data
+	# The object containing the resource data
 	attr_accessor :io
 
 	# The resource's UUID (if it has one)
@@ -180,33 +167,14 @@ class ThingFish::Resource
 	### Save the resource to the server using the resource's client. If no client is
 	### set for this resource, this method raises a RuntimeError.
 	def save
-		raise "no client set" unless @client
+		raise ThingFish::ResourceError, "no client set" unless @client
 		@client.store( self )
 	end
 	
 	
-	### Extract any attributes belonging to the resource from the given HTTP 
-	### +response+, e.g., Location, Content-Type, Content-Length, etc.
-	def set_attributes_from_http_response( response )
-		
-		case response.code.to_i
-
-		# CREATE 
-		when HTTP::CREATED
-			self.log.debug "Setting attributes from a CREATED response"
-			@uuid = response['Location'].scan( UUID_REGEXP ).first
-
-		# OK
-		when HTTP::OK
-			self.log.debug "Setting attributes from an OK response"
-			self.format   = response['Content-Type']
-			self.extent   = response['Content-Length'].to_i
-			self.checksum = response['ETag']
-
-		else
-			self.log.debug "Could not set attributes from a %s (%d)" % 
-				[response.class.name, response.code]
-		end
+	### Override Kernel#format to return the 'format' metadata key instead.
+	def format
+		return @metadata[ :format ]
 	end
 	
 	

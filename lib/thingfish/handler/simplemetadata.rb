@@ -292,9 +292,15 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			if @metastore.has_uuid?( uuid )
 				self.update_metastore( request, uuid, request.body )
 		
-				response.content_type = 'text/plain'
-				response.status = HTTP::OK
-				response.body = 'Success.'
+				if ( request.http_method == 'PUT' )
+					response.content_type = RUBY_MIMETYPE
+					response.status = HTTP::OK
+					response.body = @metastore.get_properties( uuid )
+				else
+					response.content_type = 'text/plain'
+					response.status = HTTP::OK
+					response.body = 'Success.'
+				end
 			else
 				self.log.error "Request for metadata update to non-existant UUID #{uuid}"
 				# Fallthrough to 404

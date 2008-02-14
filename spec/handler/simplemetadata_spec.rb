@@ -262,9 +262,12 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			TEST_PROP  => TEST_PROPVALUE,
 			TEST_PROP2 => TEST_PROPVALUE2
 		}
+		metadata = mock( "Updated metastore values", :null_object => true )
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request.should_receive( :http_method ).and_return( 'PUT' )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'PUT' )
 		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 		@request.should_receive( :body ).and_return( props )
 
@@ -272,9 +275,10 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 			with( TEST_UUID ).
 			and_return( true )
 		@metastore.should_receive( :update_safe_properties ).with( TEST_UUID, props )	
+		@metastore.should_receive( :get_properties ).and_return( metadata )
 
-		@response.should_receive( :content_type= ).with( 'text/plain' )
-		@response.should_receive( :body= ).with( /success/i )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+		@response.should_receive( :body= ).with( metadata )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
 		@handler.handle_put_request( @request, @response )		
@@ -474,7 +478,9 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		}
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request.should_receive( :http_method ).and_return( 'POST' )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'POST' )
 		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 		@request.should_receive( :body ).and_return( props )
 
@@ -651,7 +657,9 @@ describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do
 		props = [ TEST_PROP, TEST_PROP2 ]
 
 		@request.should_receive( :path_info ).and_return( '/' + TEST_UUID  )
-		@request.should_receive( :http_method ).and_return( 'DELETE' )
+		@request.should_receive( :http_method ).
+			at_least( :once ).
+			and_return( 'DELETE' )
 		@request.should_receive( :content_type ).and_return( RUBY_MIMETYPE )
 		@request.should_receive( :body ).and_return( props )
 

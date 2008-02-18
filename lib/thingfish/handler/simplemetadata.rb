@@ -285,7 +285,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Merge metadata properties for the specified +uuid+ with values from the
 	### request body, which should evaluate to be a hash of the form:
-	###   { property1 => value1, property2, value2 }
+	###   { property1 => value1, property2 => value2 }
 	def handle_update_uuid_request( request, response, uuid )
 		if request.content_type == RUBY_MIMETYPE
 

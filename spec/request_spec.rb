@@ -143,6 +143,39 @@ describe ThingFish::Request do
 	end
 	
 	
+	it "ensures a valid content-type is set if none is provided" do
+		params = {
+			'HTTP_CONTENT_LENGTH' => 11111,
+			'HTTP_USER_AGENT'     => 'Hotdogs',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+
+		# Set some keys that will collide with default and header-based value so we
+		# can test merge precedence
+		extracted_metadata = {
+			:extent => 2,
+			:useragent => 'Burritos',
+		}
+		body = StringIO.new( TEST_CONTENT )
+
+		@request.metadata[ body ].update( extracted_metadata )
+		@mongrel_request.should_receive( :params ).
+			at_least( :once ).
+			and_return( params )
+		@mongrel_request.should_receive( :body ).
+			at_least( :once ).
+			and_return( body )
+
+		@request.each_body do |body, metadata|
+			body.should == body
+			metadata.should have(4).members
+			metadata[:extent].should == 11111
+			metadata[:useragent].should == 'Hotdogs'
+			metadata[:format] == DEFAULT_CONTENT_TYPE
+		end
+	end
+	
+	
 	it "provides a Hash for URI query arguments" do
 		params = {
 			'REQUEST_PATH' => '/876e30c4-56bd-11dc-88be-0016cba18fb9',
@@ -404,10 +437,11 @@ describe ThingFish::Request, " with a multipart body" do
 			:title => "a bogus filename",
 			:useragent => 'Clumpy the Clown',
 		  }
-		extracted_metadata = {
-			io1 => { :format => "a bogus format" },
-			io2 => { :format => "another bogus format" },
-		  }
+		# :TODO: What was this supposed to be doing? [MG 20070218]
+		# extracted_metadata = {
+		# 	io1 => { :format => "a bogus format" },
+		# 	io2 => { :format => "another bogus format" },
+		#   }
 
 		io1.should_receive( :closed? ).and_return( true )
 		io1.should_receive( :open )
@@ -432,9 +466,53 @@ describe ThingFish::Request, " with a multipart body" do
 		yielded_pairs.keys.should include( io2 )
 
 		yielded_pairs[ io1 ][ :title ].should == 'filename1'
+		yielded_pairs[ io1 ][ :format ].should == 'format1'
 		yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
 		yielded_pairs[ io2 ][ :title ].should == 'filename2'
 		yielded_pairs[ io2 ][ :format ].should == "format2"
+		yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
+		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+	end
+	
+	
+	it "ensures each part sent to the body has the default content-type " +
+	   "if none is explicitly provided by the request" do
+		io1 = mock( "filehandle 1" )
+		io2 = mock( "filehandle 2" )
+
+		parser = mock( "multipart parser", :null_object => true )
+		entity_bodies = {
+			io1 => {:title  => "filename1",:extent => 100292},
+			io2 => {:title  => "filename2",:extent => 100234}
+		  }
+
+		io1.should_receive( :closed? ).and_return( true )
+		io1.should_receive( :open )
+		io2.should_receive( :closed? ).and_return( true )
+		io2.should_receive( :open )
+
+		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+		@mongrel_request.should_receive( :body ).once.and_return( :body )
+		parser.should_receive( :parse ).once.
+			with( :body, 'greatgoatsofgerta' ).
+			and_return([ entity_bodies, {} ])
+		io1.should_receive( :rewind )
+		io2.should_receive( :rewind )
+		
+		yielded_pairs = {}
+		@request.each_body do |body, parsed_metadata|
+			yielded_pairs[ body ] = parsed_metadata
+		end
+		
+		yielded_pairs.keys.should have(2).members
+		yielded_pairs.keys.should include( io1 )
+		yielded_pairs.keys.should include( io2 )
+
+		yielded_pairs[ io1 ][ :title ].should == 'filename1'
+		yielded_pairs[ io1 ][ :format ].should == DEFAULT_CONTENT_TYPE
+		yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+		yielded_pairs[ io2 ][ :title ].should == 'filename2'
+		yielded_pairs[ io2 ][ :format ].should == DEFAULT_CONTENT_TYPE
 		yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
 		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 	end

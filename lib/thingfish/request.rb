@@ -261,33 +261,20 @@ class ThingFish::Request
 	### ones. This is to prevent free-form upload metadata from colliding with the 
 	### metadata required for the filestore and metastore themselves.
 	def each_body  # :yields: body_io, metadata_hash
-		default_metadata = {
+		immutable_metadata = {
 			:useragent     => self.headers[ :user_agent ],
-			:uploadaddress => self.remote_addr
+			:uploadaddress => self.remote_addr,
 		}
 
-		# Parse the request's body parts if they aren't already
-		unless @entity_bodies
-			if self.has_multipart_body?
-				@entity_bodies, @form_metadata = self.parse_multipart_body
-			else
-				body, metadata = self.get_body_and_metadata
-				@entity_bodies = { body => metadata }
-				@form_metadata = {}
-			end
-
-			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
-				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
-		end
-
 		# Yield the entity body and merged metadata for each part
-		@entity_bodies.each do |body, body_metadata|
+		self.entity_bodies.each do |body, body_metadata|
+			body_metadata[ :format ] ||= DEFAULT_CONTENT_TYPE
 			extracted_metadata = self.metadata[body] || {}
 
 			# Content metadata is determined per-multipart section
 			merged = extracted_metadata.merge( @form_metadata )
 			merged.update( body_metadata )
-			merged.update( default_metadata )
+			merged.update( immutable_metadata )
 			
 			body.open if body.closed?
 			body.rewind
@@ -384,9 +371,10 @@ class ThingFish::Request
 	end
 	
 	
-	### Returns the current request's Content-Type.
+	### Returns the current request's Content-Type, or the DEFAULT_CONTENT_TYPE if
+	### the header isn't set.
 	def content_type
-		return self.headers[ :content_type ]
+		return self.headers[ :content_type ] || DEFAULT_CONTENT_TYPE
 	end
 	
 	
@@ -399,6 +387,31 @@ class ThingFish::Request
 	#########
 	protected
 	#########
+
+	### Returns the entity bodies of the request along with any related metadata as
+	### a Hash:
+	### {
+	###    <body io> => { <body metadata> },
+	###    ...
+	### }
+	def entity_bodies
+		# Parse the request's body parts if they aren't already
+		unless @entity_bodies
+			if self.has_multipart_body?
+				@entity_bodies, @form_metadata = self.parse_multipart_body
+			else
+				body, metadata = self.get_body_and_metadata
+				@entity_bodies = { body => metadata }
+				@form_metadata = {}
+			end
+
+			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
+				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
+		end
+
+		return @entity_bodies
+	end
+	
 
 	### Parse the files and form parameters from a multipart (upload) form request 
 	### body. It throws ThingFish::RequestErrors on malformed input, or if you

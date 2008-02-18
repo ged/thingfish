@@ -660,53 +660,6 @@ describe ThingFish::Daemon do
 	end
 
 
-	it "guesses a reasonable metadata format from the content-disposition" do
-		body = mock( "body IO" )
-		metadata = mock( "metadata hash", :null_object => true )
-
-		filestore = mock( "filestore", :null_object => true )
-		@daemon.instance_variable_set( :@filestore, filestore )
-		metastore = mock( "metastore", :null_object => true )
-		@daemon.instance_variable_set( :@metastore, metastore )
-
-		metastore.should_receive( :transaction ).and_yield
-		metadata_proxy = mock( "metadata proxy", :null_object => true )
-		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
-
-		metadata_proxy.stub!( :format ).and_return( nil )
-		metadata_proxy.stub!( :title ).and_return( 'wiggity wiggity wack.png' )
-
-		metadata_proxy.should_receive( :format= ).with( 'image/png' )
-
-		metadata_proxy.stub!( :extent ).and_return( 1 )
-		@daemon.store_resource( body, metadata, TEST_UUID_OBJ ).should == TEST_UUID_OBJ
-	end
-
-
-	it "falls back to the default metadata format in the absence of " +
-		"format/title information" do
-		body = mock( "body IO" )
-		metadata = mock( "metadata hash", :null_object => true )
-
-		filestore = mock( "filestore", :null_object => true )
-		@daemon.instance_variable_set( :@filestore, filestore )
-		metastore = mock( "metastore", :null_object => true )
-		@daemon.instance_variable_set( :@metastore, metastore )
-
-		metastore.should_receive( :transaction ).and_yield
-		metadata_proxy = mock( "metadata proxy", :null_object => true )
-		metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
-
-		metadata_proxy.stub!( :format ).and_return( nil )
-		metadata_proxy.stub!( :title ).and_return( nil )
-
-		metadata_proxy.should_receive( :format= ).with( DEFAULT_CONTENT_TYPE )
-
-		metadata_proxy.stub!( :extent ).and_return( 1 )
-		@daemon.store_resource( body, metadata, TEST_UUID_OBJ ).should == TEST_UUID_OBJ
-	end
-	
-	
 	it "cleans up new resources if there's an error while storing" do
 		UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 		body = mock( "body IO" )

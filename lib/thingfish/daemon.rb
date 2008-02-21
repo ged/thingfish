@@ -273,6 +273,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 				self.log.debug "  " + err.backtrace.join("\n  ")
 			else
 				response.filters << filter
+			ensure
+				request.rewind_bodies
 			end
 			
 			break if response.handled?
@@ -291,6 +293,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 				self.log.error "Response filter raised a %s: %s" % 
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
+			ensure
+				response.body.rewind if response.body.respond_to?( :rewind )
 			end
 		end
 	end

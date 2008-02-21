@@ -157,7 +157,10 @@ describe ThingFish::Daemon do
 		
 		handlers = [ @handler ]
 		@daemon.filters << filter
-
+		
+		# temp stub
+		IPAddr.stub!( :new ).and_return( '127.0.0.1' )
+		
 		filter.
 			should_receive( :handle_request ).
 			with( an_instance_of(ThingFish::Request), an_instance_of(ThingFish::Response) )
@@ -180,6 +183,9 @@ describe ThingFish::Daemon do
 		
 		handlers = [ @handler ]
 		@daemon.filters << filter
+
+		# temp stub
+		IPAddr.stub!( :new ).and_return( '127.0.0.1' )
 
 		filter.
 			should_receive( :handle_request ).
@@ -210,6 +216,9 @@ describe ThingFish::Daemon do
 		
 		handlers = [ @handler ]
 		@daemon.filters << filter
+
+		# temp stub
+		IPAddr.stub!( :new ).and_return( '127.0.0.1' )
 
 		filter.
 			should_receive( :handle_request ).
@@ -354,7 +363,7 @@ describe ThingFish::Daemon do
 			should_receive( :handle_request ).
 			once.
 			with( @request, @response )
-		
+
 		lambda {
 			@daemon.filter_request( @request, @response )
 		}.should_not raise_error()

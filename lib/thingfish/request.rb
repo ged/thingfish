@@ -266,7 +266,11 @@ class ThingFish::Request
 			:uploadaddress => self.remote_addr,
 		}
 
-		# Yield the entity body and merged metadata for each part
+		# Yield the entity body and merged metadata for each part.
+		# We intentionally do this without caching merged results, so
+		# the next sequential filter in a chain has access to metadata additions
+		# from the filter before it.
+		#
 		self.entity_bodies.each do |body, body_metadata|
 			body_metadata[ :format ] ||= DEFAULT_CONTENT_TYPE
 			extracted_metadata = self.metadata[body] || {}
@@ -286,6 +290,17 @@ class ThingFish::Request
 	end
 
 
+	### Explicitly rewind all body IO objects.
+	### Because we can't guarantee the current position of an IO after it is passed
+	### through a filter, we explicitly rewind all bodies to 'prep' them for the
+	### next filter in the chain.
+	def rewind_bodies
+		self.entity_bodies.keys.each do |body_io|
+			body_io.rewind
+		end
+	end
+	
+	
 	### Checks cache headers against the given etag and modification time.
 	### Returns boolean true if the client claims to have a valid copy.
 	def is_cached_by_client?( etag, modtime )

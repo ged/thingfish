@@ -57,7 +57,7 @@ describe ThingFish::Daemon do
 
 	before( :each ) do
 		# Have to set up logging each time, 'cause Daemon alters it in some examples
-		setup_logging( Logger::FATAL )
+		setup_logging( :fatal )
 
 		# Stop the daemon from actually doing anything in another thread or
 		# listening on a real socket.
@@ -335,9 +335,6 @@ describe ThingFish::Daemon do
 				info.values.should include( :eins_info, :zwei_info )
 			end
 			
-
-
-			### :TODO: Assert #rewind_bodies and #body.rewind for filter routines
 
 			it "iterates through its filters on incoming requests" do
 				filter_uno = mock( "request filter number one", :null_object => true )

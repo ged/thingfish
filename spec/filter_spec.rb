@@ -64,6 +64,12 @@ describe ThingFish::Filter do
 	it "accepts all types by default" do
 		@filter.accepts?( 'image/png' ).should be_true()
 	end
+
+
+	it "knows what its plugin name is" do
+		@filter.class.plugin_name.should == 'test'
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

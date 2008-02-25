@@ -116,6 +116,26 @@ class ThingFish::ExifFilter < ThingFish::Filter
 	end
 
 
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [ 1, 0 ],                    # Filter version
+	###     'supports'  => [],                          # Unused
+	###     'rev'       => 460,                         # SVN rev of plugin
+	###     'accepts'   => [''],                        # Mimetypes the filter accepts from requests
+	###     'generates' => ['application/xhtml+xml'],   # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		accepts = self.handled_types.map {|ap| ap.mediatype }
+		return {
+			'version'   => [1,0],
+			'supports'  => [],
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => accepts,
+			'generates' => [],
+		  }
+	end
+	
+
 	### Return an Array of ThingFish::AcceptParam objects which describe which
 	### content types the filter is interested in. The default returns */*,
 	### which indicates that it is interested in all requests/responses.

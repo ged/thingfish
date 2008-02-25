@@ -113,6 +113,26 @@ class ThingFish::JSONFilter < ThingFish::Filter
 	end
 	
 	
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [1, 0],                   # Filter version
+	###     'supports'  => [1, 1, 2],                # JSON version
+	###     'rev'       => 460,                      # SVN rev of plugin
+	###     'accepts'   => ['application/json'],     # Mimetypes the filter accepts from requests
+	###     'generates' => ['application/json'],     # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		accepts = self.handled_types.map {|ap| ap.mediatype }
+		return {
+			'version'   => [1,0],
+			'supports'  => JSON::VERSION_ARRAY,
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => accepts,
+			'generates' => accepts,
+		  }
+	end
+	
+	
 end # class ThingFish::JSONFilter
 
 # vim: set nosta noet ts=4 sw=4:

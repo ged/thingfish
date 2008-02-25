@@ -34,10 +34,10 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Request do
+	include ThingFish::TestHelpers
 	
 	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( Logger::FATAL )
 	end
 	
 	before( :each ) do
@@ -305,236 +305,222 @@ describe ThingFish::Request do
 		@request.is_ajax_request?.should == false
 	end
 	
-end
 
-describe ThingFish::Request, " with cache headers" do
+	describe " with cache headers" do
 
-	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-	end
-	
-	before( :each ) do
-		@config = stub( "config object" )
-		@request_headers = mock( "request headers", :null_object => true )
-		@request = ThingFish::Request.new( nil, @config )
-		@request.instance_variable_set( :@headers, @request_headers )
-		@request.stub!( :path_info ).and_return( '/a/test/path' )
+		before( :each ) do
+			@config = stub( "config object" )
+			@request_headers = mock( "request headers", :null_object => true )
+			@request = ThingFish::Request.new( nil, @config )
+			@request.instance_variable_set( :@headers, @request_headers )
+			@request.stub!( :path_info ).and_return( '/a/test/path' )
 		
-		@etag = %{"%s"} % [ TEST_CHECKSUM ]
-		@weak_etag = %{W/"v1.2"}
-	end
+			@etag = %{"%s"} % [ TEST_CHECKSUM ]
+			@weak_etag = %{W/"v1.2"}
+		end
 
 	
-	### Cache header predicate
+		### Cache header predicate
 	
-	# [RFC 2616]: If any of the entity tags match the entity tag of the
-	# entity that would have been returned in the response to a similar
-	# GET request (without the If-None-Match header) on that resource,
-	# or if "*" is given and any current entity exists for that resource,
-	# then the server MUST NOT perform the requested method, unless
-	# required to do so because the resource's modification date fails
-	# to match that supplied in an If-Modified-Since header field in the
-	# request.
+		# [RFC 2616]: If any of the entity tags match the entity tag of the
+		# entity that would have been returned in the response to a similar
+		# GET request (without the If-None-Match header) on that resource,
+		# or if "*" is given and any current entity exists for that resource,
+		# then the server MUST NOT perform the requested method, unless
+		# required to do so because the resource's modification date fails
+		# to match that supplied in an If-Modified-Since header field in the
+		# request.
 
-	it "checks the content cache token to see if it is cached by the client" do
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( @etag )
+		it "checks the content cache token to see if it is cached by the client" do
+			@request_headers.should_receive( :[] ).
+				with( :if_none_match ).
+				and_return( @etag )
 
-		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
-	end
+			@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+		end
 	
 	
-	it "checks all cache content tokens to see if it is cached by the client" do
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( %Q{#{@weak_etag}, "#{@etag}"} )
+		it "checks all cache content tokens to see if it is cached by the client" do
+			@request_headers.should_receive( :[] ).
+				with( :if_none_match ).
+				and_return( %Q{#{@weak_etag}, "#{@etag}"} )
 
-		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
-	end
+			@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+		end
 	
 
-	it "ignores weak cache tokens when checking to see if it is cached by the client" do
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( @weak_etag )
+		it "ignores weak cache tokens when checking to see if it is cached by the client" do
+			@request_headers.should_receive( :[] ).
+				with( :if_none_match ).
+				and_return( @weak_etag )
 
-		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
-	end
-
-
-	it "indicates that the client has a cached copy with a wildcard If-None-Match" do
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( '*' )
-
-		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
-	end
+			@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
+		end
 
 
-	it "ignores a wildcard 'If-None-Match' if the 'If-Modified-Since' " +
-	   "header is out of date when checking to see if the client has a cached copy" do
+		it "indicates that the client has a cached copy with a wildcard If-None-Match" do
+			@request_headers.should_receive( :[] ).
+				with( :if_none_match ).
+				and_return( '*' )
 
-		@request_headers.should_receive( :[] ).
-			with( :if_modified_since ).
-			and_return( 8.days.ago.httpdate )
-		@request_headers.should_receive( :[] ).
-			with( :if_none_match ).
-			and_return( '*' )
+			@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_true()
+		end
+
+
+		it "ignores a wildcard 'If-None-Match' if the 'If-Modified-Since' " +
+		   "header is out of date when checking to see if the client has a cached copy" do
+
+			@request_headers.should_receive( :[] ).
+				with( :if_modified_since ).
+				and_return( 8.days.ago.httpdate )
+			@request_headers.should_receive( :[] ).
+				with( :if_none_match ).
+				and_return( '*' )
   
-		@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
-	end
-	
-end
-
-describe ThingFish::Request, " with a multipart body" do
-
-	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-	end
-	
-	before( :each ) do
-		params = {
-			'HTTP_CONTENT_TYPE'   => 'multipart/form-data; boundary="greatgoatsofgerta"',
-			'HTTP_CONTENT_LENGTH' => 11111,
-			'HTTP_USER_AGENT'     => 'Hotdogs',
-			'REMOTE_ADDR'         => '127.0.0.1',
-		}
-		@mongrel_request = mock( "mongrel request", :null_object => true )
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-
-		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
-
-		@request = ThingFish::Request.new( @mongrel_request, config )
-		@request.stub!( :path_info ).and_return( '/a/test/path' )
-	end
-
-	after( :all ) do
-		ThingFish.reset_logger
-	end
-
-	
-	
-	it "knows it has a multipart body" do
-		@request.should have_multipart_body()
-	end
-	
-	
-	it "sends each body entity of the request and a copy of the merged metadata to " +
-		"the block of the body iterator" do
-		io1 = mock( "filehandle 1" )
-		io2 = mock( "filehandle 2" )
-
-		parser = mock( "multipart parser", :null_object => true )
-		entity_bodies = {
-			io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
-			io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
-		  }
-		form_metadata = {
-			'foo' => 1,
-			:title => "a bogus filename",
-			:useragent => 'Clumpy the Clown',
-		  }
-		# :TODO: What was this supposed to be doing? [MG 20070218]
-		# extracted_metadata = {
-		# 	io1 => { :format => "a bogus format" },
-		# 	io2 => { :format => "another bogus format" },
-		#   }
-
-		io1.should_receive( :closed? ).and_return( true )
-		io1.should_receive( :open )
-		io2.should_receive( :closed? ).and_return( true )
-		io2.should_receive( :open )
-
-		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
-		@mongrel_request.should_receive( :body ).once.and_return( :body )
-		parser.should_receive( :parse ).once.
-			with( :body, 'greatgoatsofgerta' ).
-			and_return([ entity_bodies, form_metadata ])
-		io1.should_receive( :rewind )
-		io2.should_receive( :rewind )
-		
-		yielded_pairs = {}
-		@request.each_body do |body, parsed_metadata|
-			yielded_pairs[ body ] = parsed_metadata
+			@request.is_cached_by_client?( TEST_CHECKSUM, 3.days.ago ).should be_false()
 		end
-		
-		yielded_pairs.keys.should have(2).members
-		yielded_pairs.keys.should include( io1 )
-		yielded_pairs.keys.should include( io2 )
-
-		yielded_pairs[ io1 ][ :title ].should == 'filename1'
-		yielded_pairs[ io1 ][ :format ].should == 'format1'
-		yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
-		yielded_pairs[ io2 ][ :title ].should == 'filename2'
-		yielded_pairs[ io2 ][ :format ].should == "format2"
-		yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
-		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+	
 	end
-	
-	
-	it "ensures each part sent to the body has the default content-type " +
-	   "if none is explicitly provided by the request" do
-		io1 = mock( "filehandle 1" )
-		io2 = mock( "filehandle 2" )
 
-		parser = mock( "multipart parser", :null_object => true )
-		entity_bodies = {
-			io1 => {:title  => "filename1",:extent => 100292},
-			io2 => {:title  => "filename2",:extent => 100234}
-		  }
+	describe " with a multipart body" do
 
-		io1.should_receive( :closed? ).and_return( true )
-		io1.should_receive( :open )
-		io2.should_receive( :closed? ).and_return( true )
-		io2.should_receive( :open )
+		before( :each ) do
+			params = {
+				'HTTP_CONTENT_TYPE'   => 'multipart/form-data; boundary="greatgoatsofgerta"',
+				'HTTP_CONTENT_LENGTH' => 11111,
+				'HTTP_USER_AGENT'     => 'Hotdogs',
+				'REMOTE_ADDR'         => '127.0.0.1',
+			}
+			@mongrel_request = mock( "mongrel request", :null_object => true )
+			@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
 
-		ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
-		@mongrel_request.should_receive( :body ).once.and_return( :body )
-		parser.should_receive( :parse ).once.
-			with( :body, 'greatgoatsofgerta' ).
-			and_return([ entity_bodies, {} ])
-		io1.should_receive( :rewind )
-		io2.should_receive( :rewind )
-		
-		yielded_pairs = {}
-		@request.each_body do |body, parsed_metadata|
-			yielded_pairs[ body ] = parsed_metadata
+			config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
+
+			@request = ThingFish::Request.new( @mongrel_request, config )
+			@request.stub!( :path_info ).and_return( '/a/test/path' )
 		end
+
+	
+		it "knows it has a multipart body" do
+			@request.should have_multipart_body()
+		end
+	
+	
+		it "sends each body entity of the request and a copy of the merged metadata to " +
+			"the block of the body iterator" do
+			io1 = mock( "filehandle 1" )
+			io2 = mock( "filehandle 2" )
+
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
+				io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
+			  }
+			form_metadata = {
+				'foo' => 1,
+				:title => "a bogus filename",
+				:useragent => 'Clumpy the Clown',
+			  }
+			# :TODO: What was this supposed to be doing? [MG 20070218]
+			# extracted_metadata = {
+			# 	io1 => { :format => "a bogus format" },
+			# 	io2 => { :format => "another bogus format" },
+			#   }
+
+			io1.should_receive( :closed? ).and_return( true )
+			io1.should_receive( :open )
+			io2.should_receive( :closed? ).and_return( true )
+			io2.should_receive( :open )
+
+			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+			@mongrel_request.should_receive( :body ).once.and_return( :body )
+			parser.should_receive( :parse ).once.
+				with( :body, 'greatgoatsofgerta' ).
+				and_return([ entity_bodies, form_metadata ])
+			io1.should_receive( :rewind )
+			io2.should_receive( :rewind )
 		
-		yielded_pairs.keys.should have(2).members
-		yielded_pairs.keys.should include( io1 )
-		yielded_pairs.keys.should include( io2 )
+			yielded_pairs = {}
+			@request.each_body do |body, parsed_metadata|
+				yielded_pairs[ body ] = parsed_metadata
+			end
+		
+			yielded_pairs.keys.should have(2).members
+			yielded_pairs.keys.should include( io1 )
+			yielded_pairs.keys.should include( io2 )
 
-		yielded_pairs[ io1 ][ :title ].should == 'filename1'
-		yielded_pairs[ io1 ][ :format ].should == DEFAULT_CONTENT_TYPE
-		yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
-		yielded_pairs[ io2 ][ :title ].should == 'filename2'
-		yielded_pairs[ io2 ][ :format ].should == DEFAULT_CONTENT_TYPE
-		yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
-		yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
-	end
+			yielded_pairs[ io1 ][ :title ].should == 'filename1'
+			yielded_pairs[ io1 ][ :format ].should == 'format1'
+			yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+			yielded_pairs[ io2 ][ :title ].should == 'filename2'
+			yielded_pairs[ io2 ][ :format ].should == "format2"
+			yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+		end
 	
-end
+	
+		it "ensures each part sent to the body has the default content-type " +
+		   "if none is explicitly provided by the request" do
+			io1 = mock( "filehandle 1" )
+			io2 = mock( "filehandle 2" )
 
-describe ThingFish::Request, " sent via XMLHTTPRequest" do
-	before( :each ) do
-		@config = stub( "config object" )
-		@request_headers = mock( "request headers", :null_object => true )
-		@request = ThingFish::Request.new( nil, @config )
-		@request.instance_variable_set( :@headers, @request_headers )
-		@request.stub!( :path_info ).and_return( '/a/test/path' )
-		@request_headers.should_receive( :[] ).
-			at_least( :once ).
-			with( :x_requested_with ).
-			and_return( 'XmlHttpRequest' )
-	end
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1",:extent => 100292},
+				io2 => {:title  => "filename2",:extent => 100234}
+			  }
+
+			io1.should_receive( :closed? ).and_return( true )
+			io1.should_receive( :open )
+			io2.should_receive( :closed? ).and_return( true )
+			io2.should_receive( :open )
+
+			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+			@mongrel_request.should_receive( :body ).once.and_return( :body )
+			parser.should_receive( :parse ).once.
+				with( :body, 'greatgoatsofgerta' ).
+				and_return([ entity_bodies, {} ])
+			io1.should_receive( :rewind )
+			io2.should_receive( :rewind )
+		
+			yielded_pairs = {}
+			@request.each_body do |body, parsed_metadata|
+				yielded_pairs[ body ] = parsed_metadata
+			end
+		
+			yielded_pairs.keys.should have(2).members
+			yielded_pairs.keys.should include( io1 )
+			yielded_pairs.keys.should include( io2 )
+
+			yielded_pairs[ io1 ][ :title ].should == 'filename1'
+			yielded_pairs[ io1 ][ :format ].should == DEFAULT_CONTENT_TYPE
+			yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+			yielded_pairs[ io2 ][ :title ].should == 'filename2'
+			yielded_pairs[ io2 ][ :format ].should == DEFAULT_CONTENT_TYPE
+			yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+		end
 	
-	it "knows that it's an ajax request" do
-		@request.is_ajax_request?.should == true
 	end
+
+	describe " sent via XMLHTTPRequest" do
+		before( :each ) do
+			@config = stub( "config object" )
+			@request_headers = mock( "request headers", :null_object => true )
+			@request = ThingFish::Request.new( nil, @config )
+			@request.instance_variable_set( :@headers, @request_headers )
+			@request.stub!( :path_info ).and_return( '/a/test/path' )
+			@request_headers.should_receive( :[] ).
+				at_least( :once ).
+				with( :x_requested_with ).
+				and_return( 'XmlHttpRequest' )
+		end
+	
+		it "knows that it's an ajax request" do
+			@request.is_ajax_request?.should == true
+		end
+	end
+
 end
 
 

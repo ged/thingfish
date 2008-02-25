@@ -123,7 +123,7 @@ class ThingFish::Resource
 	######
 
 	# Metadata hash
-	attr_reader :metadata
+	attr_accessor :metadata
 
 	# The ThingFish::Client the resource is stored in (or will be stored in when it
 	# is saved)
@@ -151,7 +151,6 @@ class ThingFish::Resource
 	
 	### Write the data from the resource to the given +io+ object.
 	def export( io )
-		
 		buf = ''
 		while @io.read( 8192, buf )
 			until buf.empty?
@@ -175,6 +174,13 @@ class ThingFish::Resource
 	### Override Kernel#format to return the 'format' metadata key instead.
 	def format
 		return @metadata[ :format ]
+	end
+
+
+	### Merge the metadata in the given Hash (or something that will function as an argument to
+	### Hash#merge!) with the metadata for the resource.
+	def merge_metadata( metadata )
+		self.metadata.merge!( metadata )
 	end
 	
 	

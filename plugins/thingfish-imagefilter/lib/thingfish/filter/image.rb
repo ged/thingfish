@@ -139,6 +139,10 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		@handled_types = @supported_formats.
 			select {|type, op| op.can_read? }.
 			collect {|type, op| ThingFish::AcceptParam.parse(type) }
+			
+		@generated_types = @supported_formats.
+			select {|type, op| op.can_write? }.
+			collect {|type, op| ThingFish::AcceptParam.parse(type) }
 		
 		super
 	end
@@ -148,7 +152,13 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	public
 	######
 	
+	# The mediatypes the plugin accepts in a request, as ThingFish::AcceptParam
+	# objects
 	attr_reader :handled_types
+	
+	# The mediatypes the plugin can generated in a response, as
+	# ThingFish::AcceptParam objects
+	attr_reader :generated_types
 	
 
 	### Filter incoming requests -- generate a thumbnail, extract image metadata.
@@ -200,6 +210,35 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		response.content_type = target_type.mediatype
 		response.headers[:content_length] = data.length
 	end
+
+
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [ 1, 0 ],    # Filter version
+	###     'supports'  => [],          # The versions of ImageMagick/RMagick the plugin uses
+	###     'rev'       => 460,         # SVN rev of plugin
+	###     'accepts'   => [...],       # Mimetypes the filter accepts from requests
+	###     'generates' => [...],       # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		accepts = self.handled_types.map {|ap| ap.mediatype }
+		generates = self.generated_types.map {|ap| ap.mediatype }
+
+		supports = [
+			Magick::Magick_version,
+			Magick::Version
+		  ]
+
+		return {
+			'version'   => [1,0],
+			'supports'  => supports,
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => accepts,
+			'generates' => generates,
+		  }
+	end
+	
+
 
 
 	#######

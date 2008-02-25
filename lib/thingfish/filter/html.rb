@@ -32,7 +32,7 @@ require 'thingfish/acceptparam'
 
 
 ### An HTML-conversion filter for ThingFish. It converts Ruby objects in the body 
-### of responses to HTML if the client accepts 'text/html'.
+### of responses to HTML if the client accepts XHTML_MIMETYPE.
 class ThingFish::HtmlFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants,
@@ -73,10 +73,11 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response
 		# body is something we know how to convert
-		return unless request.explicitly_accepts?( 'text/html' ) &&
+		return unless request.explicitly_accepts?( XHTML_MIMETYPE ) &&
 			self.accept?( response.content_type )
 
-		self.log.debug "Converting a %s response to text/html" % [ response.content_type ]
+		self.log.debug "Converting a %s response to %s" %
+			[ response.content_type, XHTML_MIMETYPE ]
 		
 		# Find the handlers that can make html
 		content = []
@@ -96,9 +97,28 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		template = self.get_erb_resource( 'template.rhtml' )
 		
 		response.body = template.result( binding() )
-		response.content_type = 'text/html'
+		response.content_type = XHTML_MIMETYPE
 	end
 
+
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [ 1, 0 ],                    # Filter version
+	###     'supports'  => [],                          # Unused
+	###     'rev'       => 460,                         # SVN rev of plugin
+	###     'accepts'   => [''],                        # Mimetypes the filter accepts from requests
+	###     'generates' => ['application/xhtml+xml'],   # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		return {
+			'version'   => [1,0],
+			'supports'  => [],
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => [],
+			'generates' => [XHTML_MIMETYPE],
+		  }
+	end
+	
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
 	### the filter is interested in. The default returns */*, which indicates that it is 

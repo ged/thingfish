@@ -113,6 +113,29 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	end
 	
 	
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'  => [ 0, 60 ],               # YAML.rb version
+	###     'supports' => [ [1,0], [1,1] ],        # Supported YAML versions
+	###     'rev'      => 460,                     # SVN rev of plugin
+	###   }
+	def info
+		yaml_rb_version = YAML::VERSION.split('.').collect {|i| Integer(i) }
+		supported_yaml_version = YAML::SUPPORTED_YAML_VERSIONS.collect do |v|
+			v.split('.').collect {|i| Integer(i) }
+		end
+		
+		return {
+			'version'  => yaml_rb_version,
+			'supports' => supported_yaml_version,
+			'rev'      => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => [YAML_MIMETYPE],
+			'generates' => [YAML_MIMETYPE],
+		}
+	end
+	
+	
+	
 	#########
 	protected
 	#########

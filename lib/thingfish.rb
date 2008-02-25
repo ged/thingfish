@@ -55,12 +55,23 @@ module ThingFish
 	# Global logging object
 	require 'thingfish/utils'
 
+
 	@default_logger = Logger.new( $stderr )
 	@default_logger.level = Logger::WARN
-	@default_logger.formatter = ThingFish::LogFormatter.new( @default_logger )
+
+	@default_log_formatter = ThingFish::LogFormatter.new( @default_logger )
+	@default_logger.formatter = @default_log_formatter
+
 	@logger = @default_logger
+
 	class << self
-		attr_reader :default_logger
+		# The log formatter that will be used when the logging subsystem is reset
+		attr_accessor :default_log_formatter
+		
+		# The logger that will be used when the logging subsystem is reset
+		attr_accessor :default_logger
+		
+		# The logger that's currently in effect
 		attr_accessor :logger
 	end
 
@@ -69,7 +80,7 @@ module ThingFish
 	def self::reset_logger
 		self.logger = self.default_logger
 		self.logger.level = Logger::WARN
-		self.logger.formatter = ThingFish::LogFormatter.new( @default_logger )
+		self.logger.formatter = self.default_log_formatter
 	end
 	
 

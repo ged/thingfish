@@ -69,6 +69,9 @@ module ThingFish::Constants
 	# section of this file
 	MIMETYPE_MAP = YAML.load( File.read(__FILE__).split(/^__END__/, 2).last )
 
+	# A MIME type string that indicates an entity body is XHTML
+	XHTML_MIMETYPE = 'application/xhtml+xml'
+	
 	# A MIME type that indicates an entity body is a Ruby data structure. 
 	RUBY_MIMETYPE = 'x-ruby/data'
 	

@@ -11,7 +11,7 @@ http.use_ssl = true
 header = {
 	'User-Agent' => 'Net::HTTP',
 	'Connection' => 'close',
-	'Accept' => 'text/html',
+	'Accept' => XHTML_MIMETYPE,
 }
 req = Net::HTTP::Get.new( uri.path )
 res = http.start do |conn|

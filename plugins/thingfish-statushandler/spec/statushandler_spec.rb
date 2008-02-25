@@ -31,117 +31,123 @@ rescue LoadError
 end
 
 
-include ThingFish::Constants,
-		ThingFish::TestConstants,
-		ThingFish::TestHelpers
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-include ThingFish::Constants
+describe ThingFish::StatusHandler do
 
-describe "A status handler with no stats filters" do
-	before(:all) do
+	include ThingFish::Constants,
+			ThingFish::TestConstants,
+			ThingFish::TestHelpers
+
+
+	before( :all ) do
+		setup_logging( :fatal )
+	end
+
+	after( :all ) do
 		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-	end
-
-	after(:all) do
-		ThingFish.reset_logger
-	end
-
-	before(:each) do
-		@request          = mock( "request", :null_object => true )
-		@response         = mock( "response", :null_object => true )
-		@listener         = mock( "listener", :null_object => true )
-
-		@response_headers = mock( "response headers", :null_object => true )
-		@response.stub!( :headers ).and_return( @response_headers )
-		@request_headers = mock( "request headers", :null_object => true )
-		@request.stub!( :headers ).and_return( @request_headers )
-
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'status', 'resource_dir' => resdir )
 	end
 
 
-	### Specs
+	describe " with no stats filters" do
+		before( :each ) do
+			@request          = mock( "request", :null_object => true )
+			@response         = mock( "response", :null_object => true )
+			@listener         = mock( "listener", :null_object => true )
 
-	it "doesn't register any filters with its listener" do
-		classifier = Mongrel::URIClassifier.new
-		classifier.register( '/status', @handler )
+			@response_headers = mock( "response headers", :null_object => true )
+			@response.stub!( :headers ).and_return( @response_headers )
+			@request_headers = mock( "request headers", :null_object => true )
+			@request.stub!( :headers ).and_return( @request_headers )
 
-		@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
-		@listener.should_receive( :register ).once
-
-		@handler.listener = @listener
-	end
+			resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+		    @handler  = ThingFish::Handler.create( 'status', 'resource_dir' => resdir )
+		end
 
 
-	it "responds with a data structure describing the statistics gathered so far" do
-		filter = mock( "a filter" )
-		stat   = mock( "a Mongrel::Stats object", :null_object => true )
+		### Specs
 
-		classifier = Mongrel::URIClassifier.new
-		classifier.register( '/status', [filter, @handler] )
-		classifier.register( '/no-stats', [@handler] )
-		@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
-		@handler.listener = @listener
-		@handler.filters[ '/status' ] = filter
+		it "doesn't register any filters with its listener" do
+			classifier = Mongrel::URIClassifier.new
+			classifier.register( '/status', @handler )
+
+			@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
+			@listener.should_receive( :register ).once
+
+			@handler.listener = @listener
+		end
+
+
+		it "responds with a data structure describing the statistics gathered so far" do
+			filter = mock( "a filter" )
+			stat   = mock( "a Mongrel::Stats object", :null_object => true )
+
+			classifier = Mongrel::URIClassifier.new
+			classifier.register( '/status', [filter, @handler] )
+			classifier.register( '/no-stats', [@handler] )
+			@listener.should_receive( :classifier ).at_least(1).and_return( classifier )
+			@handler.listener = @listener
+			@handler.filters[ '/status' ] = filter
 	
-		filter.should_receive( :each_stat ).and_yield( stat )
-		stat.should_receive( :name ).at_least( :once ).and_return('porkenheimer')
+			filter.should_receive( :each_stat ).and_yield( stat )
+			stat.should_receive( :name ).at_least( :once ).and_return('porkenheimer')
 				
-		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
-		@response.should_receive( :body= ).with( an_instance_of(Hash) )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :body= ).with( an_instance_of(Hash) )
 
-		@handler.handle_get_request( @request, @response )
-	end
+			@handler.handle_get_request( @request, @response )
+		end
 
 
-	it "can build an HTML fragment for the HTML filter" do
-		erb_template = ERB.new( "A template that refers to <%= body %>" )
-		@handler.stub!( :get_erb_resource ).and_return( erb_template )
+		it "can build an HTML fragment for the HTML filter" do
+			erb_template = ERB.new( "A template that refers to <%= body %>" )
+			@handler.stub!( :get_erb_resource ).and_return( erb_template )
 		
-		html = @handler.make_html_content( "the body", @request, @response )
-		html.should == "A template that refers to the body"
+			html = @handler.make_html_content( "the body", @request, @response )
+			html.should == "A template that refers to the body"
+		end
+
+
+		it "can build an HTML fragment for the index page" do
+			erb_template = ERB.new( "Some template that refers to <%= uri %>" )
+			@handler.stub!( :get_erb_resource ).and_return( erb_template )
+			@handler.make_index_content( "/foo" ).should ==
+				"Some template that refers to /foo"
+		end
 	end
 
 
-	it "can build an HTML fragment for the index page" do
-		erb_template = ERB.new( "Some template that refers to <%= uri %>" )
-		@handler.stub!( :get_erb_resource ).and_return( erb_template )
-		@handler.make_index_content( "/foo" ).should ==
-			"Some template that refers to /foo"
-	end
-end
-
-
-describe "A status handler with stats filters" do
-	before(:each) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-		options = {
-			'resource_dir' => resdir,
-			'stat_uris' => %w[/ /metadata /admin],
-		}
+	describe " with stats filters" do
+		before(:each) do
+			resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+			options = {
+				'resource_dir' => resdir,
+				'stat_uris' => %w[/ /metadata /admin],
+			}
 		
-		@listener = mock( "listener", :null_object => true )
-	    @handler  = ThingFish::Handler.create( 'status', options )
-	end
+			@listener = mock( "listener", :null_object => true )
+		    @handler  = ThingFish::Handler.create( 'status', options )
+		end
 
-	it "registers a StatisticsFilter with its listener for each configured URI" do
-		@listener.
-			should_receive( :register ).
-			with( an_instance_of(String), duck_type(:process, :dump), true ).
-			exactly(3).times
+		it "registers a StatisticsFilter with its listener for each configured URI" do
+			@listener.
+				should_receive( :register ).
+				with( an_instance_of(String), duck_type(:process, :dump), true ).
+				exactly(3).times
 		
-		@handler.listener = @listener
-	end
+			@handler.listener = @listener
+		end
 	
+	end
+
 end
+
+
 
 
 describe Mongrel::StatisticsFilter, " (monkeypatched)" do

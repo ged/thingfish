@@ -35,10 +35,15 @@ include ThingFish::TestHelpers
 #####################################################################
 
 describe ThingFish::StaticContentHandler do
+	include ThingFish::TestHelpers
+	
+	before( :all ) do
+		setup_logging( :fatal )
+	end
+	
+
 
 	before( :each ) do
-		ThingFish.logger.level = Logger::FATAL
-
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + '/tmp'
 		@handler = ThingFish::Handler.create( 'staticcontent', resdir )
 
@@ -103,7 +108,7 @@ describe ThingFish::StaticContentHandler do
 		@handler.stub!( :get_safe_path ).and_return( @pathname )
 
 		@pathname.should_receive( :extname ).and_return( '.html' )
-		@response.should_receive( :content_type= ).with( 'text/html' )
+		@response.should_receive( :content_type= ).with( MIMETYPE_MAP['.html'] )
 
 		stat = stub( "file stat", :mtime => 6, :size => 10, :ino => 23452 )
 		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )

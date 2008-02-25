@@ -2,7 +2,7 @@
 #	Install/distribution utility functions
 #	$Id$
 #
-#	Copyright (c) 2001-2007, The FaerieMUD Consortium.
+#	Copyright (c) 2001-2008, The FaerieMUD Consortium.
 #
 #   All rights reserved.
 #   

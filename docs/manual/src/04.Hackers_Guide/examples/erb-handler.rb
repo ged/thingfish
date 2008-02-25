@@ -32,7 +32,7 @@ class TimeHandler < ThingFish::Handler
 		# Render the ERb template with a Binding of this scope
 		response.body = template.result( binding() )
 
-		response.content_type = 'text/html'
+		response.content_type = XHTML_MIMETYPE
 		response.status = HTTP::OK
 	end
 end

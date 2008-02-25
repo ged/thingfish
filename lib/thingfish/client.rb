@@ -226,7 +226,7 @@ class ThingFish::Client
 	### hash)
 	def server_uri( handler )
 		info = self.server_info
-		path = info[:handlers][ handler.to_s ] or
+		path = info['handlers'][ handler.to_s ] or
 			raise ThingFish::ClientError, "server does not support the '#{handler}' service"
 		
 		self.log.debug "Server URI for the '%s' service is: %s" %
@@ -319,19 +319,30 @@ class ThingFish::Client
 	### containing resource data, or an IO from which resource data can be read) on
 	### the server. The optional +metadata+ hash can be used to set metadata values
 	### for the resource.
-	def store( resource, metadata={} )
-		resource = ThingFish::Resource.new( resource, self, metadata ) unless
+	def store( resource )
+		resource = self.store_data( resource )
+		self.store_metadata( resource )
+
+		return resource
+	end
+	
+	
+	### Store just the data part of the given +resource+ on the server, creating a new 
+	### ThingFish::Resource if +resource+ doesn't already have a UUID.
+	def store_data( resource )
+		resource = ThingFish::Resource.new( resource, self ) unless
 			resource.is_a?( ThingFish::Resource )
 
 		# If it's an existing resource (i.e., has a UUID), update it, otherwise
 		# create it
 		request = nil
+		uri = self.server_uri( 'default' )
 		if uuid = resource.uuid
 			self.log.debug "Creating an update PUT request for resource %p" % [ uuid ]
-			request = Net::HTTP::Put.new( @uri.path + uuid )
+			request = Net::HTTP::Put.new( uri.path + uuid )
 		else
 			self.log.debug "Creating a creation POST request for a new resource" 
-			request = Net::HTTP::Post.new( @uri.path )
+			request = Net::HTTP::Post.new( uri.path )
 		end
 
         self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
@@ -343,23 +354,43 @@ class ThingFish::Client
 		request['Accept'] = ACCEPT_HEADER
 
 		self.send_request( request ) do |response|
-			case response
-			when Net::HTTPSuccess
-									
-				# :TODO: Set metadata for the resource from the response (multipart?)
-				self.log.debug "Updating resource %p from %p" % [ resource, response ]
-				resource.set_attributes_from_http_response( response )
-				return true
+			response.error! unless response.is_a?( Net::HTTPSuccess )
 
-			# TODO: Handle redirect/auth/etc.
-			# when Net::HTTPRedirect
-			else
-				response.error!
-			end
+			# Set the UUID if it wasn't already and merge metadata returned in the response 
+			# without clobbering any existing values
+			resource.uuid = response['Location'][UUID_REGEXP] unless uuid
+			metadata = self.extract_response_body( response )
+			resource.metadata = metadata.merge( resource.metadata )
 		end
 
 		return resource
 	end
+
+
+	### Store the metadata for the given +resource+ on the server. The +resource+ must already
+	### have a UUID or an exception will be raised.
+	def store_metadata( resource )
+		uuid = resource.uuid or 
+			raise ThingFish::ClientError,
+			"cannot store metadata for an unsaved resource."
+
+		uri = self.server_uri( 'simplemetadata' )
+		self.log.debug "Creating an update PUT request for resource %p" % [ uuid ]
+		request = Net::HTTP::Put.new( uri.path + '/' + uuid )
+
+		data = Marshal.dump( resource.metadata )
+		request.body = data
+		request['Content-Length'] = data.length
+		request['Content-Type'] = RUBY_MARSHALLED_MIMETYPE
+		request['Accept'] = ACCEPT_HEADER
+
+		self.send_request( request ) do |response|
+			response.error! unless response.success?
+		end
+
+		return resource
+	end
+	
 
 
 	### Delete the given +resource+ from the server. The +resource+ argument can be either
@@ -411,7 +442,7 @@ class ThingFish::Client
 		else
 			self.log.warn "Response body was %p instead of serialized Ruby or YAML" %
 				[ response['Content-Type'] ]
-			return body
+			return response.body
 		end
 
 	end
@@ -439,7 +470,7 @@ class ThingFish::Client
 		end
 	end
 	
-
+	
 	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
 	### object). The +limit+ specifies how many redirects will be followed before giving 
 	### up.

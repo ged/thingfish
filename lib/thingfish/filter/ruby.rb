@@ -109,6 +109,33 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	end
 	
 	
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [ 1, 8, 6 ],                 # Ruby version
+	###     'supports'  => [ [4,2] ],                   # Supported Marshal version/s
+	###     'rev'       => 460,                         # SVN rev of plugin
+	###     'accepts'   => ['x-ruby/marshalled-data'],  # Mimetypes the filter accepts from requests
+	###     'generates' => ['x-ruby/marshalled-data'],  # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		ruby_version = RUBY_VERSION.split('.').collect {|i| Integer(i) }
+		supported_marshal_version = [[
+			Marshal::MAJOR_VERSION,
+			Marshal::MINOR_VERSION,
+		  ]]
+		mimetypes = self.handled_types.collect {|accept| accept.to_s }
+		
+		return {
+			'version'   => ruby_version,
+			'supports'  => supported_marshal_version,
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => mimetypes,
+			'generates' => mimetypes,
+		  }
+	end
+	
+	
+	
 end # class ThingFish::YAMLFilter
 
 # vim: set nosta noet ts=4 sw=4:

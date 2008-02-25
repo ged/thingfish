@@ -54,7 +54,13 @@ class Mongrel::StatisticsFilter
 	
 	attr_reader( *STATS )
 
+
+	### Return the name of the plugin for introspection.
+	def plugin_name
+		"statistics"
+	end
 	
+
 	### Pass each stat to the supplied block in succession.
 	def each_stat
 		STATS.each do |statname|

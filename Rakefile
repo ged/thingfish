@@ -1,10 +1,10 @@
-#!rake
+#!rake -*- ruby -*-
 #
 # ThingFish rakefile
 #
 # Based on Ben Bleything's Rakefile for Linen (URL?)
 #
-# Copyright (c) 2007 LAIKA, Inc.
+# Copyright (c) 2007, 2008 LAIKA, Inc.
 #
 # Mistakes:
 #  * Michael Granger <mgranger@laika.com>
@@ -524,6 +524,17 @@ rescue LoadError => err
 		task :diff => :no_rcov
 	end
 	task :verify => :no_rcov
+end
+
+
+task :rcov_info => :coverage
+
+task :rcov_overlay do
+	rcov, eol = Marshal.load(File.read("coverage.info")).last[ENV["FILE"]], 1
+	puts rcov[:lines].zip(rcov[:coverage]).map { |line, coverage|
+		bol, eol = eol, eol + line.length
+		[bol, eol, "#ffcccc"] unless coverage
+	}.compact.inspect
 end
 
 

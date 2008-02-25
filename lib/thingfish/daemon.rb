@@ -166,6 +166,21 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	end
 	
 
+	### Returns a Hash of filter information of the form:
+	### {
+	###    '<filterclass>' => [<version info>]
+	### }
+	def filter_info
+		info = {}
+	
+		self.filters.each do |filter|
+			info[ filter.class.plugin_name ] = filter.info
+		end
+		
+		return info
+	end
+	
+
 	### Store the data from the uploaded entity +body+ in the filestore; 
 	### create/update any associated metadata.
 	def store_resource( body, body_metadata, uuid=nil )
@@ -211,13 +226,21 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	protected
 	#########
 
-	### Override Mongrel's handler-processing to incorporate filters, and our own 
-	### request and response objects.
-	def dispatch_to_handlers( client, handlers, mongrel_request, mongrel_response )
+	### Override Mongrel's handler-processing to wrap our own request and 
+	### response object around Mongrel's.
+	def dispatch( client, handlers, mongrel_request, mongrel_response )
 		request  = ThingFish::Request.new( mongrel_request, @config )
 		response = ThingFish::Response.new( mongrel_response )
 
-		begin
+		return self.dispatch_to_handlers( client, handlers, request, response )
+	end
+
+
+	### Send the request and response through the filters in request mode,
+	### run the appropriate handlers, and then send them back through the filters
+	### in response mode. Handle any ThingFish::RequestErrors and other exceptions
+	### with appropriate HTTP responses.
+	def dispatch_to_handlers( client, handlers, request, response )
 			# Let the filters manhandle the request
 			self.filter_request( request, response )
 
@@ -232,11 +255,11 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
 				unless response.is_handled?
 
-			# Check to be sure we're providing a response which is acceptable to
-			# the client
+		# Check to be sure we're providing a response which is acceptable to the client
 			unless response.body.nil? || ! response.status_is_successful?
 				unless response.content_type
-					self.log.warn "Response body set without a content type, using default."
+					self.log.warn "Response body set without a content type, using %p." %
+						[ DEFAULT_CONTENT_TYPE ]
 					response.content_type = DEFAULT_CONTENT_TYPE
 				end
 				self.log.debug "Checking for acceptable mimetype in response"
@@ -258,7 +281,6 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		rescue => err
 			self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
 		end
-	end
 	
 
 	### Filter and potentially modify the incoming request.
@@ -319,20 +341,22 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			self.log.debug( debugtrace )
 		end
 
+		self.log.debug "Preparing error response (%p)" % [ statuscode ]
 		response.reset
 		response.status = statuscode
 
 		# Build a pretty response if the client groks HTML
-		if request.accepts?( 'text/html' )
+		if request.accepts?( XHTML_MIMETYPE )
 			template = self.get_error_response_template( statuscode ) or
 				raise "Can't find an error template"
 			content = [ template.result( binding() ) ]
 			
 			response.data[:tagline] = 'Oh, crap!'
 			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
-			response.content_type = 'text/html'
+			response.content_type = XHTML_MIMETYPE
 
 			wrapper = self.get_erb_resource( 'template.rhtml' )
+			
 			response.body = wrapper.result( binding() )
 		else
 			response.content_type = 'text/plain'
@@ -391,8 +415,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		# Send the status line
 		status_line = STATUS_LINE_FORMAT %
 			[ response.status, HTTP::STATUS_NAME[ response.status ] ]
+		self.log.info "Response: %p" % [ status_line ]
 		response.write( status_line )
-		self.log.info "Response: #{status_line.chomp}"
 
 		# Send the headers
 		response.headers[:connection] = 'close'

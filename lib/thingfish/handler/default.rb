@@ -196,6 +196,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		response.body = {
 			'version'  => ThingFish::VERSION,
 			'handlers' => self.daemon.handler_info,
+			'filters' => self.daemon.filter_info,
 		}
 		response.status = HTTP::OK
 	end

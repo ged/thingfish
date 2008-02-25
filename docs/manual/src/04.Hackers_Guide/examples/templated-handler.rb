@@ -33,7 +33,7 @@ class TimeHandler < ThingFish::Handler
 		# response body to the resulting text.
 		response.body = template % timestring
 
-		response.content_type = 'text/html'
+		response.content_type = XHTML_MIMETYPE
 		response.status = HTTP::OK
 	end
 end

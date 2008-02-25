@@ -31,10 +31,10 @@ plugins:
         - inspect:
             uris: /inspect
             resource_dir: plugins/thingfish-inspecthandler/resources
-#        - status:
-#            uris: /status
-#            stat_uris: [/, /inspect, /upload]
-#            resource_dir: plugins/thingfish-statushandler/resources
+        - status:
+            uris: /status
+            stat_uris: [/, /inspect, /upload]
+            resource_dir: plugins/thingfish-statushandler/resources
         - formupload:
             uris: /upload
             resource_dir: plugins/thingfish-formuploadhandler/resources
@@ -52,7 +52,7 @@ plugins:
         - json
         - mp3
         - exif
-#        - image
+        - image
         - xml:
             usetidy: false
             tidypath: /opt/local/lib/libtidy.dylib

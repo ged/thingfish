@@ -197,7 +197,7 @@ namespace :svn do
 
 	desc "Update from Subversion"
 	task :update do
-		run 'svn', 'up'
+		run 'svn', 'up', '--ignore-externals'
 	end
 
 

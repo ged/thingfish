@@ -105,17 +105,17 @@ module ThingFish # :nodoc:
 	### Add logging to a ThingFish class
 	module Loggable
 
+		LEVEL = {
+			:debug => Logger::DEBUG,
+			:info  => Logger::INFO,
+			:warn  => Logger::WARN,
+			:error => Logger::ERROR,
+			:fatal => Logger::FATAL,
+		  }
+
 		### A logging proxy class that wraps calls to the logger into calls that include
 		### the name of the calling class.
 		class ClassNameProxy
-
-			LEVEL = {
-				:debug => Logger::DEBUG,
-				:info  => Logger::INFO,
-				:warn  => Logger::WARN,
-				:error => Logger::ERROR,
-				:fatal => Logger::FATAL,
-			}
 
 			### Create a new proxy for the given +klass+.
 			def initialize( klass )
@@ -341,8 +341,8 @@ module ThingFish # :nodoc:
 				syms.each do |sym|
 					define_method( sym ) {
 						raise NotImplementedError,
-							"%p does not provide an implementation of #%s" %
-							[ self.class, sym ]
+							"%p does not provide an implementation of #%s" % [ self.class, sym ],
+							caller(1)
 					}
 				end
 			end

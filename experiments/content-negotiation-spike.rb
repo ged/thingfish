@@ -28,7 +28,7 @@ BEGIN {
 
 Q_DEFAULT = "1.0"
 FILTERS = {
-	:html	=> 'text/html',
+	:html	=> XHTML_MIMETYPE,
 	:yaml	=> 'application/x-yaml',
 	:json	=> 'application/json',
 	:rdf	=> 'text/xml+rdf',

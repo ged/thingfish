@@ -95,7 +95,7 @@ class ThingFish::InspectHandler < ThingFish::Handler
 	### Make an HTML fragment for the body text/html response (HTML filter API).
 	def make_html_content( body, request, response )
 		content = self.get_erb_resource( 'inspect.rhtml' )
-		response.content_type = 'text/html'
+		response.content_type = XHTML_MIMETYPE
 		return content.result( binding() )
 	end
 	

@@ -147,6 +147,28 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	def handled_types
 		return HANDLED_TYPES
 	end
+
+
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [1, 0],      # Filter version
+	###     'supports'  => [],          # Unused
+	###     'rev'       => 460,         # SVN rev of plugin
+	###     'accepts'   => [''],        # Mimetypes the filter accepts from requests
+	###     'generates' => [...],       # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		generates = self.handled_types.map {|ap| ap.mediatype }
+
+		return {
+			'version'   => [1,0],
+			'supports'  => [],
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => [],
+			'generates' => generates,
+		  }
+	end
+
 	
 
 	#########

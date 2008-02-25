@@ -52,6 +52,9 @@ module ThingFish
 	# Error in a resource
 	class ResourceError < ThingFish::Error; end
 
+	# Error in an instance of the client
+	class ClientError < ThingFish::Error; end
+
 	# Something was wrong with a request
 	class RequestError < ThingFish::Error
 		include ThingFish::Constants

@@ -38,8 +38,8 @@ describe ThingFish::Client do
 	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
 	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )
 	TEST_SERVER_INFO = {
-		:version=>"0.1.0",
-		:handlers => {
+		'version'=>"0.1.0",
+		'handlers' => {
 			"default"=>["/"],
 			"staticcontent"=>["/metadata", "/", "/upload", "/search"],
 			"simplemetadata"=>["/metadata"],
@@ -147,15 +147,14 @@ describe ThingFish::Client do
 	end
 
 
-	### REST
-	describe " interacts with the server via its REST interface" do
+	describe " created with valid connection information" do
 		
 		before(:each) do
-			@mock_response = mock( "response object", :null_object => true )
-			@mock_request = mock( "request object", :null_object => true )
-			@mock_conn = mock( "HTTP connection", :null_object => true )
+			@response = mock( "response object", :null_object => true )
+			@request = mock( "request object", :null_object => true )
+			@conn = mock( "HTTP connection", :null_object => true )
 
-			Net::HTTP.stub!( :start ).and_yield( @mock_conn ).and_return( @mock_response )
+			Net::HTTP.stub!( :start ).and_yield( @conn ).and_return( @response )
 
 			@client = ThingFish::Client.new( TEST_SERVER )
 			# Set the server info hash so it doesn't try to fetch it
@@ -163,34 +162,34 @@ describe ThingFish::Client do
 		end
 
 
-		it "and builds uris for server endpoints based on the server info hash" do
+		it "builds uris for server endpoints based on the server info hash" do
 			@client.server_uri( 'simplemetadata' ).to_s.should == 
 				'http://' + TEST_SERVER + ':3474' + 
-				TEST_SERVER_INFO[:handlers]['simplemetadata'].first
+				TEST_SERVER_INFO['handlers']['simplemetadata'].first
 		end
 		
 
 		### Server info
-		it "to fetch server information via HTTP" do
+		it "can fetch server information via HTTP" do
 			# Unset the cached server info hash for this one test
 			@client.instance_variable_set( :@server_info, nil )
 
 			Net::HTTP::Get.should_receive( :new ).
 				with( '/' ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "GET" )
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
 
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
-			Net::HTTPSuccess.should_receive( :=== ).with( @mock_response).and_return( true )
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
+			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( true )
 
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
-			@mock_response.should_receive( :message ).and_return( "OK" )
-			@mock_response.should_receive( :[] ).
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			@response.should_receive( :message ).and_return( "OK" )
+			@response.should_receive( :[] ).
 				with( /content-type/i ).
 				and_return( RUBY_MARSHALLED_MIMETYPE )
-			@mock_response.should_receive( :body ).and_return( :serialized_server_info )
+			@response.should_receive( :body ).and_return( :serialized_server_info )
 
 			Marshal.should_receive( :load ).
 				with( :serialized_server_info ).
@@ -200,26 +199,26 @@ describe ThingFish::Client do
 		end
 		
 
-		it "to fetch server information (fallback YAML filter)" do
+		it "can fetch server information (fallback YAML filter)" do
 			# Unset the cached server info hash for this one test
 			@client.instance_variable_set( :@server_info, nil )
 
 			Net::HTTP::Get.should_receive( :new ).
 				with( '/' ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "GET" )
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
 
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
-			Net::HTTPSuccess.should_receive( :=== ).with( @mock_response).and_return( true )
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
+			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( true )
 
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
-			@mock_response.should_receive( :message ).and_return( "OK" )
-			@mock_response.should_receive( :[] ).
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			@response.should_receive( :message ).and_return( "OK" )
+			@response.should_receive( :[] ).
 				with( /content-type/i ).
 				and_return( 'text/x-yaml' )
-			@mock_response.should_receive( :body ).and_return( :serialized_server_info )
+			@response.should_receive( :body ).and_return( :serialized_server_info )
 
 			YAML.should_receive( :load ).
 				with( :serialized_server_info ).
@@ -229,29 +228,29 @@ describe ThingFish::Client do
 		end
 		
 
-		it "but caches already-fetched server info" do
+		it "caches already-fetched server info" do
 			Net::HTTP::Get.should_not_receive( :new )
 			@client.server_info.should == TEST_SERVER_INFO
 		end
 		
 
 		### Fetch resource data
-		it "to fetch a resource from the server by UUID (YAML response)" do
+		it "can fetch a resource from the server by UUID (YAML response)" do
 			Net::HTTP::Get.should_receive( :new ).
-				with( TEST_SERVER_INFO[:handlers]['simplemetadata'].first + '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "GET" )
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
 
-			Net::HTTPOK.should_receive( :=== ).with( @mock_response).and_return( true )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
 
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
-			@mock_response.should_receive( :message ).and_return( "OK" )
-			@mock_response.should_receive( :[] ).
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			@response.should_receive( :message ).and_return( "OK" )
+			@response.should_receive( :[] ).
 				with( /content-type/i ).
 				and_return( 'text/x-yaml' )
-			@mock_response.should_receive( :body ).and_return( :serialized_metadata )
+			@response.should_receive( :body ).and_return( :serialized_metadata )
 
 			YAML.should_receive( :load ).
 				with( :serialized_metadata ).
@@ -265,41 +264,41 @@ describe ThingFish::Client do
 		end
 
 
-		it "and returns nil when someone attempts to fetch a non-existant resource" do
+		it "returns nil when someone attempts to fetch a non-existant resource" do
 			Net::HTTP::Get.should_receive( :new ).
-				with( TEST_SERVER_INFO[:handlers]['simplemetadata'].first + '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "GET" )
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
 
-			Net::HTTPOK.should_receive( :=== ).with( @mock_response).and_return( false )
-			Net::HTTPSuccess.should_receive( :=== ).with( @mock_response).and_return( false )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( false )
+			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( false )
 
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
-			@mock_response.should_receive( :message ).and_return( "NOT FOUND" )
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
+			@response.should_receive( :message ).and_return( "NOT FOUND" )
 		
 			@client.fetch( TEST_UUID ).should be_nil
 		end
 
 		
 		### Fetch resource metadata
-		it "to fetch a resource from the server by UUID (marshalled ruby response)" do
+		it "can fetch a resource from the server by UUID (marshalled ruby response)" do
 			Net::HTTP::Get.should_receive( :new ).
-				with( TEST_SERVER_INFO[:handlers]['simplemetadata'].first + '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "GET" )
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_yield( @mock_response )
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
 
-			Net::HTTPOK.should_receive( :=== ).with( @mock_response).and_return( true )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
 
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
-			@mock_response.should_receive( :message ).and_return( "OK" )
-			@mock_response.should_receive( :[] ).
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			@response.should_receive( :message ).and_return( "OK" )
+			@response.should_receive( :[] ).
 				with( /content-type/i ).
 				and_return( RUBY_MARSHALLED_MIMETYPE )
-			@mock_response.should_receive( :body ).and_return( :serialized_metadata )
+			@response.should_receive( :body ).and_return( :serialized_metadata )
 
 			Marshal.should_receive( :load ).
 				with( :serialized_metadata ).
@@ -314,199 +313,230 @@ describe ThingFish::Client do
 
 
 		### #has? predicate method
-		it "and returns true when asked if it has a uuid that corresponds to a resource it has" do
+		it "returns true when asked if it has a uuid that corresponds to a resource it has" do
 			Net::HTTP::Head.should_receive( :new ).
-				with( TEST_SERVER_INFO[:handlers]['simplemetadata'].first + '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "HEAD" )
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "HEAD" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
+			@conn.should_receive( :request ).with( @request ).and_return( @response )
 
-			@mock_response.should_receive( :is_a? ).with( Net::HTTPSuccess ).and_return( true )
-			@mock_response.should_receive( :code ).at_least( :once ).and_return( HTTP::OK )
-			@mock_response.should_receive( :message ).and_return( "OK" )
+			@response.should_receive( :is_a? ).with( Net::HTTPSuccess ).and_return( true )
+			@response.should_receive( :code ).at_least( :once ).and_return( HTTP::OK )
+			@response.should_receive( :message ).and_return( "OK" )
 		
 			@client.has?( TEST_UUID ).should be_true
 		end
 	
 	
-		it "and returns false when asked if it has a uuid that corresponds to a resource " +
+		it "returns false when asked if it has a uuid that corresponds to a resource " +
 		   "the server doesn't have" do
 			Net::HTTP::Head.should_receive( :new ).
-				with( TEST_SERVER_INFO[:handlers]['simplemetadata'].first + '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "HEAD" )
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "HEAD" )
 
-			@mock_conn.should_receive( :request ).with( @mock_request ).and_return( @mock_response )
-			@mock_response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
-			@mock_response.should_receive( :message ).and_return( "NOT FOUND" )
+			@conn.should_receive( :request ).with( @request ).and_return( @response )
+			@response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
+			@response.should_receive( :message ).and_return( "NOT FOUND" )
 
 			@client.has?( TEST_UUID ).should be_false
 		end
 	
 	
 		### Storing resource data
-		it "to upload a file and return a new ThingFish::Resource object" do
+		it "can upload a file and return a new ThingFish::Resource object" do
 			resource = mock( "resource" )
 
-			ThingFish::Resource.should_receive( :new ).
-				with( :a_file, @client, an_instance_of(Hash) ).
+			ThingFish::Resource.should_receive( :new ).with( :a_file, @client ).
 				and_return( resource )
-			resource.should_receive( :uuid ).
-				and_return( nil )
+			resource.should_receive( :uuid ).and_return( nil )
 
-			Net::HTTP::Post.should_receive( :new ).
-				with( '/' ).
-				and_return( @mock_request )
-			@mock_request.stub!( :method ).and_return( "POST" )
+			Net::HTTP::Post.should_receive( :new ).with( '/' ).and_return( @request )
+			@request.stub!( :method ).and_return( "POST" )
 
-			resource.should_receive( :io ).
-				at_least( :once ).
-				and_return( :an_io_object )
-			@mock_request.should_receive( :body_stream= ).
-				at_least( :once ).
-			 	with( :an_io_object )
-			
-			resource.should_receive( :extent ).
-				at_least( :once ).
-				and_return( :number_of_bytes )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-length/i, :number_of_bytes )
-			
-			resource.should_receive( :format ).
-				at_least( :once ).
-				and_return( :a_mimetype )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-type/i, :a_mimetype )
-			
-			resource.should_receive( :title ).
-				at_least( :once ).
-				and_return( 'a title' )
-			@mock_request.should_receive( :[]= ).
+			resource.should_receive( :io ).at_least( :once ).and_return( :an_io_object )
+			resource.should_receive( :extent ).at_least( :once ).and_return( :number_of_bytes )
+			resource.should_receive( :format ).at_least( :once ).and_return( :a_mimetype )
+			resource.should_receive( :title ).at_least( :once ).and_return( 'a title' )
+
+			@request.should_receive( :body_stream= ).at_least( :once ).with( :an_io_object )
+			@request.should_receive( :[]= ).with( /content-length/i, :number_of_bytes )
+			@request.should_receive( :[]= ).with( /content-type/i, :a_mimetype )
+			@request.should_receive( :[]= ).
 			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
-		
-			@client.store( :a_file ).should == resource
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+
+			# Set the UUID from the response's Location header
+			@response.should_receive( :[] ).with( /location/i ).
+				and_return( 'http://thingfish.example.com/' + TEST_UUID )
+			resource.should_receive( :uuid= ).with( TEST_UUID )
+
+			# Merge response metadata
+			response_metadata = {
+				'description' => 'Bananas Goes to Military School',
+				'checksum'    => 'A checksum',
+			  }
+			resource_metadata = {
+				'description' => 'Bananas Goes To See Assemblage 23',
+				'author'      => 'Bananas',
+			  }
+			merged_metadata = response_metadata.merge(resource_metadata)
+			
+			resource.should_receive( :metadata ).and_return( resource_metadata )
+			@response.should_receive( :[] ).with( /content-type/i ).
+				and_return( RUBY_MARSHALLED_MIMETYPE )
+			@response.should_receive( :body ).
+				and_return( Marshal.dump(response_metadata) )
+			resource.should_receive( :metadata= ).with( merged_metadata )
+
+			@client.store_data( :a_file ).should == resource
 		end
 		
 		
-		it "to upload both file data and metadata if given a new ThingFish::Resource" do
+		it "can upload an unstored ThingFish::Resource" do
+			resource = mock( "resource" )
+			resource.should_receive( :is_a? ).with( ThingFish::Resource ).and_return( true )
+			resource.should_receive( :uuid ).and_return( nil )
+
+			Net::HTTP::Post.should_receive( :new ).with( '/' ).and_return( @request )
+			@request.stub!( :method ).and_return( "POST" )
+
+			resource.should_receive( :io ).at_least( :once ).and_return( :an_io_object )
+			resource.should_receive( :extent ).at_least( :once ).and_return( :number_of_bytes )
+			resource.should_receive( :format ).at_least( :once ).and_return( :a_mimetype )
+			resource.should_receive( :title ).at_least( :once ).and_return( 'a title' )
+
+			@request.should_receive( :body_stream= ).at_least( :once ).with( :an_io_object )
+			@request.should_receive( :[]= ).with( /content-length/i, :number_of_bytes )
+			@request.should_receive( :[]= ).with( /content-type/i, :a_mimetype )
+			@request.should_receive( :[]= ).
+			 	with( /content-disposition/i, /attachment;filename="a title"/i )
+		
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+
+			# Set the UUID from the response's Location header
+			@response.should_receive( :[] ).with( /location/i ).
+				and_return( 'http://thingfish.example.com/' + TEST_UUID )
+			resource.should_receive( :uuid= ).with( TEST_UUID )
+
+			# Merge response metadata
+			response_metadata = {
+				'description' => 'Bananas Goes to Military School',
+				'checksum'    => 'A checksum',
+			  }
+			resource_metadata = {
+				'description' => 'Bananas Goes To See Assemblage 23',
+				'author'      => 'Bananas',
+			  }
+			merged_metadata = response_metadata.merge(resource_metadata)
+			
+			resource.should_receive( :metadata ).and_return( resource_metadata )
+			@response.should_receive( :[] ).with( /content-type/i ).
+				and_return( RUBY_MARSHALLED_MIMETYPE )
+			@response.should_receive( :body ).
+				and_return( Marshal.dump(response_metadata) )
+			resource.should_receive( :metadata= ).with( merged_metadata )
+
+
+			@client.store_data( resource ).should == resource
+		end
+
+
+		it "raises an error when asked to store metadata for a resource that doesn't yet " +
+		   "have a UUID" do
 
 			resource = mock( "Mock Resource" )
-			resource.should_receive( :is_a? ).
-				with( ThingFish::Resource ).any_number_of_times.and_return( true )
-			resource.should_receive( :uuid ).
-				and_return( nil )
-
-			Net::HTTP::Post.should_receive( :new ).
-				with( '/' ).
-				and_return( @mock_request )
-			@mock_request.stub!( :method ).and_return( "POST" )
-
-			resource.should_receive( :io ).
-				at_least( :once ).
-				and_return( :an_io_object )
-			@mock_request.should_receive( :body_stream= ).
-				at_least( :once ).
-			 	with( :an_io_object )
+			resource.should_receive( :uuid ).and_return( nil )
 			
-			resource.should_receive( :extent ).
-				at_least( :once ).
-				and_return( :number_of_bytes )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-length/i, :number_of_bytes )
-			
-			resource.should_receive( :format ).
-				at_least( :once ).
-				and_return( :a_mimetype )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-type/i, :a_mimetype )
-			
-			resource.should_receive( :title ).
-				at_least( :once ).
-				and_return( 'a title' )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-disposition/i, /attachment;filename="a title"/i )
-		
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
-		
-			@client.store( resource ).should == resource
+			lambda {
+				@client.store_metadata( resource )
+			}.should raise_error( ThingFish::ClientError, /unsaved resource/i )
 		end
-	
+		
+
+		it "can update a resource's metadata on the server" do
+			resource_metadata = {
+				'description' => 'Bananas Goes To See Assemblage 23',
+				'author'      => 'Bananas',
+			  }
+
+			Net::HTTP::Put.should_receive( :new ).and_return( @request )
+			@request.stub!( :method ).and_return( 'PUT' )
+
+			resource = mock( "Mock Resource" )
+			resource.should_receive( :uuid ).and_return( TEST_UUID )
+			resource.should_receive( :metadata ).and_return( resource_metadata )
+			
+			@client.store_metadata( resource )
+		end
+		
 
 		### Updating
-		it "to update both file data and metadata if given a ThingFish::Resource that " +
-		   "already has a UUID" do
+		it "can update file data if given a ThingFish::Resource that already has a UUID" do
 			resource = mock( "Mock Resource" )
-			resource.should_receive( :is_a? ).
-				with( ThingFish::Resource ).
-				any_number_of_times().
+			resource.should_receive( :is_a? ).with( ThingFish::Resource ).any_number_of_times().
 				and_return( true )
-			resource.should_receive( :uuid ).
-				and_return( TEST_UUID )
+			resource.should_receive( :uuid ).and_return( TEST_UUID )
 
-			Net::HTTP::Put.should_receive( :new ).
-				with( '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "POST" )
-
-			resource.should_receive( :io ).
-				at_least( :once ).
-				and_return( :an_io_object )
-			@mock_request.should_receive( :body_stream= ).
-				at_least( :once ).
-			 	with( :an_io_object )
+			Net::HTTP::Put.should_receive( :new ).with( '/' + TEST_UUID ).and_return( @request )
+			@request.should_receive( :method ).and_return( "POST" )
 
 			# Branch: no extent
-			resource.should_receive( :extent ).
-				at_least( :once ).
-				and_return( :number_of_bytes )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-length/i, :number_of_bytes )
-			
 			# Branch: no mimetype
-			resource.should_receive( :format ).
-				at_least( :once ).
-				and_return( :a_mimetype )
-			@mock_request.should_receive( :[]= ).
-			 	with( /content-type/i, :a_mimetype )
-			
 			# Branch: no title
-			resource.should_receive( :title ).
-				at_least( :once ).
-				and_return( 'a title' )
-			@mock_request.should_receive( :[]= ).
+			resource.should_receive( :io ).at_least( :once ).and_return( :an_io_object )
+			resource.should_receive( :extent ).at_least( :once ).and_return( :number_of_bytes )
+			resource.should_receive( :format ).at_least( :once ).and_return( :a_mimetype )
+			resource.should_receive( :title ).at_least( :once ).and_return( 'a title' )
+
+			@request.should_receive( :body_stream= ).at_least( :once ).with( :an_io_object )
+			@request.should_receive( :[]= ).with( /content-length/i, :number_of_bytes )
+			@request.should_receive( :[]= ).with( /content-type/i, :a_mimetype )
+			@request.should_receive( :[]= ).
 			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
 		
-			@client.store( resource ).should == resource
+			# Merge response metadata
+			response_metadata = {
+				'description' => 'A heartwarming tale of two hams and their adventures together',
+				'lang'    => 'en-US',
+			  }
+			resource_metadata = {
+				'description' => 'Ham salad, reimagined',
+				'author'      => 'Napoleon the Chimp',
+			  }
+			merged_metadata = response_metadata.merge(resource_metadata)
+			
+			resource.should_receive( :metadata ).and_return( resource_metadata )
+			@response.should_receive( :[] ).with( /content-type/i ).
+				and_return( RUBY_MARSHALLED_MIMETYPE )
+			@response.should_receive( :body ).
+				and_return( Marshal.dump(response_metadata) )
+			resource.should_receive( :metadata= ).with( merged_metadata )
+
+			@client.store_data( resource ).should == resource
 		end
 
 
 		### Deleting
-		it "to delete resources from the server by its UUID" do
+		it "can delete resources from the server by its UUID" do
 			Net::HTTP::Delete.should_receive( :new ).
 				with( '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "DELETE" )
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "DELETE" )
 
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
 		
 			@client.delete( TEST_UUID ).should be_true()
 		end
 
 
-		it "to delete resources from the server via a ThingFish::Resource" do
+		it "can delete resources from the server via a ThingFish::Resource" do
 			resource = mock( "Mock Resource" )
 			resource.should_receive( :is_a? ).
 				with( ThingFish::Resource ).
@@ -517,18 +547,18 @@ describe ThingFish::Client do
 
 			Net::HTTP::Delete.should_receive( :new ).
 				with( '/' + TEST_UUID ).
-				and_return( @mock_request )
-			@mock_request.should_receive( :method ).and_return( "DELETE" )
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "DELETE" )
 
-			@mock_conn.should_receive( :request ).
-				with( @mock_request ).
-				and_yield( @mock_response )
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
 		
 			@client.delete( resource ).should be_true()
 		end
 
 
-		it "to find resources by their metadata attributes"
+		it "can find resources by their metadata attributes"
 
 	end # REST API
 

@@ -31,7 +31,8 @@ require 'ostruct'
 # 
 # 
 class ThingFish::CommandLineClient
-	include ThingFish::Constants
+	include ThingFish::Constants,
+		ThingFish::Loggable
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -102,9 +103,13 @@ class ThingFish::CommandLineClient
 			end
 		end
 
-		oparser.parse!
+		remaining_args = oparser.parse( argv )
+		if remaining_args.empty?
+			$stderr.puts( oparser )
+			exit( 64 ) # EX_USAGE
+		end
 
-		return opts
+		return opts, *remaining_args
 	end
 	
 	
@@ -133,35 +138,40 @@ class ThingFish::CommandLineClient
 
 	### Main logic
 	def main( verb, *args )
+		self.log.debug "Client requested '%s' with arguments: %p" % [ verb, args ]
 	
-		until args.empty?
-			case verb.downcase
-			when 'upload', 'post'
-				file = args.shift
-				do_upload( file )
-		
-			when 'update', 'put'
+		case verb.downcase
+		when 'upload', 'post'
+			do_upload( args.shift ) until args.empty?
+	
+		when 'update', 'put'
+			until args.empty?
 				uuid = args.shift or raise "no UUID specified for update"
 				file = args.shift
 				do_update( uuid, file )
-		
-			when 'download', 'get', 'fetch'
+			end
+	
+		when 'download', 'get', 'fetch'
+			until args.empty?
 				uuid = args.shift or raise "no UUID specified for fetch"
 				file = args.shift
 				do_download( uuid, file )
-		
-			when 'check', 'head'
-				uuid = args.shift or raise "no UUID specified for check"
-				do_check( uuid )
-		
-			when 'info'
-				self.log.debug "Fetching server info"
-				info = @client.server_info or raise "couldn't fetch server info"
-				$stderr.puts "%s is running ThingFish %s" % [ @client.uri, info['version'] ]
-		
-			else
-				raise "Don't know how to '#{verb}' yet."
 			end
+	
+		when 'check', 'head'
+			do_check( args.shift ) until args.empty?
+	
+		when 'info'
+			self.log.debug "Fetching server info"
+			info = @client.server_info or raise "couldn't fetch server info"
+			$stdout.puts "%s is a version %s server." % [ @client.uri, info['version'] ],
+				"Handlers: ",
+				"  %p" % [ info['handlers'].keys.sort ],
+				"Filters: ",
+				"  %p" % [ info['filters'].keys.sort ]
+	
+		else
+			raise "Don't know how to '#{verb}' yet."
 		end
 	end
 
@@ -176,7 +186,7 @@ class ThingFish::CommandLineClient
 	def do_upload( file=nil )
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh )
-		resource.format = self.get_mimetype( file, fh )
+		resource.format = self.get_mimetype( fh )
 
 		if file
 			resource.title  = File.basename( file )
@@ -241,6 +251,7 @@ class ThingFish::CommandLineClient
 	### +nil+, returns the IO for STDIN instead.
 	def get_reader_io( filename=nil )
 		return $stdin unless filename
+		return filename if filename.is_a?( File )
 		return File.open( filename, File::RDONLY )
 	end
 
@@ -312,6 +323,7 @@ class ThingFish::CommandLineClient
 			return analyzer.buffer( data )
 		end
 	end
+
 end
 
 
@@ -319,7 +331,9 @@ if __FILE__ == $0
 	begin
 		opts, verb, *args = ThingFish::CommandLineClient.parse_options( ARGV )
 		client = ThingFish::CommandLineClient.new( opts )
+
 		client.main( verb, *args )
+
 	rescue => err
 		$stderr.puts "ERROR: #{err.message}"
 		$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG

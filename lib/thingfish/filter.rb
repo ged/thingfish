@@ -63,6 +63,18 @@ class ThingFish::Filter
 	end
 
 
+	### Return the normalized name of the subclass, which is used to refer to
+	### the instance by name.
+	def self::plugin_name
+		return self.name.
+			sub( /ThingFish::/, '' ).
+			sub( /filter$/i, '' ).
+			gsub( /\W+/, '-' ).
+			downcase
+	end
+	
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -77,7 +89,7 @@ class ThingFish::Filter
 	public
 	######
 
-	virtual :handle_request, :handle_response
+	virtual :handle_request, :handle_response, :info
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
@@ -93,8 +105,7 @@ class ThingFish::Filter
 		return self.handled_types.find {|type| type =~ content_type } ? true : false
 	end
 	alias_method :accept?, :accepts?
-	
-	
+
 
 end # class ThingFish::Filter
 

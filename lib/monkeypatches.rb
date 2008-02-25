@@ -115,7 +115,7 @@ class Mongrel::HttpServer
 						# request is good so far, continue processing the response
 						response = HttpResponse.new(client)
 
-						dispatch_to_handlers(client, handlers, request, response)
+						dispatch(client, handlers, request, response)
 
 						# And finally, if nobody closed the response off, we finalize it.
 						unless response.done or client.closed? 
@@ -158,7 +158,7 @@ class Mongrel::HttpServer
 
 	# Process each handler in registered order until we run out or one finalizes the 
 	# response.
-	def dispatch_to_handlers(client, handlers, request, response)
+	def dispatch(client, handlers, request, response)
 		handlers.each do |handler|
 			handler.process(request, response)
 			return if response.done or client.closed?

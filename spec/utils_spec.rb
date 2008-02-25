@@ -25,17 +25,26 @@ rescue LoadError
 end
 
 
-include ThingFish::TestHelpers
-
-
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::Table do
+	include ThingFish::TestHelpers
+	
+	
+	before( :all ) do
+		setup_logging()
+	end
+	
 	before( :each ) do
 		@table = ThingFish::Table.new
 	end
+	
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+	
 	
 
 	it "allows setting/fetching case-insensitively" do

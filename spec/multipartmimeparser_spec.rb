@@ -14,7 +14,9 @@ begin
 	require 'pathname'
 	require 'logger'
 	require 'spec/runner'
+	require 'spec/lib/helpers'
 	require 'stringio'
+	require 'thingfish'
 	require 'thingfish/constants'
 	require 'thingfish/multipartmimeparser'
 rescue LoadError
@@ -46,16 +48,21 @@ end
 
 
 describe ThingFish::MultipartMimeParser do
+	include ThingFish::TestHelpers
 
 	before( :all ) do
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 	
-
 	before( :each ) do
 		@parser = ThingFish::MultipartMimeParser.new
 	end
 
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+	
 
 	it "should error if the initial boundary can't be found" do
 		socket = load_form( "testform_bad.form" )
@@ -110,7 +117,7 @@ describe ThingFish::MultipartMimeParser do
 		
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
-		meta[:extent].should == 482
+		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
 		
 		file.open
@@ -131,7 +138,7 @@ describe ThingFish::MultipartMimeParser do
 		
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
-		meta[:extent].should == 482
+		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
 		
 		file.open
@@ -161,7 +168,7 @@ describe ThingFish::MultipartMimeParser do
 		
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
-		meta[:extent].should == 482
+		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
 		
 		file.open
@@ -184,15 +191,13 @@ describe ThingFish::MultipartMimeParser do
 		end
 		
 		titles = files.values.collect {|v| v[:title]}
-		titles.should include('Photo 3.jpg')
-		titles.should include('grass2.jpg')
+		titles.should include('Photo 3.jpg', 'grass2.jpg')
 
 		types = files.values.collect {|v| v[:format]}
 		types.should == ['image/jpeg', 'image/jpeg']
 
 		sizes = files.values.collect {|v| v[:extent]}
-		sizes.should include(439259)
-		sizes.should include(82145)
+		sizes.should include(439257, 82143)
 	end
 	
 end

@@ -227,6 +227,7 @@ class ThingFish::MultipartMimeParser
 			if scanner.scan_until( state.boundary_pat )
 				self.log.debug "Found the end of the file"
 				leavings = scanner.pre_match
+				leavings.slice!( -2, 2 ) # trailing CRLF
 				tmpfile.write( leavings )
 				size += leavings.length
 				tmpfile.close

@@ -47,7 +47,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 
 	# SVN Revision
-	SVNRev = %q$Rev: 331 $
+	SVNRev = %q$Rev$
 
 	# SVN Id
 	SVNId = %q$Id$

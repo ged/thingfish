@@ -47,6 +47,8 @@ end
 ### Run the specified command +cmd+ with system(), failing if the execution
 ### fails.
 def run( *cmd )
+	cmd.flatten!
+
 	log( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
 	if $dryrun
 		$deferr.puts "(dry run mode)"
@@ -232,4 +234,10 @@ def rspec_files
 	end
 end
 
+
+### Extract all the non Rake-target arguments from ARGV and return them.
+def get_target_args
+	args = ARGV.reject {|arg| Rake::Task.task_defined?(arg) }
+	return args
+end
 

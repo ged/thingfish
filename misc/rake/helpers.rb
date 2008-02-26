@@ -5,6 +5,7 @@
 require 'pathname'
 require 'readline'
 
+
 # Set some ANSI escape code constants (Shamelessly stolen from Perl's
 # Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
 ANSI_ATTRIBUTES = {
@@ -29,6 +30,10 @@ ANSI_ATTRIBUTES = {
 }
 
 
+CLEAR_TO_EOL       = "\e[K"
+CLEAR_CURRENT_LINE = "\e[2K"
+
+
 ### Output a logging message
 def log( *msg )
 	output = colorize( msg.flatten.join(' '), 'cyan' )
@@ -36,7 +41,7 @@ def log( *msg )
 end
 
 
-### Output a logging message
+### Output a logging message if tracing is on
 def trace( *msg )
 	return unless $trace
 	output = colorize( msg.flatten.join(' '), 'yellow' )
@@ -56,6 +61,31 @@ def run( *cmd )
 		system( *cmd )
 		unless $?.success?
 			fail "Command failed: [%s]" % [cmd.join(' ')]
+		end
+	end
+end
+
+
+### Open a pipe to a process running the given +cmd+ and call the given block with it.
+def pipeto( *cmd )
+	$DEBUG = true
+
+	cmd.flatten!
+	log( "Opening a pipe to: ", cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+	if $dryrun
+		$deferr.puts "(dry run mode)"
+	else
+		open( '|-', 'w+' ) do |io|
+		
+			# Parent
+			if io
+				yield( io )
+
+			# Child
+			else
+				exec( *cmd )
+				fail "Command failed: [%s]" % [cmd.join(' ')]
+			end
 		end
 	end
 end
@@ -125,21 +155,36 @@ def ansi_code( *attributes )
 end
 
 
-### Colorize the given +string+ with the specified +attributes+ and return it, handling line-endings, etc.
-def colorize( string, *attributes )
+### Colorize the given +string+ with the specified +attributes+ and return it, handling 
+### line-endings, color reset, etc.
+def colorize( *args )
+	string = ''
+	
+	if block_given?
+		string = yield
+	else
+		string = args.shift
+	end
+	
 	ending = string[/(\s)$/] || ''
 	string = string.rstrip
-	return ansi_code( attributes.flatten ) + string + ansi_code( 'reset' ) + ending
+
+	return ansi_code( args.flatten ) + string + ansi_code( 'reset' ) + ending
 end
 
 
 ### Output the specified <tt>msg</tt> as an ANSI-colored error message
 ### (white on red).
-def error_message( msg )
-	$deferr.puts ansi_code( 'bold', 'white', 'on_red' ) +
-		msg.strip + ansi_code( 'reset' ) + "\n\n"
+def error_message( msg, details='' )
+	$deferr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + details
 end
 alias :error :error_message
+
+
+### Highlight and embed a prompt control character in the given +string+ and return it.
+def make_prompt_string( string )
+	return CLEAR_CURRENT_LINE + colorize( 'bold', 'green' ) { string + ' ' }
+end
 
 
 ### Output the specified <tt>prompt_string</tt> as a prompt (in green) and
@@ -152,14 +197,14 @@ def prompt( prompt_string, failure_msg="Try again." ) # :yields: response
 	response = nil
 
 	begin
-		response = Readline.readline( ansi_code('bold', 'green') +
-			"#{prompt_string} " + ansi_code('reset') ) || ''
+		prompt = make_prompt_string( prompt_string )
+		response = Readline.readline( prompt ) || ''
 		response.strip!
 		if block_given? && ! yield( response ) 
 			error_message( failure_msg + "\n\n" )
 			response = nil
 		end
-	end until response
+	end while response.nil?
 
 	return response
 end
@@ -180,7 +225,7 @@ def prompt_with_default( prompt_string, default, failure_msg="Try again." )
 			error_message( failure_msg + "\n\n" )
 			response = nil
 		end
-	end until response
+	end while response.nil?
 
 	return response
 end
@@ -195,6 +240,7 @@ def ask_for_confirmation( description )
 	answer = prompt_with_default( "Continue?", 'n' ) do |input|
 		input =~ /^[yn]/i
 	end
+
 	case answer
 	when /^y/i
 		yield
@@ -240,4 +286,6 @@ def get_target_args
 	args = ARGV.reject {|arg| Rake::Task.task_defined?(arg) }
 	return args
 end
+
+
 

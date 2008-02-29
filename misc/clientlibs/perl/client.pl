@@ -35,6 +35,7 @@ usage() unless scalar @ARGV;
 
 my $tf = ThingFish::Client->new;
 do {
+	$url =~ s|^https?://||i;
 	my ( $host, $port ) = split ':', $url;
 	usage() unless $host && $port;
 	$tf->host( $host );

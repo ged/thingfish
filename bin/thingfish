@@ -119,13 +119,15 @@ class ThingFish::CommandLineClient
 	
 	### Create a new ThingFish::CommandLineClient
 	def initialize( options )
-		uri = URI.parse( "http://%s:%d/" % [options.host, options.port] )
+		@options = options
+		
+		uri = URI.parse( "http://%s:%d/" % [@options.host, @options.port] )
 		@client = ThingFish::Client.new( uri )
 		
-		if options.debugmode
+		if @options.debugmode
 			ThingFish.reset_logger
 			ThingFish.logger.level = Logger::DEBUG
-		elsif options.verbosemode
+		elsif @options.verbosemode
 			ThingFish.reset_logger
 			ThingFish.logger.level = Logger::INFO
 		end
@@ -162,13 +164,7 @@ class ThingFish::CommandLineClient
 			do_check( args.shift ) until args.empty?
 	
 		when 'info'
-			self.log.debug "Fetching server info"
-			info = @client.server_info or raise "couldn't fetch server info"
-			$stdout.puts "%s is a version %s server." % [ @client.uri, info['version'] ],
-				"Handlers: ",
-				"  %p" % [ info['handlers'].keys.sort ],
-				"Filters: ",
-				"  %p" % [ info['filters'].keys.sort ]
+			display_server_info()
 	
 		else
 			raise "Don't know how to '#{verb}' yet."
@@ -180,6 +176,43 @@ class ThingFish::CommandLineClient
 	protected
 	#########
 
+
+	### Fetch the server info hash from the server and display it.
+	def display_server_info
+		self.log.debug "Fetching server info"
+		info = @client.server_info or raise "couldn't fetch server info"
+		
+		handler_info = []
+		filter_info  = []
+		
+		if @options.verbosemode
+			max_length = info['handlers'].keys.max {|a,b| a.length <=> b.length }.length
+			self.log.debug "Max length is: %d" % [max_length]
+			info['handlers'].each do |name, hinfo|
+				handler_info << "  %*s -> [ %s ]" % [ max_length, name, hinfo.join(', ') ]
+			end
+
+			info['filters'].each do |name, finfo|
+				filter_info << "  %s v%s (rev %d)" % [
+					name,
+					finfo['version'].join('.'),
+					finfo['rev']
+				  ]
+			end
+			
+		else
+			handler_info << "  %p" % [ info['handlers'].keys.sort ]
+			filter_info << "  %p" % [ info['filters'].keys.sort ]
+		end
+
+		$stdout.puts "%s is a version %s server." % [ @client.uri, info['version'] ],
+			"Handlers: ",
+			handler_info,
+			"Filters: ",
+			filter_info
+		
+	end
+	
 
 	### Upload the contents of the specified +file+ to the ThingFish at the given +uri+. 
 	### If +file+ is nil, the content will be read from STDIN instead.

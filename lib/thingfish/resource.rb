@@ -106,7 +106,7 @@ class ThingFish::Resource
 		metadata, client = client, nil if client.is_a?( Hash )
 		metadata, uuid = uuid, nil if uuid.is_a?( Hash )
 
-		@io     = normalize_io_obj( datasource )
+		@io     = self.normalize_io_obj( datasource )
 		@client = client
 		@uuid   = uuid
 
@@ -122,32 +122,55 @@ class ThingFish::Resource
 	public
 	######
 
-	# Metadata hash
-	attr_accessor :metadata
-
 	# The ThingFish::Client the resource is stored in (or will be stored in when it
 	# is saved)
 	attr_accessor :client
-
-	# The object containing the resource data
-	attr_accessor :io
 
 	# The resource's UUID (if it has one)
 	attr_accessor :uuid
 
 
-	### Read the data for the resource into a String and return it.
-	def data
-		rval = nil
+	### Return an IO-ish object that contains the resource data.
+	def io
+		@io ||= self.load_data
+		return @io
+	end
 
-		if @io
-			rval = @io.read
-			@io.rewind
-		end
-		
-		return rval
+
+	### Set the IO-ish object that contains the resource's data.
+	def io=( newio )
+		@io = self.normalize_io_obj( newio )
+	end
+
+
+	### Returns the resource's metadata as a Hash
+	def metadata
+		@metadata ||= self.load_metadata
+		return @metadata
 	end
 	
+	
+	### Set the Hash of metadata associated with the Resource.
+	def metadata=( newhash )
+		@metadata = newhash.to_h
+	end
+	
+
+	### Read the data from the resource's #io and return it as a String.
+	def data
+		ioobj = self.io or return nil
+		return ioobj.read
+	end
+
+	
+	### Write the specified String of +newdata+ to the resource's #io, replacing
+	### what was there before.
+	def data=( newdata )
+		@io ||= StringIO.new
+		@io.truncate( 0 )
+		@io.write( newdata )
+	end
+
 	
 	### Write the data from the resource to the given +io+ object.
 	def export( io )
@@ -164,16 +187,38 @@ class ThingFish::Resource
 	
 	
 	### Save the resource to the server using the resource's client. If no client is
-	### set for this resource, this method raises a RuntimeError.
+	### set for this resource, this method raises a ThingFish::ResourceError.
 	def save
+		self.save_data && self.save_metadata
+	end
+
+
+	### Save the resource's data via its associated ThingFish::Client. This will
+	### raise a ThingFish::ResourceError if there is no associated client.
+	def save_data
 		raise ThingFish::ResourceError, "no client set" unless @client
-		@client.store( self )
+		@client.store_data( @io )
+	end
+	
+	
+	### Save the resource's metadata via its associated ThingFish::Client. This
+	### will raise a ThingFish::ResourceError if there is no associated client.
+	def save_metadata
+		raise ThingFish::ResourceError, "no client set" unless @client
+		@client.store_metadata( self.metadata )
+	end
+	
+	
+	### Revert the resource's data and metadata to the versions stored on the server.
+	def revert
+		@metadata = nil
+		@io = nil
 	end
 	
 	
 	### Override Kernel#format to return the 'format' metadata key instead.
 	def format
-		return @metadata[ :format ]
+		return self.metadata[ :format ]
 	end
 
 
@@ -189,30 +234,46 @@ class ThingFish::Resource
 	protected
 	#########
 
+	### Load the resource's data via the associated client and return it. If 
+	### the receiver doesn't have both an associated client and a UUID, returns nil.
+	def load_data
+		return nil unless @client && @uuid
+		return @client.fetch_data( @uuid )
+	end
+
+
+	### Load the resource's metadata via the associated client and return it. If
+	### the receiver doesn't have both an associated client and a UUID, returns
+	### an empty Hash.
+	def load_metadata
+		return {} unless @client && @uuid
+		return @client.fetch_metadata( @uuid )
+	end
+
+
 	### Proxy method for calling methods that correspond to keys.
 	def method_missing( sym, val=nil, *args )
 		case sym.to_s
 		when /^(?:has_)(\w+)\?$/
 			propname = $1.to_sym
-			return @metadata.key?( propname )
+			return self.metadata.key?( propname )
 
 		when /^(\w+)=$/
 			propname = $1.to_sym
-			return @metadata[ propname ] = val
+			return self.metadata[ propname ] = val
 			
 		else
-			return @metadata[ sym ]
+			return self.metadata[ sym ]
 		end
 	end
 	
-
 
 	### Set the datasource for the object to +sourceobj+, which can be either an
 	### IO object (in which case it's used directly), or the resource data in a 
 	### String, in which case the datasource will be set to a StringIO containing
 	### the data.
 	def normalize_io_obj( sourceobj )
-		return nil if sourceobj.nil? || (sourceobj.is_a?(String) && sourceobj.empty?)
+		return nil if sourceobj.nil?
 		return sourceobj if sourceobj.respond_to?( :read )
 		return StringIO.new( sourceobj )
 	end

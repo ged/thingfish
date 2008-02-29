@@ -23,7 +23,7 @@
 #   resource = client.store( File.open("mahlonblob.dxf"), :format => 'image/x-dxf' )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
 #   
-#   # Set some more metadata (method style):    #TODO#
+#   # Set some more metadata (method style):
 #   resource.owner = 'mahlon'
 #   resource.description = "3D model used to test the new All Open Source pipeline"
 #   # ...or hash style:
@@ -207,12 +207,7 @@ class ThingFish::Client
 			request['Accept'] = ACCEPT_HEADER
 
 			send_request( request ) do |response|
-				case response
-				when Net::HTTPSuccess
-					@server_info = self.extract_response_body( response )
-				else
-					response.error!
-				end
+				@server_info = self.extract_response_body( response )
 			end
 			
 			self.log.debug "Server info is: %p" % [ @server_info ]
@@ -242,7 +237,16 @@ class ThingFish::Client
 
 	### Fetch the resource with the given +uuid+ as a ThingFish::Resource object.
 	def fetch( uuid )
-		resource = nil
+		metadata = self.fetch_metadata( uuid ) or return nil
+		return ThingFish::Resource.new( nil, self, uuid, metadata )
+	end
+
+
+	### Fetch the metadata for the resource identified by the given +uuid+ and
+	### return it as a Hash.
+	def fetch_metadata( uuid )
+		metadata = nil
+
 		fetchuri = self.server_uri( :simplemetadata )
 		fetchuri.path += "/#{uuid}"
 
@@ -251,23 +255,12 @@ class ThingFish::Client
 		request['Accept'] = ACCEPT_HEADER
 			
 		send_request( request ) do |response|
-			case response
-			when Net::HTTPOK
-				self.log.debug "Creating a ThingFish::Resource from %p" % [response]
-				
-				resource = self.create_resource_for_response( uuid, response )
-
-			when Net::HTTPSuccess
-				raise ThingFish::ClientError,
-					"Unexpected %d response to %s" % [ response.status, request.to_s ]
-
-			else
-				response.error!
-			end
+			self.log.debug "Creating a ThingFish::Resource from %p" % [response]
+			metadata = self.extract_response_body( response )
 		end
 
-		self.log.debug { "Returning resource: %p" % [resource] }
-		return resource
+		self.log.debug { "Returning resource: %p" % [metadata] }
+		return metadata
 	end
 
 
@@ -281,19 +274,8 @@ class ThingFish::Client
 		request = Net::HTTP::Get.new( fetchuri.path )
 		request['Accept'] = '*/*'
 		
-		io = nil
-		send_request( request ) do |response|
-			case response
-			when Net::HTTPOK
-				io = self.create_io_from_response( uuid, response )
-
-			when Net::HTTPSuccess
-				raise ThingFish::ClientError,
-					"Unexpected %d response to %s" % [ response.status, request.to_s ]
-
-			else
-				response.error!
-			end
+		io = send_request( request ) do |response|
+			self.create_io_from_response( uuid, response )
 		end
 
 		self.log.debug { "Returning IO: %p" % [io] }
@@ -354,7 +336,6 @@ class ThingFish::Client
 		request['Accept'] = ACCEPT_HEADER
 
 		self.send_request( request ) do |response|
-			response.error! unless response.is_a?( Net::HTTPSuccess )
 
 			# Set the UUID if it wasn't already and merge metadata returned in the response 
 			# without clobbering any existing values
@@ -386,6 +367,9 @@ class ThingFish::Client
 
 		self.send_request( request ) do |response|
 			response.error! unless response.success?
+			metadata = self.extract_response_body( response ) or
+				raise ThingFish::ClientError, "no body in the update response"
+			resource.metadata = metadata
 		end
 
 		return resource
@@ -393,16 +377,13 @@ class ThingFish::Client
 	
 
 
-	### Delete the given +resource+ from the server. The +resource+ argument can be either
-	### a ThingFish::Resource or a UUID.
-	def delete( resource )
-		uuid = nil
-		if resource.is_a?( ThingFish::Resource )
-			uuid = resource.uuid or return nil
-		else
-			uuid = UUID.parse( resource )
-		end
-		
+	### Delete the resource that corresponds to a given uuid on the server. The
+	### +argument+ can be either a UUID string or an object that
+	### responds_to? #uuid.
+	def delete( argument )
+		argument = argument.uuid if argument.respond_to?( :uuid )
+		uuid = UUID.parse( argument )
+
 		uri = self.server_uri( :default )
 		request = Net::HTTP::Delete.new( uri.path + "#{uuid}" )
 		
@@ -413,19 +394,30 @@ class ThingFish::Client
 		return true
 	end
 
-	
 
+	### Search for resources based on the +criteria+ hash, which should consist
+	### of metadata keys and the desired matching values.
+	def find( criteria={} )
+		uri = self.server_uri( :simplesearch )
+		query_args = make_query_args( criteria )
+		request = Net::HTTP::Get.new( uri.path + query_args )
+		resources = []
+		
+		send_request( request ) do |response|
+			response.error! unless response.is_a?( Net::HTTPSuccess )
+			uuids = self.extract_response_body( response )
+			uuids.each do |uuid|
+				resources << ThingFish::Resource.new( nil, self, uuid )
+			end
+		end
+		
+		return resources
+	end
+	
+	
 	#########
 	protected
 	#########
-
-	### Extract the necessary values from the specified HTTP +response+ (a Net::HTTPResponse) 
-	### as a ThingFish::Resource associated with the given +uuid+ and return it.
-	def create_resource_for_response( uuid, response )
-		metadata = self.extract_response_body( response )
-		return ThingFish::Resource.new( nil, self, uuid, metadata )
-	end
-
 
 	### Extract the serialized object in the given +response+'s entity body and return it.
 	def extract_response_body( response )
@@ -474,19 +466,44 @@ class ThingFish::Client
 	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
 	### object). The +limit+ specifies how many redirects will be followed before giving 
 	### up.
-	def send_request( req, limit=10, &block )
+	def send_request( req, limit=10 )
 		req['User-Agent'] = USER_AGENT_HEADER
 
 		self.log.debug "Request: " + dump_request_object( req )
 		
-		response = Net::HTTP.start( uri.host, uri.port ) do |conn|
-			conn.request( req, &block )
+		rval = Net::HTTP.start( uri.host, uri.port ) do |conn|
+			conn.request( req ) do |response|
+				return response unless block_given?
+				
+				self.log.debug "Response: " + dump_response_object( response )
+
+				case response
+				when Net::HTTPOK
+					rval = yield( response )
+
+				when Net::HTTPSuccess
+					raise ThingFish::ClientError,
+						"Unexpected %d response to %s" % [ response.status, req.to_s ]
+
+				else
+					response.error!
+				end
+			end
 		end
 	
-		self.log.debug "Response: " + dump_response_object( response )
-		return response
+		return rval
 	end
 
+
+	### Given a +hash+, build and return a query argument string.
+	def make_query_args( hash )
+		query_args = hash.collect do |k,v|
+			"%s=%s" % [ URI.escape(k.to_s), URI.escape(v.to_s) ]
+		end
+		
+		return '?' + query_args.sort.join(';')
+	end
+	
 
 	### Return the request object as a string suitable for debugging
 	def dump_request_object( request )

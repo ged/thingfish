@@ -52,7 +52,7 @@ plugins:
         - json
         - mp3
         - exif
-        - image
+#        - image
         - xml:
             usetidy: false
             tidypath: /opt/local/lib/libtidy.dylib

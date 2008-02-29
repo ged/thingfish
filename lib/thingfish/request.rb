@@ -296,6 +296,7 @@ class ThingFish::Request
 	### next filter in the chain.
 	def rewind_bodies
 		self.entity_bodies.keys.each do |body_io|
+			body_io.open if body_io.closed?
 			body_io.rewind
 		end
 	end

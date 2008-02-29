@@ -34,6 +34,7 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Client do
+	include ThingFish::TestHelpers
 
 	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
 	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )
@@ -51,14 +52,11 @@ describe ThingFish::Client do
 
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
-		ThingFish.logger.formatter.debug_format = 
-			'<code>' + ThingFish::LogFormatter::DEFAULT_FORMAT + '</code><br/>'
+		setup_logging( :fatal )
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
@@ -96,6 +94,11 @@ describe ThingFish::Client do
 		client.password.should == TEST_PASSWORD
 	end
 
+	it "masks the URI password in inspected output" do
+		client = ThingFish::Client.new( 'http://foompy:chompers@localhost:3474/' )
+		client.inspect.should_not =~ /chompers/
+	end
+	
 
 	### No args creation
 	describe " created with no arguments" do
@@ -127,6 +130,7 @@ describe ThingFish::Client do
 			@client.password = TEST_PASSWORD
 			@client.password.should == TEST_PASSWORD
 		end
+		
 	end
 
 
@@ -182,7 +186,7 @@ describe ThingFish::Client do
 			@conn.should_receive( :request ).
 				with( @request ).
 				and_yield( @response )
-			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( true )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
 
 			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
 			@response.should_receive( :message ).and_return( "OK" )
@@ -199,6 +203,29 @@ describe ThingFish::Client do
 		end
 		
 
+		it "raises an exception if fetching #server_info responds with anything other than a 200" do
+			# Unset the cached server info hash for this one test
+			@client.instance_variable_set( :@server_info, nil )
+
+			Net::HTTP::Get.should_receive( :new ).
+				with( '/' ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "GET" )
+
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( false )
+
+			@response.should_receive( :error! ).once.
+				and_raise( RuntimeError.new("server error") )
+		
+			lambda {
+				@client.server_info
+			  }.should raise_error( RuntimeError, /server error/ )
+		end
+		
+
 		it "can fetch server information (fallback YAML filter)" do
 			# Unset the cached server info hash for this one test
 			@client.instance_variable_set( :@server_info, nil )
@@ -211,9 +238,9 @@ describe ThingFish::Client do
 			@conn.should_receive( :request ).
 				with( @request ).
 				and_yield( @response )
-			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( true )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
 
-			@response.should_receive( :code ).at_least(:once).and_return( HTTP::OK )
+			# @response.should_receive( :status ).at_least(:once).and_return( HTTP::OK )
 			@response.should_receive( :message ).and_return( "OK" )
 			@response.should_receive( :[] ).
 				with( /content-type/i ).
@@ -312,6 +339,24 @@ describe ThingFish::Client do
 		end
 
 
+		it "can fetch a resource's data from the server" # do
+		# 	Net::HTTP::Get.should_receive( :new ).
+		# 		with( TEST_SERVER_INFO['handlers']['default'].first + '/' + TEST_UUID ).
+		# 		and_return( @request )
+		# 	@request.should_receive( :[]= ).with( 'Accept', '*/*' )
+		# 	@request.should_receive( :method ).and_return( "GET" )
+		# 
+		# 	@conn.should_receive( :request ).with( @request ).and_yield( @response )
+		# 	Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
+		# 
+		# 	# Branch: in-memory vs. on disk
+		# 	@response.should_receive( :[] ).with( /content-length/ ).
+		# 		and_return( ThingFish::Client::MAX_INMEMORY_RESPONSE_SIZE + 100 )
+		# 	
+		# 	@client.fetch_data( TEST_UUID ).should == :an_io
+		# end
+
+
 		### #has? predicate method
 		it "returns true when asked if it has a uuid that corresponds to a resource it has" do
 			Net::HTTP::Head.should_receive( :new ).
@@ -322,8 +367,6 @@ describe ThingFish::Client do
 			@conn.should_receive( :request ).with( @request ).and_return( @response )
 
 			@response.should_receive( :is_a? ).with( Net::HTTPSuccess ).and_return( true )
-			@response.should_receive( :code ).at_least( :once ).and_return( HTTP::OK )
-			@response.should_receive( :message ).and_return( "OK" )
 		
 			@client.has?( TEST_UUID ).should be_true
 		end
@@ -337,9 +380,8 @@ describe ThingFish::Client do
 			@request.should_receive( :method ).and_return( "HEAD" )
 
 			@conn.should_receive( :request ).with( @request ).and_return( @response )
-			@response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
-			@response.should_receive( :message ).and_return( "NOT FOUND" )
-
+			@response.should_receive( :is_a? ).with( Net::HTTPSuccess ).and_return( false )
+			
 			@client.has?( TEST_UUID ).should be_false
 		end
 	
@@ -367,12 +409,13 @@ describe ThingFish::Client do
 			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
 			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
 
 			# Set the UUID from the response's Location header
 			@response.should_receive( :[] ).with( /location/i ).
 				and_return( 'http://thingfish.example.com/' + TEST_UUID )
 			resource.should_receive( :uuid= ).with( TEST_UUID )
-
+			
 			# Merge response metadata
 			response_metadata = {
 				'description' => 'Bananas Goes to Military School',
@@ -382,7 +425,7 @@ describe ThingFish::Client do
 				'description' => 'Bananas Goes To See Assemblage 23',
 				'author'      => 'Bananas',
 			  }
-			merged_metadata = response_metadata.merge(resource_metadata)
+			merged_metadata = response_metadata.merge( resource_metadata )
 			
 			resource.should_receive( :metadata ).and_return( resource_metadata )
 			@response.should_receive( :[] ).with( /content-type/i ).
@@ -415,6 +458,7 @@ describe ThingFish::Client do
 			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
 			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
 
 			# Set the UUID from the response's Location header
 			@response.should_receive( :[] ).with( /location/i ).
@@ -460,6 +504,7 @@ describe ThingFish::Client do
 			resource_metadata = {
 				'description' => 'Bananas Goes To See Assemblage 23',
 				'author'      => 'Bananas',
+				'extent'	  => 1203,
 			  }
 
 			Net::HTTP::Put.should_receive( :new ).and_return( @request )
@@ -468,9 +513,28 @@ describe ThingFish::Client do
 			resource = mock( "Mock Resource" )
 			resource.should_receive( :uuid ).and_return( TEST_UUID )
 			resource.should_receive( :metadata ).and_return( resource_metadata )
+
+			@conn.should_receive( :request ).with( @request ).
+				and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
+
+			metadata = {
+				'description' => 'Bananas Goes To See Assemblage 23',
+				'author'      => 'Bananas',
+				'extent'	  => 14002,
+				'hump'        => 'catting',
+			  }
+
+			@response.should_receive( :[] ).with( /content-type/i ).
+				and_return( RUBY_MARSHALLED_MIMETYPE )
+			@response.should_receive( :body ).
+				and_return( Marshal.dump(metadata) )
+
+			resource.should_receive( :metadata= ).with( metadata )
 			
 			@client.store_metadata( resource )
 		end
+		
 		
 
 		### Updating
@@ -498,6 +562,7 @@ describe ThingFish::Client do
 			 	with( /content-disposition/i, /attachment;filename="a title"/i )
 		
 			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
 		
 			# Merge response metadata
 			response_metadata = {
@@ -522,7 +587,7 @@ describe ThingFish::Client do
 
 
 		### Deleting
-		it "can delete resources from the server by its UUID" do
+		it "can delete a resource from the server by its UUID" do
 			Net::HTTP::Delete.should_receive( :new ).
 				with( '/' + TEST_UUID ).
 				and_return( @request )
@@ -536,29 +601,51 @@ describe ThingFish::Client do
 		end
 
 
-		it "can delete resources from the server via a ThingFish::Resource" do
+		it "can delete a resource from the server via an object that knows what its UUID is" do
 			resource = mock( "Mock Resource" )
-			resource.should_receive( :is_a? ).
-				with( ThingFish::Resource ).
-				any_number_of_times().
-				and_return( true )
-			resource.should_receive( :uuid ).
-				and_return( TEST_UUID )
+			resource.should_receive( :respond_to? ).with( :uuid ).and_return( true )
+			resource.should_receive( :uuid ).and_return( TEST_UUID )
 
-			Net::HTTP::Delete.should_receive( :new ).
-				with( '/' + TEST_UUID ).
+			Net::HTTP::Delete.should_receive( :new ).with( '/' + TEST_UUID ).
 				and_return( @request )
 			@request.should_receive( :method ).and_return( "DELETE" )
 
-			@conn.should_receive( :request ).
-				with( @request ).
+			@conn.should_receive( :request ).with( @request ).
 				and_yield( @response )
 		
 			@client.delete( resource ).should be_true()
 		end
 
 
-		it "can find resources by their metadata attributes"
+		it "can find resources by their metadata attributes" do
+			path_and_query = TEST_SERVER_INFO['handlers']['simplesearch'].first +
+				'?format=image/jpeg;title=*energylegs*'
+			Net::HTTP::Get.should_receive( :new ).with( path_and_query ).
+				and_return( @request )
+
+			@request.should_receive( :method ).and_return( 'GET' )
+			@conn.should_receive( :request ).with( @request ).
+				and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
+
+			uuids = [ TEST_UUID, TEST_UUID2, TEST_UUID3 ]
+			@response.should_receive( :[] ).with( /content-type/i ).
+				and_return( RUBY_MARSHALLED_MIMETYPE )
+			@response.should_receive( :body ).
+				and_return( Marshal.dump(uuids) )
+			
+			criteria = {
+				:format => 'image/jpeg',
+				:title  => '*energylegs*',
+			}
+
+			results = @client.find( criteria )
+			results.should be_an_instance_of( Array )
+			results.should have( 3 ).members
+			results.collect {|r| r.uuid }.
+				should include( TEST_UUID, TEST_UUID2, TEST_UUID3 )
+		end
+		
 
 	end # REST API
 

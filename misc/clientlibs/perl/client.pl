@@ -113,7 +113,11 @@ sub update
 
 sub search
 {
-	print "$_\n" foreach $tf->find( @ARGV );
+	foreach ( $tf->find( @ARGV ) ) {
+		print $_->uuid;
+		print ': ' . $_->title if $_->title;
+		print "\n" 
+	}
 	exit 0;
 }
 

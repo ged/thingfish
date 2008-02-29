@@ -291,7 +291,8 @@ sub store
 
 =item find()
 
-Takes an array of term pairs, returns an array of matching UUIDs.
+Takes an array of term pairs, returns an array of matching UUIDs
+as ThingFish::Resource objects.
 
     @uuids = $tf->find( format => 'image/*', title => '*drunk*' );
 
@@ -307,7 +308,17 @@ sub find
 	);
 
 	if ( $response->is_success ) {
-		return @{ YAML::Syck::Load( $response->content ) };
+		my $uuids = YAML::Syck::Load( $response->content );
+		my @resources = ();
+		
+		foreach ( @$uuids ) {
+			my $resource = ThingFish::Resource->new;
+			$resource->client( $self );
+			$resource->{ 'uuid' } = $_;
+			push @resources, $resource;
+		}
+		return @resources;
+				
 	}
 	else {
 		$self->err( $response->status_line );

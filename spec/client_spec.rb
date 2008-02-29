@@ -39,14 +39,14 @@ describe ThingFish::Client do
 	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
 	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )
 	TEST_SERVER_INFO = {
-		'version'=>"0.1.0",
+		'version'  => '0.1.0',
 		'handlers' => {
-			"default"=>["/"],
-			"staticcontent"=>["/metadata", "/", "/upload", "/search"],
-			"simplemetadata"=>["/metadata"],
-			"simplesearch"=>["/search"],
-			"inspect"=>["/inspect"],
-			"formupload"=>["/upload"]
+			'default'        => ['/'],
+			'staticcontent'  => ['/metadata', '/', '/upload', '/search'],
+			'simplemetadata' => ['/metadata'],
+			'simplesearch'   => ['/search'],
+			'inspect'        => ['/inspect'],
+			'formupload'     => ['/upload']
 		},
 	}
 

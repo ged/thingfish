@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# 
 
 BEGIN {
 	require 'pathname'
@@ -15,6 +14,7 @@ BEGIN {
 require 'thingfish'
 require 'thingfish/client'
 require 'uri'
+require 'ipaddr'
 require 'optparse'
 require 'ostruct'
 
@@ -44,6 +44,7 @@ class ThingFish::CommandLineClient
 
 		options.debug_mode = false
 		options.verbose_mode = false
+		options.verbose_mode = false
 		options.host = 'localhost'
 		options.port = DEFAULT_PORT
 
@@ -64,7 +65,7 @@ class ThingFish::CommandLineClient
 			oparser.banner = "Usage: #{progname.basename} OPTIONS ACTION [ARGS]"
 
 			oparser.separator 'Actions:'
-			oparser.separator '  upload, update, download, check, info'
+			oparser.separator '  upload, update, download, check, info, search'
 
 			oparser.separator ''
 			oparser.separator 'Options:'
@@ -91,9 +92,8 @@ class ThingFish::CommandLineClient
 				opts.verbosemode = true
 			end
 
-			oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
-				$stderr.puts oparser
-				exit!
+			oparser.on_tail( '--help', '-h', FalseClass, "Display help for the given command." ) do
+				opts.helpmode = true
 	        end
 
 			# Another typical switch to print the version.
@@ -106,7 +106,7 @@ class ThingFish::CommandLineClient
 		remaining_args = oparser.parse( argv )
 		if remaining_args.empty?
 			$stderr.puts( oparser )
-			exit( 64 ) # EX_USAGE
+			exit( opts.helpmode ? 0 : 64 ) # EX_USAGE
 		end
 
 		return opts, *remaining_args
@@ -142,27 +142,37 @@ class ThingFish::CommandLineClient
 	def main( verb, *args )
 		self.log.debug "Client requested '%s' with arguments: %p" % [ verb, args ]
 	
+		prefix = @options.helpmode ? 'help' : 'do'
+
 		case verb.downcase
 		when 'upload', 'post'
-			do_upload( args.shift ) until args.empty?
+			return help_upload() if args.empty?
+			send( "#{prefix}_upload", args.shift ) until args.empty?
 	
 		when 'update', 'put'
+			return help_update() if (args.length % 2).nonzero? or args.empty?
 			until args.empty?
 				uuid = args.shift or raise "no UUID specified for update"
 				file = args.shift
-				do_update( uuid, file )
+				send( "#{prefix}_update", uuid, file )
 			end
 	
 		when 'download', 'get', 'fetch'
+			return help_download() if args.empty?			
 			until args.empty?
 				uuid = args.shift or raise "no UUID specified for fetch"
 				file = args.shift
-				do_download( uuid, file )
+				send( "#{prefix}_download", uuid, file )
 			end
 	
 		when 'check', 'head'
-			do_check( args.shift ) until args.empty?
-	
+			return help_check() if args.empty?
+			send( "#{prefix}_check", args.shift ) until args.empty?
+			
+		when 'search', 'find'
+			return help_search() if (args.length % 2).nonzero? or args.empty?
+			send( "#{prefix}_search", args )
+
 		when 'info'
 			display_server_info()
 	
@@ -179,7 +189,6 @@ class ThingFish::CommandLineClient
 
 	### Fetch the server info hash from the server and display it.
 	def display_server_info
-		self.log.debug "Fetching server info"
 		info = @client.server_info or raise "couldn't fetch server info"
 		
 		handler_info = []
@@ -219,7 +228,7 @@ class ThingFish::CommandLineClient
 	def do_upload( file=nil )
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh )
-		resource.format = self.get_mimetype( fh )
+		resource.format = self.get_mimetype( file )
 
 		if file
 			resource.title  = File.basename( file )
@@ -229,6 +238,12 @@ class ThingFish::CommandLineClient
 		@client.store( resource )
 		
 		$stderr.puts "Uploaded to: #{resource.uuid}"
+	end
+	
+	
+	### Output upload help to stderr.
+	def help_upload( *args )
+		self.print_help( 'upload <filename> [filename2] [filename3] ... ' )
 	end
 
 
@@ -241,7 +256,7 @@ class ThingFish::CommandLineClient
 
 		fh = get_reader_io( file )
 		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
-		resource.format = self.get_mimetype( file, fh )
+		resource.format = self.get_mimetype( file )
 
 		if file
 			resource.title  = File.basename( file )
@@ -251,6 +266,12 @@ class ThingFish::CommandLineClient
 		resource.save
 
 		$stderr.puts "Updated #{uuid}"
+	end
+
+	
+	### Output update help to stderr.
+	def help_update( *args )
+		self.print_help( 'update <uuid> <filename> [<uuid2> <filename2>] ... ' )
 	end
 
 
@@ -264,6 +285,12 @@ class ThingFish::CommandLineClient
 		end
 	end
 	
+	
+	### Output check help to stderr.
+	def help_check( *args )
+		self.print_help( 'check <uuid> [uuid2] ... ' )
+	end
+
 
 	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
 	### and write it to the specified +file+. If +file+ is nil, the content will be
@@ -279,7 +306,45 @@ class ThingFish::CommandLineClient
 		$stderr.puts "Fetched resource at %s." % [ uuid ]
 	end
 
+	
+	### Output download help to stderr.
+	def help_download( *args )
+		self.print_help( <<-EOH )
+			download <uuid> <filename> [<uuid2> <filename2>] ...
+			(Save resources to files on disk)
+				
+		EOH
+	
+		self.print_help( <<-EOH )
+			download <uuid>
+			(Stream a resource to stdout)			
+		EOH
+	end
 
+
+	### Search for the provided terms at the server supplied 'simplesearch'
+	### URL. Prints matching resource UUIDS and titles (if available) to stderr.
+	def do_search( terms )
+		terms = Hash[ *terms ]
+		results = @client.find( terms )
+		
+		if results.empty?
+			$stdout.puts "No resources were found that match your search terms."
+			return
+		end
+		
+		results.each do |resource|
+			$stdout.puts "%s (%s)" % [ resource.uuid, resource.metadata[:title] ]
+		end
+	end
+	
+	
+	### Output search help to stderr.
+	def help_search( *args )
+		self.print_help( 'search <property> <value> [<property2> <value2>] ...' )
+	end
+
+	
 	### Get an IO object for reading from the specified +filename+. If +filename+ is 
 	### +nil+, returns the IO for STDIN instead.
 	def get_reader_io( filename=nil )
@@ -337,10 +402,9 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Given a +file+ and an optional +io+, try to deduce a mimetype from the
-	### possible filename extension.  Failing that, use the first 2k of data
-	### read from the given +io+ and return it. The IO object will be rewound
-	### before returning.
+	### Given a +file+, try to deduce a mimetype from the possible filename
+	### extension.	Failing that, use the magic value to try to determine the
+	### file's type if either the Mahoro or the filemagic library is installed.
 	def get_mimetype( file )
 		analyzer = self.get_mime_analyzer or
 			raise "Ack. None of the strategies for deriving mimetype worked."
@@ -348,13 +412,20 @@ class ThingFish::CommandLineClient
 		if file.respond_to?( :extname )
 			return analyzer.file( file )
 		else	
-			io ||= self.get_reader_io( file )
+			io = self.get_reader_io( file )
 
 			data = io.read( 2048 )
 			io.rewind
 
 			return analyzer.buffer( data )
 		end
+	end
+
+	
+	### Print the given helptext with the program name after stripping leading
+	### tabs.
+	def print_help( helptext )
+		$stderr.puts "%s %s" % [ $0, helptext.gsub(/^\t+/, '') ]
 	end
 
 end

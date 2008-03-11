@@ -250,11 +250,11 @@ class ThingFish::Client
 		fetchuri = self.server_uri( :simplemetadata )
 		fetchuri.path += "/#{uuid}"
 
-		self.log.debug "Fetching data for a resource object from: %s" % [ fetchuri ]
+		self.log.info "Fetching metadata for a resource object from: %s" % [ fetchuri ]
 		request = Net::HTTP::Get.new( fetchuri.path )
 		request['Accept'] = ACCEPT_HEADER
 			
-		send_request( request ) do |response|
+		self.send_request( request ) do |response|
 			self.log.debug "Creating a ThingFish::Resource from %p" % [response]
 			metadata = self.extract_response_body( response )
 		end
@@ -268,17 +268,17 @@ class ThingFish::Client
 	### return it as an IO object.
 	def fetch_data( uuid )
 		fetchuri = self.server_uri( :default )
-		fetchuri.path += "/#{uuid}"
+		fetchuri.path += "#{uuid}"
 
-		self.log.debug "Fetching resource data from: %s" % [ fetchuri ]
-		request = Net::HTTP::Get.new( fetchuri.path )
+		path = fetchuri.path.squeeze( '/' ) # Eliminate '//'
+		self.log.info "Fetching resource data from: %s" % [ fetchuri ]
+		request = Net::HTTP::Get.new( path )
 		request['Accept'] = '*/*'
 		
-		io = send_request( request ) do |response|
+		io = self.send_request( request ) do |response|
 			self.create_io_from_response( uuid, response )
 		end
 
-		self.log.debug { "Returning IO: %p" % [io] }
 		return io
 	end
 	
@@ -292,7 +292,7 @@ class ThingFish::Client
 
 		request = Net::HTTP::Head.new( fetchuri.path )
 			
-		res = send_request( request )
+		res = self.send_request( request )
 		return res.is_a?( Net::HTTPSuccess )
 	end
 	
@@ -328,6 +328,7 @@ class ThingFish::Client
 		end
 
         self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
+
 		request.body_stream = resource.io
 		request['Content-Length'] = resource.extent
 		request['Content-Type'] = resource.format
@@ -366,7 +367,6 @@ class ThingFish::Client
 		request['Accept'] = ACCEPT_HEADER
 
 		self.send_request( request ) do |response|
-			response.error! unless response.success?
 			metadata = self.extract_response_body( response ) or
 				raise ThingFish::ClientError, "no body in the update response"
 			resource.metadata = metadata
@@ -402,7 +402,8 @@ class ThingFish::Client
 		query_args = make_query_args( criteria )
 		request = Net::HTTP::Get.new( uri.path + query_args )
 		resources = []
-		
+	
+		request['Accept'] = ACCEPT_HEADER	
 		send_request( request ) do |response|
 			response.error! unless response.is_a?( Net::HTTPSuccess )
 			uuids = self.extract_response_body( response )
@@ -422,7 +423,7 @@ class ThingFish::Client
 	### Extract the serialized object in the given +response+'s entity body and return it.
 	def extract_response_body( response )
 		
-		case response['Content-Type']
+		case response['Content-Type']			
 		when /#{RUBY_MARSHALLED_MIMETYPE}/i
 			self.log.debug "Unmarshalling a marshalled-ruby-object response body."
             return Marshal.load( response.body )
@@ -444,12 +445,20 @@ class ThingFish::Client
 	### larger than MAX_INMEMORY_RESPONSE_SIZE), or an in-memory StringIO.
 	def create_io_from_response( uuid, response )
 		len = Integer( response['Content-length'] )
+		self.log.debug "Content length is: %p" % [ len ]
 
 		if len > MAX_INMEMORY_RESPONSE_SIZE
+			self.log.debug "...buffering to disk"
 			file = Pathname.new( Dir.tmpdir ) + "tf-#{uuid}.data.0"
-			file = file.sub(/.*/, file.to_s.succ ) while file.exist?
+			fh = nil
 			
-			fh = file.open( File::CREAT|File::RDWR|File::EXCL, 0600 )
+			begin
+				fh = file.open( File::CREAT|File::RDWR|File::EXCL, 0600 )
+			rescue Errno::EEXIST
+				file = file.sub( /\.(\d+)$/ ) { '.' + $1.succ }
+				retry
+			end
+
 			file.delete
 			response.read_body do |chunk|
 				fh.write( chunk )
@@ -458,6 +467,7 @@ class ThingFish::Client
 			
 			return fh
 		else
+			self.log.debug "...'buffering' to memory"
 			return StringIO.new( response.body )
 		end
 	end
@@ -471,15 +481,15 @@ class ThingFish::Client
 
 		self.log.debug "Request: " + dump_request_object( req )
 		
-		rval = Net::HTTP.start( uri.host, uri.port ) do |conn|
+		Net::HTTP.start( uri.host, uri.port ) do |conn|
 			conn.request( req ) do |response|
 				return response unless block_given?
 				
 				self.log.debug "Response: " + dump_response_object( response )
 
 				case response
-				when Net::HTTPOK
-					rval = yield( response )
+				when Net::HTTPOK, Net::HTTPCreated
+					return yield( response )
 
 				when Net::HTTPSuccess
 					raise ThingFish::ClientError,
@@ -490,8 +500,6 @@ class ThingFish::Client
 				end
 			end
 		end
-	
-		return rval
 	end
 
 

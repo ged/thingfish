@@ -50,9 +50,8 @@ describe ThingFish::Client do
 		},
 	}
 
-
 	before( :all ) do
-		setup_logging( :fatal )
+			setup_logging( :fatal )
 	end
 
 	after( :all ) do
@@ -300,6 +299,7 @@ describe ThingFish::Client do
 			@conn.should_receive( :request ).with( @request ).and_yield( @response )
 
 			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( false )
+			Net::HTTPCreated.should_receive( :=== ).with( @response).and_return( false )
 			Net::HTTPSuccess.should_receive( :=== ).with( @response).and_return( false )
 
 			@response.should_receive( :code ).at_least(:once).and_return( HTTP::NOT_FOUND )
@@ -339,22 +339,40 @@ describe ThingFish::Client do
 		end
 
 
-		it "can fetch a resource's data from the server" # do
-		# 	Net::HTTP::Get.should_receive( :new ).
-		# 		with( TEST_SERVER_INFO['handlers']['default'].first + '/' + TEST_UUID ).
-		# 		and_return( @request )
-		# 	@request.should_receive( :[]= ).with( 'Accept', '*/*' )
-		# 	@request.should_receive( :method ).and_return( "GET" )
-		# 
-		# 	@conn.should_receive( :request ).with( @request ).and_yield( @response )
-		# 	Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
-		# 
-		# 	# Branch: in-memory vs. on disk
-		# 	@response.should_receive( :[] ).with( /content-length/ ).
-		# 		and_return( ThingFish::Client::MAX_INMEMORY_RESPONSE_SIZE + 100 )
-		# 	
-		# 	@client.fetch_data( TEST_UUID ).should == :an_io
-		# end
+		it "can fetch a resource's data from the server" do
+			Net::HTTP::Get.should_receive( :new ).
+				with( TEST_SERVER_INFO['handlers']['default'].first + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :[]= ).with( 'Accept', '*/*' )
+			@request.should_receive( :method ).and_return( "GET" )
+		
+			@conn.should_receive( :request ).with( @request ).and_yield( @response )
+			Net::HTTPOK.should_receive( :=== ).with( @response).and_return( true )
+		
+			# Branch: in-memory vs. on disk
+			pathname = mock( "pathname object" )
+			filehandle = mock( "filehandle object" )
+			
+			@response.should_receive( :[] ).with( /content-length/i ).
+				and_return( ThingFish::Client::MAX_INMEMORY_RESPONSE_SIZE + 100 )
+			Pathname.should_receive( :new ).and_return( pathname )
+			pathname.should_receive( :+ ).with( "tf-#{TEST_UUID}.data.0" ).
+				and_return( pathname )
+
+			flags = File::EXCL|File::CREAT|File::RDWR
+			pathname.should_receive( :open ).with( flags, 0600 ).
+				and_return( filehandle )
+			pathname.should_receive( :delete )
+						
+			@response.should_receive( :read_body ).
+				and_yield( :first_chunker ).
+				and_yield( :second_chunker )
+			filehandle.should_receive( :write ).with( :first_chunker )
+			filehandle.should_receive( :write ).with( :second_chunker )
+			filehandle.should_receive( :rewind )
+						
+			@client.fetch_data( TEST_UUID ).should == filehandle
+		end
 
 
 		### #has? predicate method
@@ -624,6 +642,7 @@ describe ThingFish::Client do
 				and_return( @request )
 
 			@request.should_receive( :method ).and_return( 'GET' )
+			@request.should_receive( :[]= ).with( /accept/i, /#{RUBY_MARSHALLED_MIMETYPE}/ )
 			@conn.should_receive( :request ).with( @request ).
 				and_yield( @response )
 			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )

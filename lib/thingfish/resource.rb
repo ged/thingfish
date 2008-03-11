@@ -97,22 +97,22 @@ class ThingFish::Resource
 	### If the optional +client+ argument is set, it will be used as the ThingFish::Client instance 
 	### which should be used to load and store the resource on the server. If the +uuid+ argument
 	### is given, it will be used as the resource's Universally Unique IDentifier when 
-	### communicating with the server. The +metadata+ Hash may include one or more metadata 
+	### communicating with the server. The +new_metadata+ Hash may include one or more metadata 
 	### key-value pairs which will be set on the resource.
-	def initialize( datasource=nil, client=nil, uuid=nil, metadata={} )
-		metadata ||= {}
+	def initialize( datasource=nil, client=nil, uuid=nil, new_metadata={} )
+		new_metadata ||= {}
 
-		metadata, datasource = datasource, nil if datasource.is_a?( Hash )
-		metadata, client = client, nil if client.is_a?( Hash )
-		metadata, uuid = uuid, nil if uuid.is_a?( Hash )
+		new_metadata, datasource = datasource, nil if datasource.is_a?( Hash )
+		new_metadata, client = client, nil if client.is_a?( Hash )
+		new_metadata, uuid = uuid, nil if uuid.is_a?( Hash )
 
 		@io     = self.normalize_io_obj( datasource )
 		@client = client
 		@uuid   = uuid
 
 		# Use the accessor to set all remaining pairs
-        @metadata = {}
-		metadata.each do |key, val|
+        @metadata = nil
+		new_metadata.each do |key, val|
 			self.send( "#{key}=", val )
 		end
 	end
@@ -145,14 +145,15 @@ class ThingFish::Resource
 
 	### Returns the resource's metadata as a Hash
 	def metadata
-		@metadata ||= self.load_metadata
+		self.log.debug "Metadata is: %p" % [ @metadata ]
+		@metadata = self.load_metadata if @metadata.nil? || @metadata.empty?
 		return @metadata
 	end
 	
 	
 	### Set the Hash of metadata associated with the Resource.
 	def metadata=( newhash )
-		@metadata = newhash.to_h
+		@metadata = newhash.to_hash
 	end
 	
 
@@ -174,15 +175,17 @@ class ThingFish::Resource
 	
 	### Write the data from the resource to the given +io+ object.
 	def export( io )
+		self.load_data
 		buf = ''
-		while @io.read( 8192, buf )
+		resource_io = self.io.dup
+		
+		while resource_io.read( 8192, buf )
 			until buf.empty?
 				bytes = io.write( buf )
 				buf.slice!( 0, bytes )
 			end
 		end
 		
-		@io.rewind
 	end
 	
 	
@@ -197,7 +200,7 @@ class ThingFish::Resource
 	### raise a ThingFish::ResourceError if there is no associated client.
 	def save_data
 		raise ThingFish::ResourceError, "no client set" unless @client
-		@client.store_data( @io )
+		@client.store_data( self )
 	end
 	
 	
@@ -205,7 +208,7 @@ class ThingFish::Resource
 	### will raise a ThingFish::ResourceError if there is no associated client.
 	def save_metadata
 		raise ThingFish::ResourceError, "no client set" unless @client
-		@client.store_metadata( self.metadata )
+		@client.store_metadata( self )
 	end
 	
 	
@@ -218,7 +221,7 @@ class ThingFish::Resource
 	
 	### Override Kernel#format to return the 'format' metadata key instead.
 	def format
-		return self.metadata[ :format ]
+		return self.metadata[ 'format' ]
 	end
 
 

@@ -38,7 +38,10 @@ describe ThingFish::Resource do
 		'title' => 'The Way it Was.jpg',
 		'author' => 'Semilin P. Idsnitch',
 		'extent' => 134622,
+		'doodlebops' => 'suck',
+		'byline' => 'Something Naughty That Jonathan Will Make Us Change'
 	}
+	TEST_METADATA.freeze
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -46,21 +49,6 @@ describe ThingFish::Resource do
 
 	after( :all ) do
 		reset_logging()
-	end
-
-
-	### Metadata interface
-
-	it "auto-generates accessors for metadata values" do
-		resource = ThingFish::Resource.new
-
-		resource.should_not have_extent()
-        
-		resource.extent = 1024
-		resource.extent.should == 1024
-	    
-		resource.should have_extent()
-		resource.should_not have_pudding() # Awwww... no pudding.
 	end
 
 
@@ -113,6 +101,8 @@ describe ThingFish::Resource do
 
 
 	it "can be created from an IO object, a client object, a UUID, and a Hash of metadata" do
+		@client.should_receive( :fetch_metadata ).with( TEST_UUID ).
+			and_return( TEST_METADATA.dup )
 		resource = ThingFish::Resource.new( @io, @client, TEST_UUID,
 		 	:title => 'Piewicket Eats a Potato' )
 		resource.io.should == @io
@@ -137,6 +127,85 @@ describe ThingFish::Resource do
 	end
 
 
+	### Metadata interface
+	describe "created with no arguments" do
+		before( :each ) do
+			@resource = ThingFish::Resource.new
+		end
+		
+		
+		it "auto-generates accessors for metadata values" do
+			@resource.should_not have_extent()
+        
+			@resource.extent = 1024
+			@resource.extent.should == 1024
+	    
+			@resource.should have_extent()
+			@resource.should_not have_pudding() # Awwww... no pudding.
+		end
+
+
+		it "allows one to replace the metadata hash" do
+			@resource.metadata = TEST_METADATA
+
+			@resource.metadata.should have(6).members
+			@resource.metadata.keys.should include( 'doodlebops', 'title' )
+			@resource.metadata.values.
+				should include( 'suck', 'Something Naughty That Jonathan Will Make Us Change' )
+		end
+	
+	
+		it "returns nil when asked for its data" do
+			@resource.data.should be_nil()
+		end
+
+		it "allows one to replace the metadata with something that can be cast to a Hash" do
+			my_metadata_class = Class.new {
+				def initialize( stuff={} )
+					@innerhash = stuff
+				end
+			
+				def to_hash
+					return @innerhash
+				end
+			}
+		
+			@resource.metadata = my_metadata_class.new( TEST_METADATA )
+
+			@resource.metadata.should have(6).members
+			@resource.metadata.keys.should include( 'doodlebops', 'title' )
+			@resource.metadata.values.
+				should include( 'suck', 'Something Naughty That Jonathan Will Make Us Change' )
+		end
+		
+		it "allows one to overwrite the resource's data" do
+			@resource.io.should be_nil()
+			@resource.data = "newdata"
+			@resource.io.rewind
+			@resource.io.read.should == "newdata"
+		end
+		
+	end
+
+
+	### With an IO object
+	describe "created with an IO object" do
+		
+		before( :each ) do
+			@io = StringIO.new
+			@resource = ThingFish::Resource.new( @io )
+		end
+		
+
+		it "allows one to overwrite the resource's data" do
+			@resource.data = "newdata"
+			@resource.io.rewind
+			@resource.io.read.should == "newdata"
+		end
+
+	end
+
+
 	### Client interface
 	describe "created with an associated client object" do
 	
@@ -147,20 +216,28 @@ describe ThingFish::Resource do
 
 		it "uses its associated client to save changes" do
 			@resource.io = @io
-			@client.should_receive( :store_data ).with( @io ).
+			@client.should_receive( :store_data ).with( @resource ).
 				and_return( @resource )
-			@client.should_receive( :store_metadata ).with( @resource.metadata ).
+			@client.should_receive( :store_metadata ).with( @resource ).
 				and_return( @resource )
 
 			@resource.save.should == @resource
 		end
 		
 		
-		it "loads its data from the client on demand" do
+		it "fetches an IO from the client on demand" do
 			@client.should_receive( :fetch_data ).with( TEST_UUID ).
-				and_return( :the_data )
+				and_return( :an_io )
+			@resource.io.should == :an_io
+		end
+		
 
-			@resource.io.should == :the_data
+		it "loads its data from the client on demand" do
+			io = mock( "mock io" )
+			@client.should_receive( :fetch_data ).with( TEST_UUID ).
+				and_return( io )
+			io.should_receive( :read ).and_return( :the_data )
+			@resource.data.should == :the_data
 		end
 		
 	end
@@ -172,11 +249,13 @@ describe ThingFish::Resource do
 		end
 
 		it "can discard local metadata changes in favor of the server-side version" do
+ 			@client.should_receive( :fetch_metadata ).with( TEST_UUID ).twice.
+				and_return( TEST_METADATA.dup, TEST_METADATA.dup )
 			@resource.energy = 'legs'
-			@client.should_receive( :fetch_metadata ).with( TEST_UUID ).
-				and_return( :new_metadata )
 			@resource.revert
-			@resource.metadata.should == :new_metadata
+
+			@resource.metadata.should == TEST_METADATA
+			@resource.metadata.should_not include( 'energy' )
 		end
 		
 		
@@ -186,6 +265,12 @@ describe ThingFish::Resource do
 				and_return( :a_new_io )
 			@resource.revert
 			@resource.io.should == :a_new_io
+		end
+	
+	
+		it "can read its data from the associated IO object" do
+			@io.should_receive( :read ).and_return( :the_data )
+			@resource.data.should == :the_data
 		end
 		
 	end

@@ -92,8 +92,6 @@ module Manual
 
 			rawsource = @sourcefile.read
 			@config, @source = self.read_page_config( rawsource )
-			$stderr.puts "Config is: %p" % [@config],
-				"Source is: %p" % [ @source[0,100] ]
 			@filters = self.load_filters( @config['filters'] )
 
 			super()
@@ -195,7 +193,7 @@ module Manual
 
 		### Load RedCloth when the filter is first created
 		def initialize( *args )
-			require 'RedCloth'
+			require 'redcloth'
 			super
 		end
 		

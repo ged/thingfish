@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-	<title>ThingFish :: Manual :: <%= page.title || "untitled" %></title>
+	<title>ThingFish :: Manual :: <%= metadata.title || "untitled" %></title>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
 	<script type="text/javascript" src="/js/jquery.js"></script>
@@ -24,43 +24,60 @@
 	<div id="content">
 		<div class="left">
 			<div class="section">
-				<!-- @template_name = <%= template_name %> -->
-				<% if template_name == 'index.page' %>
-				<h2 class="current">Introduction</h2>
-				<% else %>
 				<h2><a href="/manual/index.html">Introduction</a></h2>
-				<% end %>
 			</div>
 			<div class="section">
-				<% if @template_name == 'getting-started.page' %>
-				<h2 class="current">Getting Started</h2>
-				<% else %>
 				<h2><a href="/manual/getting-started.html">Getting Started</a></h2>
-				<% end %>
 			</div>
-			<% @navsections.each do |sectiontitle, sectionhref, subpages| %>
-			<div class="section">
-				<% if @template_name.sub(/\.page$/i, '.html') == sectionhref.to_s %>
-				<h2 class="current"><%= sectiontitle %></h2>
-				<% else %>
-				<h2><a href="/manual/<%= sectionhref %>"><%= sectiontitle %></a></h2>
-				<% end %>
-				<ul>
-				<% subpages.each do |pagepath, pagetitle| %>
-				<% if pagepath.sub(/\.html$/, '') == @template_name.sub(/\.page$/, '') %>
-					<li class="current"><%= pagetitle %></li>
-				<% else %>
-					<li><a href="/manual/<%= pagepath %>"><%= pagetitle %></a></li>
-				<% end %>
-				<% end %>
-				</ul>
-			</div>
-			<% end %>
+
+			<!-- Static until I can get the index stuff working under the new docs system -->
+	      <div class="section">
+	        <h2><a href="/manual/02.Developers_Guide/index.html">Developers Guide</a></h2>
+	        <ul>
+	          <li><a href="/manual/02.Developers_Guide/01.connecting.html">Connecting to the
+	          Server</a></li>
+
+	          <li><a href="/manual/02.Developers_Guide/02.ruby-client.html">The Ruby Client
+	          Library</a></li>
+
+	          <li><a href="/manual/02.Developers_Guide/03.js-client.html">The Javascript Client
+	          Library</a></li>
+
+	          <li><a href="/manual/02.Developers_Guide/04.writing-your-own-client.html">Writing Your
+	          Own Client Library</a></li>
+	        </ul>
+	      </div>
+
+	      <div class="section">
+	        <h2><a href="/manual/03.Hackers_Guide/index.html">Hackers Guide</a></h2>
+
+	        <ul>
+	          <li><a href="/manual/03.Hackers_Guide/01.server-architecture.html">Server
+	          Architecture</a></li>
+
+	          <li><a href="/manual/03.Hackers_Guide/02.writing-handlers.html">Writing a ThingFish
+	          Handler</a></li>
+
+	          <li><a href="/manual/03.Hackers_Guide/03.writing-filters.html">Writing a ThingFish
+	          Filter</a></li>
+
+	          <li><a href="/manual/03.Hackers_Guide/04.writing-filestores.html">Writing a ThingFish
+	          FileStore</a></li>
+
+	          <li><a href="/manual/03.Hackers_Guide/05.writing-metastores.html">Writing a ThingFish
+	          MetaStore</a></li>
+	        </ul>
+	      </div>
+
 		</div>
 
 		<div class="right">
-	        <p class="textright">Version: <%= @version %></p>
-		    <%= @content_for_layout %>
+	        <p class="textright">Version: <%= metadata.version %></p>
+
+			<!-- Generated content -->
+			<%= content %>
+			<!-- end of generated content -->
+
 		</div>
 	</div>
  

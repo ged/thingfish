@@ -23,6 +23,10 @@ include ThingFish::Constants
 
 module ThingFish::TestHelpers
 
+	###############
+	module_function
+	###############
+
 	### Return a Net::HTTPSuccess object with the contents set to the specified 
 	### +data+.
 	def with_fixtured_http_get_response( data='', code=HTTP::OK )

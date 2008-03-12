@@ -1,12 +1,184 @@
 ---
-title: About
+layout: default
+filters:
+  - erb
+  - textile
+  - examples
+something_else: blah
 ---
+<% @page_title = "Introduction" %>
 
-h2. Buh?
+h1. <%= @page_title %>
 
-*ThingFish* is copyrighted Open Source software written by the Information Systems department of LAIKA, Inc., a media and entertainment company in Portland, OR.
+h2. Intended Audience
 
-It was developed in-house for the web-based applications created there, but is being shared with the community in appreciation of all the fine free and Open Source software in use at the studio.
+This manual is primarily for three different kinds of people: System Administrators,
+Web Developers, and ThingFish Plugin Developers.
+
+h3. System Administrators
+
+If you're thinking about setting up a ThingFish server on your local network, you'll
+probably want to know how to configure the daemon, how to start it up, what
+maintenance it requires, and what troubleshooting steps you can take if something
+doesn't work.
+
+You can skim the rest of this introduction to familiarize yourself with the structure of
+the system, but the "Getting Started":getting_started section describes installation and
+setup procedures, so you should probably start there if you just want to get to work.
+
+
+h3. Web Developers
+
+If you're a web developer seeking to use an installed ThingFish server, the 
+"Developer's Guide":developers_guide is for you. You'll most likely want to skim the rest 
+of the introduction as well, as it describes several important concepts that will make
+using the service a bit more intuitive.
+
+
+h3. Plugin Developers
+
+If ThingFish isn't exactly what you need, chances are you can whip it into shape with a
+few plugins. ThingFish is made to be customized, and the "Hacker's Guide":hackers_guide is
+the roadmap to the internals you'll need to know about (and probably some you don't) when
+extending or replacing its built-in functionality.
+
+
+
+h2. Design Principles
+
+Before we wrote ThingFish, we were looking to address a need in several backend
+applications we were developing. We started out with several explicit principles in 
+mind to guide us, and wanted to either buy or build something to meet those needs.
+
+<dl>
+<dt>Simplicity</dt>
+<dd>The system should be simple in its architecture, with few dependencies for basic usage. 
+	Fewer dependencies leads to easier administration, quicker deployment, and greater 
+	flexibility in testing.</dd>
+
+<dt>Modularity</dt>
+<dd>Every aspect beyond the core featureset should be extensible. Adding functionality 
+	such as an authentication layer or custom filesystem storage should be possible with
+	minimal effort.</dd>
+
+<dt>Language-Agnostic API</dt>
+<dd>Client access should require as little application specific knowledge as possible. We 
+	can't anticipate our future use cases for searching and fetching data, but will be 
+	initially using it from within a web browser (Javascript) and from command-line
+	programs (Ruby, Perl, Python) at a minimum. Writing a client should be straightforward 
+	for any language that provides a an HTTP client library.</dd>
+</dl>
+
+
+
+h2. Similar Systems
+
+We considered several other systems which provide network data storage before we
+decided to write ThingFish. Both Amazon's S3 and Danga's MogileFS provide the ability
+to store and retrieve chunks of data through a network interface, but there were
+features or limitations of each that made them unsuitable for our use.
+
+
+h3. Amazon S3 %(title-link)"[link]":http://aws.amazon.com/s3%
+
+Amazon's Simple Storage Service is probably the closest thing we've found to what we
+need, but there are some limitations which it imposes which we couldn't live with:
+
+<dl>
+  	<dt>Metadata restrictions</dt>
+  	<dd>We can't anticipate everything that we'd want to store as metadata, but we
+	    predict that it will be nearly as important as the file data itself. We want 
+		to store relations between files, summaries, ACLs, and other information 
+		which will easily not only exceed S3's current 2k limitation, but also 
+		require a rich set of operations independent of file data. S3's metadata is 
+		intimately coupled with the files themselves, and there is no facility for 
+		interacting with the metadata separately.</dd>
+
+  	<dt>Hosted on Amazon's Servers</dt>
+	<dd>Because some of the data we're storing is highly sensitive (e.g., shots of 
+		movies and commercials which are still in production, personnel data, etc.),
+		we couldn't store data outside of our local network.</dd>
+	<dd>We also anticipate needing to store many very large chunks of data which
+		will need to be retrieved quickly, so we needed to stay within our own
+		local network for speed.</dd>
+
+ 	<dt>Authentication</dt>
+	<dd>All of our authentication/authorization is done using our LDAP directory, and
+		we couldn't figure out a way to be able to leverage our existing single 
+		sign-on to control access to S3 data.</dd>
+</dl>
+
+
+h3. MogileFS %(title-link)"[link]":http://www.danga.com/mogilefs/%
+
+MogileFS is Danga Interactive's distributed filesystem. Since both of us worked for
+Danga at LiveJournal, this was the first thing we considered. After testing it out,
+and based on our experiences at LiveJournal, we decided that it didn't mesh with our
+requirements:
+
+<dl>
+	<dt>Inflexible</dt>
+	<dd>MogileFS was invented as a "cheap (open source) spray-files-everywhere 
+		solution" at the expense of flexibility, portability, and ease of use. While
+		some strides have been made to make it more-generally useful, it's still
+		best suited for the environments which most closely match the problems that
+		Danga was trying to solve when they wrote it, an environment which is
+		significantly different than our own.</dd>
+	
+	<dt>Custom Protocol</dt>
+	<dd>At the most basic level, the MogileFS storage nodes speak simple HTTP, but
+		because MogileFS also does replication and load-balancing in its protocol, 
+		writing a client for it is a bit more complex than we wanted.</dd>
+
+	<dt>Complexity</dt>
+	<dd>Because it does replication and load-balancing itself, MogileFS has a few
+		more moving parts than we think is necessary. We'd like to support those
+		things as well, but we want to defer their implementation until they're 
+		needed. We'd also like to be able to leverage existing orthogonal solutions 
+		for load-balancing and replication when they become necessary rather than
+		being forced into the one that's imposed on the system out of the box.</dd>
+
+</dl>
+
+h3. CouchDB %(title-link)"[link]":http://couchdb.org/%
+
+Though we didn't find this until well after we'd starting development on ThingFish, we 
+took a serious look at using CouchDB instead. Its got lots of the same nifty things we
+wanted for our own datastore (REST API, JSON instead of XML, no rigid schema, kickass 
+metadata layer) and even some stuff we didn't know we wanted. After looking at it,
+installing it, and giving it some thought, we decided that while we could probably make it
+work with some rethinking of the problem, it still wasn't a perfect fit for what we 
+needed:
+
+<dl>
+	<dt>Not Written in Ruby</dt>
+	<dd>We know, all the cool kids are switching to Erlang. It's retro *and* modern! And 
+		it's all concurrent and distributed and phone-system-ey! We know. But we still 
+		love Ruby. And we'd take cartoon foxes over Mike and Joe and their fancy PABX 
+		any day.</dd>
+
+ 	<dt>The 2Gb Limit</dt>
+	<dd>Considering that we work at an animation studio, and most of the resources we 
+		want to store are very large, we'd easily exceed the 2Gb limit imposed by the
+		standard library CouchDB uses. It looks like it's being addressed, but we
+		didn't feel like we could base our whole project on the assumption that it was
+		going to be addressed before we started using it.</dd>
+
+	<dt>Philosophy/Flexibility</dt>
+	<dd>Ultimately, CouchDB is just made for a different problem. While we're big fans of 
+		both map/reduce and Javascript, CouchDB's "document database" goals don't exactly 
+		mesh with what we need. We need a place to catalog and store large chunks of 
+		data. We need the ability to move more of the metadata-extraction and similar
+		functions into the server. We need to offer a dead-simple interface for 
+		interacting with the data for other programmers who want to or don't have time to 
+		learn how to write views in Javascript.</dd>
+	<dd>The CouchDB developers are a bunch of incredibly smart people, and we're sure 
+		it'll go on to rule the world. We'll submit and use that when our kind and 
+		gentle Erlang masters show up, but in the meantime we'll keep hacking away on 
+		our 'Fish.</dd>
+
+</dl>
+
 
 
 h2. Authors
@@ -14,21 +186,51 @@ h2. Authors
 * Michael Granger <"mgranger@laika.com":mailto:mgranger@laika.com>
 * Mahlon E. Smith <"mahlon@laika.com":mailto:mahlon@laika.com>
 
+*ThingFish* is copyrighted Open Source software written by the Information Systems
+department of LAIKA, Inc., a media and entertainment company in Portland, OR.
+
+It was developed in-house for the web-based applications created there, but is being
+shared with the community in appreciation of all the fine free and Open Source software in
+use at the studio.
+
 
 h2. License
 
-!images/opensource-75x65-t.png!
-
-Copyright (c) 2007, LAIKA, Inc
+Copyright © 2007-2008, LAIKA, Inc
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, are
+permitted provided that the following conditions are met:
 
-* Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-* Neither the name of the <ORGANIZATION> nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+* Redistributions of source code must retain the above copyright notice, this list of
+  conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, this list of
+  conditions and the following disclaimer in the documentation and/or other materials
+  provided with the distribution.
+* Neither the name of LAIKA nor the names of its contributors may be used to
+  endorse or promote products derived from this software without specific prior written
+  permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-<a rel="license" href="http://creativecommons.org/licenses/by/3.0/"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by/3.0/88x31.png"/></a><br/>The content of this manual, including images, video, and any example source code is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0  License</a>.
+<div id="cc-license">
+<a rel="license" href="http://creativecommons.org/licenses/by/3.0/">
+	!http://i.creativecommons.org/l/by/3.0/88x31.png(Creative Commons License)!
+</a><br/>
+The content of this manual, including images, video, and any example source code is 
+licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative 
+	Commons Attribution 3.0 License</a>.
+</div>
+
+[getting_started]../01.Getting_Started/01.downloading.html
+[developers_guide]../02.Developers_Guide/
+[hackers_guide]../03.Hackers_Guide/
 

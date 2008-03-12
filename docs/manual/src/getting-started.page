@@ -1,0 +1,382 @@
+<% @page_title = "Getting Started" %>
+
+h1. <%= @page_title %>
+
+h2. Installation
+
+h3. Requirements
+
+ThingFish is written in ruby, and is tested using version 1.8.6:
+
+* Ruby (>= 1.8.6): "http://www.ruby-lang.org/en/downloads/":http://www.ruby-lang.org/en/downloads/
+
+Other versions may work, but are not tested.
+
+h3. Ruby Modules
+
+There are two ways you can install ThingFish. The easiest is to use RubyGems:
+
+  $ sudo gem install thingfish
+
+If you'd rather install from source, you can download and install it yourself manually a couple of
+different ways.
+
+h3. Releases
+
+Released source tarballs can be downloaded from:
+ 
+* "http://opensource.laika.com/ThingFish/":http://opensource.laika.com/downloads
+
+h3. Development Sources
+
+If you wish to help with development or just check out the development sources, you can 
+do so using Subversion:
+
+* "svn://opensource.laika.com/thingfish/trunk":svn://opensource.laika.com/thingfish/trunk
+
+
+If you're installing from source, you'll also need to install these:
+
+* Mongrel (>= 1.0.3): "http://mongrel.rubyforge.org/":http://mongrel.rubyforge.org/
+* PluginFactory (>= 1.0.3): "http://deveiate.org/projects/PluginFactory":http://deveiate.org/projects/PluginFactory
+* UUIDTools (>= 1.0.0): "http://rubyforge.org/projects/uuidtools/":http://rubyforge.org/projects/uuidtools/
+
+Once you have those installed, you can install ThingFish like so:
+
+  $ tar -zxvf thingfish-0.1.0.tgz
+  $ cd thingfish-0.1.0
+  $ su -
+  # rake install
+
+The dependencies above are enough to run the server, but if you want to help out with development,
+run tests, or generate documentation, you'll need a few more things:
+
+#:gemlist#
+coderay
+lockfile
+rcodetools
+rcov
+redcloth
+rote
+rspec
+#:gemlist#
+
+* CodeRay (>= 0.7.0): "http://coderay.rubychan.de/":http://coderay.rubychan.de/
+* lockfile (>= 1.4.3): "http://codeforpeople.com/lib/ruby/lockfile/":http://codeforpeople.com/lib/ruby/lockfile/
+* rcodetools (>= 0.7.0): "http://eigenclass.org/hiki/rcodetools":http://eigenclass.org/hiki/rcodetools
+* rcov (>= 0.7.0): "http://eigenclass.org/hiki.rb?rcov":http://eigenclass.org/hiki.rb?rcov
+* Redcloth (>= 3.0.4): "http://whytheluckystiff.net/ruby/redcloth/":http://whytheluckystiff.net/ruby/redcloth/
+* rote (>= 0.3.4): "http://webgen.rubyforge.org/":http://webgen.rubyforge.org/
+* RSpec (>= 1.1.1): "http://rspec.rubyforge.org/":http://rspec.rubyforge.org/
+
+If you have RubyGems installed, you can install these automatically via the 
+@install_dependencies@ task of the Rakefile:
+
+#:example#{language: console, caption:Install dependencies as gems via the Rakefile task}#
+$ sudo rake install_dependencies
+#:example#
+
+
+h2. Running ThingFish
+
+The server comes with a @thingfishd@ command line program which can be started in 
+the usual fashion:
+
+#:example#{language: console, caption: Starting thingfishd}#
+$ thingfishd
+#:example#
+
+The server reads its configuration from a single file called @thingfish.conf@ which
+is expected to be in Ruby's @sysconfdir@ by default. You can point it at a config
+file somewhere else with the @-f@ flag:
+
+#:example#{language: console, caption: Starting thingfishd with a config}#
+$ thingfishd -f /etc/thingfish.conf
+#:example#
+
+
+h3. Configuration File
+
+The config file is a YAML file, and chooses sane values as defaults.  An absolutely
+minimalistic configuration should look something like this:
+
+#:example#{language: yaml, caption: Example minimalistic config file}#
+---
+defaulthandler:
+    resource_dir: var/www
+
+#:example#
+
+Because all default storage is in memory, it makes for a nice  "is it working?"
+test.  You'll probably want to get more elaborate with your configuration fairly 
+quickly, however.
+
+#:example#{language: yaml, caption: Example comprehensive config file}#
+---
+port: 80
+ip: 127.0.0.1
+spooldir: /home/thingfish/var/spool
+bufsize: 16384
+user: daemon
+daemon: true
+pidfile: /home/thingfish/var/thingfish.pid
+
+defaulthandler:
+    html_index: index.rhtml
+    resource_dir: /home/thingfish/var/www
+
+logging:
+    level: info
+    logfile: /home/thingfish/var/thingfish.log
+
+plugins:
+    filestore:
+        name: filesystem
+        maxsize: 1073741824
+        root: /home/thingfish/var
+    metastore:
+        name: marshalled
+        root: /home/thingfish/var
+    filters:
+        - html
+        - xml
+        - yaml
+        - json
+        - mp3info
+        - exif
+    handlers:
+        - inspect:
+            uris: /inspect
+            resource_dir: /home/thingfish/plugins/thingfish-inspecthandler/resources
+        - formupload:
+            uris: /upload
+            resource_dir: /home/thingfish/plugins/thingfish-formuploadhandler/resources
+        - metadata:
+            uris: /metadata
+            resource_dir: /home/thingfish/var/www
+        - status:
+            uris: /status
+            stat_uris: [/, /inspect, /upload, /metadata, /status]
+            resource_dir: /home/thingfish/plugins/thingfish-statushandler/resources
+
+#:example#
+
+The meaning of the config values are as follows:
+
+<dl class="kvlist">
+	<dt>port</dt>
+	<dd class="description">The port the daemon should listen on.</dd>
+	<dd class="default">Defaults to <code>3474</code></dd>
+	
+	<dt>ip</dt>
+	<dd class="description">The ip the daemon should bind to.</dd>
+	<dd class="default">Defaults to <code>127.0.0.1</code></dd>
+	
+	<dt>user</dt>
+	<dd class="description">The username to run as if we're started as root.</dd>
+	<dd class="default">No default</dd>
+	
+	<dt>daemon</dt>
+	<dd class="description">Either <code>true</code> or <code>false</code>.
+	    Whether or not to detach from the controlling terminal.</dd>
+	<dd class="default">Defaults to <code>false</code></dd>
+	
+	<dt>pidfile</dt>
+	<dd class="description">A filename to write the daemon's pid to.  Ignored
+	    if daemon mode is not enabled.</dd>
+	<dd class="default">No default</dd>
+	
+	<dt>defaulthandler</dt>
+	<dd class="description">This subsection contains configuration values for the 
+		top-level handler object of the daemon.</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>html_index</dt>
+			<dd class="description">This contains the name of the file to serve by 
+				default for requests to the <code>/</code> URI when no content-type 
+				is specified.</dd>
+			<dd class="default">Defaults to <code>index.rhtml</code></dd>
+			
+			<dt>resource_dir</dt>
+			<dd class="description">The directory to search for static resources 
+				relative to the , including the <code>html_index</code> file.</dd>
+			<dd class="default">Defaults to a directory called 
+				<code>thingfish/default</code> under Ruby's shared datadir </dd>
+		</dl>
+	</dd>
+	
+	<dt>logging</dt>
+	<dd class="description">This section contains the configuration for the logging 
+		subsystem.</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>level</dt>
+			<dd class="description">The level of message that should be logged.</dd>
+			<dd class="valid-values">Valid values (in increasing order of severity) 
+				are:
+				<ul>
+					<li><code>debug</code></li>
+					<li><code>info</code></li>
+					<li><code>warn</code></li>
+					<li><code>error</code></li>
+					<li><code>fatal</code></li>
+				</ul>
+			</dd>
+			<dd class="default">Defaults to: <code>warn</code></dd>
+			
+			<dt>logfile</dt>
+			<dd class="description">The file or filehandle that logging messages
+				should be written to.</dd>
+			<dd class="valid-values">May be either one of the special 
+				values <code>stderr</code> or <code>stdout</code>, which correspond 
+				to the STDERR and STDOUT file descriptors, or a path to a logfile.
+				If the path is not absolute, it is relative to	</dd>
+			<dd class="default">Defaults to: <code>stderr</code></dd>
+		</dl>
+	</dd>
+	
+	<dt>plugins</dt>
+	<dd class="description">This section contains configuration information for any
+		plugins you wish to be loaded. It has one section for each type of
+		plugin:</dd>
+	<dd class="subsection">
+		<dl>
+			<dt>filestore</dt>
+			<dd class="description">Configuration of the plugin which provides the 
+				filestore implementation.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+					<dd class="description">The name of the plugin to load.</dd>
+					<dd class="default">Defaults to @memory@</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+			
+			<dt>metastore</dt>
+			<dd class="description">Configuration of the plugin which provides the
+				metastore implementation.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+					<dd class="description">The name of the plugin to load.</dd>
+					<dd class="default">Defaults to @memory@</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+			
+			<dt>filters</dt>
+			<dd class="description">Configures which (optional) filters to load.</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>name</dt>
+					<dd class="description">The name of the plugin to load.</dd>
+
+					<dt class="placeholder">(Plugin-specific values)</dt>
+					<dd class="description">See the documentation for your chosen 
+						plugin about what valid config values are.</dd>
+				</dl>
+			</dd>
+			
+			<dt>handlers</dt>
+			<dd class="description">Configuration of any handler plugins you wish to
+				be loaded to handle various part of the urispace of the server. This 
+				is in the form of a YAML array of hashes, one plugin per hash. Each 
+				hash has the name of the plugin to be loaded as the key, and any 
+				plugin-specific configuration is stored in the value. This 
+				plugin-specific configuration must contain at least a uri mount
+				point. See the documentation for the plugin itself for additional
+				values that can be set.  For more information about writing handlers,
+				see the "Handler":../03.Hackers_Guide/writing-handlers.html
+				documentation.
+			</dd>
+			<dd class="subsection">
+				<dl>
+					<dt>Defining a URI mount point</dt>
+					<dd class="description">
+						<p>The following are all valid methods for defining URI mount
+						points for a handler:</p>
+#:example#{language: yaml, caption: As the only value}#
+- handlername: /mount
+#:example#
+
+#:example#{language: yaml, caption: As a string value in the uris pair of the options hash}#
+- handlername:
+    uris: /mount
+#:example#
+
+#:example#{language: yaml, caption: As an array of URIs in the uris pair of the options hash}#
+- handlername:
+    uris: [/mount, /mount2]
+#:example#
+					</dd>
+				</dl>
+			</dd>
+			<dd class="default">The default is to only handle requests via the default
+				handler.</dd>
+
+		</dl>		
+	</dd>
+</dl>
+
+
+h2. Running the Server Under Daemontools
+
+ThingFish is designed to optionally co-exist with Dan Bernstein's
+"Daemontools":http://cr.yp.to/daemontools.html package, which gives you a lot of
+service management and log rotation goodies for free.
+
+h3. Daemontools run File
+
+An example run file that can be used with supervise is included in the ThingFish distribution.
+This run file adds the ThingFish and ThingFish plug-in libraries to Ruby's search path
+before starting the daemon.  This isn't necessary if you've used RubyGems to install
+ThingFish and ThingFish add-ons, but is useful if everything is extracted to a single
+directory.
+
+#:example#{language: shell, caption: A ThingFish run file for use with supervise}#
+#!/bin/bash
+
+plugin_libs=(plugins/*/lib)
+
+libflags=''
+for libdir in ${plugin_libs[*]}; do
+	libflags="-I${libdir} $libflags"
+done
+
+exec ruby -Ilib $libflags bin/thingfishd -f etc/thingfish.conf $*
+#:example#
+
+h3. Configuration File
+
+Change the following ThingFish configuration options for best results with supervise.
+
+<dl class="kvlist">
+	<dt>daemon</dt>
+	<dd class="description">
+		The 'supervise' process within Daemontools wants the underlying process to
+		run in the foreground.
+	<dd class="default">Set this to <code>false</code></dd>
+	
+	<dt>logging</dt>
+	<dd class="subsection">
+		<dl>
+			<dt>logfile</dt>
+			<dd class="description">Daemontools comes with an included logging
+				and rotation tool called "multilog.":http://cr.yp.to/daemontools/multilog.html
+				Multilog wants to see log data on stdin.
+			</dd>
+			<dd class="default">Set this to <code>stdout</code></dd>
+		</dl>
+	</dd>
+</dl>
+
+
+
+

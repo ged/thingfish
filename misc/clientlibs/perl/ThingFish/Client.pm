@@ -87,10 +87,10 @@ use URI;
 #==============================================================================
 
 my $version      = '0.1';
-my $svnrev       = '$Rev$';
+my $svnrev       = '$Rev$'; $svnrev = $1 if $svnrev =~ /(\d+)/;
 my $agent        = "thingfish-client $version-$svnrev/perl";
-our $uuid_regexp = qr/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/i;
 my $buffersize   = 16384;
+our $uuid_regexp = qr/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/i;
 
 #==============================================================================
 
@@ -212,7 +212,7 @@ sub has
 
 	my $uri = $self->_handler_uri('simplemetadata') or return;
 
-	my $response = $self->_send_request( HEAD => "$uri/$uuid" );
+	my $response = $self->_send_request( HEAD => $uri . $uuid );
 	unless ( $response->is_success ) {
 		$self->err( $response->status_line );
 		return 0;
@@ -365,8 +365,10 @@ sub _handler_uri
 	}
 
 	my $handlers = $info->{ 'handlers' };
-	my $uris     = $handlers->{ $handler };
-	return ref $uris eq 'ARRAY' ? $uris->[0] : undef;
+	my $uris     = $handlers->{ $handler } or return;
+	my $uri      = $uris->[0] . '/';
+	$uri =~ s|/+|/|g;
+	return $uri;
 }
 
 ### Build and cache the local UserAgent object.
@@ -445,14 +447,15 @@ sub _storedata
 	# we update via PUT.  Otherwise, it's a new storage request,
 	# and we POST.
 	#
-	my ( $method, $uri );
+	my $method;	
+	my $uri = $self->_handler_uri('default') || '/';
+
 	if ( $resource->uuid ) {
 		$method = 'PUT';
-		$uri    = '/' . $resource->uuid;
+		$uri    = $uri . $resource->uuid;
 	}
 	else {
 		$method = 'POST';
-		$uri    = '/';
 	}
 
 	# build HTTP::Headers

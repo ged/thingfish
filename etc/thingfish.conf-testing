@@ -20,11 +20,14 @@ logging:
 
 plugins:
     filestore:
+#        name: filesystem
         name: memory
         maxsize: 1073741824
         root: /tmp/thingfish
     metastore:
         name: memory
+#        name: sequel
+        sequel_connect: sqlite:////tmp/thingfish/metastore.db
     handlers:
         - inspect:
             uris: /inspect

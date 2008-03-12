@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+BEGIN {
+	require 'pathname'
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+
+	libdir = basedir + "lib"
+
+	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
+}
+
+begin
+	require 'rbconfig'
+
+	require 'spec/runner'
+	require 'spec/lib/constants'
+	require 'spec/lib/filter_behavior'
+
+	require 'thingfish'
+	require 'thingfish/filter'
+	require 'thingfish/filter/<%= @name %>'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+
+
+#####################################################################
+###	C O N T E X T S
+#####################################################################
+
+include ThingFish::Constants
+
+describe ThingFish::<%= @name.capitalize %><%= @type.capitalize %> do
+
+	before( :all ) do
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+		
+	before( :each ) do
+		@<%= @type %> = ThingFish::<%= @type.capitalize %>.create( '<%= @name %>' )
+	end
+
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+	
+	### Shared behaviors
+	it_should_behave_like "A Filter"
+	
+	### Implementation-specific Examples
+	it "is well tested"
+
+end
+
+# vim: set nosta noet ts=4 sw=4:

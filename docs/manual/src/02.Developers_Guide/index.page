@@ -1,0 +1,13 @@
+<% @page_title = "Developer's Guide" %>
+
+h2. <%= @page_title %>
+
+This is a collection of tutorials on how to access a ThingFish server from the command 
+line and from your own code, as well as how to write a client library for languages which
+don't yet have one.
+
+* <a href="01.connecting.html">Connecting to the Server</a>
+* <a href="02.ruby-client.html">Using the Ruby Client Library</a>
+* <a href="03.js-client.html">Using the Javascript Client Library</a>
+* <a href="04.writing-your-own-client.html">Writing a ThingFish Client Library</a>
+

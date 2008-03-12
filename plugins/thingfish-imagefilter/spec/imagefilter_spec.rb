@@ -85,6 +85,16 @@ describe ThingFish::ImageFilter do
 	end
 	
 	
+	it "ignores entity bodies of media types it doesn't know how to open" do
+		@request.should_receive( :http_method ).at_least( :once ).and_return( 'PUT' )
+		@request_metadata[ :format ] = 'dessert/tiramisu'
+		Magick::Image.should_not_receive( :from_blob )
+		@request.should_not_receive( :metadata )
+		
+		@filter.handle_request( @request, @response )
+	end
+	
+	
 	it "extracts dimension metadata from uploaded image data using RMagick" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
 		

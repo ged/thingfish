@@ -205,7 +205,7 @@ module UtilityFunctions
 	def debug_msg( msg )
 		return unless $DEBUG
 		msg.chomp!
-		$stderr.puts ansi_code( 'bold', 'yellow', 'on_blue' ) + ">>> #{msg}" + ansi_code( 'reset' )
+		$stderr.puts ansi_code( 'yellow' ) + ">>> #{msg}" + ansi_code( 'reset' )
 		$stderr.flush
 	end
 

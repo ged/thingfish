@@ -1,4 +1,0 @@
-$ tar -zxvf thingfish-0.1.0.tgz
-$ cd thingfish-0.1.0
-$ su -
-# rake install

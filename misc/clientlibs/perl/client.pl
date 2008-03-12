@@ -19,6 +19,7 @@ sub usage
 {
 	print <<EOF;
 Usage:
+  $0 THINGFISH_URL info
   $0 THINGFISH_URL upload FILE
   $0 THINGFISH_URL check UUID
   $0 THINGFISH_URL fetch UUID [FILE]
@@ -31,7 +32,6 @@ EOF
 
 my $url  = shift @ARGV;
 my $verb = shift @ARGV;
-usage() unless scalar @ARGV;
 
 my $tf = ThingFish::Client->new;
 do {
@@ -42,6 +42,9 @@ do {
 	$tf->port( $port );
 };
 
+info() if $verb eq 'info';
+usage() unless scalar @ARGV;
+
 upload()     if $verb eq 'upload';
 check()      if $verb eq 'check';
 fetch()      if $verb eq 'fetch';
@@ -49,6 +52,30 @@ properties() if $verb eq 'properties';
 update()     if $verb eq 'update';
 search()     if $verb eq 'search';
 usage();
+
+sub info
+{
+	my $info = $tf->_serverinfo;
+	
+	printf "ThingFish at %s:%d is a version %s server.\n",
+		$tf->host, $tf->port, $tf->server_version;
+		
+	print "\nHandlers:\n";
+	printf "%20s -> [ %s ]\n",
+		'default', ( join ', ', @{$info->{ 'handlers' }->{ 'default' }} );
+	foreach my $handler ( keys %{ $info->{ 'handlers' } }) {
+		next if $handler eq 'default';
+		printf "%20s -> [ %s ]\n",
+			$handler, ( join ', ', @{$info->{ 'handlers' }->{ $handler }} );
+	}
+	print "\nFilters:\n";
+	foreach my $filter ( keys %{ $info->{ 'filters' } }) {
+		my $filter_info = $info->{'filters'}->{ $filter };
+		printf "  %s v%s (rev %d)\n",
+			$filter, ( join '.', @{$filter_info->{ 'version' }} ), $filter_info->{ 'rev' };
+	}	
+	exit 0;
+}
 
 sub check
 {

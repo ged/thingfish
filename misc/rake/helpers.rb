@@ -104,23 +104,35 @@ def download( sourceuri, targetfile )
 	targetpath.open( File::WRONLY|File::TRUNC|File::CREAT, 0644 ) do |ofh|
 	
 		url = URI.parse( sourceuri )
-		Net::HTTP.start( url.host, url.port ) do |http|
-			req = Net::HTTP::Get.new( url.path )
+		downloaded = false
+		limit = 5
+		
+		until downloaded or limit.zero?
+			Net::HTTP.start( url.host, url.port ) do |http|
+				req = Net::HTTP::Get.new( url.path )
 
-			http.request( req ) do |res|
-				if res.is_a?( Net::HTTPSuccess )
-					print "Downloading..."
-					res.read_body do |buf|
-						ofh.print( buf )
-					end
-					puts "done."
+				http.request( req ) do |res|
+					if res.is_a?( Net::HTTPSuccess )
+						log "Downloading..."
+						res.read_body do |buf|
+							ofh.print( buf )
+						end
+						downloaded = true
+						puts "done."
+		
+					elsif res.is_a?( Net::HTTPRedirection )
+						url = URI.parse( res['location'] )
+						log "...following redirection to: %s" % [ url ]
+						limit -= 1
+						sleep 0.2
+						next
 				
-				else
-					res.error!
+					else
+						res.error!
+					end
 				end
 			end
 		end
-		
 	end
 	
 	return targetpath

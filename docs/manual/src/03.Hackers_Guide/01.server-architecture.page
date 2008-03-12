@@ -1,0 +1,76 @@
+h1. Hacker's Guide
+
+h2. <%= @page_title = "Server Architecture" %>
+
+The server has five major components:
+
+!/images/server-architecture.png(Server Architecture Diagram)!
+
+h3{color:#9568AA}. Daemon
+
+The daemon is the container for the other parts, and is the class that is executed
+when the server starts up. On startup, the daemon loads the configuration file, reads
+it, then loads the configured plugin components and assembles them into the chain of
+objects that defines how ThingFish functions.
+
+After startup, the daemon is also the component which handles incoming connections
+and manages the cleanup process when it is shutting down.
+
+In comparison to the other components, there's really nothing to customize in the
+Daemon class itself. The other components are all pluggable -- that is, you can
+define your own just by adding an appropriately-named file to the right directory.
+
+
+h3{color:#BD140D}. Handlers
+
+Handlers are the main workhorses of the system. They provide the logic for how to
+handle any of the various requests sent to the server. ThingFish has one of these
+by default, called the @DefaultHandler@, which handlers requests for the index
+(@/@) and provides the functionality for uploads and downloads
+of file data.
+
+The @DefaultHandler@ is always loaded and can't be omitted or replaced via the
+config. If you want to modify it, you'll have to write your own Daemon class to do
+so.
+
+You can, however, add one or more other handlers to the chain that will handle
+requests for metadata, search strategies, or anything else you might want to
+do. ThingFish comes with a number of these that can be loaded via the config.
+
+See the "Writing Handlers":02.writing-handlers.html section
+for more on how to do this.
+
+
+h3{color: #6694b2}. Filters
+
+Filters are a bit like handlers, but they don't create or accept content themselves;
+they transform outgoing content to a form which the requester has asked for if it
+isn't in that format already (HTTP content negotiation), or automatically extract
+metadata from incoming file data.
+
+See the "Writing Filters":03.writing-filters.html section for
+more information.
+
+
+h3{color: #84ac2b}. Filestore
+
+The Filestore is the data-storage backend, the system which stores the actual
+file data in some storage medium behind the scenes. ThingFish comes with two
+different ones: a memory-based one that stores everything in memory, and a simple
+filesystem-based one that stores everything on disk in a hashed directory tree.
+
+For more about writing a custom Filestore, see the "Writing FileStores":./04.writing-filestores.html
+section.
+
+
+h3{color: #ccae2f}. Metastore
+
+The Metastore is the backend system which stores searchable metadata about the
+files. ThingFish comes with two metastore backends which are complimentary to
+the included filestore plugins -- one that stores everything in an in-memory
+datastructure, and one that stores it on disk.
+
+The "Writing MetaStores":05.writing-metastores.html section
+contains instructions on how to write your own.
+
+

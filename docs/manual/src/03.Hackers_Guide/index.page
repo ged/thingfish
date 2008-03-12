@@ -1,0 +1,10 @@
+h1. <% @page_title = "Hacker's Guide" %>
+
+This is a collection of tutorials on how to add your own functionality to ThingFish via its pluggable components.
+
+* "Server Architecture":01.server-architecture.html
+* "Writing your own Handler":02.writing-handlers.html
+* "Writing your own Filter":03.writing-filters.html
+* "Writing your own FileStore":04.writing-filestores.html
+* "Writing your own MetaStore":05.writing-metastores.html
+

@@ -15,9 +15,29 @@ require 'optparse'
 require 'ostruct'
 require 'erb'
 require 'etc'
+require 'fileutils'
+
+BASEDIR = Pathname.new( __FILE__ ).dirname.parent
+
+require BASEDIR + 'loadpath.rb'
+require BASEDIR + 'utils.rb'
 
 
 class PluginGenerator
+	include FileUtils, UtilityFunctions
+	
+	PLUGINDIR = BASEDIR + 'plugins'
+	SKELDIR   = PLUGINDIR + '.skel'
+
+	SKEL_LIBDIR = SKELDIR + 'lib'
+	SKEL_TFDIR = SKEL_LIBDIR + 'thingfish'
+	
+
+	### Return a list of the types of plugins that can be created.
+	def self::find_valid_types
+		Pathname.glob( SKEL_TFDIR + '*' ).collect {|pn| pn.basename.to_s }
+	end
+	
 	
 	### Return a struct which contains the default config values, appropriate
 	### for passing as the first argument to #main
@@ -25,47 +45,28 @@ class PluginGenerator
 		options = OpenStruct.new
 
 		options.debugging = false
-		options.author = Etc.getpwuid( Process.euid ).gecos rescue "J Random Hacker"
+		options.noaction  = false
+		options.author    = Etc.getpwuid( Process.euid ).gecos rescue "J Random Hacker"
 		
 		return options
 	end
-	
-	
-	### Create a new PluginGenerator object, configured with the given +options+ 
-	### struct.
-	def initialize( options )
-		@options = options
-	end
-	
-
-	######
-	public
-	######
-
-	### Run the generator
-	def run( *args )
-		valid_types = self.find_valid_types
-	end
-	
-	
-end
 
 
-### If running directly, handle parsing command-line arguments, etc.
-if __FILE__ == $0
-	$stderr.sync = $stdout.sync = true
-	
-	begin
+	### Make an OptionParser
+	def self::parse_arguments( args )
 		program = Pathname.new( $0 ).expand_path
-		options = PluginGenerator.default_config
-		
+		options = self.default_config
+
 		oparser = ARGV.options do |opts|
 
-			opts.banner = "Usage: #{program.basename} [OPTIONS] PLUGINTYPE PLUGINNAME"
+			opts.banner = "Usage: #{program.basename} [OPTIONS] PLUGINNAME PLUGINTYPE"
 			opts.separator ""
 			opts.separator "PLUGINTYPE should be one of: "
 			opts.separator "  " + 
-			
+				PluginGenerator.find_valid_types.collect {|type| %Q{"%s"} % type.to_s }.join(", ")
+
+			opts.separator ""
+
 			opts.on( '--author=AUTHORNAME', '-a=AUTHORNAME', String, 
 			         "Use AUTHORNAME in the plugin files instead of '#{options.author}'") do |str|
 				options.author = str
@@ -74,22 +75,131 @@ if __FILE__ == $0
 			opts.separator ""
 
 			opts.on( '--debug', '-D', TrueClass, "Turn debugging on." ) do
-				options.debugging = true
+				$DEBUG = true
 			end
-			
+
+			opts.on( '--verbose', '-v', TrueClass, "Turn verbose output on." ) do
+				$VERBOSE = true
+			end
+
+			opts.on( '--no-action', '-n', FalseClass, "Don't really do anything, " +
+				"just output what would happen." ) do
+				options.noaction = true
+			end
+
 			opts.on( '--help', '-h', TrueClass, "Display this text." ) do
 				$stderr.puts( opts )
 				exit!( 0 )
 			end
-			
+
 		end
-		args = oparser.parse!
 		
-		PluginGenerator.new( options ).run( *args )
+		name, type = oparser.parse!
+		unless args.length >= 2
+			$stderr.puts( oparser )
+			exit( 1 )
+		end
+
+		return options, name, type
+	end	
+	
+	
+	### Create a new PluginGenerator object, configured with the given +options+ 
+	### struct.
+	def initialize( args )
+		@options, @name, @type = self.class.parse_arguments( args )
+		@name = @name.sub( /#@type$/, '' ) # Trim the type off the plain name
 		
-	rescue => err
-		$stderr.puts "ERROR: #{err.message}"
-		$stderr.puts "  " + err.backtrace.join("\n  ")
+		self.extend FileUtils::DryRun if @options.noaction
 	end
+	
+
+	######
+	public
+	######
+
+	### Run the generator
+	def run
+		valid_types = self.class.find_valid_types
+		unless valid_types.include?( @type )
+			raise ArgumentError, "Unknown plugin type %p. Expected one of: %p" %
+				[ @type, valid_types ]
+		end
+
+		targetdir = self.make_project_name( @name, @type )
+		raise "#{targetdir}: already exists" if targetdir.exist?
+		self.setup_new_project( targetdir )
+		self.render_project_templates( targetdir )
+
+	rescue => err
+		error_msg "ERROR: #{err.message}"
+		debug_msg "  " + err.backtrace.join("\n  ")
+	end
+
+
+	### Search the target directory for files with the extension '.erb', render each
+	### one using ERB to a file with the same name but with the '.erb' removed, then
+	### remove the .erb version.
+	def render_project_templates( targetdir )
+		Pathname.glob( targetdir + '**/*.erb' ) do |pathname|
+			outputname = pathname.to_s.sub(/\.erb$/, '').gsub( /TEMPLATE/, @name )
+			outputfile = Pathname.new( outputname ).
+				relative_path_from( Pathname.pwd )
+			template = ERB.new( pathname.read )
+
+			verbose_msg "Rendering %s as %s" % [ pathname, outputfile ]
+			begin
+				name = @name
+				type = @type
+				unless @options.noaction
+					outputfile.open( File::CREAT|File::EXCL|File::WRONLY, 0644 ) do |fh|
+						fh.write( template.result(binding()) )
+					end
+				end
+			rescue => err
+				raise "%s while rendering %s\n    from %s:\n    %s" %
+					[ err.class.name, outputfile, pathname, err.message ]
+			end			
+			
+			rm_r( pathname )
+		end
+	end
+	
+	
+	### Set up a new project directory by cloning the SKELDIR and removing any unnecessary
+	### files.
+	def setup_new_project( targetdir )
+		debug_msg "Cloning %s to %s" % [ SKELDIR, targetdir ]
+		cp_r( SKELDIR, targetdir, :verbose => true )
+		
+		unused_types = []
+		self.class.find_valid_types.each do |utype|
+			next if @type == utype
+			debug_msg "  Adding libdir #{utype} to the list of stuff to remove"
+			unused_types << targetdir + 'lib/thingfish' + utype
+			unused_types << targetdir + 'spec/thingfish' + utype
+		end
+		unused_types += Pathname.glob( targetdir + '**/.svn' )
+
+		debug_msg "Trimming unused paths (%p)" % [ unused_types ]
+		unused_types.each {|path| rm_rf( path, :verbose => true ) }
+	end
+
+
+	### Make a normalized name for the new project directory and return it as a Pathname object.
+	def make_project_name( name, type )
+		name = "thingfish-#{name.downcase}" unless name =~ /^thingfish-/
+		name += type.downcase unless name =~ /#{type}$/i
+		return Pathname.pwd + name
+	end
+	
+end
+
+
+### If running directly, handle parsing command-line arguments, etc.
+if __FILE__ == $0
+	$stderr.sync = $stdout.sync = true
+	
+	PluginGenerator.new( ARGV ).run
 end
 

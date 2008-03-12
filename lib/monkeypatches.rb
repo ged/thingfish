@@ -21,7 +21,11 @@
 # 
 # 
 # 
-	
+
+require 'rubygems'
+
+gem 'mongrel', '>= 1.1.3'
+
 require 'mongrel'
 require 'uuidtools'
 require 'thingfish/mixins'
@@ -103,7 +107,7 @@ class Mongrel::HttpServer
 					if handlers
 						params[Const::PATH_INFO] = path_info
 						params[Const::SCRIPT_NAME] = script_name
-						params[Const::REMOTE_ADDR] = params[Const::HTTP_X_FORWARDED_FOR] || client.peeraddr.last
+						params[Const::REMOTE_ADDR] = client.peeraddr.last
 
 						# select handlers that want more detailed request notification
 						notifiers = handlers.select { |h| h.request_notify }
@@ -142,16 +146,23 @@ class Mongrel::HttpServer
 			client.close rescue Object
 		rescue HttpParserError
 			if $mongrel_debug_client
-				STDERR.puts "#{Time.now}: BAD CLIENT (#{params[Const::HTTP_X_FORWARDED_FOR] || client.peeraddr.last}): #$!"
-				STDERR.puts "#{Time.now}: REQUEST DATA: #{data.inspect}\n---\nPARAMS: #{params.inspect}\n---\n"
+				$stderr.puts "#{Time.now}: HTTP parse error, malformed request (#{params[Const::HTTP_X_FORWARDED_FOR] || client.peeraddr.last}): #{e.inspect}"
+				$stderr.puts "#{Time.now}: REQUEST DATA: #{data.inspect}\n---\nPARAMS: #{params.inspect}\n---\n"
 			end
 		rescue Errno::EMFILE
 			reap_dead_workers('too many files')
-		rescue Object
-			STDERR.puts "#{Time.now}: ERROR: #$!"
-			STDERR.puts $!.backtrace.join("\n") if $mongrel_debug_client
+		rescue => err
+			$stderr.puts "#{Time.now}: ERROR: #{err.message}"
+			$stderr.puts err.backtrace.join("\n")
 		ensure
-			client.close rescue Object
+			begin
+				client.close
+			rescue IOError
+				# Already closed
+			rescue => err
+				$stderr.puts "#{Time.now}: Client error: #{err.inspect}"
+				$stderr.puts err.backtrace.join("\n")
+			end
 			request.body.delete if request and request.body.class == Tempfile
 		end
 	end

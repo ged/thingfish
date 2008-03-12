@@ -1,0 +1,6 @@
+h1. Developer's Guide
+
+h2. <%= @page_title = "The Javascript Client Library" %>
+
+«Coming Soon!»
+

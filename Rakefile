@@ -133,8 +133,6 @@ task :clobber_manual do
 end
 
 
-
-
 ### Cruisecontrol task
 desc "Cruisecontrol build"
 task :cruise => [:clean, :coverage, :package] do |task|

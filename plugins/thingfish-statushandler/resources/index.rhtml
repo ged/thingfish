@@ -9,15 +9,51 @@
 				<caption>Settings</caption>
 
 				<tbody>
-					<tr><th>timeout</th><td><%= listener.timeout %></td></tr>
-					<tr><th>workers max</th><td><%= listener.num_processors %></td></tr>
+					<tr><th>Timeout</th><td><%= listener.timeout %></td></tr>
+					<tr><th>Max Workers</th><td><%= listener.num_processors %></td></tr>
 				</tbody>
 			</table>
 
 		</div>
 
+		<div id="plugins-section">
+			<h2>Plugins</h2>
+			
+			<table id="plugins">
+				<caption>Plugin configuration.</caption>
+				<thead><tr><th>Type</th><th>Name</th></tr></thead>
+				<tbody>
+					<tr>
+						<th>FileStore Backend</th>
+						<td><%= @config.plugins.filestore.name %></td>
+					</tr>
+					<tr>
+						<th>MetaStore Backend</th>
+						<td><%= @config.plugins.metastore.name %></td>
+					</tr>
+					<tr>
+						<th>Filters</th>
+						<td>
+							<ul>
+						<% for plugin in @config.plugins.filters %>
+						<% 
+							case plugin 
+							when String
+						%>
+							<li><%= h plugin %></li>
+						<%  when Hash %>
+							<li><%= h plugin.keys.first %></li>
+						<% end %>
+						<% end %>
+							</ul>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
 		<div id="handlers-section">
-			<h2>Handler Map</h2>
+			<h2>Handler Statistics</h2>
 
 			<table id="handlers">
 				<thead><tr><th>URI</th><th>Handlers</th></tr></thead>

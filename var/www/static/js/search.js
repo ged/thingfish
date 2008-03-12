@@ -31,7 +31,7 @@ function viewMetaData()
 	var uri    = metadata_uri + '/' + uuid;
 	var button = this;
 
-	metahtml = '<tr id="metarow"><td colspan="2">' +
+	metahtml = '<tr id="metarow" style="display: none;"><td colspan="2">' +
 			   '<table id="metainfo"></table>' +
 			   '</td></tr>';
 
@@ -68,7 +68,7 @@ function viewMetaData()
 
 				metainfo.append(
 					'<tr>' +
-					'<td>' + key  + '</td>' +
+					'<th>' + key  + '</th>' +
 					'<td>' + link + '</td>' +
 					'</tr>'
 				);

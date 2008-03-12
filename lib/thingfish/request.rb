@@ -162,11 +162,13 @@ class ThingFish::Request
 	### than a ThingFish::Table, because we can't arbitrarily normalize query
 	### arguments.
 	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
-	### TODO: Parse query args for methods other than GET.
 	def query_args
 		return {} if @uri.query.nil?
 		@query_args ||= @uri.query.split(/[&;]/).inject({}) do |hash,arg|
 			key, val = arg.split('=')
+			key = URI.decode( key )
+
+			# Convert values
 			case val
 			when NilClass
 				# no-op
@@ -176,9 +178,18 @@ class ThingFish::Request
 				val = URI.decode( val )
 			end
 
-			hash[ URI.decode( key ) ] = val
+			# If there's already a value in the Hash, turn it into an array if
+			# it's not already, and append the new value
+			if hash.key?( key )
+				hash[ key ] = [ hash[key] ] unless hash[ key ].is_a?( Array )
+				hash[ key ] << val
+			else
+				hash[ key ] = val
+			end
+			
 			hash
 		end
+
 		self.log.debug( "Query arguments parsed as: %p" % [ @query_args ] )
 		return @query_args
 	end
@@ -280,7 +291,10 @@ class ThingFish::Request
 			merged.update( body_metadata )
 			merged.update( immutable_metadata )
 			
-			body.open if body.closed?
+			if body.closed?
+				self.log.warn "Ack! Body IO was closed! Reopening..."
+				body.open
+			end
 			body.rewind
 
 			self.log.debug "Yielding body = %p, merged metadata = %p" %

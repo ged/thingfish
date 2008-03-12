@@ -117,7 +117,7 @@ describe ThingFish::MP3Filter do
 	
 	it "ignores all non-mp3 uploads" do
 		@request_metadata[ :format ] = 'dessert/tapioca'		
-		@filter.should_not_receive( :extract_mp3_metadata )
+		Mp3Info.should_not_receive( :new )
 		@request.should_not_receive( :metadata )
 		
 		@filter.handle_request( @request, @response )

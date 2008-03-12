@@ -102,6 +102,14 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	end # class MagickOperations
 
 
+	# An array of mediatypes to ignore, even though ImageMagick claims it groks them
+	IGNORED_MIMETYPES = %w[
+		application/octet-stream
+		text/html
+		text/plain
+		text/x-server-parsed-html
+	  ]
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -125,8 +133,8 @@ class ThingFish::ImageFilter < ThingFish::Filter
 				next
 			end
 			
-			# Skip application/octet-stream, as it's too generic a mapping to be useful
-			next if mimetype == 'application/octet-stream'
+			# Skip some mediatypes that are too generic to be useful
+			next if IGNORED_MIMETYPES.include?( mimetype )
 			
 			self.log.debug "Registering image format %s (%s)" % [ mimetype, operations ]
 			@supported_formats[ mimetype ] = operations
@@ -167,21 +175,19 @@ class ThingFish::ImageFilter < ThingFish::Filter
 					  request.http_method == 'POST'
 
 		request.each_body do |body,metadata|
-			self.log.debug "Reading an ImageMagick image list from %p" % [ body ]
-			images = Magick::Image.from_blob( body.read )
-			self.log.debug "ImageMagick read %d images from %p" % [ images.length, body ]
+			if self.accept?( metadata[:format] )
 
-			image = images.first
-			image_attributes = {}
+				self.log.debug "Reading an ImageMagick image list from %p" % [ body ]
+				images = Magick::Image.from_blob( body.read )
+				self.log.debug "ImageMagick read %d images from %p" % [ images.length, body ]
+
+				image = images.first
+				image_attributes = self.extract_metadata( image )
 			
-			image_attributes['image_height']       = image.rows
-			image_attributes['image_width']        = image.columns
-			image_attributes['image_depth']        = image.depth
-			image_attributes['image_density']      = image.density
-			image_attributes['image_gamma']        = image.gamma
-			image_attributes['image_bounding_box'] = image.bounding_box
-			
-			request.metadata[ body ].merge!( image_attributes )
+				request.metadata[ body ].merge!( image_attributes )
+			else
+				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
+			end
 		end
 	end
 
@@ -300,6 +306,28 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		
 		return target_type
 	end
+
+
+	#########
+	protected
+	#########
+
+
+	### Extract metadata from the given +image+ (a Magick::Image object) and return it in
+	### a Hash.
+	def extract_metadata( image )
+		image_attributes = {}
+		
+		image_attributes['image_height']       = image.rows
+		image_attributes['image_width']        = image.columns
+		image_attributes['image_depth']        = image.depth
+		image_attributes['image_density']      = image.density
+		image_attributes['image_gamma']        = image.gamma
+		image_attributes['image_bounding_box'] = image.bounding_box
+		
+		return image_attributes
+	end
+	
 	
 end # class ThingFish::ImageFilter
 

@@ -1,0 +1,106 @@
+#!/usr/bin/ruby
+# 
+# A <%= @name %> filter for ThingFish
+# 
+# == Version
+#
+#  $Id$
+# 
+# == Authors
+# 
+# * <%= @options.author %>
+# 
+# :include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the 'docs' directory for licensing details.
+#
+
+begin
+	require 'thingfish'
+	require 'thingfish/mixins'
+	require 'thingfish/constants'
+	require 'thingfish/acceptparam'
+	require 'thingfish/filter'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+
+### A <%= @name %> filter for ThingFish
+class ThingFish::<%= @name.capitalize %>Filter < ThingFish::Filter
+	include ThingFish::Loggable,
+		ThingFish::Constants
+
+	# SVN Revision
+	SVNRev = %q$Rev: 394 $
+
+	# SVN Id
+	SVNId = %q$Id$
+
+	# The Array of types this filter is interested in
+	HANDLED_TYPES = [ ThingFish::AcceptParam.parse('x-application/undetermined') ]
+	HANDLED_TYPES.freeze
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
+
+	######
+	public
+	######
+	
+	### Filter incoming requests
+	def handle_request( request, response )
+
+		request.each_body do |body,metadata|
+			# ... filter the entity bodies of incoming requests
+		end
+	end
+
+
+	### Filter reponses
+	def handle_response( response, request )
+		# ... filter the entity body of the response
+	end
+
+
+	### Return an Array of ThingFish::AcceptParam objects which describe which content types
+	### the filter is interested in. The default returns */*, which indicates that it is 
+	### interested in all requests/responses.
+	def handled_types
+		return HANDLED_TYPES
+	end
+
+
+	### Returns a Hash of information about the filter; this is of the form:
+	###   {
+	###     'version'   => [1, 0],       # Filter version
+	###     'supports'  => [],           # Any specific version information unique to the filter
+	###     'rev'       => 460,          # SVN rev of plugin
+	###     'accepts'   => [...],        # Mimetypes the filter accepts from requests
+	###     'generates' => [...],        # Mimetypes the filter can convert responses to
+	###   }
+	def info
+		accepts = self.handled_types.map {|ap| ap.mediatype }
+		
+		return {
+			'version'   => [1,0],
+			'supports'  => [],
+			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'accepts'   => accepts,
+			'generates' => [],
+		  }
+	end
+	
+end # class ThingFish::<%= @name.capitalize %>Filter
+
+# vim: set nosta noet ts=4 sw=4:
+
+

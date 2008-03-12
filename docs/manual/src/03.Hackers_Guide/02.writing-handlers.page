@@ -1,0 +1,486 @@
+h1. Hacker's Guide
+
+h2. <%= @page_title = "Writing a ThingFish Handler" %>
+
+h3. What does a handler look like?
+
+Glad you asked.  Here's a teeny one that we'll build on.
+
+#:example#{language: ruby, caption: A minimal handler!}#
+require 'thingfish/constants'
+require 'thingfish/handler'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+		response.body   = Time.now.to_s
+		response.headers[:content_type] = 'text/plain'
+		response.status = HTTP::OK
+	end
+end
+#:example#
+
+Let's go over the interesting parts of this.
+
+|_. line number |_. what's it doing? |
+| 4 | All handlers inherit from the @ThingFish::Handler@ parent class.
+The handler name needs to match the filename it is stored in -
+in this case, the file would be called _time.rb_, and stored in a _lib/handler_ directory. |
+| 5 | Import some useful constants, like the @HTTP::OK@ a little further down |
+| 8 | Actions are defined in special methods that match the naming convention
+@handle_«METHOD»_request@.  We're only going to accept @GET@ methods for this example.
+These special methods receive a @ThingFish::Request@@ and a @ThingFish::Response@ object 
+to fiddle with as you see fit. |
+| 9 | We're just using a simple time string as the response here, but this could just as 
+easily be an erb template, or even an @IO@ object.  @IO@ objects will automatically buffer out 
+to the client. |
+| 10 | Set the content type of the response. |
+| 11 | The default response code is a _404 (Not Found)_ – after we're sure we've generated
+the content we want, setting this to @OK@ stops further processing, and lets the response 
+through successfully. |
+
+h3. Installing the handler
+
+Alright, now that you've got this wicked cool Time handler, how do we tell ThingFish
+to actually use it?  So far, all we really need to do is to load it when a particular
+URI is requested.  This is done in the _thingfish.conf_ file, under the _handlers_
+section.  If you wanted to install it under a single URI called _/what-time-is-it_,
+here's how you'd do it.
+
+#:example#{language: yaml, caption: Our handler's config section}#
+plugins:
+    handlers:
+        - time: /what-time-is-it
+#:example#
+
+That's it!  If your daemon is logging messages at the _debug_ level or higher, you
+should see a message similar to this at startup, showing that the handler was found
+and installed under the proper URI:
+
+<div class="example">
+<div class="CodeRay">
+<pre>
+Handler map is:
+    /: [ThingFish::DefaultHandler, ThingFish::StaticContentHandler]  
+    /what-time-is-it: [TimeHandler]
+</pre>
+</div>
+</div>
+
+Making the actual request should log the following:
+
+<div class="example">
+<div class="CodeRay">
+<pre>
+Dispatching to 1 handlers
+TimeHandler: 127.0.0.1 GET /what-time-is-it
+Searching for a GET handler method: TimeHandler#handle_get_request
+Response: HTTP/1.1 200 OK
+</pre>
+</div>
+</div>
+
+h3. Building on top of this
+
+h4. Limiting URI space
+
+With the above implementation, you'd get the same response for every possible URI under the
+@/what-time-is-it@ path. But what if you want your handler to do more than just one simple
+thing?  Let's add some more functionality to our little handler by checking the request's
+@path_info@, and providing some different variations on the time:
+
+#:example#{language: ruby, caption: A slightly-less-minimal handler!}#
+require 'thingfish/constants'
+require 'thingfish/handler'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+
+		time = Time.now
+		uri  = request.path_info
+
+		case uri
+		when '', '/'
+			response.body = time.to_s
+		when '/epoch'
+			response.body = time.to_i
+		when '/rfc822', '/rfc2822'
+			response.body = time.rfc2822
+		when '/xmlschema'
+			response.body = time.xmlschema
+		else
+			return
+		end
+
+		response.headers[:content_type] = 'text/plain'
+		response.status = HTTP::OK
+	end
+end
+#:example#
+
+|_. line number |_. what's it doing? |
+| 11 | Like with Apache or other webservers, the request's @path_info@ is the parts of
+the URI that are left after trimming off the leading bits up to the current handler. E.g.,
+if the request was for: @/what-time-is-it/in/chicago@ the @path_info@ of the request would 
+be: @/in/chicago@ |
+| 13-22 | Handle various requests with different returned content. Requesting 
+@/what-time-is-it@ still returns the default Ruby @Time#to_s@ representation, but if you 
+add @/epoch@ to the end, it returns the seconds-since-epoch version of the time. Adding 
+@/rfc822@ will get you the time in the standard MIME representation, @/xmlschema@ will
+return it in the XMLSchema format, etc. |
+| 24 | There weren't any recognized actions, so just return without doing anything.
+If a handler doesn't change the response's @status@, the daemon will look to any other 
+handlers that are installed at the same URI to satisfy the request. If no handlers are
+found that set the status, it will remain at its default, which is @HTTP::NOT_FOUND@ (404),
+and that is what will be returned to the client, along with an appropriate error page.
+|
+
+h4. Using Templates or Other Resources
+
+We've now got a pretty featureful time handler, albeit a pretty plain-looking one. Let's 
+say we want to make it pretty now, in anticipation of it becoming the next hot Web 2.0 
+application. We could just embed a big glob of HTML in the handler itself, and cram a 
+bunch of strings together for the output, but why repeat all those mistakes we made in 
+1995? As enlightened Rubyists, we'd rather keep all the static HTML outside our code, and 
+just mix in the tasty dynamic bits when needed.
+
+We'll do that by mixing in @ThingFish::ResourceLoader@, which adds a few methods to our
+handler class to make loading up static files easier. We'll use simple string 
+interpolation for our templating for now.
+
+#:example#{language: ruby, caption: A fancy handler! (Well kind of)}#
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants,
+		ThingFish::ResourceLoader
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+
+		time = Time.now
+		uri  = request.path_info
+		template = self.get_resource( "timehandler.html" )
+		timestring = ''
+
+		# Calculate the time string based on the URI like before
+		case uri
+		when '', '/'
+			timestring = time.to_s
+		when '/epoch'
+			timestring = time.to_i
+		when '/rfc822', '/rfc2822'
+			timestring = time.rfc2822
+		when '/xmlschema'
+			timestring = time.xmlschema
+		else
+			return
+		end
+
+		# Do %-style interpolation of the time string into the template and set the 
+		# response body to the resulting text.
+		response.body = template % timestring
+
+		response.headers[:content_type] = 'text/html'
+		response.status = HTTP::OK
+	end
+end
+#:example#
+
+And the template we'll use looks like:
+
+#:example#{language: html, caption: timehandler.html -- A template for our fancier handler!}#
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<title>TimeHandler 3000!</title>
+	<style type="text/css" media="screen">
+		body {
+			background: silver;
+			color: #333;
+			margin: 2em;
+			font: 18px "Helvetica Neue", sans-serif;
+		}
+	</style>
+</head>
+<body>
+
+	<p>At the tone, the time will be:<br />
+		<tt>%s</tt></p>
+
+</body>
+</html>
+#:example#
+
+|_\2. Handler Code |
+| 8 | Including the @ThingFish::ResourceLoader@ mixin sets up the resource directory for
+this handler and adds a few methods for dealing with files contained in it. |
+| 15 | Load the HTML file we're going to use as a template. The resources directory for 
+each plugin is in a @thingfish@ directory under Ruby's @datadir@ by default. Each plugin 
+gets its own directory based on its name, so our TimeHandler plugin's resource directory
+is @#{datadir}/thingfish/timehandler/@. This can be changed by setting the @resource_dir@
+key in the handler's config. |
+| 33 | Interpolate the calculated @timestring@ into the template where the first @%s@ is. |
+|_\2. Template (@timehandler.html@) |
+| 13 | Really Big Fonts -- +10 pts on the Web 2.0 scorecard! |
+| 20 | This is where @timestring@ will be inserted. |
+
+When it's run it'll produce something that looks like this:
+
+!/images/templated-timehandler.png(Templated TimeHandler screenshot)!
+
+If we wanted to insert some other stuff, we could insert a bunch of other @%s@
+placeholders, but that would get unmaintainable very quickly. We really need some better
+way of templating.
+
+h4. Using ERB Templates
+
+We can make more-complex templating situations a bit easier (albeit at the expense of a
+much higher degree of coupling) by using ERb. This will let us pass a @Binding@ object
+into the template and just grab values from the calling scope directly from within the
+output. While this isn't really what we would consider a clean solution[1], it certainly
+affords us more options than those inherent in @sprintf@-style interpolation, and it has
+the added advantage of being distributed with Ruby itself.
+
+We'll change the call from @#get_resource@ to @#get_erb_resource@ instead, which loads the 
+file and returns a new ERb object created from it instead of a String.
+
+#:example#{language: ruby, caption: A fancy handler!}#
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants,
+		ThingFish::ResourceLoader
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+
+		time = Time.now
+		uri  = request.path_info
+		template = self.get_erb_resource( "timehandler.rhtml" )
+		title = "TimeServer 3000"
+		timestring = ''
+
+		# Calculate the time string based on the URI like before
+		case uri
+		when '', '/'
+			timestring = time.to_s
+		when '/epoch'
+			timestring = time.to_i
+		when '/rfc822', '/rfc2822'
+			timestring = time.rfc2822
+		when '/xmlschema'
+			timestring = time.xmlschema
+		else
+			return
+		end
+
+		# Render the ERb template with a Binding of this scope
+		response.body = template.result( binding() )
+
+		response.headers[:content_type] = 'text/html'
+		response.status = HTTP::OK
+	end
+end
+#:example#
+
+And then we'll change the @%s@ placeholders into ERb directives in the template:
+
+#:example#{language: rhtml, caption: timehandler.rhtml -- an ERb template!}#
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<title><%%= title %></title>
+	<style type="text/css" media="screen">
+		body {
+			background: silver;
+			color: #333;
+			margin: 2em;
+			font: 18px "Helvetica Neue", sans-serif;
+		}
+	</style>
+</head>
+<body>
+
+	<p>At the tone, the time will be:<br />
+		<tt><%%= timestring %></tt></p>
+
+</body>
+</html>
+#:example#
+
+|_\2. Handler Code |
+| 7 | Still including the @ThingFish::ResourceLoader@ mixin. |
+| 15-16 | Set the page's title as a simple variable that will be in the Binding; the 
+@timestring@ gets set as before, and is accessable from the template as well. |
+| 33 | Pass the Binding for the current scope into the ERb template and set the response's 
+body to the rendered output. |
+|_\2. Template (@timehandler.rhtml@) |
+| 7  | We'll set the @title@ dynamically too now. |
+| 20 | This will get the @timestring@ just like before. |
+
+
+h3. Linking to Other Handlers
+
+Sometimes you'll want one handler to provide a link to another handler, but since the URI
+handlers live at can change, here's how to discover where another handler is installed:
+
+#:example#{language: rhtml, caption: Finding another handler's URI}#
+<%%
+	search_uri = @config.find_handler_uri('search')
+	if search_uri
+ %>
+	<p>You can also <a href="<%%= search_uri %>">search for what you need</a> if it's
+		not in this list.</p>
+<%% end %>
+
+#:example#
+</pre>
+
+
+h3. Fetching Query Arguments
+
+When you're implementing a service that needs to take a collection of 
+unordered arguments (as opposed to noun-type arguments that are sent in the URL), you may
+want to retrieve them from the request's query parameters. You can do this via the 
+@ThingFish::Request@ object's @#query_args@ method:
+
+#:example#{language: ruby, caption: Fetching query arguments from the request.}#
+request = ThingFish::Request.new
+request.query_args                                    # =>
+#:example#
+
+The method returns a Hash -- multiple values are contained in Arrays and single values are Strings.
+
+#:example#{language: ruby, caption: A handler example that checks query arguments.}#
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+require 'time'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants,
+		ThingFish::ResourceLoader
+
+	### Send the local time to the requester in plain text.
+	def handle_get_request( request, response )
+
+		time = Time.now
+		uri  = request.path_info
+		template = self.get_erb_resource( 'timehandler.rhtml' )
+		title = "TimeServer 3000"
+		timestring = ''
+
+		# Calculate the time string based on the URI like before
+		case uri
+		when '', '/'
+			
+			# Check for optional timezone argument
+			zone   = request.query_args['zone'].to_s
+			offset = Time.zone_offset( zone, time ) unless zone.empty?
+			unless offset.nil?
+				timestring = (time - (time.utc_offset - offset) ).ctime
+			else
+				
+				timestring = time.to_s
+			end
+			
+		when '/epoch'
+			timestring = time.to_i
+		when '/rfc822', '/rfc2822'
+			timestring = time.rfc2822
+		when '/xmlschema'
+			timestring = time.xmlschema
+		else
+			return
+		end
+
+		# Render the ERb template with a Binding of this scope
+		response.body = template.result( binding() )
+
+		response.headers[:content_type] = 'text/html'
+		response.status = HTTP::OK
+	end
+end
+#:example#
+
+
+h3. Index page content
+
+#:example#{language: ruby, caption: A simple index page content provider callback}#
+def make_index_content( uri )
+	return "Oh snap!  What <a href=\"#{uri}\">time</a> is it?<br />"
+end
+#:example#
+
+h3. Content Negotiation
+
+#:example#{language: ruby, caption: Returning a complex datatype for content negotiation.}#
+require 'thingfish'
+require 'thingfish/handler'
+
+class MyHandler
+	include ThingFish::Constants
+	
+	def handle_get_request( req, res )
+		res.headers[:content_type] = RUBY_MIMETYPE
+		res.body = Time.now
+	end
+end
+#:example#
+
+
+h3. Access to Other Parts of the System
+
+When the Daemon starts up, each handler gets a reference to the Daemon object via the @#listener=@ 
+method. The implementation of that method provided by @ThingFish::Handler@ grabs a reference to the
+loaded FileStore, MetaStore, and Config objects and sets them in instance variables.
+
+h3. Accessing the Config
+
+#:example#{language: ruby, caption: Accessing the config object.}#
+def handle_get_request( req, res )
+	loaded_filters = @config.plugins.filters
+end
+#:example#
+
+
+
+h3. Accessing the Metastore
+
+#:example#{language: ruby, caption: Accessing the metastore.}#
+def handle_get_request( req, res )
+	uuids = @metastore.find_by_matching_properties( :format => 'image/*' )
+end
+#:example#
+
+
+h3. Accessing the Filestore
+
+#:example#{language: ruby, caption: Accessing the filestore.}#
+def handle_get_request( req, res )
+	fh = @filestore.fetch_io( uuid )
+end
+#:example#
+
+
+fn1(footnote). We'd prefer a templating system that avoided coupling together the
+rendering of the output with the implementation details of the handler code (e.g.,
+variable names, scoping at the time of the @binding()@ call, etc.), but we chose to use
+ERb for ThingFish to avoid introducing further dependencies.
+

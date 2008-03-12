@@ -26,13 +26,21 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
-require 'pp'
-require 'rbconfig'
-require 'pathname'
-require 'thingfish/mixins'
-require 'thingfish/handler'
-require 'thingfish/constants'
-require 'thingfish/exceptions'
+begin
+	require 'pp'
+	require 'rbconfig'
+	require 'pathname'
+	require 'thingfish/mixins'
+	require 'thingfish/handler'
+	require 'thingfish/constants'
+	require 'thingfish/exceptions'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
 
 ### Output a quick inspection page

@@ -1,0 +1,81 @@
+#!/usr/bin/ruby
+#
+# A <%= @name %> handler for ThingFish
+#
+# == Synopsis
+#
+#   # thingfish.conf
+#   plugins:
+#     handlers:
+#		- <%= @name %>:
+#           uris: '/<%= @name %>'
+# 
+# == Version
+#
+#  $Id$
+#
+# == Authors
+#
+# * <%= @author %>
+#
+# :include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the 'docs' directory for licensing details.
+#
+
+
+begin
+	require 'pp'
+	require 'rbconfig'
+	require 'pathname'
+	require 'thingfish/mixins'
+	require 'thingfish/handler'
+	require 'thingfish/constants'
+	require 'thingfish/exceptions'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+
+### A <%= @name %> handler for ThingFish
+class ThingFish::<%= @name.capitalize %>Handler < ThingFish::Handler
+	include ThingFish::Loggable,
+		ThingFish::Constants,
+		ThingFish::ResourceLoader
+
+	# SVN Revision
+	SVNRev = %q$Rev: 388 $
+
+	# SVN Id
+	SVNId = %q$Id$
+
+
+	### Handler API: handle a GET request with an inspection page.
+	def handle_get_request( request, response )
+		# :TODO: Handle GET requests
+	end
+
+
+	### Make an HTML fragment for the body text/html response (HTML filter API).
+	def make_html_content( body, request, response )
+		content = self.get_erb_resource( 'template.rhtml' )
+		response.headers[ :content_type ] = 'text/html'
+		return template.result( binding() )
+	end
+	
+	
+	### Return the HTML fragment that should be used to link to this handler.
+	def make_index_content( uri )
+		tmpl = self.get_erb_resource( "index_content.rhtml" )
+		return tmpl.result( binding() )
+	end
+	
+end # class ThingFish::<%= @name.capitalize %>Handler
+
+# vim: set nosta noet ts=4 sw=4:

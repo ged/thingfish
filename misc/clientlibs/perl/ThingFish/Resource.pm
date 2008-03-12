@@ -277,8 +277,9 @@ sub update_properties
 	return sort keys %{ $self->{ '_metadata' } } unless
 		$self->{ '_dirty' }->{ 'metadata' };
 
+	my $uri = $self->client->_handler_uri('simplemetadata');
 	my $response = $self->client->_send_request(
-		'PUT' => '/metadata/' . $self->uuid,
+		'PUT' => $uri . $self->uuid,
 	   	{
 			headers => [ content_type => 'text/x-yaml' ],
 			content => YAML::Syck::Dump( $self->{ '_metadata' } )
@@ -355,8 +356,9 @@ sub export
 		return;
 	}
 
+	my $uri = $self->client->_handler_uri('default');
 	my $response = $self->client->_send_request(
-		GET => '/' . $self->uuid,
+		GET => $uri . $self->uuid,
 		{
 			headers => [ Accept => $self->{'_accept'} || '*/*' ],
 			spool   => 1,
@@ -421,8 +423,9 @@ sub data
 		# Fetch the data from the server.
 		#
 		if ( $self->uuid && ! $self->{ '_data' } ) {
+			my $uri = $self->client->_handler_uri('simplemetadata');
 			my $response = $self->client->_send_request(
-				GET => '/' . $self->uuid,
+				GET => $uri . $self->uuid,
 				{
 					headers => [ Accept => $self->{'_accept'} || '*/*' ],
 					spool   => 1
@@ -470,7 +473,8 @@ sub _reset
 sub _fetch_metadata
 {
 	my $self = shift;
-	my $response = $self->client->_send_request( GET => '/metadata/' . $self->uuid );
+	my $uri = $self->client->_handler_uri('simplemetadata');
+	my $response = $self->client->_send_request( GET => $uri . $self->uuid );
 
 	if ( $response->is_success ) {
 		$self->{ '_metadata' } = YAML::Syck::Load( $response->content );

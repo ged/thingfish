@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+
+BEGIN {
+	require 'pathname'
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+
+	libdir = basedir + "lib"
+
+	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
+}
+
+begin
+	require 'pathname'
+	require 'stringio'
+	require 'spec/runner'
+	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
+	require 'spec/lib/handler_behavior'
+
+	require 'thingfish/constants'
+	require 'thingfish/handler/<%= @name %>'
+	require 'thingfish/exceptions'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+include ThingFish::Constants,
+		ThingFish::TestConstants,
+		ThingFish::TestHelpers
+
+
+#####################################################################
+###	C O N T E X T S
+#####################################################################
+
+describe ThingFish::<%= @name.capitalize %>Handler do
+	before(:all) do
+		@basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+		ThingFish.reset_logger
+		ThingFish.logger.level = Logger::FATAL
+	end
+	
+	before(:each) do
+		resdir = @basedir + 'resources'
+	    @handler  = ThingFish::Handler.create( '<%= @name %>', 'resource_dir' => resdir )
+		@request  = mock( "request", :null_object => true )
+		@response = mock( "response", :null_object => true )
+
+		@request_headers  = mock( "request headers", :null_object => true )
+		@request.stub!( :headers ).and_return( @request_headers )
+		@response_headers  = mock( "response headers", :null_object => true )
+		@response.stub!( :headers ).and_return( @response_headers )
+		@response_data  = mock( "response data", :null_object => true )
+		@response.stub!( :data ).and_return( @response_data )
+
+		@daemon = mock( "daemon object", :null_object => true )
+		@handler.listener = @daemon
+	end
+
+	after( :all ) do
+		ThingFish.reset_logger
+	end
+
+	
+
+	### Shared behaviors
+	it_should_behave_like "A Handler"
+
+	
+	### Implementation-specific Examples
+	it "is well tested"
+
+end
+
+# vim: set nosta noet ts=4 sw=4:

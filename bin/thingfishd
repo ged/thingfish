@@ -74,6 +74,7 @@ end
 ### Get the options struct filled with defaults
 def get_default_options
 	options = OpenStruct.new
+
 	options.configfile = DEFAULT_CONFIGFILE
 	
 	return options

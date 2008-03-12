@@ -1,41 +1,88 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>ThingFish :: <%= response.data[:title] || "untitled" %></title>
+<head>
+	<title>ThingFish :: <%= response.data[:title] || "untitled" %></title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="Original design: Andreas Viklund - http://andreasviklund.com/" />
-
-    <link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
-	
+	<link rel="stylesheet" type="text/css" href="/css/default.css" media="screen,projection" />
 	<script src="/js/jquery.js" type="text/javascript" charset="utf-8"></script>
 	<%= response.data[:head] %>
-  </head>
+</head>
+<body>
 
-  <body>
-    <div id="wrap">
-      <div id="header">
-        <h1><a href="/">ThingFish</a></h1>
-		<p><strong><%= response.data[:tagline] %></strong></p>
-      </div>
-
-	<!-- content start -->
-	<div id="contentwide">
-		<p class="textright">&nbsp;</p>
-
-		<% for section in content %>
-		<%= section %>
-		<% end %>
-
+	<div id="header">
+		<h1><a href="/">ThingFish</a></h1>
 	</div>
-	<!-- content end -->
 
-      <div id="footer">
-        <p>Copyright &copy; 2007 LAIKA, Inc. | 
-			    Design by <a href="http://andreasviklund.com">Andreas Viklund</a></p>
-			  <p>$Id$</p>
-      </div>
-    </div>
-  </body>
+	<div id="tagline"><%= response.data[:tagline] %></div>
+
+	<% navmenu ||= {} %>
+
+	<div id="content">
+		<div class="left">
+			<div class="section">
+				<h2><a href="/">Top</a></h2>
+			</div>
+			<% for section in navmenu %>
+			<div class="section">
+				<h2><%= section.title %></h2>
+				
+				<ul>
+				<% section.subpages.each do |pagepath, pagetitle| %>
+				<% if pagepath == uri %>
+					<li class="current"><%= pagetitle %></li>
+				<% else %>
+					<li><a href="<%= pagepath %>"><%= pagetitle %></a></li>
+				<% end %>
+				<% end %>
+				</ul>
+			</div>
+			<% end %>
+
+			<div class="section">
+				<h2>Catalog</h2>
+				
+				<ul>
+					<li><a href="/upload">Upload Files</a></li>
+					<li><a href="/metadata">Browse for Resources</a></li>
+					<li><a href="/search">Search for Resources</a></li>
+				</ul>
+			</div>
+
+			<div class="section">
+				<h2>Documentation</h2>
+				
+				<ul>
+					<li><a href="/manual/">Manual</a></li>
+					<li><a href="/coverage/">Coverage Statistics</a></li>
+					<li><a href="/api/">API Documentation</a></li>
+				</ul>
+			</div>
+
+			<div class="section">
+				<h2>Server</h2>
+				
+				<ul>
+					<li><a href="/inspect">Internals Inspector</a></li>
+					<li><a href="/status">Server Status</a></li>
+				</ul>
+			</div>
+
+		</div>
+
+		<div class="right">
+			<% for chunk in content %>
+			<%= chunk %>
+			<% end %>
+		</div>
+	</div>
+ 
+	<div id="footer">
+		<p>
+			<span class="copyright">Copyright &copy; 2007-<%= DateTime.now.year %> LAIKA, Inc.</span>
+			<span class="svnid">$Id$</span>
+		</p>
+	</div>
+</body>
 </html>

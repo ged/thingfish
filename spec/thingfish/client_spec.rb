@@ -34,7 +34,7 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Client do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
 	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )

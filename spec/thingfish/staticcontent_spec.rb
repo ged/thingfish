@@ -27,7 +27,7 @@ rescue LoadError
 end
 
 
-include ThingFish::TestHelpers
+include ThingFish::SpecHelpers
 
 
 #####################################################################
@@ -35,7 +35,7 @@ include ThingFish::TestHelpers
 #####################################################################
 
 describe ThingFish::StaticContentHandler do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 	
 	before( :all ) do
 		setup_logging( :fatal )

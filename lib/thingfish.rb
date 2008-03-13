@@ -49,9 +49,6 @@ module ThingFish
 	require 'thingfish/utils'
 
 
-	# Add some method to core classes
-	Numeric.extend( ThingFish::NumericConstantMethods )
-
 	# Global logging object
 	require 'thingfish/utils'
 

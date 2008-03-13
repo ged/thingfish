@@ -60,7 +60,7 @@ require 'thingfish/exceptions'
 #   Removes all properties associated with the given +uuid+, as well as the entry itself.
 # [<tt>get_all_property_keys()</tt>]
 #   Return an Array of all property keys in the store.
-# [<tt>get_all_property_values()</tt>]
+# [<tt>get_all_property_values( key )</tt>]
 #   Return a uniquified Array of all values in the metastore for the specified +key+.
 # [<tt>find_by_exact_properties()</tt>]
 #   Return an array of uuids whose metadata matched the criteria

@@ -34,7 +34,7 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Request do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 	
 	before(:all) do
 		setup_logging( Logger::FATAL )

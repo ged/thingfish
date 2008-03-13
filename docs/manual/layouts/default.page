@@ -75,7 +75,7 @@
 	        <p class="textright">Version: <%= metadata.version %></p>
 
 			<!-- Generated content -->
-			<%= content %>
+			<%= content %>
 			<!-- end of generated content -->
 
 		</div>

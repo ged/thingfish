@@ -26,7 +26,7 @@ rescue LoadError
 end
 
 
-include ThingFish::TestHelpers
+include ThingFish::SpecHelpers
 
 
 #####################################################################

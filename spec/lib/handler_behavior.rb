@@ -27,7 +27,7 @@ end
 
 describe "A Handler", :shared => true do
 	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 
 	after( :all ) do

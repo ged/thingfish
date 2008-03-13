@@ -30,7 +30,7 @@ end
 #####################################################################
 
 describe ThingFish::Resource do
-	include ThingFish::TestHelpers,
+	include ThingFish::SpecHelpers,
 		ThingFish::TestConstants
 
 	TEST_METADATA = {

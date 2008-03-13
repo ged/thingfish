@@ -33,7 +33,7 @@ end
 
 include ThingFish::Constants,
 		ThingFish::TestConstants,
-		ThingFish::TestHelpers
+		ThingFish::SpecHelpers
 
 
 #####################################################################

@@ -48,7 +48,7 @@ end
 
 
 describe ThingFish::MultipartMimeParser do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )

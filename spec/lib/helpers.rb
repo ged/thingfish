@@ -21,7 +21,7 @@ end
 include ThingFish::TestConstants
 include ThingFish::Constants
 
-module ThingFish::TestHelpers
+module ThingFish::SpecHelpers
 
 	###############
 	module_function
@@ -80,6 +80,13 @@ module ThingFish::TestHelpers
 	
 
 	### Reset the logging subsystem to its default state.
+	def reset_logging
+		ThingFish.reset_logger
+	end
+	
+	
+	
+	### Reset the logging subsystem.
 	def reset_logging
 		ThingFish.reset_logger
 	end

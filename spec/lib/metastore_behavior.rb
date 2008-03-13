@@ -27,7 +27,7 @@ end
 
 describe "A MetaStore", :shared => true do
 	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 	it "can set and get a property belonging to a UUID" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )

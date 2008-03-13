@@ -36,7 +36,7 @@ end
 describe ThingFish::FilesystemFileStore do
 	include ThingFish::Constants,
 		ThingFish::TestConstants,
-		ThingFish::TestHelpers
+		ThingFish::SpecHelpers
 
 
 	before(:all) do

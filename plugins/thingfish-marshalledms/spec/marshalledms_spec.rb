@@ -37,7 +37,7 @@ end
 
 describe ThingFish::MarshalledMetaStore do
 	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 	before(:each) do
 		@tmpdir = make_tempdir()

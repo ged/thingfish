@@ -27,7 +27,7 @@ end
 
 describe "A FileStore", :shared => true do
 	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 	it "returns nil for non-existant entry" do
 	    @fs.fetch( TEST_UUID ).should == nil

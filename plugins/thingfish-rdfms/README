@@ -5,17 +5,23 @@ A ThingFish metastore based on an RDF knowledge-base.
 == Configuration
 
   plugins:
-	metastore:
-	  name: rdf
-	  store: postgresql
-	  options: "new='yes',host='localhost',database='tf-rdf',user='thingfish',password='ind1g0='"
+    metastore:
+      name: rdf
+      store: postgresql
+      store_options: 
+        new: yes
+        host: localhost
+        database: tf-rdf
+        user: thingfish
+        password: "ind1g0='"
+
 
 === Config Keys ===
 
 [store]::
   The name of the backend to use for the triplestore.
 [options]::
-  The config options specific to the configured store.
+  The hash of config options specific to the configured store.
 
 == Authors
 
@@ -24,7 +30,7 @@ A ThingFish metastore based on an RDF knowledge-base.
 
 == License
 
-Copyright (c) 2007, LAIKA, Inc
+Copyright (c) 2007, 2008 LAIKA, Inc
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

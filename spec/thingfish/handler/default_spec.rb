@@ -30,7 +30,7 @@ end
 
 include ThingFish::Constants
 include ThingFish::TestConstants
-include ThingFish::TestHelpers
+include ThingFish::SpecHelpers
 
 
 #####################################################################

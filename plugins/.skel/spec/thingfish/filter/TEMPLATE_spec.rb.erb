@@ -2,10 +2,13 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+	plugindir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
+	pluginlibdir = plugindir + 'lib'
 
-	libdir = basedir + "lib"
+	basedir = plugindir.parent.parent
+	libdir = basedir + 'lib'
 
+	$LOAD_PATH.unshift( pluginlibdir ) unless $LOAD_PATH.include?( pluginlibdir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 

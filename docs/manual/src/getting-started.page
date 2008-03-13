@@ -1,6 +1,12 @@
-<% @page_title = "Getting Started" %>
+---
+title: Getting Started
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h1. <%= @page_title %>
+h1. <%= page.config['title'] %>
 
 h2. Installation
 
@@ -16,7 +22,9 @@ h3. Ruby Modules
 
 There are two ways you can install ThingFish. The easiest is to use RubyGems:
 
-  $ sudo gem install thingfish
+<pre>
+  $ <kbd>sudo gem install thingfish</kbd>
+</pre>
 
 If you'd rather install from source, you can download and install it yourself manually a couple of
 different ways.
@@ -43,23 +51,15 @@ If you're installing from source, you'll also need to install these:
 
 Once you have those installed, you can install ThingFish like so:
 
-  $ tar -zxvf thingfish-0.1.0.tgz
-  $ cd thingfish-0.1.0
-  $ su -
-  # rake install
+<pre>
+  $ <kbd>tar -zxvf thingfish-0.1.0.tgz</kbd>
+  $ <kbd>cd thingfish-0.1.0</kbd>
+  $ <kbd>su -</kbd>
+  # <kbd>rake install</kbd>
+</pre>
 
 The dependencies above are enough to run the server, but if you want to help out with development,
 run tests, or generate documentation, you'll need a few more things:
-
-#:gemlist#
-coderay
-lockfile
-rcodetools
-rcov
-redcloth
-rote
-rspec
-#:gemlist#
 
 * CodeRay (>= 0.7.0): "http://coderay.rubychan.de/":http://coderay.rubychan.de/
 * lockfile (>= 1.4.3): "http://codeforpeople.com/lib/ruby/lockfile/":http://codeforpeople.com/lib/ruby/lockfile/
@@ -72,27 +72,26 @@ rspec
 If you have RubyGems installed, you can install these automatically via the 
 @install_dependencies@ task of the Rakefile:
 
-#:example#{language: console, caption:Install dependencies as gems via the Rakefile task}#
-$ sudo rake install_dependencies
-#:example#
-
+<pre>
+  $ <kbd>sudo rake install_dependencies</kbd>
+</pre>
 
 h2. Running ThingFish
 
 The server comes with a @thingfishd@ command line program which can be started in 
 the usual fashion:
 
-#:example#{language: console, caption: Starting thingfishd}#
-$ thingfishd
-#:example#
+<pre>
+  $ <kbd>thingfishd</kbd>
+</pre>
 
 The server reads its configuration from a single file called @thingfish.conf@ which
 is expected to be in Ruby's @sysconfdir@ by default. You can point it at a config
 file somewhere else with the @-f@ flag:
 
-#:example#{language: console, caption: Starting thingfishd with a config}#
-$ thingfishd -f /etc/thingfish.conf
-#:example#
+<pre>
+  $ <kbd>thingfishd -f /etc/thingfish.conf</kbd>
+</pre>
 
 
 h3. Configuration File
@@ -100,18 +99,18 @@ h3. Configuration File
 The config file is a YAML file, and chooses sane values as defaults.  An absolutely
 minimalistic configuration should look something like this:
 
-#:example#{language: yaml, caption: Example minimalistic config file}#
+<?example { language: yaml, caption: Example minimalistic config file } ?>
 ---
 defaulthandler:
     resource_dir: var/www
 
-#:example#
+<?end?>
 
 Because all default storage is in memory, it makes for a nice  "is it working?"
 test.  You'll probably want to get more elaborate with your configuration fairly 
 quickly, however.
 
-#:example#{language: yaml, caption: Example comprehensive config file}#
+<?example { language: yaml, caption: Example comprehensive config file } ?>
 ---
 port: 80
 ip: 127.0.0.1
@@ -159,7 +158,7 @@ plugins:
             stat_uris: [/, /inspect, /upload, /metadata, /status]
             resource_dir: /home/thingfish/plugins/thingfish-statushandler/resources
 
-#:example#
+<?end?>
 
 The meaning of the config values are as follows:
 
@@ -302,19 +301,19 @@ The meaning of the config values are as follows:
 					<dd class="description">
 						<p>The following are all valid methods for defining URI mount
 						points for a handler:</p>
-#:example#{language: yaml, caption: As the only value}#
+<?example { language: yaml, caption: As the only value } ?>
 - handlername: /mount
-#:example#
+<?end?>
 
-#:example#{language: yaml, caption: As a string value in the uris pair of the options hash}#
+<?example { language: yaml, caption: As a string value in the uris pair of the options hash } ?>
 - handlername:
     uris: /mount
-#:example#
+<?end?>
 
-#:example#{language: yaml, caption: As an array of URIs in the uris pair of the options hash}#
+<?example { language: yaml, caption: As an array of URIs in the uris pair of the options hash } ?>
 - handlername:
     uris: [/mount, /mount2]
-#:example#
+<?end?>
 					</dd>
 				</dl>
 			</dd>
@@ -340,7 +339,7 @@ before starting the daemon.  This isn't necessary if you've used RubyGems to ins
 ThingFish and ThingFish add-ons, but is useful if everything is extracted to a single
 directory.
 
-#:example#{language: shell, caption: A ThingFish run file for use with supervise}#
+<?example { language: bash, caption: A ThingFish run file for use with supervise } ?>
 #!/bin/bash
 
 plugin_libs=(plugins/*/lib)
@@ -351,7 +350,7 @@ for libdir in ${plugin_libs[*]}; do
 done
 
 exec ruby -Ilib $libflags bin/thingfishd -f etc/thingfish.conf $*
-#:example#
+<?end?>
 
 h3. Configuration File
 

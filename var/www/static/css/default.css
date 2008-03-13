@@ -30,16 +30,17 @@ body {
 	margin: 0;
 	padding: 0;
 	min-width: 600px;
+	height: 100%
 }
 
 h1,h2,h3,h4,h5,h6 { font-weight: normal; }
 
-h1 { font-size: 3em; line-height: 1; margin-bottom: 0.5em; }
-h2 { font-size: 2em; margin-bottom: 0.75em; }
-h3 { font-size: 1.5em; line-height: 1; margin-bottom: 1em; }
-h4 { font-size: 1.2em; line-height: 1.25; margin-bottom: 1.25em; }
-h5 { font-size: 1em; font-weight: bold; margin-bottom: 1.5em; }
-h6 { font-size: 1em; font-weight: bold; }
+h1 { line-height: 1; margin-bottom: 0.5em; }
+h2 { margin: 0 0 4px; }
+h3 { line-height: 1; margin-bottom: 1em; }
+h4 { line-height: 1.25; margin-bottom: 1.25em; }
+h5 { font-weight: bold; margin-bottom: 1.5em; }
+h6 { font-weight: bold; }
 
 p           { margin: 0 0 1.5em; }
 p.last      { margin-bottom: 0; }
@@ -48,7 +49,7 @@ p img.top   { margin-top: 0; }
 img         { margin: 0 0 1.5em; }
 
 a {
-	color: #fff4cf;
+	color: #b6d7da;
 	text-decoration: none;
 	border-bottom: 1px dotted #999;
 }
@@ -67,9 +68,17 @@ a:hover {
 }
 
 pre, code, tt {
+	font-weight: normal;
 	font-family: Monaco, "Andale Mono", "Vera Sans Mono", mono;
-	background-color: #424e4f;
 	color: #ccc;
+}
+pre {
+	background-color: #424e4f;
+	margin: 1em;
+}
+pre kbd {
+	color: #fff;
+	font-weight: bold;
 }
 td code {
 	background-color: #343d3e;
@@ -95,6 +104,14 @@ table {
 	margin: 1.5em 0.2em;
 }
 
+table caption {
+	caption-side: bottom;
+	font-size: 12px;
+	margin: 0;
+	padding: 0;
+	display: none;
+}
+
 #manual table {
 	margin: inherit;
 }
@@ -108,7 +125,7 @@ td, th {
 }
 
 th {
-	background: #26282a url(../images/large-shadow-50.png) repeat-x 0 top;
+	background: #26282a url(../images/shadows/large-50.png) repeat-x 0 top;
 	font-weight: bold;
 }
 
@@ -158,31 +175,26 @@ ol li + li {
 	text-align: right;
 	text-transform: uppercase;
 	letter-spacing: 0.2em;
-	padding: 8px 20px 8px;
+	padding: 8px 20px 0;
 	-webkit-border-bottom-right-radius: 15px;
 	-moz-border-radius-bottomright: 15px;
 }
 
 #content {
+	background: #323435 url(/images/leftbar.png) repeat-y left bottom;
 	position: relative;
-	padding-bottom: 65px;
 }
 
 #footer {
+	clear: both;
 	font: 10px "Helvetica Neue";
-	position: fixed;
-	bottom: 0;
-	padding: 0 12px;
-	width: 98%;
-	background-color: #323435;
-	z-index: 15;
 	color: #fff4cf;
-	border-top: 1px solid #474849;
+	padding: 0 1.5em 1em 2em;
+	background: #323435 url(/images/leftbar.png) repeat-y left bottom;
 }
 
 #footer .svnid {
-	position: absolute;
-	right: 5px;
+	float: right;
 }
 
 /* @end */
@@ -281,8 +293,7 @@ ol li + li {
 	position: relative;
 	color: white;
 	font-size: 35px;
-	margin: 0;
-	margin-left: -15px;
+	margin: 0 0 0.25em;
 	text-shadow: black 3px 3px 5px;
 	letter-spacing: 0.02em;
 }
@@ -294,13 +305,8 @@ ol li + li {
 }
 
 .right h2 {
-	letter-spacing: -0.1em;
-	padding-bottom: 6px;
-	margin: 1.5em 0 0;
+	line-height: 1.5em;
 	background: url(../images/horizontal-groove.png) repeat-x 0 bottom;
-}
-#manual .right h2 {
-	margin-bottom: -8px;
 }
 
 .right h3 {
@@ -462,13 +468,15 @@ table.stats td {
 
 dl {
 	margin: 0.2em 1.5em;
+	font-size: 12px;
+	line-height: 1;
 }
 
 dl dt {
 	color: white;
 	padding: 0.4em;
 	font-weight: bold;
-	border-bottom: 1px solid black;
+	border-bottom: 1px solid #1b1d1e;
 }
 
 dl dd + dt {
@@ -476,6 +484,7 @@ dl dd + dt {
 }
 
 dl dd {
+	line-height: 1.3em;
 	margin: 0.5em 0.5em;
 }
 
@@ -486,7 +495,7 @@ dl dd.example {
 dl.barsections dt {
 	padding: 0.4em;
 	font-weight: bold;
-	background: #26282a url(../images/small-shadow-50.png);
+	background: #26282a url(../images/shadows/small-50.png);
 	border: 1px solid black;
 }
 
@@ -529,13 +538,12 @@ dl.barsections dt {
 }
 
 .example .caption {
-	background-color: #424e4f;
 	text-align: center;
 	color: #fff4cf;
 	font-size: 0.9em;
 	border-top: 0;
 	padding: 3px 0;
-	border-top: 2px solid black;
+	background: #424e4f url(../images/shadows/smallest-50.png) repeat-x 0 top;
 }
 
 /* @end */
@@ -543,12 +551,11 @@ dl.barsections dt {
 /* @group CodeRay highlighting */
 
 .CodeRay {
-	border: 1px solid black;
 	background-color: #f8f8f8;
 	border: 1px solid silver;
-	font-family: 'Courier New', 'Terminal', monospace;
 	color: #100;
 	line-height: 1em;
+	font-size: 12px;
 }
 
 .CodeRay pre {

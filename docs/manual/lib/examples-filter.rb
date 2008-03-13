@@ -126,7 +126,7 @@ class ExamplesFilter < Manual::Page::Filter
 					contents = scanner.string[ contentpos..offset ]
 				end
 
-				$stderr.puts "Processing with params: %p, contents: %p" % [ params, contents ]
+				# $stderr.puts "Processing with params: %p, contents: %p" % [ params, contents ]
 				buffer << self.process_example( params, contents )
 			else
 				break

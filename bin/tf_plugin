@@ -127,6 +127,7 @@ class PluginGenerator
 		end
 
 		targetdir = self.make_project_name( @name, @type )
+		debug_msg "Project name is: %p" % [ targetdir ]
 		raise "#{targetdir}: already exists" if targetdir.exist?
 		self.setup_new_project( targetdir )
 		self.render_project_templates( targetdir )
@@ -188,8 +189,8 @@ class PluginGenerator
 
 	### Make a normalized name for the new project directory and return it as a Pathname object.
 	def make_project_name( name, type )
-		name = "thingfish-#{name.downcase}" unless name =~ /^thingfish-/
-		name += type.downcase unless name =~ /#{type}$/i
+		debug_msg "Making project name for a %p project named %p" % [ type, name ]
+		name = "thingfish-#{type}-#{name.downcase}" unless name =~ /^thingfish-/
 		return Pathname.pwd + name
 	end
 	

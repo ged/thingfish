@@ -28,7 +28,7 @@ rescue LoadError
 	raise
 end
 
-include ThingFish::TestHelpers
+include ThingFish::SpecHelpers
 include ThingFish::TestConstants
 
 #####################################################################

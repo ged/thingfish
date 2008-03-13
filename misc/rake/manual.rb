@@ -92,6 +92,8 @@ module Manual
 
 			rawsource = @sourcefile.read
 			@config, @source = self.read_page_config( rawsource )
+			# $stderr.puts "Config is: %p" % [@config],
+			# 	"Source is: %p" % [ @source[0,100] ]
 			@filters = self.load_filters( @config['filters'] )
 
 			super()
@@ -303,10 +305,10 @@ module Manual
 					proc {|name| name.sub(/\.[^.]+$/, '.page').sub( outputdir, sourcedir) },
 					outputdir.to_s
 			 	]) do |task|
-				trace "  #{task.source} -> #{task.name}"
 			
-				source = Pathname.new( task.source )
-				target = Pathname.new( task.name )
+				source = Pathname.new( task.source ).relative_path_from( Pathname.getwd )
+				target = Pathname.new( task.name ).relative_path_from( Pathname.getwd )
+				log "  #{ source } -> #{ target }"
 					
 				page = Manual::Page.new( source, layoutsdir )
 					
@@ -326,7 +328,12 @@ module Manual
 			task :copy_resources => [ outputdir.to_s ] do
 				when_writing( "Copying resources" ) do
 					verbose do
-						cp_r FileList[ resourcedir + '*' ], outputdir, :verbose => true
+						files = FileList[ resourcedir + '*' ]
+						files.exclude( /\.svn/ )
+						unless files.empty?
+							trace "  Copying resource files: #{files}"
+							cp_r files, outputdir, :verbose => true
+						end
 					end
 				end
 			end

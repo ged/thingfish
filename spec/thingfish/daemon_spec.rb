@@ -47,7 +47,7 @@ end
 #####################################################################
 
 describe ThingFish::Daemon do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 	
 	before(:all) do
 		ThingFish.reset_logger

@@ -30,7 +30,7 @@ end
 #####################################################################
 
 describe ThingFish::Table do
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 	
 	
 	before( :all ) do

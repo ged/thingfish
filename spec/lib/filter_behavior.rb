@@ -27,7 +27,7 @@ end
 
 describe "A Filter", :shared => true do
 	include ThingFish::TestConstants
-	include ThingFish::TestHelpers
+	include ThingFish::SpecHelpers
 
 
 	it "knows what types it handles" do

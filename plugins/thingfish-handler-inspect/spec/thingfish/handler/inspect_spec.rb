@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	plugindir = Pathname.new( __FILE__ ).dirname.parent
+	plugindir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 	basedir = plugindir.parent.parent
 
 	libdir = basedir + "lib"

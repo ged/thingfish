@@ -37,7 +37,6 @@ begin
 	require 'thingfish'
 	require 'mongrel'
 	require 'uuidtools'
-	require 'etc'
 	require 'logger'
 rescue LoadError
 	unless Object.const_defined?( :Gem )

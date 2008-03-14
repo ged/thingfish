@@ -1,19 +1,46 @@
-#!/bin/bash
+#!/usr/bin/env ruby
+
+BEGIN {
+	$LOAD_PATH.unshift( 'lib' )
+}
+
+require 'etc'
+require 'pathname'
+require 'rbconfig'
+require 'thingfish'
+require 'thingfish/daemon'
+require 'thingfish/config'
+
 
 # This is a little wrapper that starts thingfishd with the config in
 # etc/thingfish.conf-testing, like run did originally.
 
-plugin_libs=(plugins/*/lib)
-# echo ${plugin_libs[*]}
+plugin_libs = Pathname.glob( 'plugins/*/lib' )
+# puts plugin_libs
 
-libflags=''
-for libdir in ${plugin_libs[*]}; do
-	libflags="-I${libdir} $libflags"
-done
+plugin_libs.each {|lib| $LOAD_PATH.unshift(lib) }
+suffix = nil
+if user = Etc.getpwuid( Process.euid )
+	suffix = user.name
+	puts "Config file suffix is: %p" % [ suffix ]
+else
+	suffix = 'testing'
+end
 
-# echo "Args are: "
-# echo $*
+config = nil
+configfile = "etc/thingfish.conf-#{suffix}"
+if File.exist?( configfile )
+	puts "Loading config: #{configfile}"
+	config = ThingFish::Config.load( configfile )
+else
+	config = ThingFish::Config.load( "etc/thingfish.conf-testing" )
+end
 
-# set -x
-exec ruby -Ilib $libflags bin/thingfishd -f etc/thingfish.conf-testing $*
+instance = ThingFish::Daemon.new( config )
+accepter = instance.run
+
+Signal.trap( "INT" ) { instance.shutdown("Interrupted") }
+Signal.trap( "TERM" ) { instance.shutdown("Terminated") }
+
+accepter.join
 

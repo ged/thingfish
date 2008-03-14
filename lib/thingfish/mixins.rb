@@ -96,6 +96,7 @@
 
 require 'rbconfig'
 require 'erb'
+require 'etc'
 
 require 'thingfish'
 

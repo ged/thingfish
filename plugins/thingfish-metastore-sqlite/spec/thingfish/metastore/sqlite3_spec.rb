@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	plugindir = Pathname.new( __FILE__ ).dirname.parent
+	plugindir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 	basedir = plugindir.parent.parent
 
 	libdir = basedir + "lib"
@@ -41,7 +41,7 @@ describe "A SQLite3 MetaStore" do
 		ThingFish.logger = Logger.new( $stderr )
 		ThingFish.logger.level = Logger::FATAL
 
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent.parent + 'resources'
 		@tmpdir = make_tempdir()
 	    @store = ThingFish::MetaStore.create( 'sqlite3',
 			:root => @tmpdir.to_s,

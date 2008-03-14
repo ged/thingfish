@@ -20,25 +20,24 @@ logging:
 
 plugins:
     filestore:
-#        name: filesystem
+        name: filesystem
         name: memory
         maxsize: 1073741824
         root: /tmp/thingfish
     metastore:
-        name: memory
-#        name: sequel
-        sequel_connect: sqlite:////tmp/thingfish/metastore.db
+        name: sqlite3
+        resource_dir: plugins/thingfish-metastore-sqlite/resources
     handlers:
         - inspect:
             uris: /inspect
-            resource_dir: plugins/thingfish-inspecthandler/resources
+            resource_dir: plugins/thingfish-handler-inspect/resources
         - status:
             uris: /status
             stat_uris: [/, /inspect, /upload]
-            resource_dir: plugins/thingfish-statushandler/resources
+            resource_dir: plugins/thingfish-handler-status/resources
         - formupload:
             uris: /upload
-            resource_dir: plugins/thingfish-formuploadhandler/resources
+            resource_dir: plugins/thingfish-handler-formupload/resources
         - simplemetadata:
             uris: /metadata
             resource_dir: var/www
@@ -53,7 +52,4 @@ plugins:
         - json
         - mp3
         - exif
-#        - image
-        - xml:
-            usetidy: false
-            tidypath: /opt/local/lib/libtidy.dylib
+        - image

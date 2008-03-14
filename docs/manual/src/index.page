@@ -1,14 +1,14 @@
 ---
+title: Introduction
 layout: default
+tagline: No, this is.
 filters:
   - erb
   - textile
   - examples
-something_else: blah
 ---
-<% @page_title = "Introduction" %>
 
-h1. <%= @page_title %>
+h1. <%= page.config['title'] %>
 
 h2. Intended Audience
 

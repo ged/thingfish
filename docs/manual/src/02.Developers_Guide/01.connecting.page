@@ -1,6 +1,15 @@
+---
+title: Connecting to the Server
+layout: default
+filters:
+  - erb
+  - textile
+  - examples
+---
+
 h1. Developer's Guide
 
-h2. <%= @page_title = "Connecting to the Server" %>
+h2. <%= page.config['title'] %>
 
 There are several options for connecting: you can use a client library if one has
 been written for your language, or you can use HTTP to talk to the server directly.
@@ -10,13 +19,16 @@ h3. The Basics
 To test out the particulars of your connection, you can connect to the daemon with a
 web browser by pointing it at the URL:
 
-@http://your-thingfish-server:3474/@
+<pre>
+http://your-thingfish-server:3474/
+</pre>
 
-It will (by default) display a page describing the configuration of the server,
-including an overview of the API for connecting to it. Because the server is
-extensible and overridable using plugins, the particulars of your server might be
-different than the ones described here, but the basic upload/download REST API should
-remain consistent.
+It will (by default) display a page with documentation and a section describing each of the
+configured handlers running on the server.
+
+Because the server is extensible and overridable using plugins, the particulars of your server might
+be different than the ones described here, but the basic upload/download REST API should remain
+consistent.
 
 h3. Operations
 
@@ -30,16 +42,13 @@ h4. Default Handler
 	<dd>
 	  Fetch information about the server. The format of the information depends on the requested
 	  type -- a `text/html` request will display a server overview for web browsers, while
-	  code-centric content types like `application/json` and `text/x-yaml` will return hash-like
-	  structures that looks something like:
+	  code-centric content types like `application/json` and `text/x-yaml` will return a serialized
+	  hash of server information. This information can be later used to build REST queries to
+	  access ThingFish's other services.
 
-#:example#{language: yaml, caption: An example YAML response for the '/' URI}#
-/: default, inspect
-/status: status
-/upload: formupload
-/metadata: simplemetadata
-/search: simplesearch
-#:example#
+<?example { language: yaml, caption: "Server introspection hash" } ?>
+version: 0.2.0
+<?end?>
 
 	</dd>
 

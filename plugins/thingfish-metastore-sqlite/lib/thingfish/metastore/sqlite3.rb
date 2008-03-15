@@ -103,7 +103,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		super
 		@root = Pathname.new( options[:root] || DEFAULT_ROOT )
 		@root.mkpath
-		@dbname = @root + 'metadata.db'
+		@dbname = @root + 'metastore.db'
 		@schema = nil
 
 		@metadata = SQLite3::Database.new( @dbname.to_s )

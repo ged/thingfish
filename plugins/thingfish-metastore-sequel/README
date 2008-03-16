@@ -1,21 +1,24 @@
-== Thingfish::SQLite3MetaStore
+== Thingfish::SequelMetaStore
 
-This is a metastore plugin for ThingFish which saves metadata to a SQLite backed
-file.
+This is a metastore plugin for ThingFish which saves metadata to a database,
+via the Sequel "database toolkit".
+
+See http://sequel.rubyforge.org/files/sequel/README.html for more information on Sequel.
 
 == Configuration
 
- plugins:
-	metastore:
-	  name: sqlite3
-	  root: /tmp/thingfish/metastore
+    plugins:
+        metastore:
+            name: sequel
+            sequel_connect: postgres://user:password@host/database
 
 === Config Keys ===
 
 [name]::
-  Set to 'sqlite3' to use this plugin.
-[root]::
-  The directory to store the database file in.
+  Set to 'sequel' to use this plugin.
+[sequel_connect]::
+  Optional.  Defaults to an in-memory SQLite database.  This needs to
+  be a valid Sequel connection URI.
 
 == Authors
 

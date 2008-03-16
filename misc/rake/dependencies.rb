@@ -85,7 +85,7 @@ NONGEM_INSTALLS = {
 }
 
 ### Task: install gems for plugins
-PLUGIN_DEPENDENCIES = %w[json exifr ruby-mp3info tidy sqlite3-ruby]
+PLUGIN_DEPENDENCIES = %w[json exifr ruby-mp3info tidy sqlite3-ruby sequel]
 task :install_plugin_dependencies do
 	
 	workdir = Pathname.new( Dir.tmpdir )

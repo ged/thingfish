@@ -119,14 +119,16 @@ module ThingFish # :nodoc:
 		class ClassNameProxy
 
 			### Create a new proxy for the given +klass+.
-			def initialize( klass )
-				@classname = klass.name
+			def initialize( klass, force_debug=false )
+				@classname   = klass.name
+				@force_debug = force_debug
 			end
 			
 			### Delegate calls the global logger with the class name as the 'progname' 
 			### argument.
 			def method_missing( sym, msg=nil, &block )
 				return super unless LEVEL.key?( sym )
+				sym = :debug if @force_debug
 				ThingFish.logger.add( LEVEL[sym], msg, @classname, &block )
 			end
 		end # ClassNameProxy
@@ -140,6 +142,10 @@ module ThingFish # :nodoc:
 			@log_proxy ||= ClassNameProxy.new( self.class )
 		end
 
+		### Return a proxied "debug" logger that ignores other level specification.
+		def log_debug
+			@log_debug_proxy ||= ClassNameProxy.new( self.class, true )
+		end
 	end # module Loggable
 
 

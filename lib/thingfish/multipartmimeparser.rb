@@ -51,8 +51,10 @@ class ThingFish::MultipartMimeParser
 	### from the given +socket+ as a stream, and spool files to a temporary 
 	### directory.
 	def initialize( spooldir=DEFAULT_SPOOLDIR, bufsize=DEFAULT_BUFSIZE )
-		@spooldir = spooldir || DEFAULT_SPOOLDIR
+		@spooldir = Pathname.new( spooldir || DEFAULT_SPOOLDIR )
 		@bufsize  = bufsize  || DEFAULT_BUFSIZE
+		
+		@spooldir.mkpath unless @spooldir.exist?
 	end
 
 
@@ -218,7 +220,7 @@ class ThingFish::MultipartMimeParser
 		io      = state.socket
 		
 		self.log.debug "Spooling file from upload"
-		tmpfile = Tempfile.open( 'filedata', @spooldir )
+		tmpfile = Tempfile.open( 'filedata', @spooldir.to_s )
 		size = 0
 	
 		until tmpfile.closed?

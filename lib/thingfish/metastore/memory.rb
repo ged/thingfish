@@ -162,7 +162,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 			key = key.to_sym
 
 			matching_uuids = @metadata.keys.find_all do |uuid|
-				@metadata[ uuid ][ key ] == value
+				@metadata[ uuid ][ key ].to_s == value
 			end
 			
 			if ary
@@ -188,7 +188,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 			re = Regexp.new( '^' + pattern.to_s.gsub('*', '.*') + '$', Regexp::IGNORECASE )
 			
 			matching_uuids = @metadata.keys.find_all do |uuid|
-				re.match( @metadata[ uuid ][ key ] )
+				re.match( @metadata[ uuid ][ key ].to_s )
 			end
 			
 			if ary

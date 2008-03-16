@@ -14,7 +14,7 @@ LIBDIR		  	= BASEDIR + 'lib'
 TF_DIR			= BASEDIR.parent.parent
 TF_LIBDIR		= TF_DIR + 'lib'
 
-PKG_NAME	  	= "thingfish-marshalledms"
+PKG_NAME	  	= "thingfish-metastore-marshalled"
 PKG_VERSION	  	= "0.0.1"
 PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
               	

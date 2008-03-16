@@ -37,23 +37,16 @@ include ThingFish::TestConstants
 
 describe ThingFish::SequelMetaStore do
 	
-	before(:all) do
+	before( :all ) do
 		setup_logging( :fatal )
-
-	    @store = ThingFish::MetaStore.create( 'sequel' )
-#		@store.begin_transaction
+		@store = ThingFish::MetaStore.create( 'sequel' )
 	end
 
-	before(:each) do
-		pending "Yeah, I'm workin' on it"
-	end
-	
-	after(:each) do
+	after( :each ) do
 		@store.clear
 	end
 
-	after(:all) do
-#		@store.commit
+	after( :all ) do
 		reset_logging()
 	end
 

@@ -19,8 +19,8 @@
 #   ms.get_properties( uuid )						# => {...}
 #
 #   metadata = ms[ uuid ]
-#   metadata.format = 'application/x-yaml'
 #   metadata.format		# => 'application/x-yaml'
+#   metadata.format = 'application/x-yaml'
 #   metadata.format?	# => true
 #
 # == Version
@@ -53,9 +53,7 @@ require 'thingfish/metastore/simple'
 class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 	extend Forwardable
-
-	include ThingFish::Loggable,
-	        ThingFish::ResourceLoader
+	include ThingFish::Loggable
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -79,16 +77,15 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		#	postgres://user:password@host/database
 		#	...
 		#
-		# Defaults to in memory sqlite.
+		# Defaults to in-memory sqlite.
 		#
 		@metadata = options[:sequel_connect].nil? ?
 					Sequel.sqlite :
 					Sequel.open( options[:sequel_connect] )
 
 		# Enable query logging in debug mode
-		# FIXME: Need to register as a DEBUG message instead of the INFO default
 		self.log.debug {
-			@metadata.logger = self.log
+			@metadata.logger = self.log_debug
 			'Enabled SQL query logging'
 		}
 
@@ -98,7 +95,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	# The Sequel object that is backing the metastore
 	attr_reader :metadata
 
-	# Delete transactions to the underlying Sequel object.
+	# Delegate transactions to the underlying Sequel object.
 	def_delegators :@metadata, :transaction
 	
 
@@ -115,10 +112,9 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		m_id = get_id( :metakey, propname )
 
 		if @metadata[ :metaval ].
-			filter( :r_id => r_id, :m_id => m_id ).
-			update( :val => value ).zero?
-			
-			@metadata[ :metaval ] << [ r_id, m_id, value ]
+				filter( :r_id => r_id, :m_id => m_id ).
+				update( :val => value.to_s ).zero?
+			@metadata[ :metaval ] << [ r_id, m_id, value.to_s ]
 		end
 	end
 
@@ -127,11 +123,15 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		self.transaction do
-			self.delete_resource( uuid )
+			
+			# Wipe existing properties
+			@metadata[ :metaval ].
+				filter( :r_id => @metadata[ :resources ].
+						filter( :uuid => uuid.to_s ).select( :id ) ).delete
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
-		end		
+		end
 	end
 	
 
@@ -196,8 +196,10 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		r  = @metadata[ :resources ]
 		mv = @metadata[ :metaval ]
 		mk = @metadata[ :metakey ]
+		props = propnames.collect { |prop| prop.to_s }
+
 		mv.filter { :r_id == r.filter( :uuid => uuid.to_s ).select( :id ) &&
-					:m_id == mk.filter( :key => propnames ).select( :id ) }.delete
+					:m_id == mk.filter( :key => props ).select( :id ) }.delete
 	end
 	
 	
@@ -288,7 +290,10 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 	### Delete all resources from the database, but preserve the keys
 	def clear
-		@metadata.execute( 'DELETE FROM resources' )
+		self.transaction do
+			@metadata[ :resources ].delete
+			@metadata[ :metaval   ].delete
+		end
 	end
 
 
@@ -338,7 +343,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		when :resources
 			row = @metadata[ key ].filter( :uuid => value.to_s ).first
 		when :metakey
-			row = @metadata[ key ].filter( :key => value ).first
+			row = @metadata[ key ].filter( :key => value.to_s ).first
 		else
 			raise "Unknown ID type %p!" % [ key ]
 		end

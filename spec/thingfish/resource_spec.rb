@@ -34,12 +34,12 @@ describe ThingFish::Resource do
 		ThingFish::TestConstants
 
 	TEST_METADATA = {
-		'format' => 'image/jpeg',
-		'title' => 'The Way it Was.jpg',
-		'author' => 'Semilin P. Idsnitch',
-		'extent' => 134622,
+		'format'	 => 'image/jpeg',
+		'title'		 => 'The Way it Was.jpg',
+		'author'	 => 'Semilin P. Idsnitch',
+		'extent'	 => 134622,
 		'doodlebops' => 'suck',
-		'byline' => 'Something Naughty That Jonathan Will Make Us Change'
+		'byline'	 => 'Something Naughty That Jonathan Will Make Us Change'
 	}
 	TEST_METADATA.freeze
 

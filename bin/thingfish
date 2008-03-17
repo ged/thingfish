@@ -409,15 +409,15 @@ class ThingFish::CommandLineClient
 		analyzer = self.get_mime_analyzer or
 			raise "Ack. None of the strategies for deriving mimetype worked."
 
-		if file.respond_to?( :extname )
-			return analyzer.file( file )
-		else	
+		if file.respond_to?( :read )
 			io = self.get_reader_io( file )
 
 			data = io.read( 2048 )
 			io.rewind
 
 			return analyzer.buffer( data )
+		else
+			return analyzer.file( file )
 		end
 	end
 

@@ -221,7 +221,7 @@ class ThingFish::Resource
 	
 	### Override Kernel#format to return the 'format' metadata key instead.
 	def format
-		return self.metadata[ 'format' ]
+		return self.metadata[ :format ]
 	end
 
 

@@ -70,6 +70,8 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def initialize( options={} )
 		super
 
+		@id_cache = { :resources => {}, :metakey => {} }
+		
 		# Connect to the backend database specified in the
 		# thingfish config file. ('sequel_connect')
 		#
@@ -214,6 +216,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			
 			# Remove resource row.
 			resources.filter( :uuid => uuid.to_s ).delete
+			@id_cache[ :resources ].delete( uuid )
 		end
 	end
 
@@ -291,6 +294,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### Delete all resources from the database, but preserve the keys
 	def clear
 		self.transaction do
+			@id_cache[ :resources ] = {}
 			@metadata[ :resources ].delete
 			@metadata[ :metaval   ].delete
 		end
@@ -339,22 +343,24 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### Return the id of a given resource or metakey, or if none exist,
 	### create a new row and return the id.
 	def get_id( key, value )
-		case key
-		when :resources
-			row = @metadata[ key ].filter( :uuid => value.to_s ).first
-		when :metakey
-			row = @metadata[ key ].filter( :key => value.to_s ).first
-		else
-			raise "Unknown ID type %p!" % [ key ]
-		end
+		
+		# Return the previously cached ID
+		return @id_cache[ key ][ value ] unless @id_cache[ key ][ value ].nil?
 
-		# return a found ID.
+		# Try and find an ID.
+		column = key == :resources ? :uuid : :key
+		row = @metadata[ key ].filter( column => value.to_s ).first
+
+		# Cache and return a found ID.
 		#
-		return row[:id] unless row.nil?
-
-		# create a new row for the requested object, and return the new ID.
+		unless row.nil?
+			@id_cache[ key ][ value ] = row[ :id ]
+			return row[ :id ]
+		end
+		
+		# Create a new row for the requested object, and return the new ID.
 		#
 		self.log.debug "Creating new %s row: %s" % [ key, value ]
-		return @metadata[ key ] << [ nil, value.to_s ]
+		return @metadata[ key ] << { column => value.to_s }
 	end
 end

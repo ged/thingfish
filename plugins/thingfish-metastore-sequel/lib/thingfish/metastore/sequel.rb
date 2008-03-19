@@ -348,7 +348,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		return @id_cache[ key ][ value ] unless @id_cache[ key ][ value ].nil?
 
 		# Try and find an ID.
-		column = key == :resources ? :uuid : :key
+		column = ( key == :resources ? :uuid : :key )
 		row = @metadata[ key ].filter( column => value.to_s ).first
 
 		# Cache and return a found ID.

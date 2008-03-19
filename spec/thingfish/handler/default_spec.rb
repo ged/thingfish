@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -249,6 +249,9 @@ describe ThingFish::DefaultHandler do
 
 
 	it "sets the content disposition of the requested resource if asked to do so" do
+		time = stub( "Fake time object", :rfc822 => "Wed, 29 Aug 2007 21:24:09 -0700" )
+		Time.stub!( :parse ).and_return( time )
+		
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).
 			at_least( :once ).
@@ -278,6 +281,9 @@ describe ThingFish::DefaultHandler do
 
 
 	it "sets the content disposition filename of the requested resource" do
+		time = stub( "Fake time object", :rfc822 => "Wed, 29 Aug 2007 21:24:09 -0700" )
+		Time.stub!( :parse ).and_return( time )
+		
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).
 			at_least( :once ).

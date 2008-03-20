@@ -2,6 +2,10 @@
 
 A handler plugin that adds inspection of internal datastructures 
 
+== Dependencies
+
+No additional requirements.
+
 == Authors
 
  * Michael Granger <mgranger@laika.com>

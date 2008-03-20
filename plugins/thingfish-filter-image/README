@@ -6,6 +6,10 @@ response image format conversion.
 It uses RMagick for mostly everything, so you'll have to have that 
 installed to use it.
 
+== Dependencies
+
+ $ sudo gem install rmagick
+
 == Configuration
 
  plugins:

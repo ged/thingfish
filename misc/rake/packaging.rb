@@ -14,10 +14,11 @@ gemspec = Gem::Specification.new do |gem|
 	gem.version 	= "%s.%s" % [ PKG_VERSION, pkg_build ]
 
 	gem.summary     = "ThingFish - A highly-accessable network datastore"
-	gem.description = <<-EOD
-	:TODO: Finish writing this description.
-	ThingFish is a highly-accessable network datastore. And it needs more description.
-	EOD
+	gem.description = "ThingFish is a network-accessable, searchable, extensible " +
+	                  "datastore. It can be used to store chunks of data on the " +
+	                  "network in an application-independent way, associate the chunks " +
+	                  "with other chunks through metadata, and then search for the chunk " +
+	                  "you need later and fetch it again, all through a REST API over HTTP."	
 
 	gem.authors  	= "LAIKA, Inc."
 	gem.homepage 	= "http://opensource.laika.com"

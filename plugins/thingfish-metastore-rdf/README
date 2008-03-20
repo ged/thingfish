@@ -2,6 +2,20 @@
 
 A ThingFish metastore based on an RDF knowledge-base.
 
+== Dependencies
+
+We currently do not support the Redland RDF rubygem, as it's several years out of date at the time
+of this writing.  Instead, we recommend installing the version available from http://librdf.org.
+
+ $ wget http://download.librdf.org/source/redland-VERSION.tar.gz
+ $ wget http://download.librdf.org/source/redland-bindings-VERSION.tar.gz
+ $ tar -zxf redland-VERSION.tar.gz
+ $ tar -zxf redland-bindings-VERSION.tar.gz
+ $ cd redland-VERSION
+ $ ./configure && make && sudo make install
+ $ cd ../redland-bindings-VERSION
+ $ ./configure --with-ruby && make && sudo make install
+
 == Configuration
 
   plugins:

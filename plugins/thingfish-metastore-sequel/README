@@ -5,6 +5,16 @@ via the Sequel "database toolkit".
 
 See http://sequel.rubyforge.org/files/sequel/README.html for more information on Sequel.
 
+== Dependencies
+
+ $ sudo gem install sequel
+
+You will also need the bindings specific to the database you wish to use.
+
+ $ sudo gem install postgres
+ $ sudo gem install sqlite3-ruby
+ $ sudo gem install [whatever]
+
 == Configuration
 
     plugins:

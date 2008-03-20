@@ -2,6 +2,10 @@
 
 An MP3 metadata-extraction filter for ThingFish.
 
+== Dependencies
+
+ $ sudo gem install ruby-mp3info
+
 == Configuration
 
  plugins:

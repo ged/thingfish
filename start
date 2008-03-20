@@ -7,10 +7,12 @@ BEGIN {
 require 'etc'
 require 'pathname'
 require 'rbconfig'
+require 'utils'
 require 'thingfish'
 require 'thingfish/daemon'
 require 'thingfish/config'
 
+include UtilityFunctions
 
 # This is a little wrapper that starts thingfishd with the config in
 # etc/thingfish.conf-testing, like run did originally.
@@ -30,10 +32,23 @@ end
 config = nil
 configfile = "etc/thingfish.conf-#{suffix}"
 if File.exist?( configfile )
-	puts "Loading config: #{configfile}"
 	config = ThingFish::Config.load( configfile )
 else
-	config = ThingFish::Config.load( "etc/thingfish.conf-testing" )
+	header( 'Attention!' )
+	divider
+	message( <<-EOH )
+You are running a developer script that is not intended for production use.
+
+For information on how to get started with ThingFish, please see the
+QUICKSTART document, and/or the 'Getting Started' section of the manual.
+
+If you are interested in using this script for development, just
+create a ThingFish configuration file at #{configfile}!
+
+HAVE A PLEASANT DAY. 
+	EOH
+	divider
+	exit 64
 end
 
 instance = ThingFish::Daemon.new( config )

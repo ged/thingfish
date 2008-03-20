@@ -3,6 +3,10 @@
 This is a simple metastore plugin for ThingFish which saves metadata to a single 
 serialized hash on disk.
 
+== Dependencies
+
+ $ sudo gem install lockfile
+
 == Configuration
 
  plugins:

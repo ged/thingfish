@@ -3,8 +3,9 @@
 This is a filter plugin for ThingFish which converts Ruby data structures
 into JSON strings.
 
-It requires the json module, available at
-	http://json.rubyforge.org/
+== Dependencies
+
+ $ sudo gem install json
 
 == Configuration
 

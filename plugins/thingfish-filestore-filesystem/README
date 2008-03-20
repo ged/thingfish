@@ -5,6 +5,10 @@ A disk filesystem-based ThingFish FileStore plugin.
 This FileStore stores resources on disk in a hierarchy of hashed directories. It uses
 NFS-safe locking for writes, and should be threadsafe.
 
+== Dependencies
+
+ $ sudo gem install lockfile
+
 == Configuration
 
 To run this handler in your ThingFish, set the 'name' value in your config file's 'filestore'

@@ -3,13 +3,15 @@
 This is a filter plugin for ThingFish which converts Ruby data structures
 into XML strings.
 
+== Dependencies
 
 It requires the CLabs XMLSerial module, available at
-    http://clabs.org/clxmlserial.htm,
 
-and the ruby Tidy bindings, which can be found at
-    http://rubyforge.org/projects/tidy/ 
+ http://clabs.org/clxmlserial.htm
 
+and the ruby Tidy bindings, which can be installed via gem:
+
+ $ sudo gem install tidy
 
 == Configuration
 

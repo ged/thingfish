@@ -2,6 +2,10 @@
 
 A handler plugin that displays server status and statistics about some of its URIs.
 
+== Dependencies
+
+No additional requirements.
+
 == Configuration
 
 To run this handler in your ThingFish, add a 'status' section to the 'handlers' 

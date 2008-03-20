@@ -6,6 +6,7 @@ require 'rake/gempackagetask'
 require 'rake/rdoctask'
 require 'spec/rake/spectask'
 require 'fileutils'
+require 'pathname'
 
 
 BASEDIR			= Pathname.new( __FILE__ ).dirname.expand_path
@@ -13,13 +14,13 @@ LIBDIR		  	= BASEDIR + 'lib'
 TF_DIR			= BASEDIR.parent.parent
 TF_LIBDIR		= TF_DIR + 'lib'
 
-PKG_NAME	  	= "<%= vars[:package] %>"
-PKG_VERSION	  	= "0.0.1"
+PKG_NAME	  	= "thingfish-metastore-rdf"
+PKG_VERSION	  	= "0.2.0"
 PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
               	
 RELEASE_NAME  	= "REL #{PKG_VERSION}"
               	
-TEXT_FILES	  	= %w( README LICENSE COPYING )
+TEXT_FILES	  	= %w( README LICENSE )
 SPEC_FILES	  	= Dir.glob('spec/*_spec.rb')
 LIB_FILES	  	= Dir.glob('lib/**/*.rb').delete_if { |item| item =~ /\.svn/ }
 
@@ -40,7 +41,7 @@ end
 ### Task: rdoc
 Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_dir = 'docs/html'
-	rdoc.title    = "<%= vars[:package] %>"
+	rdoc.title    = "ThingFish RDF Metastore Plugin"
 	rdoc.options += ['-w', '4', '-SHN', '-i', 'docs']
 
 	rdoc.rdoc_files.include TEXT_FILES
@@ -62,21 +63,25 @@ gemspec = Gem::Specification.new do |gem|
 	gem.name    	= PKG_NAME
 	gem.version 	= PKG_VERSION
 
-	gem.summary     = "<%= vars[:package] %>"
-	gem.description = ""
+	gem.summary     = "ThingFish RDF Metastore Plugin"
+	gem.description = "This is a metastore plugin for the ThingFish network datastore. " +
+	                  "It provides an RDF-backed metadata store."
 
-	gem.authors  	= "LAIKA, Inc."
-	gem.homepage 	= "http://opensource.laika.com"
+	gem.authors  	= "Michael Granger and Mahlon E. Smith"
+	gem.email  		= "mgranger@laika.com, mahlon@laika.com"	
+	gem.homepage 	= "http://opensource.laika.com/wiki/ThingFish"
 
 	gem.has_rdoc 	= true
 
 	gem.files      	= RELEASE_FILES
 	gem.test_files 	= SPEC_FILES
 
-	gem.autorequire	= '<%= package %>.rb'
   	gem.files += Dir.glob( "resources/**/*" )
 
-  	gem.add_dependency( 'thingfish', '>= 0.0.1' )
+  	gem.add_dependency( 'thingfish', '>= 0.2.0' )
+
+  	gem.requirements << 'Redland RDF'
+  	gem.requirements << 'Redland RDF Ruby Bindings'
 end
 
 Rake::GemPackageTask.new(gemspec) do |task|

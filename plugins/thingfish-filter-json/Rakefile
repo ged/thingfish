@@ -15,7 +15,7 @@ TF_DIR			= BASEDIR.parent.parent
 TF_LIBDIR		= TF_DIR + 'lib'
 
 PKG_NAME	  	= "thingfish-filter-json"
-PKG_VERSION	  	= "0.0.1"
+PKG_VERSION	  	= "0.2.0"
 PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
               	
 RELEASE_NAME  	= "REL #{PKG_VERSION}"
@@ -67,18 +67,19 @@ gemspec = Gem::Specification.new do |gem|
 	gem.description = "This is a simple filter plugin for ThingFish which outputs " +
 		"JSON formatted Ruby data structures."
 
-	gem.authors  	= "LAIKA, Inc."
-	gem.homepage 	= "http://opensource.laika.com"
+	gem.authors  	= "Michael Granger and Mahlon E. Smith"
+	gem.email  		= "mgranger@laika.com, mahlon@laika.com"
+	gem.homepage 	= "http://opensource.laika.com/wiki/ThingFish"
 
 	gem.has_rdoc 	= true
 
 	gem.files      	= RELEASE_FILES
 	gem.test_files 	= SPEC_FILES
 
-	gem.autorequire	= '<%= package %>.rb'
   	gem.files += Dir.glob( "resources/**/*" )
 
-  	gem.add_dependency( 'thingfish', '>= 0.0.1' )
+  	gem.add_dependency( 'thingfish', '>= 0.2.0' )
+	gem.add_dependency( 'json', '>= 1.1.2' )
 end
 
 Rake::GemPackageTask.new(gemspec) do |task|

@@ -44,7 +44,7 @@ PKGDIR        = BASEDIR + 'pkg'
 ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
 RAKE_TASKDIR  = MISCDIR + 'rake'
 
-TEXT_FILES    = %w( Rakefile README LICENSE ).
+TEXT_FILES    = %w( Rakefile README LICENSE QUICKSTART ).
 	collect {|filename| BASEDIR + filename }
 
 SPECDIR       = BASEDIR + 'spec'

@@ -42,6 +42,7 @@ function viewMetaData()
 		dataType:    'json',
 		processData: true,
 		beforeSend:  function(xhr){ xhr.setRequestHeader('Accept','application/json') },
+		error:       function(xhr, status, error) { window.location = uri; },
 		success:     function(data){
 
 			// remove any existing metadata tables

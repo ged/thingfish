@@ -2,6 +2,10 @@
 
 An EXIF metadata-extraction filter for ThingFish.
 
+== Dependencies
+
+ $ sudo gem install exifr
+
 == Configuration
 
  plugins:

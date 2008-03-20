@@ -164,8 +164,8 @@ class ThingFish::Request
 	### arguments.
 	### ?arg1=yes&arg2=no&arg3  #=> {'arg1' => 'yes', 'arg2' => 'no', 'arg3' => nil}
 	def query_args
-		return {} if @uri.query.nil?
-		@query_args ||= @uri.query.split(/[&;]/).inject({}) do |hash,arg|
+		return {} if self.uri.query.nil?
+		@query_args ||= self.uri.query.split(/[&;]/).inject({}) do |hash,arg|
 			key, val = arg.split('=')
 			key = URI.decode( key )
 

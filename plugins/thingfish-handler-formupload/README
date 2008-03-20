@@ -3,6 +3,10 @@
 A handler that accepts and unwraps multipart form uploads, as documented at
 http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
 
+== Dependencies
+
+No additional requirements.
+
 == Configuration
 
 To run this handler in your ThingFish, add a 'upload' section to the 'plugins' 

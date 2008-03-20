@@ -37,7 +37,6 @@ Once these are installed:
 If you want to help out with development, run tests, or generate documentation, 
 you'll need a few more things:
 
-  * webgen (>= 0.4.4): http://webgen.rubyforge.org/
   * RSpec (>= 1.0.5): http://rspec.rubyforge.org/
   * rcov (>= 0.7.0): http://eigenclass.org/hiki.rb?rcov
   * lockfile (>= 1.4.3): http://codeforpeople.com/lib/ruby/lockfile/
@@ -46,6 +45,9 @@ you'll need a few more things:
   * Redcloth (>= 3.0.4): http://whytheluckystiff.net/ruby/redcloth/
 
 If you have RubyGems installed, you can install these automatically via the 
-@install_dependencies@ task of the Rakefile:
++install_dependencies+ task of the Rakefile:
 
   $ sudo rake install_dependencies
+
+For further information on getting your server up and running, see the QUICKSTART file.
+

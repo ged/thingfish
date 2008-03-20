@@ -3,6 +3,10 @@
 This is a metastore plugin for ThingFish which saves metadata to a SQLite backed
 file.
 
+== Dependencies
+
+ $ sudo gem install sqlite3-ruby
+
 == Configuration
 
  plugins:

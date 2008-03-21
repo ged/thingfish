@@ -41,7 +41,7 @@ module ThingFish
 	SVNId = %q$Id$
 
 	# Package version
-	VERSION = '0.2.0'
+	VERSION = '0.2.1'
 
 	# Need to require these here so some constants are already defined
 	require 'thingfish/constants'

@@ -20,8 +20,11 @@ gemspec = Gem::Specification.new do |gem|
 	                  "with other chunks through metadata, and then search for the chunk " +
 	                  "you need later and fetch it again, all through a REST API over HTTP."	
 
-	gem.authors  	= "LAIKA, Inc."
-	gem.homepage 	= "http://opensource.laika.com"
+	gem.authors  	= "Michael Granger and Mahlon E. Smith"
+	gem.email  		= "mgranger@laika.com, mahlon@laika.com"
+	gem.homepage 	= "http://opensource.laika.com/wiki/ThingFish"
+
+	gem.rubyforge_project = 'laika'
 
 	gem.has_rdoc 	= true
 
@@ -49,6 +52,7 @@ desc "Build the ThingFish gem and gems for all the standard plugins"
 task :gems => [:gem] do
 	log "Building gems for plugins in: %s" % [PLUGINS.join(', ')]
 	PLUGINS.each do |plugindir|
+		log plugindir.basename
 		cp BASEDIR + 'LICENSE', plugindir
 		Dir.chdir( plugindir ) do
 			system 'rake', 'gem'
@@ -58,7 +62,6 @@ task :gems => [:gem] do
 		
 		pkgdir = plugindir + 'pkg'
 		gems = Pathname.glob( pkgdir + '*.gem' )
-		log "Would copy #{gems} from #{pkgdir} to #{PKGDIR}"
 		cp gems, PKGDIR
 	end
 end

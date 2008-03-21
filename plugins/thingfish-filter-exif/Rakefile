@@ -70,6 +70,8 @@ gemspec = Gem::Specification.new do |gem|
 	gem.email  		= "mgranger@laika.com, mahlon@laika.com"
 	gem.homepage 	= "http://opensource.laika.com/wiki/ThingFish"
 
+	gem.rubyforge_project = 'laika'
+
 	gem.has_rdoc 	= true
 
 	gem.files      	= RELEASE_FILES
@@ -89,7 +91,7 @@ end
 
 
 task :install => [:test, :package] do
-	installer = Gem::Installer.new( %{pkg/#{name}-#{version}.gem} )
+	installer = Gem::Installer.new( %{pkg/#{PKG_FILE_NAME}.gem} )
 	intaller.install
 end
 

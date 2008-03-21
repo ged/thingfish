@@ -18,24 +18,27 @@ BEGIN {
 
 
 require 'rdf/redland'
+RDF = Redland
 
-$store = Redland::TripleStore.new( 'postgresql', 'thingfish_metastore', 'database=thingfish_metastore' )
-$model = Redland::Model.new( $store )
-$parser = Redland::Parser.new
+begin
+	$store = RDF::TripleStore.new( 'postgresql', 'thingfish_metastore', 'database=test,host=localhost' )
+	$model = RDF::Model.new( $store )
+	$parser = RDF::Parser.new
+rescue => err
+	
+	URLS = %w[
+		http://purl.org/dc/elements/1.1/
+		http://purl.org/dc/terms/
+		http://purl.org/dc/dcmitype/
+		http://www.w3.org/1999/02/22-rdf-syntax-ns
+		http://www.w3.org/2000/01/rdf-schema
+	]
 
-URLS = %w[
-	http://purl.org/dc/elements/1.1/
-	http://purl.org/dc/terms/
-	http://purl.org/dc/dcmitype/
-	http://www.w3.org/1999/02/22-rdf-syntax-ns
-	http://www.w3.org/2000/01/rdf-schema
-]
-
-URLS.each do |uri|
-	$stderr.print "Loading vocabulary from %p..." % [uri]
-	$parser.parse_into_model( $model, uri )
-	$stderr.puts " done."
-end
+	URLS.each do |uri|
+		$stderr.print "Loading vocabulary from %p..." % [uri]
+		$parser.parse_into_model( $model, uri )
+		$stderr.puts " done."
+	end
 
 start_irb_session( binding() )
 

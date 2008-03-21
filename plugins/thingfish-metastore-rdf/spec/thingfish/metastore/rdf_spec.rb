@@ -49,7 +49,7 @@ describe ThingFish::RdfMetaStore do
 	end
 
 	before( :each ) do
-		pending "More development"
+		pending "still experimental"
 		@triplestore = mock( "triplestore", :null_object => true )
 	end
 
@@ -98,7 +98,7 @@ describe ThingFish::RdfMetaStore do
 		end
 
 		after( :each ) do
-			# @store.
+			# @store.clear
 		end
 
 		### Shared behavior specification

@@ -39,6 +39,7 @@
 
 begin
 	require 'pathname'
+	require 'breakpoint'
 	require 'rdf/redland'
 	require 'rdf/redland/constants'
 	require 'rdf/redland/schemas/rdfs'
@@ -79,6 +80,14 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	#   * User vocabularies
 	#   * Standard vocabularies (DC, DCMI, etc.)
 	#   * Fallback to ThingFish namespace
+
+	def map_to_predicate( key )
+		
+	end
+	
+	def unmap_from_predicate( predicate )
+	end
+	
 
 	# Predicate map that translates simple-string keys to their Dublin Core, 
 	# DCMI Type Vocabulary, or RDF Schema equivalents.
@@ -165,6 +174,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		http://www.w3.org/2000/01/rdf-schema
 	]
 
+
 	# Schemas for the ThingFish RDF metastore
 	module Schemas
 		UUID = Redland::Namespace.new( 'urn:uuid:' )
@@ -220,10 +230,17 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	public
 	######
 
+	attr_reader :store, :model
+	
+
 	### Returns +true+ if the given +uuid+ exists in the metastore.
 	def has_uuid?( uuid )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		return @model.include?( uuid_urn, nil, nil )
+
+		statements = @model.find( uuid_urn, nil, nil )
+		self.log.debug "Got statements: %p" % [ statements ]
+		
+		return statements.empty? ? false : true
 	end
 	
 
@@ -232,9 +249,10 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
 		prop_url = Schemas::THINGFISH_NS[ propname ]
 
-		self.log_model
-
-		return @model.include?( uuid_urn, prop_url, nil )
+		statements = @model.find( uuid_urn, prop_url, nil )
+		self.log.debug "Got statements: %p" % [ statements ]
+		
+		return statements.empty? ? false : true
 	end
 
 

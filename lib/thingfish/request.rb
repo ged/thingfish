@@ -291,8 +291,15 @@ class ThingFish::Request
 			merged = extracted_metadata.merge( @form_metadata )
 			merged.update( body_metadata )
 			merged.update( immutable_metadata )
-			
-			yield( body.dup, merged )
+
+			# We have to explicitly case this because StringIO doesn't behave like a
+			# real IO when #dup'ed; closing the original also closes the copy.
+			case body
+			when StringIO
+				yield( StringIO.new(body.string), merged )
+			else
+				yield( body.dup, merged )
+			end
 		end
 	end
 
@@ -300,11 +307,10 @@ class ThingFish::Request
 	### Check the body IO objects to ensure they're still open.
 	def check_body_ios
 		self.entity_bodies.each do |body, _|
-			self.log.debug "Checking entity body %p: %s" % [
-				body,
-				body.closed? ? "CLOSED" : "still open"
-			]
-			body.open if body.closed?
+			if body.closed?
+				self.log.warn "Entity body closed: %p" % [ body ]
+				body.open 
+			end
 		end
 	end
 	

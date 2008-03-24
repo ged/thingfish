@@ -199,7 +199,7 @@ The meaning of the config values are as follows:
 			
 			<dt>resource_dir</dt>
 			<dd class="description">The directory to search for static resources 
-				relative to the , including the <code>html_index</code> file.</dd>
+				relative to the current directory,
 			<dd class="default">Defaults to a directory called 
 				<code>thingfish/default</code> under Ruby's shared datadir </dd>
 		</dl>
@@ -230,7 +230,7 @@ The meaning of the config values are as follows:
 			<dd class="valid-values">May be either one of the special 
 				values <code>stderr</code> or <code>stdout</code>, which correspond 
 				to the STDERR and STDOUT file descriptors, or a path to a logfile.
-				If the path is not absolute, it is relative to	</dd>
+				If the path is not absolute, it is relative to the current directory.</dd>
 			<dd class="default">Defaults to: <code>stderr</code></dd>
 		</dl>
 	</dd>

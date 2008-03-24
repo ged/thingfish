@@ -87,12 +87,13 @@ sub check
 
 sub upload
 {
-	my $file = shift @ARGV or return;
-	my $rs   = ThingFish::Resource->new( $file, $tf );
-	my $mime = File::MimeInfo::Magic::magic( $rs->data );
-	$rs->format( $mime );
-	$rs->save or die $rs->err . "\n";
-	print 'OK: ' . $rs->uuid . "\n";
+        foreach ( @ARGV ) {
+            my $rs   = ThingFish::Resource->new( $_, $tf );
+            my $mime = File::MimeInfo::Magic::magic( $rs->data );
+            $rs->format( $mime );
+            $rs->save or die $rs->err . "\n";
+            printf "OK: %s -> %s\n", $rs->uuid, $rs->title;
+        }
 	exit 0;
 }
 

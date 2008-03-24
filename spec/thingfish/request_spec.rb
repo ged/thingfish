@@ -432,7 +432,7 @@ describe ThingFish::Request do
 		end
 	
 	
-		it "sends each body entity of the request and a copy of the merged metadata to " +
+		it "sends each IO body entity of the request and a copy of the merged metadata to " +
 			"the block of the body iterator" do
 			io1 = mock( "filehandle 1" )
 			io1_dup = mock( "duplicated filehandle 1" )
@@ -477,7 +477,37 @@ describe ThingFish::Request do
 			yielded_pairs[ io2_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 		end
 	
-	
+
+		it "creates distinct duplicates for StringIO bodies" do
+			io1 = StringIO.new("foom!")
+			io2 = StringIO.new("DOOOOOM")
+			
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
+				io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
+			  }
+			form_metadata = {
+				'foo' => 1,
+				:title => "a bogus filename",
+				:useragent => 'Clumpy the Clown',
+			  }
+
+			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+			@mongrel_request.should_receive( :body ).once.and_return( :body )
+			parser.should_receive( :parse ).once.
+				with( :body, 'greatgoatsofgerta' ).
+				and_return([ entity_bodies, form_metadata ])
+			
+			@request.each_body do |body, parsed_metadata|
+				body.read     # modify the pointer on the duped StringIO
+			end
+		
+			io1.pos.should == 0
+			io2.pos.should == 0
+		end
+		
+		
 		it "ensures each part sent to the body has the default content-type " +
 		   "if none is explicitly provided by the request" do
 			io1 = mock( "filehandle 1" )

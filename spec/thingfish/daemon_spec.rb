@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -354,8 +354,6 @@ describe ThingFish::Daemon do
 					once.
 					with( @request, @response )
 
-				@request.should_receive( :rewind_bodies ).at_least( :once )
-
 				@daemon.filter_request( @request, @response )
 			end
 
@@ -378,8 +376,6 @@ describe ThingFish::Daemon do
 					should_receive( :handle_request ).
 					once.
 					with( @request, @response )
-
-				@request.should_receive( :rewind_bodies ).at_least( :once )
 
 				lambda {
 					@daemon.filter_request( @request, @response )

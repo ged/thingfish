@@ -47,7 +47,7 @@ class ThingFish::MemoryFileStore < ThingFish::FileStore
 	DEFAULT_MAXSIZE = 2 ** 18  # 256k
 
 	### Create a new MemoryFileStore
-	def initialize( options={} )
+	def initialize( ignored_datadir=nil, ignored_spooldir=nil, options={} )
 		super
 		@data = {}
 		@options[:maxsize] ||= DEFAULT_MAXSIZE

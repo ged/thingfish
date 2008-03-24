@@ -81,8 +81,11 @@ class ThingFish::FileStore
 	#################################################################
 
 	### Set up a new ThingFish::FileStore object.
-	def initialize( options={} )
-		@options = options
+	def initialize( datadir, spooldir, options={} )
+		@datadir  = datadir
+		@spooldir = spooldir
+		@options  = options
+
 		super()
 	end
 
@@ -90,6 +93,13 @@ class ThingFish::FileStore
 	######
 	public
 	######
+
+	# The directory this filestore will store stuff in (if it uses files)
+	attr_reader :datadir
+	
+	# The directory this filestore will use for temporary files
+	attr_reader :spooldir
+
 
 	### Mandatory FileStore API
 	virtual :store, :fetch, :delete, :size, :has_file?

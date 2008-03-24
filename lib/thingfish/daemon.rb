@@ -254,7 +254,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
 				unless response.is_handled?
 
-		# Check to be sure we're providing a response which is acceptable to the client
+			# Check to be sure we're providing a response which is acceptable to the client
 			unless response.body.nil? || ! response.status_is_successful?
 				unless response.content_type
 					self.log.warn "Response body set without a content type, using %p." %
@@ -267,7 +267,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 					self.log.info "Can't create an acceptable response: " +
 						"Client accepts:\n  %p\nbut response is:\n  %p" %
 						[ request.accepted_types, response.content_type ]
-					return self.send_error_response( response, request, HTTP::NOT_ACCEPTABLE, client )
+					return self.send_error_response( response, request, 
+						HTTP::NOT_ACCEPTABLE, client )
 				end
 			end
 
@@ -295,7 +296,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			else
 				response.filters << filter
 			ensure
-				request.rewind_bodies
+				request.check_body_ios
 			end
 			
 			break if response.handled?
@@ -394,13 +395,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	def run_handlers( client, handlers, request, response )
 		self.log.debug "Dispatching to %d handlers" % [handlers.length]
 
-		# BRANCH: Iterate through handlers
 		handlers.each do |handler|
-			# BRANCH: Adds handlers to the response as it executes them
 			response.handlers << handler
 			handler.process( request, response )
-			# BRANCH: Stops running handlers on status change
-			# BRANCH: Stops running handlers if client connection closes
+			request.check_body_ios
 			break if response.is_handled? || client.closed?
 		end
 	end

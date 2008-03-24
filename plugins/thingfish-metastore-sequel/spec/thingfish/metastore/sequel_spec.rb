@@ -39,7 +39,7 @@ describe ThingFish::SequelMetaStore do
 	
 	before( :all ) do
 		setup_logging( :fatal )
-		@store = ThingFish::MetaStore.create( 'sequel' )
+		@store = ThingFish::MetaStore.create( 'sequel', nil, nil )
 	end
 
 	after( :each ) do

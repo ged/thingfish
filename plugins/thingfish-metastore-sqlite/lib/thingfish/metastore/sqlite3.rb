@@ -86,9 +86,6 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	# SVN Id
 	SVNId = %q$Id$
 
-	# The default root directory
-	DEFAULT_ROOT = '/tmp/thingstore'
-
 	# The name of the schema file under resources/
 	SCHEMA_RESOURCE_NAME = 'base-schema.sql'
 
@@ -98,12 +95,14 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	#################################################################
 
 	### Create a new SQLite3MetaStore
-	def initialize( options={} )
+	def initialize( datadir, spooldir, options={} )
+		raise ArgumentError, "invalid data directory %p" % [ datadir ] unless
+			datadir.is_a?( Pathname )
 
 		super
-		@root = Pathname.new( options[:root] || DEFAULT_ROOT )
-		@root.mkpath
-		@dbname = @root + 'metastore.db'
+
+		self.datadir.mkpath
+		@dbname = self.datadir + 'metastore.db'
 		@schema = nil
 
 		@metadata = SQLite3::Database.new( @dbname.to_s )

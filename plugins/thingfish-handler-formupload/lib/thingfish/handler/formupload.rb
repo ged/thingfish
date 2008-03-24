@@ -43,7 +43,6 @@
 require 'thingfish'
 require 'thingfish/handler'
 require 'thingfish/constants'
-require 'thingfish/multipartmimeparser'
 require 'strscan'
 require 'forwardable'
 require 'tempfile'
@@ -69,23 +68,11 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new UploadHandler
-	def initialize( options={} )
-		@parser = ThingFish::MultipartMimeParser.new
-		super
-	end
-
 
 	######
 	public
 	######
 
-	# Delegate some settings to the parser object
-	def_delegators :@parser, :bufsize, :bufsize=, :spooldir, :spooldir=
-
-	# The multipart parser the handler uses to extract uploaded data
-	attr_accessor :parser
-	
 
 	### Return the HTML fragment that should be used to link to this handler.
 	def make_index_content( uri )
@@ -112,6 +99,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	end
 
 
+
 	#########
 	protected
 	#########
@@ -134,7 +122,6 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 
 		files = []
 		request.each_body do |body, metadata|
-			body.open  # reopen filehandle for store_io
 			uuid = self.daemon.store_resource( body, metadata )
 			metadata[:uuid] = uuid
 			files << [ uuid, metadata ]

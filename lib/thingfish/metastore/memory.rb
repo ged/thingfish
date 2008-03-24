@@ -47,7 +47,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	#################################################################
 
 	### Create a new MemoryMetaStore with the specified +options+.
-	def initialize( options={} )
+	def initialize( ignored_datadir=nil, ignored_spooldir=nil, options={} )
 		@options = options
 		@metadata = Hash.new {|hash,key| hash[key] = {} }
 		super

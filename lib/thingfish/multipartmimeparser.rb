@@ -50,11 +50,9 @@ class ThingFish::MultipartMimeParser
 	### Create a new MultipartMimeParser that will parse uploads and metadata 
 	### from the given +socket+ as a stream, and spool files to a temporary 
 	### directory.
-	def initialize( spooldir=DEFAULT_SPOOLDIR, bufsize=DEFAULT_BUFSIZE )
+	def initialize( spooldir, bufsize=DEFAULT_BUFSIZE )
 		@spooldir = Pathname.new( spooldir || DEFAULT_SPOOLDIR )
 		@bufsize  = bufsize  || DEFAULT_BUFSIZE
-		
-		@spooldir.mkpath unless @spooldir.exist?
 	end
 
 

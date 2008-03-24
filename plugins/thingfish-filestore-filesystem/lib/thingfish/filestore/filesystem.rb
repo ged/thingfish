@@ -12,22 +12,15 @@
 # 
 #   filestore:
 #     name: filesystem
-#     root: /tmp/thingstore
 # 
 # === Config Keys
 # 
-# [+root+]
-#   The directory in which to create the hashed directory structure and store uploaded
-#   resources. Defaults to ThingFish::FilesystemFileStore::DEFAULT_ROOT.
 # [+hashdepth+]
 #   The number of subdirectories to use. Can be set to 1, 2, 4, or 8. Defaults to 
 #   ThingFish::FilesystemFileStore::DEFAULT_HASHDEPTH.
 # [+bufsize+]
 #   The size of the buffer to use when reading incoming data (in bytes). Defaults to
 #   ThingFish::FilesystemFileStore::DEFAULT_BUFSIZE.
-# [+spooldir+]
-#   The directory to use when spooling uploaded files (relative to the +root+). 
-#   Defaults to ThingFish::FilesystemFileStore::DEFAULT_SPOOLDIR.
 # [+locking+]
 #   The configuration for the locking system. Defaults are in 
 #   ThingFish::FilesystemFileStore::DEFAULT_LOCKING_OPTIONS.
@@ -91,7 +84,8 @@ require 'thingfish/filestore'
 
 ### A filesystem based filestore plugin for ThingFish
 class ThingFish::FilesystemFileStore < ThingFish::FileStore
-	include ThingFish::Constants::Patterns
+	include ThingFish::Constants,
+		ThingFish::Constants::Patterns
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -100,10 +94,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	SVNId = %q$Id$
 
 	# Number of bytes in one megabyte
-	ONE_MEGABYTE = 1024**2
-
-	# The default filesystem root to store stuff in
-	DEFAULT_ROOT = File.join( Dir.tmpdir, 'thingstore' )
+	ONE_MEGABYTE = 1.megabyte
 
 	# The default number of hashed directories
 	DEFAULT_HASHDEPTH = 4
@@ -111,9 +102,6 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	# The buffer chunker size
 	DEFAULT_BUFSIZE = 8192
 
-	# The default location of upload temporary files
-	# (relative to DEFAULT_ROOT)
-	DEFAULT_SPOOLDIR = 'spool'
 
 	# The default options to use when creating locks. See the docs for Lockfile for
 	# more info on what these values mean
@@ -140,20 +128,26 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	#################################################################
 
 	### Create a new FilesystemFileStore
-	def initialize( options={} )
+	def initialize( datadir, spooldir, options={} )
+		raise ArgumentError, "invalid data directory %p" % [ datadir ] unless
+			datadir.is_a?( Pathname )
+		raise ArgumentError, "invalid spool directory %p" % [ spooldir ] unless
+			spooldir.is_a?( Pathname )
+
+		# Create the data directories if they don't already exist
+		datadir.mkpath
+		spooldir.mkpath
+		
 		super
-		@root      = Pathname.new( options[:root] || DEFAULT_ROOT )
-		@hashdepth = @options[:hashdepth] || DEFAULT_HASHDEPTH
-		@bufsize   = @options[:bufsize]   || DEFAULT_BUFSIZE
-		@lock_opts = @options[:locking]   || DEFAULT_LOCKING_OPTIONS
-		@spooldir  = @options[:spooldir]  || DEFAULT_SPOOLDIR
+
+		@hashdepth = options[:hashdepth] || DEFAULT_HASHDEPTH
+		@bufsize   = options[:bufsize]   || DEFAULT_BUFSIZE
+		@lock_opts = options[:locking]   || DEFAULT_LOCKING_OPTIONS
 		
 		raise ThingFish::ConfigError, "Max hash depth (8) exceeded" if @hashdepth > 8
 		raise ThingFish::ConfigError, "Hash depth must be 1, 2, 4, or 8." \
 		 	unless [ 1, 2, 4, 8 ].include?( @hashdepth )
 		
-		# Create the root if it doesn't already exist
-		@root.mkpath unless @root.exist?
 		@total_size = find_filestore_size()
 	end
 
@@ -165,9 +159,6 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 
 	# The number of hashed subdirectories to use
 	attr_reader :hashdepth
-	
-	# The filesystem root (as a Pathname object)
-	attr_reader :root
 	
 
 	### Mandatory FileStore interface
@@ -282,11 +273,11 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	### Return the full path on disk for a given uuid
 	def hashed_path( uuid )
 		uuid = uuid.to_s
-		return @root + uuid if @hashdepth.zero?
+		return @datadir + uuid if @hashdepth.zero?
 
 		# Split the first 8 characters of the UUID up into subdirectories, one for 
 		# each @hashdepth
-		path = [ @root ]
+		path = [ @datadir ]
 		chunksize = 8 / @hashdepth
 		0.step( 7, chunksize ) do |i|
 			path << uuid[i, chunksize]
@@ -304,7 +295,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		
 		self.log.debug "Opening writer for %s" % [path]
 		
-		spoolfile = @root + @spooldir + uuid.to_s
+		spoolfile = @datadir + @spooldir + uuid.to_s
 		spoolfile.dirname.mkpath
 
 		# open the spoolfile and a lock, link into place after write
@@ -351,14 +342,14 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		sum = 0
 		
 		self.log.info "Calculating current size of FileStore (this could take a moment...)"
-		@root.find do |path|
+		@datadir.find do |path|
 			next unless path.file? && path.basename.to_s =~ /^#{UUID_REGEXP}$/
 			sum += path.size
 		end
 		
-		maxsize = @options[:maxsize] ? "%0.2fMB" % [@options[:maxsize]/ONE_MEGABYTE.to_f] : nil
+		maxsize = @options[:maxsize] ? "%0.2fMB" % [@options[:maxsize]/1.megabyte.to_f] : nil
 		self.log.info "FileStore currently using %0.2fMB%s" %
-			[sum / ONE_MEGABYTE.to_f, maxsize ? " of #{maxsize}" : "" ]
+			[sum / 1.megabyte.to_f, maxsize ? " of #{maxsize}" : "" ]
 		
 		return sum
 	end

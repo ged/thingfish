@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -32,33 +32,31 @@ end
 ###	C O N T E X T S
 #####################################################################
 
-BOUNDARY = 'sillyBoundary'
-
-unless defined?( SPECDIR )
-	SPECDIR = Pathname.new( __FILE__ ).dirname
-	DATADIR = SPECDIR.parent + 'data'
-end
-
-
-### Create a stub request prepopulated with HTTP headers and form data
-def load_form( filename )
-	datafile = DATADIR + filename
-	return datafile.open
-end
-
-
 describe ThingFish::MultipartMimeParser do
 	include ThingFish::SpecHelpers
+
+	BOUNDARY = 'sillyBoundary'
+	SPECDIR = Pathname.new( __FILE__ ).dirname.parent
+	DATADIR = SPECDIR + 'data'
+
+	### Create a stub request prepopulated with HTTP headers and form data
+	def load_form( filename )
+		datafile = DATADIR + filename
+		return datafile.open
+	end
+
 
 	before( :all ) do
 		setup_logging( :fatal )
 	end
 	
 	before( :each ) do
-		@parser = ThingFish::MultipartMimeParser.new
+		@tmpdir = make_tempdir()
+		@parser = ThingFish::MultipartMimeParser.new( @tmpdir )
 	end
 
 	after( :all ) do
+		@tmpdir.rmtree
 		ThingFish.reset_logger
 	end
 

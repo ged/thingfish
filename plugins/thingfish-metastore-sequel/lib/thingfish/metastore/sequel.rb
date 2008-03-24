@@ -67,7 +67,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	#################################################################
 
 	### Create a new SequelMetaStore
-	def initialize( options={} )
+	def initialize( datadir, spooldir, options={} )
 		super
 
 		@id_cache = { :resources => {}, :metakey => {} }

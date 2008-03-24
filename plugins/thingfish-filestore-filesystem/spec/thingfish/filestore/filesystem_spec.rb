@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	plugindir = Pathname.new( __FILE__ ).dirname.parent
+	plugindir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 	basedir = plugindir.parent.parent
 
 	libdir = basedir + "lib"
@@ -42,6 +42,7 @@ describe ThingFish::FilesystemFileStore do
 	before(:all) do
 		setup_logging( :fatal )
 		@tmpdir = make_tempdir()
+		@spooldir = @tmpdir + 'foomp'
 	end
 
 	after( :all ) do
@@ -51,7 +52,7 @@ describe ThingFish::FilesystemFileStore do
 
 	describe " with default settings" do
 		before(:each) do
-		    @fs = ThingFish::FileStore.create( 'filesystem', :root => @tmpdir.to_s )
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
 	
@@ -161,8 +162,7 @@ describe ThingFish::FilesystemFileStore do
 	describe " with a hash depth of 2" do
 
 		before(:each) do
-		    @fs = ThingFish::FileStore.create( 'filesystem', 
-				:hashdepth => 2, :root => @tmpdir.to_s )
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :hashdepth => 2 )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
 
@@ -184,8 +184,7 @@ describe ThingFish::FilesystemFileStore do
 	describe " with a hash depth of 8" do
 
 		before(:each) do
-		    @fs = ThingFish::FileStore.create( 'filesystem', 
-				:hashdepth => 8, :root => @tmpdir.to_s )
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :hashdepth => 8 )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
 
@@ -208,7 +207,7 @@ describe ThingFish::FilesystemFileStore do
 	describe " with a hash depth that isn't a power of 2" do
 		it "raises a config error" do
 		    lambda {
-				ThingFish::FileStore.create( 'filesystem', :hashdepth => 3 )
+				ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :hashdepth => 3 )
 			}.should raise_error( ThingFish::ConfigError, /Hash depth must be 1,/i )
 		end
 	end
@@ -217,7 +216,7 @@ describe ThingFish::FilesystemFileStore do
 	describe " with a hash depth of greater than 8" do
 		it "raises a config error" do
 		    lambda {
-				ThingFish::FileStore.create( 'filesystem', :hashdepth => 10 )
+				ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :hashdepth => 10 )
 			}.should raise_error( ThingFish::ConfigError, /Max.*exceeded/i )
 		end
 	end
@@ -225,8 +224,7 @@ describe ThingFish::FilesystemFileStore do
 	describe " with a maxsize of 2k" do
 
 		before(:each) do
-		    @fs = ThingFish::FileStore.create( 'filesystem',
-			          :root => @tmpdir.to_s, :maxsize => 2_048 )
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :maxsize => 2_048 )
 		end
 	
 		after(:each) do

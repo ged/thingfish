@@ -58,9 +58,6 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	# SVN Id
 	SVNId = %q$Id$
 
-	# The default root directory
-	DEFAULT_ROOT = '/tmp/thingstore'
-
 	# The default options to use when creating locks. See the docs for Lockfile for
 	# more info on what these values mean
 	DEFAULT_LOCK_OPTIONS = {
@@ -85,15 +82,15 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	#################################################################
 
 	### Create a new MarshalledMetaStore
-	def initialize( options={} )
+	def initialize( datadir, spooldir, options={} )
 		super
-		@root = Pathname.new( options[:root] || DEFAULT_ROOT )
-		@root.mkpath
-		@datafile = @root + 'metadata'
+
+		datadir.mkpath
+		@datafile = @datadir + 'metadata'
 
 		@metadata  = PStore.new( @datafile.to_s )
 		@lock_opts = @options[:lock] || DEFAULT_LOCK_OPTIONS
-		@lock      = Lockfile.new( @root + 'metadata.lock' )
+		@lock      = Lockfile.new( @datadir + 'metadata.lock' )
 	end
 
 
@@ -101,9 +98,6 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	public
 	######
 
-	# The root directory
-	attr_accessor :root
-	
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )

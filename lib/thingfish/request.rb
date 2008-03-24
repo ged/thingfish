@@ -292,31 +292,23 @@ class ThingFish::Request
 			merged.update( body_metadata )
 			merged.update( immutable_metadata )
 			
-			if body.closed?
-				self.log.warn "Ack! Body IO was closed! Reopening..."
-				body.open
-			end
-			body.rewind
-
-			self.log.debug "Yielding body = %p, merged metadata = %p" %
-				[ body, merged ]
-			yield( body, merged )
+			yield( body.dup, merged )
 		end
 	end
 
 
-	### Explicitly rewind all body IO objects.
-	### Because we can't guarantee the current position of an IO after it is passed
-	### through a filter, we explicitly rewind all bodies to 'prep' them for the
-	### next filter in the chain.
-	def rewind_bodies
-		self.entity_bodies.keys.each do |body_io|
-			body_io.open if body_io.closed?
-			body_io.rewind
+	### Check the body IO objects to ensure they're still open.
+	def check_body_ios
+		self.entity_bodies.each do |body, _|
+			self.log.debug "Checking entity body %p: %s" % [
+				body,
+				body.closed? ? "CLOSED" : "still open"
+			]
+			body.open if body.closed?
 		end
 	end
 	
-	
+
 	### Checks cache headers against the given etag and modification time.
 	### Returns boolean true if the client claims to have a valid copy.
 	def is_cached_by_client?( etag, modtime )
@@ -460,8 +452,7 @@ class ThingFish::Request
 		
 		mimetype, boundary = $1, $2
 		self.log.debug "Parsing a %s document with boundary %p" % [mimetype, boundary]
-		
-		parser = ThingFish::MultipartMimeParser.new( @config.spooldir, @config.bufsize )
+		parser = ThingFish::MultipartMimeParser.new( @config.spooldir_path, @config.bufsize )
 		
 		return parser.parse( @mongrel_request.body, boundary )
 	end

@@ -91,7 +91,7 @@ end
 
 
 task :install => [:test, :package] do
-	installer = Gem::Installer.new( %{pkg/#{name}-#{version}.gem} )
+	installer = Gem::Installer.new( %{pkg/#{PKG_FILE_NAME}.gem} )
 	intaller.install
 end
 

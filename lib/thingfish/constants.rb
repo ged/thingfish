@@ -25,6 +25,7 @@
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
 
+require 'pathname'
 require 'tmpdir'
 require 'mongrel'
 require 'thingfish'
@@ -50,8 +51,12 @@ module ThingFish::Constants
 	# The buffer chunker size
 	DEFAULT_BUFSIZE = 2 ** 14
 
+	# The default directory ThingFish will use to store data files, spool files,
+	# its pid, and anything else. (unless configured otherwise)
+	DEFAULT_DATADIR = Dir.tmpdir + '/thingfish'
+	
 	# The default location of upload temporary files
-	DEFAULT_SPOOLDIR = Dir.tmpdir
+	DEFAULT_SPOOLDIR = 'spool'
 	
 	### Constants for HTTP headers
 	

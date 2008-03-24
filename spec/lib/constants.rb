@@ -63,6 +63,9 @@ module ThingFish::TestConstants
 		Server: ThingFish/0.0.1 (Rev: 185 )
 		Content-Length: 14620
 		EOF
+
+		SPECDIR = Pathname.new( __FILE__ ).dirname
+		DATADIR = SPECDIR + 'data'
 		
 		# Freeze all constants so tests stomping on other tests are detected earlier.
 		constants.each { |const| const_get( const ).freeze }

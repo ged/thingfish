@@ -31,15 +31,11 @@ rescue LoadError
 end
 
 
-include ThingFish::Constants,
-		ThingFish::TestConstants,
-		ThingFish::SpecHelpers
 
 
 class ThingFish::FormUploadHandler
 	public :handle_get_request,
 		:handle_post_request
-		
 end
 
 
@@ -47,22 +43,26 @@ end
 ###	C O N T E X T S
 #####################################################################
 
-unless defined?( SPECDIR )
-	SPECDIR = Pathname.new( __FILE__ ).dirname
-	DATADIR = SPECDIR + 'data'
-end
-
-
 describe ThingFish::FormUploadHandler do
+	include ThingFish::Constants,
+			ThingFish::TestConstants,
+			ThingFish::SpecHelpers
+
 
 	before( :all ) do
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 	
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
 	end
+	
+	after( :all ) do
+		reset_logging()
+	end
+
+	
 	
 	
 	# Shared behaviors
@@ -136,9 +136,7 @@ describe ThingFish::FormUploadHandler, " (POST request)" do
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
-		@parser = mock( "mpm parser", :null_object => true )
 		
-		@handler.parser = @parser
 		@request = mock( "request object", :null_object => true )
 		@response = mock( "response object", :null_object => true )
 

@@ -61,6 +61,7 @@ class ThingFish::Config
 		:ip       => DEFAULT_BIND_IP,
 		:port     => DEFAULT_PORT,
 		:user     => nil,
+		:datadir  => DEFAULT_DATADIR,
 		:spooldir => DEFAULT_SPOOLDIR,
 		:bufsize  => DEFAULT_BUFSIZE,
 
@@ -128,8 +129,9 @@ class ThingFish::Config
 			@struct = ConfigStruct.new( confighash )
 		end
 
-		@time_created = Time.now
-		@name = name.to_s if name
+		@spooldir_path = nil
+		@time_created  = Time.now
+		@name          = name.to_s if name
 	end
 
 
@@ -206,14 +208,54 @@ class ThingFish::Config
 	end
 
 
+	### Return a Pathname object for the directory that temporary files should be created in.
+	### If the config specifies a relative path, this will be relative to the +datadir+.
+	def spooldir_path
+		unless @spooldir_path
+			sp = Pathname.new( self.spooldir || DEFAULT_SPOOLDIR )
+			if sp.relative?
+				datadir = Pathname.new( self.datadir )
+				@spooldir_path = datadir + sp
+			else
+				@spooldir_path = sp
+			end
+		end
+		
+		return @spooldir_path
+	end
+	
+	
+	### Set up the data and spool directories and return them
+	def setup_data_directories
+		options = {}
+		
+		datadir = Pathname.new( self.datadir || DEFAULT_DATADIR )
+		self.log.debug "Datadir is: %s" % [ datadir ]
+		unless datadir.exist?
+			self.log.info "Creating configured data directory"
+			datadir.mkpath
+		end
+
+		self.log.debug "Spooldir is: %s" % [ self.spooldir_path ]
+		unless self.spooldir_path.exist?
+			self.log.info "Creating configured spool directory"
+			self.spooldir_path.mkpath
+		end
+
+		return datadir, self.spooldir_path
+	end
+	
+
 	### Instantiate, configure, and return the filestore plugin specified by the
 	### configuration.
 	def create_configured_filestore
 		options = self.plugins.filestore.to_hash
 		name = options.delete( :name )
 		self.log.info "Creating a %s filestore with options %p" % [ name, options ]
+
+		datadir, spooldir = self.setup_data_directories
 		
-		return ThingFish::FileStore.create( name, options )
+		return ThingFish::FileStore.create( name, datadir, spooldir, options )
 	end
 	
 
@@ -224,7 +266,9 @@ class ThingFish::Config
 		name = options.delete( :name )
 		self.log.info "Creating a %s metastore with options %p" % [ name, options ]
 		
-		return ThingFish::MetaStore.create( name, options )
+		datadir, spooldir = self.setup_data_directories
+		
+		return ThingFish::MetaStore.create( name, datadir, spooldir, options )
 	end
 	
 

@@ -39,7 +39,6 @@
 
 begin
 	require 'pathname'
-	require 'breakpoint'
 	require 'rdf/redland'
 	require 'rdf/redland/constants'
 	require 'rdf/redland/schemas/rdfs'
@@ -205,9 +204,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### 
 	### [:hash_type]
 	###   The type of hash store to use (+memory+ or +bdb+).
-	### [:dir]
-	###   The directory to use for persistence (if you use the +bdb+ hash).
-	def initialize( config={} )
+	def initialize( datadir, spooldir, config={} )
 		self.log.debug "Initializing an RDF metastore with options: %p" % [config]
 		opts = DEFAULT_OPTIONS.merge( config[:options] || {} )
 
@@ -215,6 +212,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		# option string from the remaining items
 		storetype = opts.delete( :store )
 		name = opts.delete( :name )
+		opts[:dir] = datadir.to_s if datadir
 		optstring = make_optstring( opts )
 
 		self.log.debug "Creating a %p store named %p, with options = %p" %

@@ -174,9 +174,12 @@ class ThingFish::MetaStore
 	#################################################################
 
 	### Set up a new ThingFish::MetaStore object.
-	def initialize( options={} )
-		@options = options
+	def initialize( datadir, spooldir, options={} )
+		@datadir     = datadir
+		@spooldir    = spooldir
+		@options     = options
 		@proxy_class = ResourceProxy
+
 		super()
 	end
 
@@ -184,6 +187,12 @@ class ThingFish::MetaStore
 	######
 	public
 	######
+
+	# The directory this metastore will store stuff in (if it uses files)
+	attr_reader :datadir
+	
+	# The directory this metastore will use for temporary files
+	attr_reader :spooldir
 
 	# The class of object to use as the proxy for a given object's metadata
 	attr_accessor :proxy_class

@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -33,7 +33,7 @@ end
 describe "An instance of a derivative filestore class" do
 
 	before(:each) do
-		@filestore = ThingFish::FileStore.create( 'test' )
+		@filestore = ThingFish::FileStore.create( 'test', nil, nil )
 	end
 
 

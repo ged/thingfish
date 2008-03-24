@@ -75,7 +75,10 @@ module ThingFish::SpecHelpers
 			Process.pid,
 			(Time.now.to_f % 3600),
 		  ]
-		return Pathname.new( Dir.tmpdir ) + dirname
+		tempdir = Pathname.new( Dir.tmpdir ) + dirname
+		tempdir.mkpath
+		
+		return tempdir
 	end
 	
 

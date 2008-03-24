@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 	
 	libdir = basedir + "lib"
 	
@@ -42,7 +42,7 @@ describe ThingFish::Request do
 	
 	before( :each ) do
 		@mongrel_request = mock( "mongrel request", :null_object => true )
-		config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
+		config = stub( "Config object", :spooldir_path => Pathname.new('sdfgsd'), :bufsize => 3 )
 		@request = ThingFish::Request.new( @mongrel_request, config )
 		@request.stub!( :path_info ).and_return( '/a/test/path' )
 	end
@@ -420,7 +420,7 @@ describe ThingFish::Request do
 			@mongrel_request = mock( "mongrel request", :null_object => true )
 			@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
 
-			config = stub( "Config object", :spooldir => 'sdfgsd', :bufsize => 3 )
+			config = stub( "Config object", :spooldir_path => Pathname.new('sdfgsd'), :bufsize => 3 )
 
 			@request = ThingFish::Request.new( @mongrel_request, config )
 			@request.stub!( :path_info ).and_return( '/a/test/path' )
@@ -435,7 +435,9 @@ describe ThingFish::Request do
 		it "sends each body entity of the request and a copy of the merged metadata to " +
 			"the block of the body iterator" do
 			io1 = mock( "filehandle 1" )
+			io1_dup = mock( "duplicated filehandle 1" )
 			io2 = mock( "filehandle 2" )
+			io2_dup = mock( "duplicated filehandle 2" )
 
 			parser = mock( "multipart parser", :null_object => true )
 			entity_bodies = {
@@ -447,24 +449,15 @@ describe ThingFish::Request do
 				:title => "a bogus filename",
 				:useragent => 'Clumpy the Clown',
 			  }
-			# :TODO: What was this supposed to be doing? [MG 20070218]
-			# extracted_metadata = {
-			# 	io1 => { :format => "a bogus format" },
-			# 	io2 => { :format => "another bogus format" },
-			#   }
-
-			io1.should_receive( :closed? ).and_return( true )
-			io1.should_receive( :open )
-			io2.should_receive( :closed? ).and_return( true )
-			io2.should_receive( :open )
 
 			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
 			@mongrel_request.should_receive( :body ).once.and_return( :body )
 			parser.should_receive( :parse ).once.
 				with( :body, 'greatgoatsofgerta' ).
 				and_return([ entity_bodies, form_metadata ])
-			io1.should_receive( :rewind )
-			io2.should_receive( :rewind )
+			
+			io1.should_receive( :dup ).and_return( io1_dup )
+			io2.should_receive( :dup ).and_return( io2_dup )
 		
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|
@@ -472,59 +465,62 @@ describe ThingFish::Request do
 			end
 		
 			yielded_pairs.keys.should have(2).members
-			yielded_pairs.keys.should include( io1 )
-			yielded_pairs.keys.should include( io2 )
+			yielded_pairs.keys.should include( io1_dup )
+			yielded_pairs.keys.should include( io2_dup )
 
-			yielded_pairs[ io1 ][ :title ].should == 'filename1'
-			yielded_pairs[ io1 ][ :format ].should == 'format1'
-			yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
-			yielded_pairs[ io2 ][ :title ].should == 'filename2'
-			yielded_pairs[ io2 ][ :format ].should == "format2"
-			yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
-			yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+			yielded_pairs[ io1_dup ][ :title ].should == 'filename1'
+			yielded_pairs[ io1_dup ][ :format ].should == 'format1'
+			yielded_pairs[ io1_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+			yielded_pairs[ io2_dup ][ :title ].should == 'filename2'
+			yielded_pairs[ io2_dup ][ :format ].should == "format2"
+			yielded_pairs[ io2_dup ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io2_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 		end
 	
 	
 		it "ensures each part sent to the body has the default content-type " +
 		   "if none is explicitly provided by the request" do
 			io1 = mock( "filehandle 1" )
+			io1_dup = mock( "duplicated filehandle 1" )
 			io2 = mock( "filehandle 2" )
+			io2_dup = mock( "duplicated filehandle 2" )
 
 			parser = mock( "multipart parser", :null_object => true )
 			entity_bodies = {
-				io1 => {:title  => "filename1",:extent => 100292},
-				io2 => {:title  => "filename2",:extent => 100234}
+				io1 => {:title  => "filename1", :extent => 100292},
+				io2 => {:title  => "filename2", :extent => 100234}
 			  }
-
-			io1.should_receive( :closed? ).and_return( true )
-			io1.should_receive( :open )
-			io2.should_receive( :closed? ).and_return( true )
-			io2.should_receive( :open )
+			form_metadata = {
+				'foo' => 1,
+				:title => "a bogus filename",
+				:useragent => 'Clumpy the Clown',
+			  }
 
 			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
 			@mongrel_request.should_receive( :body ).once.and_return( :body )
 			parser.should_receive( :parse ).once.
 				with( :body, 'greatgoatsofgerta' ).
-				and_return([ entity_bodies, {} ])
-			io1.should_receive( :rewind )
-			io2.should_receive( :rewind )
-		
+				and_return([ entity_bodies, form_metadata ])
+
+			io1.should_receive( :dup ).and_return( io1_dup )
+			io2.should_receive( :dup ).and_return( io2_dup )
+
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|
 				yielded_pairs[ body ] = parsed_metadata
 			end
-		
-			yielded_pairs.keys.should have(2).members
-			yielded_pairs.keys.should include( io1 )
-			yielded_pairs.keys.should include( io2 )
 
-			yielded_pairs[ io1 ][ :title ].should == 'filename1'
-			yielded_pairs[ io1 ][ :format ].should == DEFAULT_CONTENT_TYPE
-			yielded_pairs[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
-			yielded_pairs[ io2 ][ :title ].should == 'filename2'
-			yielded_pairs[ io2 ][ :format ].should == DEFAULT_CONTENT_TYPE
-			yielded_pairs[ io2 ][ :useragent ].should == "Hotdogs"
-			yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+			yielded_pairs.keys.should have(2).members
+			yielded_pairs.keys.should include( io1_dup )
+			yielded_pairs.keys.should include( io2_dup )
+
+			yielded_pairs[ io1_dup ][ :title ].should == 'filename1'
+			yielded_pairs[ io1_dup ][ :format ].should == DEFAULT_CONTENT_TYPE
+			yielded_pairs[ io1_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+			yielded_pairs[ io2_dup ][ :title ].should == 'filename2'
+			yielded_pairs[ io2_dup ][ :format ].should == DEFAULT_CONTENT_TYPE
+			yielded_pairs[ io2_dup ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io2_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 		end
 	
 	end

@@ -41,7 +41,8 @@ describe ThingFish::MarshalledMetaStore do
 
 	before(:each) do
 		@tmpdir = make_tempdir()
-	    @store = ThingFish::MetaStore.create( 'marshalled', :root => @tmpdir.to_s )
+		@spooldir = @tmpdir + 'spool'
+	    @store = ThingFish::MetaStore.create( 'marshalled', @tmpdir, @spooldir )
 	end
 	
 	after(:each) do

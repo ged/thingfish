@@ -67,7 +67,7 @@ describe ThingFish::RdfMetaStore do
 		Redland::Model.stub!( :new ).and_return( :model )
 		
 		config = { :options => {:new => 'no'} }
-		ThingFish::MetaStore.create( 'rdf', config )
+		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
 
 	it "ignores the 'write' key in the config options hash" do
@@ -79,7 +79,7 @@ describe ThingFish::RdfMetaStore do
 		Redland::Model.stub!( :new ).and_return( :model )
 		
 		config = { :options => {:write => 'no'} }
-		ThingFish::MetaStore.create( 'rdf', config )
+		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
 
 
@@ -94,7 +94,7 @@ describe ThingFish::RdfMetaStore do
 		  }
 
 		before( :each ) do
-		    @store = ThingFish::MetaStore.create( 'rdf', STORE_OPTIONS )
+		    @store = ThingFish::MetaStore.create( 'rdf', nil, nil, STORE_OPTIONS )
 		end
 
 		after( :each ) do

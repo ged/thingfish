@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -41,21 +41,24 @@ end
 describe ThingFish::MemoryFileStore, " with a maxsize of 2k" do
 
 	before(:each) do
-		@fs = ThingFish::FileStore.create( 'memory', :maxsize => 2_048 )
+		@fs = ThingFish::FileStore.create( 'memory', nil, nil, :maxsize => 2_048 )
 	end
+	
 	
 	it "raises a FileStoreQuotaError when trying to store data > 3k" do
 		lambda {
 			@fs.store( TEST_UUID, '8=D' * 1024 )
-		}.should raise_error( ThingFish::FileStoreQuotaError)
+		}.should raise_error( ThingFish::FileStoreQuotaError )
 	end
+
 
 	it "raises a FileStoreQuotaError when trying to store two things whose sum is > 2k" do
 		@fs.store( TEST_UUID, '!' * 1024 )
 		lambda {
 			@fs.store( TEST_UUID2, '!' * 1025 )
-		}.should raise_error( ThingFish::FileStoreQuotaError)
+		}.should raise_error( ThingFish::FileStoreQuotaError )
 	end
+	
 	
 	it "is able to store a 1k chunk of data" do
 		lambda {

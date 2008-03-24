@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 	
 	libdir = basedir + "lib"
 	
@@ -37,7 +37,7 @@ describe ThingFish::MetaStore do
 	describe " (derivative class that doesn't implement virtual methods)" do
 		
 		before(:each) do
-			@metastore = ThingFish::MetaStore.create( 'test' )
+			@metastore = ThingFish::MetaStore.create( 'test', nil, nil )
 		end
 	
 	

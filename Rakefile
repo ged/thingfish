@@ -30,7 +30,7 @@ require 'pathname'
 $dryrun = false
 
 # Pathname constants
-BASEDIR       = Pathname.new( __FILE__ ).dirname.expand_path
+BASEDIR       = Pathname.new( __FILE__ ).dirname.relative_path_from( Pathname.getwd )
 BINDIR        = BASEDIR + 'bin'
 LIBDIR        = BASEDIR + 'lib'
 DOCSDIR       = BASEDIR + 'docs'

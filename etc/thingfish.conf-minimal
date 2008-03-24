@@ -2,11 +2,9 @@
 # This is a minimal configuration file for ThingFish.
 #
 # Behaviors:
+#     - Resources are loaded from Ruby's datadir
 #     - Stay in the foreground
 #     - Only log warnings and errors
 #     - Store all data (metastore and filestore) in RAM
-#     - No handler or filters installed.
+#     - No handlers or filters installed.
 ---
-defaulthandler:
-    resource_dir: var/www
-

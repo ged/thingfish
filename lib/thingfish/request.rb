@@ -66,6 +66,8 @@ class ThingFish::Request
 		"			# Closing quote
 	  }ix
 
+	# Query argument that enables profiling for the current request
+	PROFILE_ARG = '_profile'
 
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
 	### The specified +spooldir+ will be used for spooling uploaded files, 
@@ -78,9 +80,16 @@ class ThingFish::Request
 		@entity_bodies   = nil
 		@form_metadata   = nil
 		@body            = nil
-
+		@profile         = false
+		
 		@mongrel_request = mongrel_request
 		@metadata        = Hash.new {|h,k| h[k] = {} }
+		
+		# Check for the presence of the profile key.
+		if self.uri.query and self.uri.query.gsub!( /[&;]?(#{PROFILE_ARG}=?[^&;]*)/, '' )
+			profile_arg = $1
+			@profile = ( profile_arg =~ /=(?:1|yes|true)$/i ? true : false )
+		end
 	end
 
 
@@ -159,6 +168,12 @@ class ThingFish::Request
 	alias_method :header, :headers
 
 
+	### Returns a boolean based on the presence of a '_profile' query arg.
+	def run_profile?
+		return @profile
+	end
+	
+
 	### Return a Hash of request query arguments.  This is a regular Hash, rather
 	### than a ThingFish::Table, because we can't arbitrarily normalize query
 	### arguments.
@@ -191,7 +206,7 @@ class ThingFish::Request
 			hash
 		end
 
-		self.log.debug( "Query arguments parsed as: %p" % [ @query_args ] )
+		self.log.debug "Query arguments parsed as: %p" % [ @query_args ]
 		return @query_args
 	end
 

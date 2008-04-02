@@ -30,7 +30,6 @@ body {
 	margin: 0;
 	padding: 0;
 	min-width: 600px;
-	height: 100%
 }
 
 h1,h2,h3,h4,h5,h6 { color: white; font-weight: normal; }
@@ -221,7 +220,6 @@ ol li + li {
 /* @group Left Column */
 
 .left {
-	background: #151617;
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -232,11 +230,12 @@ ol li + li {
 	margin: 2px 4px;
 	font-size: 12px;
 	text-align: right;
-	padding: 0 20px 0 0;
+	padding: 0 10px 0 0;
 }
 
 .left .section h2 {
 	color: white;
+	border-bottom: 1px solid #151617;
 	background: #323435;
 	padding: 4px 4px 2px;
 	font-weight: normal;
@@ -246,10 +245,12 @@ ol li + li {
 }
 
 .left .section h2 a {
+	border: 0;
 	color: inherit;
 }
 
 .left .section a {
+	display: block;
 	border: inherit;
 }
 
@@ -280,9 +281,9 @@ ol li + li {
 
 .right {
 	color: #fff4cf;
-	margin: 0 0 0 260px;
-	padding: 1em 2em 2em 1em;
-	background: red;
+	border-left: 1px solid #151617;
+	margin: 0 0 0 250px;
+	padding: 1em 2em 2em 20px;
 	font-size: 14px;
 	-webkit-border-top-left-radius: 15px;
 	-webkit-border-bottom-left-radius: 15px;
@@ -917,21 +918,29 @@ ol.CodeRay li {
 table.files {
 	width: 100%;
 }
+
 table.files .extrainfo {
 	font-size: 0.7em;
+}
+
+table.files th {
+	text-align: left;
 }
 
 table.files tr {
 	border-left-width: 2px;
 	border-right-width: 2px;
 }
+
 table.files td a {
 }
+
 table.files tr#metarow {
 	font-size: 0.8em;
 	background: #141617;
 	padding: 0;
 }
+
 table.files tr#metarow td {
 	padding: 5px;
 }
@@ -941,12 +950,14 @@ table.files tr#metarow table#metainfo {
 	background: #4f4f4f;
 	-webkit-box-shadow: #333 0 2px 2px;
 }
+
 table.files tr#metarow table#metainfo th {
 	font-weight: bold;
 	text-align: right;
 	background-color: transparent;
 	border-right: 1px solid black;
 }
+
 table.files tr#metarow table#metainfo th,
 table.files tr#metarow table#metainfo td {
 	padding: 4px;

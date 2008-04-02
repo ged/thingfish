@@ -70,6 +70,12 @@ describe ThingFish::Config do
 	end
 
 
+	it "can qualify paths relative to the configured datadir" do
+		@config.datadir = '/glah'
+		@config.qualify_path( 'woot' ).should == Pathname.new( '/glah/woot' )
+	end
+
+
 	it "constructs the spool directory path relative to the data directory if it isn't absolute" do
 		@config.datadir = '/tmp'
 		@config.spooldir = 'spool'
@@ -77,22 +83,28 @@ describe ThingFish::Config do
 	end
 
 
-	it "creates the data and spool directories if it doesn't already exist when it's installed" do
+	it "constructs the profile directory path relative to the data directory if it isn't absolute" do
+		@config.datadir = '/tmp'
+		@config.profiling.profile_dir = 'profiles'
+		@config.profiledir_path.should == Pathname.new( '/tmp/profiles' )
+	end
+
+
+	it "ensures the data and spool directories exist" do
 		datadir_pathname = mock( "mock datadir pathname" )
 		@config.datadir = :datadir
-		Pathname.should_receive( :new ).with( :datadir ).and_return( datadir_pathname )
+		Pathname.should_receive( :new ).with( :datadir ).at_least(:once).
+			and_return( datadir_pathname )
 
 		spooldir_pathname = mock( "mock spooldir pathname" )
 		@config.spooldir = :spooldir
 		Pathname.should_receive( :new ).with( :spooldir ).and_return( spooldir_pathname )
 
-		datadir_pathname.should_receive( :exist? ).and_return( false )
 		datadir_pathname.should_receive( :mkpath )
 		spooldir_pathname.should_receive( :relative? ).and_return( false )
-		spooldir_pathname.should_receive( :exist? ).and_return( false )
 		spooldir_pathname.should_receive( :mkpath )
 
-		@config.setup_data_directories.should == [ datadir_pathname, spooldir_pathname ]
+		@config.setup_data_directories
 	end
 
 
@@ -541,15 +553,6 @@ describe ThingFish::Config do
 		        - inspect: /admin/inspect
 		}.gsub( /^\t\t/, '' )
 
-		before(:all) do
-			ThingFish.reset_logger
-			ThingFish.logger.level = Logger::FATAL
-		end
-
-		after( :all ) do
-			ThingFish.reset_logger
-		end
-
 		before(:each) do
 		    @config = ThingFish::Config.new( TEST_HANDLER_URI_CONFIG )
 		end
@@ -567,6 +570,42 @@ describe ThingFish::Config do
 			@config.find_handler_uri( 'moonlanding' ).should be_nil()
 		end
 
+	end
+	
+	describe " with profiling enabled" do
+
+		TEST_PROFILING_ENABLED_CONFIG = %{
+		---
+		profiling:
+		  enabled: true
+		  profile_dir: profiles
+		}.gsub( /^\t\t/, '' )
+
+		before(:each) do
+		    @config = ThingFish::Config.new( TEST_PROFILING_ENABLED_CONFIG )
+		end
+
+
+		it "ensures the profiling report directory exists" do
+			datadir_pathname = stub( "mock datadir pathname", :mkpath => false )
+			@config.datadir = :datadir
+			Pathname.should_receive( :new ).with( :datadir ).at_least(:once).
+				and_return( datadir_pathname )
+			
+			spooldir_pathname = stub( "mock spooldir pathname", :mkpath => false )
+			@config.spooldir = :spooldir
+			Pathname.should_receive( :new ).with( :spooldir ).and_return( spooldir_pathname )
+			spooldir_pathname.stub!( :relative? ).and_return( false )
+			
+			profiledir_pathname = mock( "profiledir pathname" )
+			Pathname.should_receive( :new ).with( 'profiles' ).and_return( profiledir_pathname )
+
+			profiledir_pathname.should_receive( :relative? ).and_return( false )
+			profiledir_pathname.should_receive( :mkpath )
+
+			@config.setup_data_directories
+		end
+		
 	end
 end
 

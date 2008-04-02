@@ -84,7 +84,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 			if self.accept?( metadata[:format] )
 				mp3_metadata = self.extract_id3_metadata( body )
 				request.metadata[ body ].merge!( mp3_metadata )
-				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata ]
+				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata.keys ]
 			else
 				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
 			end

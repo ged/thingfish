@@ -58,12 +58,18 @@ class ThingFish::Config
 
 	# Define the layout and defaults for the underlying structs
 	DEFAULTS = {
-		:ip       => DEFAULT_BIND_IP,
-		:port     => DEFAULT_PORT,
-		:user     => nil,
-		:datadir  => DEFAULT_DATADIR,
-		:spooldir => DEFAULT_SPOOLDIR,
-		:bufsize  => DEFAULT_BUFSIZE,
+		:ip        => DEFAULT_BIND_IP,
+		:port      => DEFAULT_PORT,
+		:user      => nil,
+		:datadir   => DEFAULT_DATADIR,
+		:spooldir  => DEFAULT_SPOOLDIR,
+		:bufsize   => DEFAULT_BUFSIZE,
+
+		:profiling => {
+			:enabled => false,
+			:profile_dir => DEFAULT_PROFILEDIR,
+			:metrics => [],
+		},
 
 		:daemon  => false,
 		:pidfile => nil,
@@ -129,9 +135,10 @@ class ThingFish::Config
 			@struct = ConfigStruct.new( confighash )
 		end
 
-		@spooldir_path = nil
-		@time_created  = Time.now
-		@name          = name.to_s if name
+		@spooldir_path   = nil
+		@profiledir_path = nil
+		@time_created    = Time.now
+		@name            = name.to_s if name
 	end
 
 
@@ -208,41 +215,50 @@ class ThingFish::Config
 	end
 
 
+	### Return a Pathname object for the directory that ThingFish will write all data to.
+	def datadir_path
+		 return Pathname.new( self.datadir )
+	end
+
+
 	### Return a Pathname object for the directory that temporary files should be created in.
 	### If the config specifies a relative path, this will be relative to the +datadir+.
 	def spooldir_path
-		unless @spooldir_path
-			sp = Pathname.new( self.spooldir || DEFAULT_SPOOLDIR )
-			if sp.relative?
-				datadir = Pathname.new( self.datadir )
-				@spooldir_path = datadir + sp
-			else
-				@spooldir_path = sp
-			end
-		end
-		
+		@spooldir_path ||= self.qualify_path( self.spooldir || DEFAULT_SPOOLDIR )
 		return @spooldir_path
 	end
-	
+
+
+	### Return a Pathname object for the directory that profiler reports should be saved in.
+	### If the config specifies a relative path, this will be relative to the +datadir+.
+	def profiledir_path
+		@profiledir_path ||= self.qualify_path( self.profiling.profile_dir || DEFAULT_PROFILEDIR )
+		return @profiledir_path
+	end
+
+
+	### Construct a fully-qualified Pathname object from the given +dir+, either as-is if it is
+	### already an absolute path, or relative to the configured +datadir+ if not.
+	def qualify_path( dir )
+		sp = Pathname.new( dir )
+		return sp unless sp.relative?
+		return Pathname.new( self.datadir ) + sp
+	end
+
 	
 	### Set up the data and spool directories and return them
 	def setup_data_directories
-		options = {}
-		
-		datadir = Pathname.new( self.datadir || DEFAULT_DATADIR )
-		self.log.debug "Datadir is: %s" % [ datadir ]
-		unless datadir.exist?
-			self.log.info "Creating configured data directory"
-			datadir.mkpath
-		end
+		self.log.info "Ensuring the configured data directory (%s) exists" % [ self.datadir_path ]
+		self.datadir_path.mkpath
 
-		self.log.debug "Spooldir is: %s" % [ self.spooldir_path ]
-		unless self.spooldir_path.exist?
-			self.log.info "Creating configured spool directory"
-			self.spooldir_path.mkpath
-		end
+		self.log.info "Ensuring the configured spool directory (%s) exists" % [ self.spooldir_path ]
+		self.spooldir_path.mkpath
 
-		return datadir, self.spooldir_path
+		if self.profiling.enabled?
+			self.log.info "Ensuring the configured profile data directory (%s) exists" %
+				[ self.profiledir_path ]
+			self.profiledir_path.mkpath
+		end
 	end
 	
 
@@ -253,9 +269,7 @@ class ThingFish::Config
 		name = options.delete( :name )
 		self.log.info "Creating a %s filestore with options %p" % [ name, options ]
 
-		datadir, spooldir = self.setup_data_directories
-		
-		return ThingFish::FileStore.create( name, datadir, spooldir, options )
+		return ThingFish::FileStore.create( name, self.datadir_path, self.spooldir_path, options )
 	end
 	
 
@@ -266,9 +280,7 @@ class ThingFish::Config
 		name = options.delete( :name )
 		self.log.info "Creating a %s metastore with options %p" % [ name, options ]
 		
-		datadir, spooldir = self.setup_data_directories
-		
-		return ThingFish::MetaStore.create( name, datadir, spooldir, options )
+		return ThingFish::MetaStore.create( name, self.datadir_path, self.spooldir_path, options )
 	end
 	
 

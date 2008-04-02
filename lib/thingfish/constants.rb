@@ -58,6 +58,9 @@ module ThingFish::Constants
 	# The default location of upload temporary files
 	DEFAULT_SPOOLDIR = 'spool'
 	
+	# The default location of Ruby-Prof output
+	DEFAULT_PROFILEDIR = 'profiles'
+	
 	### Constants for HTTP headers
 	
 	# The version of the server

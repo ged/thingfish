@@ -37,14 +37,18 @@ describe ThingFish::Request do
 	include ThingFish::SpecHelpers
 	
 	before(:all) do
-		setup_logging( Logger::FATAL )
+		setup_logging( :fatal )
 	end
 	
 	before( :each ) do
 		@mongrel_request = mock( "mongrel request", :null_object => true )
-		config = stub( "Config object", :spooldir_path => Pathname.new('sdfgsd'), :bufsize => 3 )
-		@request = ThingFish::Request.new( @mongrel_request, config )
-		@request.stub!( :path_info ).and_return( '/a/test/path' )
+		@config = stub( "Config object" )
+		@default_params = {
+			'SERVER_NAME'	=> 'thingfish.laika.com',
+			'SERVER_PORT'	=> '3474',
+			'REQUEST_PATH'	=> '/',
+			'QUERY_STRING'	=> '',
+		}
 	end
 
 	after( :all ) do
@@ -54,69 +58,83 @@ describe ThingFish::Request do
 	
 	it "wraps and delegates requests for the body to the mongrel request's body " +
 	   "if we haven't replaced it" do
+		@mongrel_request.stub!( :params ).and_return( @default_params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
 		@mongrel_request.should_receive( :body ).and_return( :the_body )
-		@request.body.should == :the_body
+		request.body.should == :the_body
 	end
 	
 	
 	it "returns the new body if the body has been replaced" do
-		@request.body = :new_body
+		@mongrel_request.stub!( :params ).and_return( @default_params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.body = :new_body
 		@mongrel_request.should_not_receive( :body )
-		@request.body.should == :new_body
+		request.body.should == :new_body
 	end
 	
 	
 	it "knows how to return the original body even if the body has been replaced" do
-		@request.body = :new_body
+		@mongrel_request.stub!( :params ).and_return( @default_params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.body = :new_body
 		@mongrel_request.should_receive( :body ).and_return( :original_body )
-		@request.original_body.should == :original_body
+		request.original_body.should == :original_body
 	end
 	
 	
 	it "extracts HTTP headers as simple headers from its mongrel request" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_ACCEPT' => 'Accept',
-		}
+		})
 		
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		
-		@request.headers['accept'].should == 'Accept'
-		@request.headers['Accept'].should == 'Accept'
-		@request.headers['ACCEPT'].should == 'Accept'
+		@mongrel_request.stub!( :params ).and_return( params )
+
+		request = ThingFish::Request.new( @mongrel_request, @config )		
+		request.headers['accept'].should == 'Accept'
+		request.headers['Accept'].should == 'Accept'
+		request.headers['ACCEPT'].should == 'Accept'
 	end
 	
 	
 	it "parses the 'Accept' header into one or more AcceptParam structs" do
-		params = {
+		params = @default_params.merge({	
 			# 'application/x-yaml, application/json; q=0.2, text/xml; q=0.75'
 			'HTTP_ACCEPT' => TEST_ACCEPT_HEADER,
-		}
+		})
 		
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@mongrel_request.stub!( :params ).and_return( params )
 		
-		@request.accepted_types.should have(3).members
-		@request.accepted_types[0].mediatype.should == 'application/x-yaml'
-		@request.accepted_types[1].mediatype.should == 'application/json'
-		@request.accepted_types[2].mediatype.should == 'text/xml'
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		request.accepted_types.should have(3).members
+		request.accepted_types[0].mediatype.should == 'application/x-yaml'
+		request.accepted_types[1].mediatype.should == 'application/json'
+		request.accepted_types[2].mediatype.should == 'text/xml'
 	end
 	
 	it "knows when it does not have a multipart/form-data body" do
-		params = {
+		params = @default_params.merge({
 			'Content-type' => 'application/x-bungtruck'
-		}
+		})
 
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		@request.should_not have_multipart_body()
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		request.should_not have_multipart_body()
 	end
 	
 	
 	it "calls the block of the body iterator with the single body entity and merged metadata" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_CONTENT_TYPE'   => 'application/x-bungtruck',
 			'HTTP_CONTENT_LENGTH' => 11111,
 			'HTTP_USER_AGENT'     => 'Hotdogs',
 			'REMOTE_ADDR'         => '127.0.0.1',
-		}
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 
 		# Set some keys that will collide with default and header-based value so we
 		# can test merge precedence
@@ -126,15 +144,12 @@ describe ThingFish::Request do
 		}
 		body = StringIO.new( TEST_CONTENT )
 
-		@request.metadata[ body ].update( extracted_metadata )
-		@mongrel_request.should_receive( :params ).
-			at_least( :once ).
-			and_return( params )
+		request.metadata[ body ].update( extracted_metadata )
 		@mongrel_request.should_receive( :body ).
 			at_least( :once ).
 			and_return( body )
 
-		@request.each_body do |body, metadata|
+		request.each_body do |body, metadata|
 			body.should == body
 			metadata.should have(4).members
 			metadata[:extent].should == 11111
@@ -144,11 +159,13 @@ describe ThingFish::Request do
 	
 	
 	it "ensures a valid content-type is set if none is provided" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_CONTENT_LENGTH' => 11111,
 			'HTTP_USER_AGENT'     => 'Hotdogs',
 			'REMOTE_ADDR'         => '127.0.0.1',
-		}
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 
 		# Set some keys that will collide with default and header-based value so we
 		# can test merge precedence
@@ -158,7 +175,8 @@ describe ThingFish::Request do
 		}
 		body = StringIO.new( TEST_CONTENT )
 
-		@request.metadata[ body ].update( extracted_metadata )
+
+		request.metadata[ body ].update( extracted_metadata )
 		@mongrel_request.should_receive( :params ).
 			at_least( :once ).
 			and_return( params )
@@ -166,7 +184,7 @@ describe ThingFish::Request do
 			at_least( :once ).
 			and_return( body )
 
-		@request.each_body do |body, metadata|
+		request.each_body do |body, metadata|
 			body.should == body
 			metadata.should have(4).members
 			metadata[:extent].should == 11111
@@ -177,22 +195,21 @@ describe ThingFish::Request do
 	
 	
 	it "provides a Hash for URI query arguments" do
-		params = {
+		params = @default_params.merge({
 			'REQUEST_PATH' => '/search',
 			'SERVER_NAME' => 'thingfish.laika.com',
 			'SERVER_PORT' => '3474',
 			'QUERY_STRING' => 'wow%20ow%20wee%20wow=1&no-val;semicolon-val=jyes',
-		}
-		@mongrel_request.should_receive( :params ).
-			at_least(:once).
-			and_return( params )
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.uri.should be_an_instance_of( URI::HTTP )
-		@request.uri.query.should_receive( :nil? ).
+		request.uri.should be_an_instance_of( URI::HTTP )
+		request.uri.query.should_receive( :nil? ).
 			once.
 			and_return( false )
 
-		args = @request.query_args
+		args = request.query_args
 		args.should have(3).members
 		args['wow ow wee wow'].should == 1
 		args['no-val'].should be_nil()
@@ -202,22 +219,21 @@ describe ThingFish::Request do
 
 
 	it "query arguments that appear more than once are put in an Array" do
-		params = {
+		params = @default_params.merge({
 			'REQUEST_PATH' => '/search',
 			'SERVER_NAME' => 'thingfish.laika.com',
 			'SERVER_PORT' => '3474',
 			'QUERY_STRING' => 'format=image/jpeg;format=image/png;format=image/gif',
-		}
-		@mongrel_request.should_receive( :params ).
-			at_least(:once).
-			and_return( params )
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.uri.should be_an_instance_of( URI::HTTP )
-		@request.uri.query.should_receive( :nil? ).
+		request.uri.should be_an_instance_of( URI::HTTP )
+		request.uri.query.should_receive( :nil? ).
 			once.
 			and_return( false )
 
-		args = @request.query_args
+		args = request.query_args
 		args.should have(1).members
 		args['format'].should be_an_instance_of( Array )
 		args['format'].should have(3).members
@@ -227,108 +243,137 @@ describe ThingFish::Request do
 	end
 
 
+	it "detects when profiling is requested" do
+		params = @default_params.merge({
+			'QUERY_STRING' => 'wow%20ow%20wee%20wow=1&_profile=true&no-val;semicolon-val=jyes',
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.uri.should be_an_instance_of( URI::HTTP )
+
+		args = request.query_args
+		request.run_profile?.should == true
+		args.should_not include('_profile')
+	end
+
+
 	it "knows what the requested URI is" do
-		params = {
+		params = @default_params.merge({
 			'REQUEST_PATH' => '/inspect',
 			'SERVER_NAME' => 'thingfish.laika.com',
 			'SERVER_PORT' => '3474',
 			'QUERY_STRING' => 'king=thingwit',
-		}
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 
-		@request.uri.should be_an_instance_of( URI::HTTP )
-		@request.uri.path.should  == '/inspect'
-		@request.uri.host.should  == 'thingfish.laika.com'
-		@request.uri.query.should == 'king=thingwit'
-		@request.uri.port.should  == 3474
+		request.uri.should be_an_instance_of( URI::HTTP )
+		request.uri.path.should  == '/inspect'
+		request.uri.host.should  == 'thingfish.laika.com'
+		request.uri.query.should == 'king=thingwit'
+		request.uri.port.should  == 3474
 	end
     
 
 	it "knows what the request method is" do
-		params = {
+		params = @default_params.merge({
 			'REQUEST_METHOD' => 'GET',
-		}
+		})
 		
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		@request.http_method.should == 'GET'
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.http_method.should == 'GET'
 	end
 	
 	
 	it "knows what the requesters address is" do
-		params = {
+		params = @default_params.merge({
 			'REMOTE_ADDR' => '127.0.0.1',
-		}
+		})
 		
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		@request.remote_addr.should be_an_instance_of( IPAddr )
-		@request.remote_addr.to_s.should == '127.0.0.1'
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.remote_addr.should be_an_instance_of( IPAddr )
+		request.remote_addr.to_s.should == '127.0.0.1'
 	end
 
 
 	it "knows what the request content type is" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_CONTENT_TYPE' => 'text/erotica',
-		}
+		})
 		
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
-		@request.content_type.should == 'text/erotica'
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.content_type.should == 'text/erotica'
 	end
 
 	
 	it "can modify the request content type" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_CONTENT_TYPE' => 'text/erotica',
-		}
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.content_type = 'image/nude'
-		@request.content_type.should == 'image/nude'
+		request.content_type = 'image/nude'
+		request.content_type.should == 'image/nude'
 	end
 	
 	
 	it "knows what mimetypes are acceptable responses" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_ACCEPT' => 'text/html, text/plain; q=0.5, image/*;q=0.1',
-		}
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.accepts?( 'text/html' ).should be_true()
-		@request.accepts?( 'text/plain' ).should be_true()
-		@request.accepts?( 'text/ascii' ).should be_false()
+		request.accepts?( 'text/html' ).should be_true()
+		request.accepts?( 'text/plain' ).should be_true()
+		request.accepts?( 'text/ascii' ).should be_false()
 
-		@request.accepts?( 'image/png' ).should be_true()
-		@request.accepts?( 'application/x-yaml' ).should be_false()
+		request.accepts?( 'image/png' ).should be_true()
+		request.accepts?( 'application/x-yaml' ).should be_false()
 	end
 
 
 	it "knows what mimetypes are explicitly acceptable responses" do
-		params = {
+		params = @default_params.merge({
 			'HTTP_ACCEPT' => 'text/html, text/plain; q=0.5, image/*;q=0.1, */*',
-		}
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		})
+		@mongrel_request.stub!( :params ).and_return( params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.explicitly_accepts?( 'text/html' ).should be_true()
-		@request.explicitly_accepts?( 'text/plain' ).should be_true()
-		@request.explicitly_accepts?( 'text/ascii' ).should be_false()
+		request.explicitly_accepts?( 'text/html' ).should be_true()
+		request.explicitly_accepts?( 'text/plain' ).should be_true()
+		request.explicitly_accepts?( 'text/ascii' ).should be_false()
 
-		@request.explicitly_accepts?( 'image/png' ).should be_false()
-		@request.explicitly_accepts?( 'application/x-yaml' ).should be_false()
+		request.explicitly_accepts?( 'image/png' ).should be_false()
+		request.explicitly_accepts?( 'application/x-yaml' ).should be_false()
 	end
 		
 
 	it "accepts anything if the client doesn't provide an Accept header" do
-		params = {}
-		@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+		@mongrel_request.stub!( :params ).and_return( @default_params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
 		
-		@request.accepts?( 'text/html' ).should be_true()
-		@request.accepts?( 'text/plain' ).should be_true()
-		@request.accepts?( 'text/ascii' ).should be_true()
-		@request.accepts?( 'image/png' ).should be_true()
-		@request.accepts?( 'application/x-yaml' ).should be_true()
+		request.accepts?( 'text/html' ).should be_true()
+		request.accepts?( 'text/plain' ).should be_true()
+		request.accepts?( 'text/ascii' ).should be_true()
+		request.accepts?( 'image/png' ).should be_true()
+		request.accepts?( 'application/x-yaml' ).should be_true()
 	end
 	
 
 	it "knows that it's not an ajax request" do
-		@request.is_ajax_request?.should == false
+		@mongrel_request.stub!( :params ).and_return( @default_params )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+		
+		request.is_ajax_request?.should == false
 	end
 	
 
@@ -336,10 +381,17 @@ describe ThingFish::Request do
 
 		before( :each ) do
 			@config = stub( "config object" )
+			mongrel_request = mock( "mongrel request", :null_object => true )
+			mongrel_request.stub!( :params ).and_return({
+				'SERVER_NAME'	=> 'thingfish.laika.com',
+				'SERVER_PORT'	=> '3474',
+				'REQUEST_PATH'	=> '/',
+				'QUERY_STRING'	=> '',
+			})
 			@request_headers = mock( "request headers", :null_object => true )
-			@request = ThingFish::Request.new( nil, @config )
+
+			@request = ThingFish::Request.new( mongrel_request, @config )
 			@request.instance_variable_set( :@headers, @request_headers )
-			@request.stub!( :path_info ).and_return( '/a/test/path' )
 		
 			@etag = %{"%s"} % [ TEST_CHECKSUM ]
 			@weak_etag = %{W/"v1.2"}
@@ -416,11 +468,15 @@ describe ThingFish::Request do
 				'HTTP_CONTENT_LENGTH' => 11111,
 				'HTTP_USER_AGENT'     => 'Hotdogs',
 				'REMOTE_ADDR'         => '127.0.0.1',
+				'SERVER_NAME'         => 'thingfish.laika.com',
+				'SERVER_PORT'         => '3474',
+				'REQUEST_PATH'        => '/',
+				'QUERY_STRING'        => '',
 			}
 			@mongrel_request = mock( "mongrel request", :null_object => true )
-			@mongrel_request.should_receive( :params ).at_least(:once).and_return( params )
+			@mongrel_request.stub!( :params ).and_return( params )
 
-			config = stub( "Config object", :spooldir_path => Pathname.new('sdfgsd'), :bufsize => 3 )
+			config = stub( "Config object", :spooldir_path => Pathname.new('asdfsadf'), :bufsize => 3 )
 
 			@request = ThingFish::Request.new( @mongrel_request, config )
 			@request.stub!( :path_info ).and_return( '/a/test/path' )
@@ -557,11 +613,23 @@ describe ThingFish::Request do
 
 	describe " sent via XMLHTTPRequest" do
 		before( :each ) do
+			params = {
+				'HTTP_CONTENT_TYPE'   => 'multipart/form-data; boundary="greatgoatsofgerta"',
+				'HTTP_CONTENT_LENGTH' => 11111,
+				'HTTP_USER_AGENT'     => 'Hotdogs',
+				'REMOTE_ADDR'         => '127.0.0.1',
+				'SERVER_NAME'         => 'thingfish.laika.com',
+				'SERVER_PORT'         => '3474',
+				'REQUEST_PATH'        => '/',
+				'QUERY_STRING'        => '',
+			}
+			mongrel_request = mock( "mongrel request", :null_object => true )
+			mongrel_request.stub!( :params ).and_return( params )
+
 			@config = stub( "config object" )
 			@request_headers = mock( "request headers", :null_object => true )
-			@request = ThingFish::Request.new( nil, @config )
+			@request = ThingFish::Request.new( mongrel_request, @config )
 			@request.instance_variable_set( :@headers, @request_headers )
-			@request.stub!( :path_info ).and_return( '/a/test/path' )
 			@request_headers.should_receive( :[] ).
 				at_least( :once ).
 				with( :x_requested_with ).

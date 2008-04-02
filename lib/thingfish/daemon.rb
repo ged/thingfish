@@ -57,7 +57,6 @@ require 'thingfish/handler'
 require 'thingfish/request'
 require 'thingfish/response'
 
-
 ### ThingFish daemon class
 class ThingFish::Daemon < Mongrel::HttpServer
 	include ThingFish::Constants,
@@ -85,7 +84,14 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		@config = config || ThingFish::Config.new
 		@config.install
 
+		# Load the profiler library if profiling is enabled
+		@have_profiling = false
+		if @config.profiling.enabled?
+			@have_profiling = self.load_profiler
+		end
+		
 		# Load plugins for filestore, filters, and handlers
+		@config.setup_data_directories
 		@filestore = @config.create_configured_filestore
 		@metastore = @config.create_configured_metastore
 		@filters = @config.create_configured_filters
@@ -129,7 +135,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	# The Array of installed ThingFish::Filters
 	attr_reader :filters
 
-
+	# Boolean for testing if profiling is available
+	attr_reader :have_profiling
+	
+	
 	### Perform any additional daemon actions before actually starting
 	### the Mongrel side of things.
 	def run
@@ -230,57 +239,117 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	def dispatch( client, handlers, mongrel_request, mongrel_response )
 		request  = ThingFish::Request.new( mongrel_request, @config )
 		response = ThingFish::Response.new( mongrel_response )
-
-		return self.dispatch_to_handlers( client, handlers, request, response )
+		
+		if self.have_profiling and request.run_profile?
+			self.log.debug "Profiling the current request"
+			self.profile( request, response ) do
+				self.dispatch_to_handlers( client, handlers, request, response )
+			end
+		else
+			self.dispatch_to_handlers( client, handlers, request, response )
+		end
 	end
 
+	
+	### Start a profile for the provided +block+ if profiling is enabled, dumping the result
+	### out to a profile directory afterwards.
+	def profile( request, response )
+		report = RubyProf.profile do
+			yield
+		end
+		
+		self.log.debug {
+			output = ""
+			printer = RubyProf::FlatPrinter.new( report )
+			printer.print( output, 0 )
+			output
+		}
+		
+		filename = @config.profiledir_path + "%f#%d#%s" % [
+			Time.now,
+			Thread.current.object_id * 2,
+			request.uri.path.gsub( %r{/}, '_' ).sub( /^_/, '' ).chomp('_')
+		]
+		File.open( "#{filename}.html", 'w' ) do | profile |
+			printer = RubyProf::GraphHtmlPrinter.new( report )
+			printer.print( profile )
+#			profile.puts Marshal.dump( report )  TODO!!
+		end
+	end
+
+	
+	### Attempt to load and configure the profiling library. 
+	def load_profiler
+		require 'ruby-prof'
+
+		# enable additonal optional profile measurements
+		mask  = RubyProf::PROCESS_TIME
+		mask |= RubyProf::CPU_TIME if 
+			@config.profiling.metrics.include?( 'cpu' ) and ! RubyProf::CPU_TIME.nil?		
+		mask |= RubyProf::ALLOCATIONS if 
+			@config.profiling.metrics.include?( 'allocations' ) and ! RubyProf::ALLOCATIONS.nil?
+		mask |= RubyProf::MEMORY if 
+			@config.profiling.metrics.include?( 'memory' ) and ! RubyProf::MEMORY.nil?
+	 	RubyProf.measure_mode = mask
+	
+		self.log.debug "Enabled profiling"
+		return true
+		
+	rescue Exception => err
+		self.log.error "Couldn't load profiler: %s" % [ err.message ]
+		self.log.debug( err.backtrace.join("\n") )
+		return false
+	end
+	
 
 	### Send the request and response through the filters in request mode,
 	### run the appropriate handlers, and then send them back through the filters
 	### in response mode. Handle any ThingFish::RequestErrors and other exceptions
 	### with appropriate HTTP responses.
 	def dispatch_to_handlers( client, handlers, request, response )
-			# Let the filters manhandle the request
-			self.filter_request( request, response )
+		
+		# Let the filters manhandle the request
+		self.filter_request( request, response )
 
-			# Now execute the given handlers on the request and response
-			self.run_handlers( client, handlers, request, response ) unless
-				response.is_handled?
+		# Now execute the given handlers on the request and response
+		self.run_handlers( client, handlers, request, response ) unless
+			response.is_handled?
 
-			# Let the filters manhandle the response
-			self.filter_response( response, request )
+		# Let the filters manhandle the response
+		self.filter_response( response, request )
 
-			# Handle NOT_FOUND 
-			return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
-				unless response.is_handled?
+		# Handle NOT_FOUND 
+		return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
+			unless response.is_handled?
 
-			# Check to be sure we're providing a response which is acceptable to the client
-			unless response.body.nil? || ! response.status_is_successful?
-				unless response.content_type
-					self.log.warn "Response body set without a content type, using %p." %
-						[ DEFAULT_CONTENT_TYPE ]
-					response.content_type = DEFAULT_CONTENT_TYPE
-				end
-				self.log.debug "Checking for acceptable mimetype in response"
-
-				unless request.accepts?( response.content_type )
-					self.log.info "Can't create an acceptable response: " +
-						"Client accepts:\n  %p\nbut response is:\n  %p" %
-						[ request.accepted_types, response.content_type ]
-					return self.send_error_response( response, request, 
-						HTTP::NOT_ACCEPTABLE, client )
-				end
+		# Check to be sure we're providing a response which is acceptable to the client
+		unless response.body.nil? || ! response.status_is_successful?
+			unless response.content_type
+				self.log.warn "Response body set without a content type, using %p." %
+					[ DEFAULT_CONTENT_TYPE ]
+				response.content_type = DEFAULT_CONTENT_TYPE
 			end
+			self.log.debug "Checking for acceptable mimetype in response"
 
-			# Normal response
-			self.send_response( response, request ) unless client.closed?
-
-		rescue ThingFish::RequestError => err
-			self.send_error_response( response, request, err.status, client, err )
-
-		rescue => err
-			self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
+			unless request.accepts?( response.content_type )
+				self.log.info "Can't create an acceptable response: " +
+					"Client accepts:\n  %p\nbut response is:\n  %p" %
+					[ request.accepted_types, response.content_type ]
+				return self.send_error_response( response, request, 
+					HTTP::NOT_ACCEPTABLE, client )
+			end
 		end
+		
+		# Normal response
+		self.send_response( response, request ) unless client.closed?
+
+	rescue ThingFish::RequestError => err
+		self.send_error_response( response, request, err.status, client, err )
+
+	rescue => err
+		self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
+		
+	end
 	
 
 	### Filter and potentially modify the incoming request.

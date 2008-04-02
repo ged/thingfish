@@ -93,7 +93,7 @@ describe ThingFish::Daemon do
 
 
 	### End-to-end 
-	describe do
+	describe " configured with defaults" do
 
 		before( :each ) do
 			config = ThingFish::Config.new
@@ -125,6 +125,7 @@ describe ThingFish::Daemon do
 		end
 		
 
+		### Response generation
 		describe " response handling" do
 
 			it "returns a valid http 404 response if no filter or handler sets the response status" do
@@ -747,6 +748,7 @@ describe ThingFish::Daemon do
 		
 	end
 
+
 	describe " constructed with no arguments" do
 
 		before(:each) do
@@ -781,7 +783,8 @@ describe ThingFish::Daemon do
 		end
 	end
 
-	describe " started as root with a user configged" do
+
+	describe " started as root with a user configured" do
 
 		before(:each) do
 			@config = ThingFish::Config.new
@@ -866,6 +869,46 @@ describe ThingFish::Daemon do
 			@daemon.handler_info['test'].should have(1).members
 			@daemon.handler_info['test'].should include('/test')
 		end
+	end
+
+
+	describe " with profiling configured" do
+
+		before( :all ) do
+			setup_logging( :debug )
+		end
+		
+		after( :all ) do
+			reset_logging()
+		end
+
+		before(:each) do
+			@config = ThingFish::Config.new
+			@config.profiling.enabled = true
+		end
+
+		
+		it "attempts to load the ruby-prof library"
+		# 	Kernel.should_receive( :require ).with( 'ruby-prof' )
+		# 	::RubyProf = Module.new
+		# 	def RubyProf.const_missing( name )
+		# 		raise "glaslsdlgf"
+		# 		return 16
+		# 	end
+		# 
+		# 	daemon = ThingFish::Daemon.new( @config )
+		# 	daemon.have_profiling.should == true
+		# end
+		
+		
+		it "doesn't propagate exceptions thrown while loading"
+		# 	Kernel.stub!( :require ).and_raise( LoadError.new("something bad happened") )
+		# 
+		# 	lambda {
+		# 		@daemon.load_profiler
+		# 	}.should_not raise_error()
+		# 	@daemon.have_profiling.should == false
+		# end
 	end
 
 

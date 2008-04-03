@@ -68,7 +68,7 @@ class ThingFish::Config
 		:profiling => {
 			:enabled => false,
 			:profile_dir => DEFAULT_PROFILEDIR,
-			:metrics => ['cpu'],
+			:metrics => [],
 		},
 
 		:daemon  => false,

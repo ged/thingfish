@@ -104,8 +104,8 @@ class ThingFish::ExifFilter < ThingFish::Filter
 
 			exif_metadata = self.extract_exif( parser, attributes )
 
-			request.metadata[ body ].merge!( exif_metadata )
-			self.log.debug "Extracted exif info: %p" % [ exif_metadata ]
+			request.append_metadata_for( body, exif_metadata )
+			self.log.debug "Extracted exif info: %p" % [ exif_metadata.keys ]
 		end
 	end
 

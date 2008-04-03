@@ -38,8 +38,7 @@ include ThingFish::Constants
 describe ThingFish::ImageFilter do
 	
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 		
 	before( :each ) do
@@ -57,10 +56,19 @@ describe ThingFish::ImageFilter do
 		
 		@request_metadata = { :format => 'image/png' }
 		@request.stub!( :each_body ).and_yield( @io, @request_metadata )
+		
+		@extracted_metadata = {
+			'image_height'       => :rows,
+			'image_width'        => :columns,
+			'image_depth'        => :depth,
+			'image_density'      => :density,
+			'image_gamma'        => :gamma,
+			'image_bounding_box' => :bounding_box,
+		}
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
@@ -101,71 +109,15 @@ describe ThingFish::ImageFilter do
 		image = mock( "image object", :null_object => true )
 		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
 
-		image.should_receive( :columns ).and_return( 100 )
-		image.should_receive( :rows ).and_return( 200 )
+		@extracted_metadata.each do |key, val|
+			image.should_receive( val ).and_return( val.to_s )
+			@extracted_metadata[ key ] = val.to_s
+		end
 		
-		extracted_metadata = {}
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
+		@request.should_receive( :append_metadata_for ).with( @io, @extracted_metadata )
 
 		# Run the request filter
 		@filter.handle_request( @request, @response )
-		
-		extracted_metadata['image_width'].should == 100
-		extracted_metadata['image_height'].should == 200
-	end
-	
-	
-	it "extracts density metadata from uploaded image data using RMagick" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
-		
-		image = mock( "image object", :null_object => true )
-		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
-
-		image.should_receive( :density ).and_return( "72" )
-		
-		extracted_metadata = {}
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
-
-		# Run the request filter
-		@filter.handle_request( @request, @response )
-		
-		extracted_metadata['image_density'].should == "72"
-	end
-	
-	
-	it "extracts color depth metadata from uploaded image data" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
-		
-		image = mock( "image object", :null_object => true )
-		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
-
-		image.should_receive( :depth ).and_return( 16 )
-		
-		extracted_metadata = {}
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
-
-		# Run the request filter
-		@filter.handle_request( @request, @response )
-		
-		extracted_metadata['image_depth'].should == 16
-	end
-	
-	
-	it "extracts gamma level metadata from uploaded image data" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
-		
-		image = mock( "image object", :null_object => true )
-		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
-
-		image.should_receive( :gamma ).and_return( 0.2 )
-		
-		extracted_metadata = {}
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
-
-		# Run the request filter
-		@filter.handle_request( @request, @response )
-		
-		extracted_metadata['image_gamma'].should == 0.2
 	end
 	
 	
@@ -192,9 +144,6 @@ describe ThingFish::ImageFilter do
 	end
 
 
-	it "doesn't try to convert downloads"
-
-	
 	it "doesn't try to convert formats it doesn't know about" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
 		@request.should_receive( :accepts? ).and_return( false )

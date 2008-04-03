@@ -31,6 +31,10 @@ describe ThingFish::ExifFilter do
 	include ThingFish::Constants
 	include ThingFish::TestConstants
 
+	before( :all ) do
+		setup_logging( :fatal )
+	end
+	
 	before( :each ) do
 	    @filter = ThingFish::Filter.create( 'exif' )
 	
@@ -38,12 +42,16 @@ describe ThingFish::ExifFilter do
 		@io.stub!( :path ).and_return( :a_dummy_path )
 		@response = stub( "response object" )
 
-		@request = mock( "request object" , :null_object => true)
+		@request = mock( "request object" , :null_object => true )
 		@request.stub!( :http_method ).and_return( 'POST' )
 
 		@exif_parser = mock( "exif parser", :null_object => true )
 		EXIFR::JPEG.stub!( :new ).and_return( @exif_parser )
 		EXIFR::TIFF.stub!( :new ).and_return( @exif_parser )
+	end
+	
+	after( :all ) do
+		reset_logging()
 	end
 	
 	
@@ -54,44 +62,62 @@ describe ThingFish::ExifFilter do
 	### Filter-specific tests
 
 	it "extracts exif metadata from uploaded jpeg images" do
-		extracted_metadata = {}
+		exif_data = {
+			:model => 'Pinhole Camera 2000'
+		}
+		
+		extracted_metadata = {
+			'exif_width'	=> 320,
+			'exif_height'	=> 240,
+			'exif_bits'		=> 8,
+			'exif_comment'	=> 'Trundled by Grundle',
+			'exif_model' 	=> 'Pinhole Camera 2000',
+		}
 
 		request_metadata = { :format => 'image/jpeg' }
 		@request.stub!( :each_body ).and_yield( @io, request_metadata )
 
 		@exif_parser.should_receive( :exif? ).and_return( true )
-		@exif_parser.should_receive( :exif ).and_return( extracted_metadata )
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
+		@exif_parser.should_receive( :exif ).and_return( exif_data )
 
 		@exif_parser.should_receive( :width ).and_return( 320 )
 		@exif_parser.should_receive( :height ).and_return( 240 )
+		@exif_parser.should_receive( :bits ).and_return( 8 )
+		@exif_parser.should_receive( :comment ).and_return( 'Trundled by Grundle' )
+		@exif_parser.should_receive( :model ).and_return( 'Pinhole Camera 2000' )
+		
+		@request.should_receive( :append_metadata_for ).with( @io, extracted_metadata )
 
 		@filter.handle_request( @request, @response )
-		
-		extracted_metadata.should have(4).members
-		extracted_metadata['exif_width'].should == 320
-		extracted_metadata['exif_height'].should == 240
 	end
 
 
 	it "extracts exif metadata from uploaded tiff images" do
-		extracted_metadata = {}
+		exif_data = {
+			:model => 'Pinhole Camera 2000'
+		}
+		
+		extracted_metadata = {
+			'exif_width'	=> 320,
+			'exif_height'	=> 240,
+			'exif_size'		=> '320x240',
+			'exif_model' 	=> 'Pinhole Camera 2000',
+		}
 
 		request_metadata = { :format => 'image/tiff' }
 		@request.stub!( :each_body ).and_yield( @io, request_metadata )
 
 		@exif_parser.should_not_receive( :exif? )
-		@exif_parser.should_receive( :to_hash ).and_return( extracted_metadata )
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
+		@exif_parser.should_receive( :to_hash ).and_return( exif_data )
 
 		@exif_parser.should_receive( :width ).and_return( 320 )
 		@exif_parser.should_receive( :height ).and_return( 240 )
+		@exif_parser.should_receive( :size ).and_return( '320x240' )
+		@exif_parser.should_receive( :model ).and_return( 'Pinhole Camera 2000' )
+
+		@request.should_receive( :append_metadata_for ).with( @io, extracted_metadata )
 
 		@filter.handle_request( @request, @response )
-		
-		extracted_metadata.should have(3).members
-		extracted_metadata['exif_width'].should == 320
-		extracted_metadata['exif_height'].should == 240
 	end
 
 

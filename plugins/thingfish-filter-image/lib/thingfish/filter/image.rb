@@ -184,7 +184,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 				image = images.first
 				image_attributes = self.extract_metadata( image )
 			
-				request.metadata[ body ].merge!( image_attributes )
+				request.append_metadata_for( body, image_attributes )
 			else
 				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
 			end

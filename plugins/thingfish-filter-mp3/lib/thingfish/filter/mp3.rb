@@ -83,8 +83,8 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		request.each_body do |body, metadata|
 			if self.accept?( metadata[:format] )
 				mp3_metadata = self.extract_id3_metadata( body )
-				request.metadata[ body ].merge!( mp3_metadata )
-				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata.keys ]
+				request.append_metadata_for( body, mp3_metadata )
+				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata ]
 			else
 				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
 			end
@@ -148,7 +148,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 			:mp3_comments  => info.tag.comments,
 		}
 
-		# ID3V2 2.2.0 had three-letter tags, so map those if the artist info isn't set
+		# ID3V2 2.2.0 has three-letter tags, so map those if the artist info isn't set
 		if info.hastag2? && mp3_metadata[:mp3_artist].nil?
 			self.log.debug "   extracting old-style ID3v2 info" % [info.tag2.version]
 			

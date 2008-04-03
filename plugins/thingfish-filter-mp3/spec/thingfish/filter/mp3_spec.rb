@@ -35,6 +35,24 @@ describe ThingFish::MP3Filter do
 	TEST_ARTIST    = "The Artist Formerly Known as Pork"
 	TEST_ALBUM     = "Lung Bacon"
 	TEST_COMMENTS  = ["Frazzles", "3d glasses", "your face is stupid"]
+	TEST_YEAR      = 2004
+	TEST_GENRE     = 11
+	TEST_TRACKNUM  = 4
+
+	EXTRACTED_METADATA = {
+		:mp3_frequency => 44000,
+		:mp3_bitrate   => 128,
+		:mp3_vbr       => true,
+
+		:mp3_tracknum  => TEST_TRACKNUM,
+		:mp3_title     => TEST_MP3_TITLE,
+		:mp3_artist    => TEST_ARTIST,
+		:mp3_album     => TEST_ALBUM,
+		:mp3_comments  => TEST_COMMENTS,
+		:mp3_year      => TEST_YEAR,
+		:mp3_genre     => TEST_GENRE,
+	}
+	
 
 	before( :each ) do
 	    @filter = ThingFish::Filter.create( 'mp3' )
@@ -62,23 +80,20 @@ describe ThingFish::MP3Filter do
 	### Filter-specific tests
 	
 	it "extracts MP3 metadata from ID3v1 tags of uploaded MP3s" do
-		extracted_metadata = {}
-		
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
 		@mp3info.should_receive( :samplerate ).and_return( 44000 )
 		@mp3info.should_receive( :bitrate ).and_return( 128 )
 		@mp3info.should_receive( :vbr ).and_return( true )
 		
+		@id3tag.should_receive( :tracknum ).and_return( TEST_TRACKNUM )
 		@id3tag.should_receive( :title ).and_return( TEST_MP3_TITLE )
 		@id3tag.should_receive( :artist ).and_return( TEST_ARTIST )
 		@id3tag.should_receive( :album ).and_return( TEST_ALBUM )
+		@id3tag.should_receive( :comments ).and_return( TEST_COMMENTS )
+		@id3tag.should_receive( :year ).and_return( TEST_YEAR )
+		@id3tag.should_receive( :genre ).and_return( TEST_GENRE )
 		
+		@request.should_receive( :append_metadata_for ).with( @io, EXTRACTED_METADATA )
 		@filter.handle_request( @request, @response )
-		
-		extracted_metadata.should have(10).members
-		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
-		extracted_metadata[:mp3_album].should == TEST_ALBUM
 	end
 
 	
@@ -86,7 +101,6 @@ describe ThingFish::MP3Filter do
 		extracted_metadata = {}
 		v2tag = mock( "ID3v2 tag", :null_object => true )
 		
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
 		@mp3info.should_receive( :samplerate ).and_return( 44000 )
 		@mp3info.should_receive( :bitrate ).and_return( 128 )
 		@mp3info.should_receive( :vbr ).and_return( true )
@@ -94,6 +108,10 @@ describe ThingFish::MP3Filter do
 		@id3tag.should_receive( :title ).and_return( nil )
 		@id3tag.should_receive( :artist ).and_return( nil )
 		@id3tag.should_receive( :album ).and_return( nil )
+		@id3tag.should_receive( :year ).and_return( nil )
+		@id3tag.should_receive( :tracknum ).and_return( nil )
+		@id3tag.should_receive( :comments ).and_return( nil )
+		@id3tag.should_receive( :genre ).and_return( nil )
 
 		@mp3info.should_receive( :hastag2? ).
 			at_least( :once ).
@@ -105,13 +123,13 @@ describe ThingFish::MP3Filter do
 		v2tag.should_receive(:TT2).and_return( TEST_MP3_TITLE )
 		v2tag.should_receive(:TP1).and_return( TEST_ARTIST )
 		v2tag.should_receive(:TAL).and_return( TEST_ALBUM )
+		v2tag.should_receive(:TYE).and_return( TEST_YEAR )
+		v2tag.should_receive(:TRK).and_return( TEST_TRACKNUM )
+		v2tag.should_receive(:COM).and_return( TEST_COMMENTS )
+		v2tag.should_receive(:TCO).and_return( TEST_GENRE )
 		
+		@request.should_receive( :append_metadata_for ).with( @io, EXTRACTED_METADATA )
 		@filter.handle_request( @request, @response )
-		
-		extracted_metadata.should have(10).members
-		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
-		extracted_metadata[:mp3_album].should == TEST_ALBUM
 	end
 	
 	
@@ -125,13 +143,14 @@ describe ThingFish::MP3Filter do
 	
 	
 	it "normalizes id3 values" do
-		extracted_metadata = {}
-		
-		@request.should_receive( :metadata ).and_return({ @io => extracted_metadata })
 		@mp3info.should_receive( :samplerate ).and_return( 44000 )
 		@mp3info.should_receive( :bitrate ).and_return( 128 )
 		@mp3info.should_receive( :vbr ).and_return( true )
 		
+		@id3tag.should_receive( :tracknum ).and_return( TEST_TRACKNUM )
+		@id3tag.should_receive( :year ).and_return( TEST_YEAR )
+		@id3tag.should_receive( :genre ).and_return( TEST_GENRE )
+
 		@id3tag.should_receive( :title ).and_return( TEST_MP3_TITLE + "\x0" )
 		@id3tag.should_receive( :artist ).and_return( "\n" + TEST_ARTIST + "   \n\n" )
 		@id3tag.should_receive( :album ).and_return( nil )
@@ -141,13 +160,13 @@ describe ThingFish::MP3Filter do
 			TEST_COMMENTS[2]
 		  ])
 		
-		@filter.handle_request( @request, @response )
+		# The nil should be transformed into an '(unknown)', but everything else should 
+		# be the same
+		normalized_values = EXTRACTED_METADATA.dup
+		normalized_values[:mp3_album] = "(unknown)"
 		
-		extracted_metadata.should have(10).members
-		extracted_metadata[:mp3_artist].should == TEST_ARTIST
-		extracted_metadata[:mp3_title].should == TEST_MP3_TITLE
-		extracted_metadata[:mp3_album].should == "(unknown)"
-		extracted_metadata[:mp3_comments].should == TEST_COMMENTS
+		@request.should_receive( :append_metadata_for ).with( @io, normalized_values )
+		@filter.handle_request( @request, @response )
 	end
 	
 	

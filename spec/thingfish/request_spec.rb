@@ -36,6 +36,8 @@ include ThingFish::Constants
 describe ThingFish::Request do
 	include ThingFish::SpecHelpers
 	
+	TEMPFILE_PATH = '/var/folders/k7/k7DNYX+ZGSOBod3-pJ-Lhk++0+I/-Tmp-/thingfish.65069.0'
+	
 	before(:all) do
 		setup_logging( :fatal )
 	end
@@ -155,6 +157,153 @@ describe ThingFish::Request do
 			metadata[:extent].should == 11111
 			metadata[:useragent].should == 'Hotdogs'
 		end
+	end
+	
+	
+	it "allows new metadata to be appended to resources yielded from the iterator" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'image/x-bitmap',
+			'HTTP_CONTENT_LENGTH' => 18181,
+			'HTTP_USER_AGENT'     => 'GarglePants/1.0',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+		upload = StringIO.new( TEST_CONTENT )
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+		request.each_body do |body, metadata|
+			metadata = { 'relation' => 'thumbnail' }
+			request.append_metadata_for( body, metadata )
+		end
+
+		request.metadata.should have_key( upload )
+		request.metadata[ upload ].should have(1).member
+		request.metadata[ upload ][ 'relation' ].should == 'thumbnail'
+	end
+	
+	
+	it "allows appending of resources related to the ones in the entity body (StringIO)" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'application/x-bungtruck',
+			'HTTP_CONTENT_LENGTH' => 11111,
+			'HTTP_USER_AGENT'     => 'Hotdogs',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+		upload = StringIO.new( TEST_CONTENT )
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+		generated_resource = StringIO.new( "generated content" )
+		metadata = { 'relation' => 'thumbnail' }
+
+		request.each_body do |body, metadata|
+			request.append_related_resource( body, generated_resource, metadata )
+		end
+
+		request.related_resources.should have_key( upload )
+		request.related_resources[ upload ].should be_an_instance_of( Hash )
+		request.related_resources[ upload ].should have(1).member
+		request.related_resources[ upload ].keys.should == [ generated_resource ]
+		request.related_resources[ upload ].values.should == [ metadata ]
+	end
+
+
+	it "allows appending of resources related to the ones in the entity body (Tempfile)" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'application/x-bungtruck',
+			'HTTP_CONTENT_LENGTH' => 37337,
+			'HTTP_USER_AGENT'     => 'Plantains',
+			'REMOTE_ADDR'         => '18.17.16.15',
+		}
+
+		upload = mock( "Mock Upload Tempfile" )
+		upload.should_receive( :path ).and_return( TEMPFILE_PATH )
+		duped_upload = mock( "Mock Upload Tempfile duplicate" )
+		duped_upload.should_receive( :path ).and_return( TEMPFILE_PATH )
+		
+		upload.should_receive( :dup ).and_return( duped_upload )
+		
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+		generated_resource = StringIO.new( "generated content" )
+		metadata = { 'relation' => 'thumbnail' }
+
+		request.each_body do |body, metadata|
+			request.append_related_resource( body, generated_resource, metadata )
+		end
+
+		request.related_resources.should have_key( upload )
+		request.related_resources[ upload ].should be_an_instance_of( Hash )
+		request.related_resources[ upload ].should have(1).member
+		request.related_resources[ upload ].keys.should == [ generated_resource ]
+		request.related_resources[ upload ].values.should == [ metadata ]
+	end
+
+
+	it "allows appending of resources related to already-appended ones" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'application/x-gungtruck',
+			'HTTP_CONTENT_LENGTH' => 121212,
+			'HTTP_USER_AGENT'     => 'Sausages',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+
+		upload = StringIO.new( TEST_CONTENT )
+		
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+		generated_resource = StringIO.new( "generated content" )
+		metadata = { 'relation' => 'part_of' }
+		sub_generated_resource = StringIO.new( "content generated from the generated content" )
+		sub_metadata = { 'relation' => 'thumbnail' }
+
+		request.each_body do |body, metadata|
+			request.append_related_resource( body, generated_resource, metadata )
+			request.append_related_resource( generated_resource, sub_generated_resource, sub_metadata )
+		end
+
+		request.related_resources.should have_key( upload )
+		request.related_resources[ upload ].should be_an_instance_of( Hash )
+		request.related_resources[ upload ].should have(1).member
+		request.related_resources[ upload ].keys.should == [ generated_resource ]
+		request.related_resources[ upload ].values.should == [ metadata ]
+		request.related_resources.should have_key( generated_resource )
+		request.related_resources[ generated_resource ].should be_an_instance_of( Hash )
+		request.related_resources[ generated_resource ].should have(1).member
+		request.related_resources[ generated_resource ].keys.should == [ sub_generated_resource ]
+		request.related_resources[ generated_resource ].values.should == [ sub_metadata ]
+	end
+
+
+	it "requires 'related' resources be appended with a body that's part of the request" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'application/x-bungtruck',
+			'HTTP_CONTENT_LENGTH' => 11111,
+			'HTTP_USER_AGENT'     => 'Hotdogs',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+
+		upload = StringIO.new( TEST_CONTENT )
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+
+		mystery_resource = StringIO.new( "mystery content" )
+		generated_resource = StringIO.new( "generated content" )
+		metadata = { 'relation' => 'thumbnail' }
+
+		lambda { 
+			request.each_body do |body, _|
+				request.append_related_resource( mystery_resource, generated_resource, metadata )
+			end
+		}.should raise_error( ThingFish::ResourceError, /cannot append/i )
 	end
 	
 	
@@ -488,10 +637,83 @@ describe ThingFish::Request do
 		end
 	
 	
+		it "sends IO bodies as well as appended resources with merged metadata to the block " +
+		   "of the resource iterator" do
+			io1 = mock( "filehandle 1" )
+			io1_dup = mock( "duplicated filehandle 1" )
+
+			io2 = mock( "filehandle 2" )
+			io2_dup = mock( "duplicated filehandle 2" )
+
+			resource1 = mock( "extracted body 1" )
+			resource1_dup = mock( "duplicated extracted body 1" )
+
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
+				io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
+			  }
+			form_metadata = {
+				'foo' => 1,
+				:title => "a bogus filename",
+				:useragent => 'Clumpy the Clown',
+			  }
+
+			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+			@mongrel_request.should_receive( :body ).once.and_return( :body )
+			parser.should_receive( :parse ).once.
+				with( :body, 'greatgoatsofgerta' ).
+				and_return([ entity_bodies, form_metadata ])
+
+			io1.should_receive( :dup ).at_least(:once).and_return( io1_dup )
+			io1.stub!( :path ).and_return( :a_path )
+			io1_dup.stub!( :path ).and_return( :a_path )
+			io2.should_receive( :dup ).at_least(:once).and_return( io2_dup )
+			io2.stub!( :path ).and_return( :another_path )
+			io2_dup.stub!( :path ).and_return( :another_path )
+			resource1.should_receive( :dup ).at_least(:once).and_return( resource1_dup )
+			resource1.stub!( :path ).and_return( :a_third_path )
+
+			yielded_pairs = {}
+			@request.each_body( true ) do |res, parsed_metadata|
+				if res == io1_dup
+					thumb_metadata = {
+						:relation => 'thumbnail',
+						:format   => 'image/jpeg',
+						:title    => 'filename1_thumb.jpg',
+					  }
+					@request.append_related_resource( io1_dup, resource1, thumb_metadata )
+				end
+					
+				yielded_pairs[ res ] = parsed_metadata
+			end
+
+			yielded_pairs.keys.should have(3).members
+			yielded_pairs.keys.should include( io1_dup )
+			yielded_pairs.keys.should include( io2_dup )
+			yielded_pairs.keys.should include( resource1_dup )
+
+			yielded_pairs[ io1_dup ][ :title ].should == 'filename1'
+			yielded_pairs[ io1_dup ][ :format ].should == 'format1'
+			yielded_pairs[ io1_dup ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io1_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+
+			yielded_pairs[ io2_dup ][ :title ].should == 'filename2'
+			yielded_pairs[ io2_dup ][ :format ].should == "format2"
+			yielded_pairs[ io2_dup ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ io2_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+
+			yielded_pairs[ resource1_dup ][ :title ].should == 'filename1_thumb.jpg'
+			yielded_pairs[ resource1_dup ][ :format ].should == 'image/jpeg'
+			yielded_pairs[ resource1_dup ][ :useragent ].should == "Hotdogs"
+			yielded_pairs[ resource1_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+		end
+	
 		it "sends each IO body entity of the request and a copy of the merged metadata to " +
 			"the block of the body iterator" do
 			io1 = mock( "filehandle 1" )
 			io1_dup = mock( "duplicated filehandle 1" )
+			
 			io2 = mock( "filehandle 2" )
 			io2_dup = mock( "duplicated filehandle 2" )
 
@@ -513,7 +735,9 @@ describe ThingFish::Request do
 				and_return([ entity_bodies, form_metadata ])
 			
 			io1.should_receive( :dup ).and_return( io1_dup )
+			io1.stub!( :path ).and_return( :a_path )
 			io2.should_receive( :dup ).and_return( io2_dup )
+			io2.stub!( :path ).and_return( :another_path )
 		
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|
@@ -526,7 +750,9 @@ describe ThingFish::Request do
 
 			yielded_pairs[ io1_dup ][ :title ].should == 'filename1'
 			yielded_pairs[ io1_dup ][ :format ].should == 'format1'
+			yielded_pairs[ io1_dup ][ :useragent ].should == "Hotdogs"
 			yielded_pairs[ io1_dup ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+
 			yielded_pairs[ io2_dup ][ :title ].should == 'filename2'
 			yielded_pairs[ io2_dup ][ :format ].should == "format2"
 			yielded_pairs[ io2_dup ][ :useragent ].should == "Hotdogs"
@@ -589,7 +815,9 @@ describe ThingFish::Request do
 				and_return([ entity_bodies, form_metadata ])
 
 			io1.should_receive( :dup ).and_return( io1_dup )
+			io1.stub!( :path ).and_return( :a_path )
 			io2.should_receive( :dup ).and_return( io2_dup )
+			io2.stub!( :path ).and_return( :another_path )
 
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|

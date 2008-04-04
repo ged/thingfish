@@ -8,6 +8,7 @@
 #	- Bind only to the localhost interface, port 80.
 #	- Become a daemon.
 #	- Store metadata and filedata persistently.
+#	- Try and load profiling.
 #   - All data is stored under /home/thingfish, except tempfiles, which are created in /var/tmp.
 #	- Install some useful intropection and file upload handlers.
 #	- Install some basic response filters.
@@ -22,6 +23,9 @@ bufsize: 16384
 user: daemon
 daemon: true
 pidfile: thingfish.pid
+
+profiling:
+    enabled: true
 
 defaulthandler:
     html_index: index.rhtml

@@ -44,7 +44,7 @@ class ThingFish::CommandLineClient
 
 		options.debug_mode = false
 		options.verbose_mode = false
-		options.verbose_mode = false
+		options.profile_mode = false
 		options.host = 'localhost'
 		options.port = DEFAULT_PORT
 
@@ -92,6 +92,11 @@ class ThingFish::CommandLineClient
 				opts.verbosemode = true
 			end
 
+			oparser.on( '--profile', FalseClass, 
+						"Turn on server profiling (must also be enabled server side)" ) do
+				opts.profilemode = true
+			end
+
 			oparser.on_tail( '--help', '-h', FalseClass, "Display help for the given command." ) do
 				opts.helpmode = true
 	        end
@@ -122,7 +127,7 @@ class ThingFish::CommandLineClient
 		@options = options
 		
 		uri = URI.parse( "http://%s:%d/" % [@options.host, @options.port] )
-		@client = ThingFish::Client.new( uri )
+		@client = ThingFish::Client.new( uri, :profile => @options.profilemode )
 		
 		if @options.debugmode
 			ThingFish.reset_logger

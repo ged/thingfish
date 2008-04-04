@@ -34,7 +34,8 @@ end
 # Expose some methods for testing (ick, but we can't test through Mongrel any 
 # other way)
 class ThingFish::Daemon
-	public :dispatch_to_handlers,
+	public :dispatch,
+		:dispatch_to_handlers,
 		:run_handlers,
 		:send_response,
 		:filter_request,
@@ -50,8 +51,7 @@ describe ThingFish::Daemon do
 	include ThingFish::SpecHelpers
 	
 	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 	
 
@@ -96,9 +96,9 @@ describe ThingFish::Daemon do
 	describe " configured with defaults" do
 
 		before( :each ) do
-			config = ThingFish::Config.new
-			config.defaulthandler.resource_dir = 'var/www'
-			@daemon = ThingFish::Daemon.new( config )
+			@config = ThingFish::Config.new
+			@config.defaulthandler.resource_dir = 'var/www'
+			@daemon = ThingFish::Daemon.new( @config )
 			
 			@handlers = []
 			@filters = []
@@ -122,6 +122,27 @@ describe ThingFish::Daemon do
 			@response.stub!( :filters ).and_return( @filters )
 			@response.stub!( :is_handled? ).and_return( false )
 			@response.stub!( :body ).and_return( "" )
+		end
+		
+		
+		it "wraps the mongrel request and response objects in their ThingFish counterparts" do
+			m_request   = stub( "mongrel request object" )
+			m_response  = stub( "mongrel response object" )
+			tf_request  = stub( "thingfish request" )
+			tf_response = stub( "thingfish response" )
+
+			ThingFish::Request.should_receive( :new ).with( m_request, @config ).
+				and_return( tf_request )
+			ThingFish::Response.should_receive( :new ).with( m_response ).
+				and_return( tf_response )
+
+			# We're mocking a method on the class under test here, which is usually
+			# a really bad idea, but the alternative is to mock out a whole
+			# bunch of other stuff that happens in #dispatch_to_handlers that is
+			# beside the point (and already tested).
+			@daemon.should_receive( :dispatch_to_handlers ).
+				with( @client, @handlers, tf_request, tf_response )
+			@daemon.dispatch( @client, @handlers, m_request, m_response )
 		end
 		
 
@@ -874,41 +895,109 @@ describe ThingFish::Daemon do
 
 	describe " with profiling configured" do
 
-		before( :all ) do
-			setup_logging( :debug )
-		end
-		
 		after( :all ) do
 			reset_logging()
 		end
 
 		before(:each) do
 			@config = ThingFish::Config.new
+			setup_logging( :fatal )
 			@config.profiling.enabled = true
 		end
 
 		
-		it "attempts to load the ruby-prof library"
-		# 	Kernel.should_receive( :require ).with( 'ruby-prof' )
-		# 	::RubyProf = Module.new
-		# 	def RubyProf.const_missing( name )
-		# 		raise "glaslsdlgf"
-		# 		return 16
-		# 	end
-		# 
-		# 	daemon = ThingFish::Daemon.new( @config )
-		# 	daemon.have_profiling.should == true
-		# end
+		module RubyProf
+			PROCESS_TIME = 1
+			CPU_TIME     = 2
+			ALLOCATIONS  = 4
+			MEMORY       = 8
+			
+			class FlatPrinter
+				def initialize( *args ); end
+				def print( *args ); end
+			end
+			class GraphHtmlPrinter
+				def initialize( *args ); end
+				def print( *args ); end
+			end
+			class Result; end
+		end
+
+		it "attempts to load and configure the ruby-prof library" do
+			@config.profiling.metrics = %w[]
+			RubyProf.should_receive( :measure_mode= ).with( 1 )
+
+			daemon = ThingFish::Daemon.allocate
+			daemon.should_receive( :require ).with( 'ruby-prof' ).and_return( true )
+			daemon.__send__( :initialize, @config )
+			daemon.have_profiling.should == true
+		end
+
+
+		it "adds additional metrics to the profiling config if they're available and enabled" do
+			@config.profiling.metrics = %w[ cpu allocations memory ]
+			RubyProf.should_receive( :measure_mode= ).with( 15 )
+
+			daemon = ThingFish::Daemon.allocate
+			daemon.should_receive( :require ).with( 'ruby-prof' ).and_return( true )
+			daemon.__send__( :initialize, @config )
+			daemon.have_profiling.should == true
+		end
+				
+		
+		it "doesn't propagate exceptions thrown while loading" do
+			daemon = ThingFish::Daemon.allocate
+			daemon.should_receive( :require ).
+				with( 'ruby-prof' ).
+				and_raise( LoadError.new("Something bad!!") )
+			
+			lambda {
+				daemon.__send__( :initialize, @config )
+			}.should_not raise_error()
+
+			daemon.have_profiling.should == false
+		end
 		
 		
-		it "doesn't propagate exceptions thrown while loading"
-		# 	Kernel.stub!( :require ).and_raise( LoadError.new("something bad happened") )
-		# 
-		# 	lambda {
-		# 		@daemon.load_profiler
-		# 	}.should_not raise_error()
-		# 	@daemon.have_profiling.should == false
-		# end
+		it "profiles the life of the request" do
+			m_request   = stub( "mongrel request object" )
+			m_response  = stub( "mongrel response object" )
+			tf_request  = stub( "thingfish request" )
+			tf_response = stub( "thingfish response" )
+			
+			RubyProf.should_receive( :measure_mode= ).with( 1 )
+			daemon = ThingFish::Daemon.allocate
+			daemon.should_receive( :require ).with( 'ruby-prof' ).and_return( true )
+			daemon.__send__( :initialize, @config )
+
+			client = mock( "client socket object" )
+
+			ThingFish::Request.should_receive( :new ).with( m_request, @config ).
+				and_return( tf_request )
+			ThingFish::Response.should_receive( :new ).with( m_response ).
+				and_return( tf_response )
+
+			uri = URI.parse( "http://localhost:3474/search?_profile=1" )
+			tf_request.should_receive( :run_profile? ).and_return( true )
+			tf_request.should_receive( :uri ).and_return( uri )
+
+			result = mock( "Ruby-prof result object" )
+			RubyProf.should_receive( :profile ).and_yield.and_return( result )
+			
+			fh = mock( "filehandle" )
+			File.should_receive( :open ).with( /\d+\.\d+#\d+#search\.html$/, 'w' ).and_yield( fh )
+			
+			### We're currently working on the marshalling aspect of ruby-prof.
+			###
+			# Marshal.should_receive( :dump ).with([ tf_request, result ]).and_return( :dumped_stuff )
+			# fh.should_receive( :print ).with( :dumped_stuff )
+
+			# Mocking the class under test to avoid mocking a whole bunch of other
+			# stuff we don't care about (that is already tested.) 
+			daemon.should_receive( :dispatch_to_handlers ).
+				with( client, [], tf_request, tf_response )
+			daemon.dispatch( client, [], m_request, m_response )
+		end
 	end
 
 

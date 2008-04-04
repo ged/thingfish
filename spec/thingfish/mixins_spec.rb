@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -44,9 +44,9 @@ describe ThingFish::Loggable, " (class)" do
 			def log_test_message( level, msg )
 				self.log.send( level, msg )
 			end
-		
-			def test_log_request( request )
-				self.log_request( request )
+			
+			def logdebug_test_message( msg )
+				self.log_debug.debug( msg )
 			end
 		end
 		@obj = @test_class.new
@@ -59,6 +59,11 @@ describe ThingFish::Loggable, " (class)" do
 		@logfile.read.should =~ /debugging message/
 	end
 
+	it "is able to output to the log via its #log_debug method" do
+		@obj.logdebug_test_message( "sexydrownwatch" )
+		@logfile.rewind
+		@logfile.read.should =~ /sexydrownwatch/
+	end
 end
 
 

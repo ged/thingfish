@@ -130,7 +130,7 @@ class ThingFish::Client
 	USER_AGENT_HEADER = "%s/%s.%d" %
 		[ self.name.downcase.gsub(/\W+/, '-'), ThingFish::VERSION, SVNRev[/\d+/] ]
 
-	# Maximum size of a resource reponse that's kept in-memory. Anything larger
+	# Maximum size of a resource response that's kept in-memory. Anything larger
 	# gets buffered to a tempfile.
 	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes 
 
@@ -145,6 +145,7 @@ class ThingFish::Client
 	### specified as attributes on the client.
 	def initialize( endpoint=DEFAULT_HOST, options={} )
 		@server_info = nil
+		@profile     = nil
 		
 		# If it contains a '/', assume it's a URI
 		if endpoint =~ %r{/}
@@ -174,6 +175,8 @@ class ThingFish::Client
 	# The URI of the API endpoint
 	attr_reader :uri
 	
+	# Profiling boolean
+	attr_accessor :profile
 
 	# Delegate some methods to the URI
 	def_delegators :@uri,
@@ -480,6 +483,10 @@ class ThingFish::Client
 		req['User-Agent'] = USER_AGENT_HEADER
 
 		self.log.debug "Request: " + dump_request_object( req )
+
+		if @profile
+			req.path << ( req.path =~ /\?/ ? "&#{PROFILING_ARG}=true" : "?#{PROFILING_ARG}=true" )
+		end
 		
 		Net::HTTP.start( uri.host, uri.port ) do |conn|
 			conn.request( req ) do |response|
@@ -534,10 +541,7 @@ class ThingFish::Client
 		buf << "\r\n"
 		
 		return buf
-	end
-
-
-
+	end	
 end # class ThingFish::Client
 
 # vim: set nosta noet ts=4 sw=4:

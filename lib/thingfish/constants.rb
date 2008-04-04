@@ -61,6 +61,10 @@ module ThingFish::Constants
 	# The default location of Ruby-Prof output
 	DEFAULT_PROFILEDIR = 'profiles'
 	
+	# Query argument that enables profiling for the current request
+	PROFILING_ARG = '_profile'
+
+
 	### Constants for HTTP headers
 	
 	# The version of the server
@@ -71,7 +75,6 @@ module ThingFish::Constants
 	
 	# Version and name of the server + subversion rev
 	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
-
 
 	# Suck in a mapping of default mime types by file extension from the data
 	# section of this file

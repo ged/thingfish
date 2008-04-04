@@ -68,8 +68,6 @@ class ThingFish::Request
 		"			# Closing quote
 	  }ix
 
-	# Query argument that enables profiling for the current request
-	PROFILE_ARG = '_profile'
 
 	### Create a new ThingFish::Request wrapped around the given +mongrel_request+.
 	### The specified +config+ is used to determine paths to the data directory, spool 
@@ -91,7 +89,7 @@ class ThingFish::Request
 		@metadata          = Hash.new {|h,k| h[k] = {} }
 		
 		# Check for the presence of the profile key.
-		if self.uri.query and self.uri.query.gsub!( /[&;]?(#{PROFILE_ARG}=?[^&;]*)/, '' )
+		if self.uri.query and self.uri.query.gsub!( /[&;]?(#{PROFILING_ARG}=?[^&;]*)/, '' )
 			profile_arg = $1
 			@profile = ( profile_arg =~ /=(?:1|yes|true)$/i ? true : false )
 		end

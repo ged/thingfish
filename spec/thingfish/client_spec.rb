@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 	
 	libdir = basedir + "lib"
 	
@@ -130,6 +130,9 @@ describe ThingFish::Client do
 			@client.password.should == TEST_PASSWORD
 		end
 		
+		it "defaults to disabled profiling" do
+			@client.profile.should_not == true
+		end
 	end
 
 
@@ -149,6 +152,57 @@ describe ThingFish::Client do
 		end
 	end
 
+
+	describe " created with profiling enabled" do
+		before(:each) do
+			@response = mock( "response object", :null_object => true )
+			@request = mock( "request object", :null_object => true )
+			@conn = mock( "HTTP connection", :null_object => true )
+
+			Net::HTTP.stub!( :start ).and_yield( @conn ).and_return( @response )
+
+			@client = ThingFish::Client.new( TEST_SERVER, :profile => true )
+			@client.instance_variable_set( :@server_info, TEST_SERVER_INFO )
+		end
+	
+		it "adds a profiling query argument to the request path" do
+			Net::HTTP::Head.should_receive( :new ).
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "HEAD" )
+
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
+		
+			path = '/'
+			@request.should_receive( :path ).at_least( :once ).and_return( path )
+
+			@client.profile.should == true		
+			@client.has?( TEST_UUID ).should be_false			
+			path.should == '/?_profile=true'
+		end
+		
+		
+		it "adds a profiling query argument to the request path after existing arguments" do
+			Net::HTTP::Head.should_receive( :new ).
+				with( TEST_SERVER_INFO['handlers']['simplemetadata'].first + '/' + TEST_UUID ).
+				and_return( @request )
+			@request.should_receive( :method ).and_return( "HEAD" )
+
+			@conn.should_receive( :request ).
+				with( @request ).
+				and_yield( @response )
+		
+			path = '/?sexydrownwatch=pamelllla'
+			@request.should_receive( :path ).at_least( :once ).and_return( path )
+
+			@client.profile.should == true		
+			@client.has?( TEST_UUID ).should be_false			
+			path.should == '/?sexydrownwatch=pamelllla&_profile=true'
+		end
+	end
+	
 
 	describe " created with valid connection information" do
 		

@@ -253,14 +253,12 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	
 	### Start a profile for the provided +block+ if profiling is enabled, dumping the result
 	### out to a profile directory afterwards.
-	def profile( request, response )
-		report = RubyProf.profile do
-			yield
-		end
+	def profile( request, response, &block )
+		result = RubyProf.profile( &block )
 		
 		self.log.debug {
 			output = ""
-			printer = RubyProf::FlatPrinter.new( report )
+			printer = RubyProf::FlatPrinter.new( result )
 			printer.print( output, 0 )
 			output
 		}
@@ -271,9 +269,9 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			request.uri.path.gsub( %r{/}, '_' ).sub( /^_/, '' ).chomp('_')
 		]
 		File.open( "#{filename}.html", 'w' ) do | profile |
-			printer = RubyProf::GraphHtmlPrinter.new( report )
+			printer = RubyProf::GraphHtmlPrinter.new( result )
 			printer.print( profile )
-#			profile.puts Marshal.dump( report )  TODO!!
+			# profile.print( Marshal.dump([ request, result ]) )  # TODO!!
 		end
 	end
 

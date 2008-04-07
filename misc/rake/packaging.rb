@@ -37,7 +37,7 @@ gemspec = Gem::Specification.new do |gem|
 
   	gem.add_dependency( 'mongrel', '>= 1.0.1' )
   	gem.add_dependency( 'uuidtools', '>= 1.0.0' )
-  	gem.add_dependency( 'pluginfactory	', '>= 1.0.3' )
+  	gem.add_dependency( 'pluginfactory', '>= 1.0.3' )
 end
 Rake::GemPackageTask.new( gemspec ) do |task|
 	task.gem_spec = gemspec

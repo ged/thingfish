@@ -221,7 +221,7 @@ describe ThingFish::Request do
 		upload = mock( "Mock Upload Tempfile" )
 		upload.should_receive( :path ).and_return( TEMPFILE_PATH )
 		duped_upload = mock( "Mock Upload Tempfile duplicate" )
-		duped_upload.should_receive( :path ).and_return( TEMPFILE_PATH )
+		duped_upload.should_receive( :path ).at_least( :once ).and_return( TEMPFILE_PATH )
 		
 		upload.should_receive( :dup ).and_return( duped_upload )
 		
@@ -673,6 +673,7 @@ describe ThingFish::Request do
 			io2_dup.stub!( :path ).and_return( :another_path )
 			resource1.should_receive( :dup ).at_least(:once).and_return( resource1_dup )
 			resource1.stub!( :path ).and_return( :a_third_path )
+			resource1_dup.stub!( :path ).and_return( :a_third_path )
 
 			yielded_pairs = {}
 			@request.each_body( true ) do |res, parsed_metadata|
@@ -736,8 +737,10 @@ describe ThingFish::Request do
 			
 			io1.should_receive( :dup ).and_return( io1_dup )
 			io1.stub!( :path ).and_return( :a_path )
+			io1_dup.stub!( :path ).and_return( :another_path )
 			io2.should_receive( :dup ).and_return( io2_dup )
 			io2.stub!( :path ).and_return( :another_path )
+			io2_dup.stub!( :path ).and_return( :another_path )
 		
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|
@@ -816,8 +819,10 @@ describe ThingFish::Request do
 
 			io1.should_receive( :dup ).and_return( io1_dup )
 			io1.stub!( :path ).and_return( :a_path )
+			io1_dup.stub!( :path ).and_return( :a_path )
 			io2.should_receive( :dup ).and_return( io2_dup )
 			io2.stub!( :path ).and_return( :another_path )
+			io2_dup.stub!( :path ).and_return( :another_path )
 
 			yielded_pairs = {}
 			@request.each_body do |body, parsed_metadata|

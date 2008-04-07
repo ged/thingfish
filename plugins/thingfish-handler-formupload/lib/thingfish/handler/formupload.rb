@@ -121,7 +121,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		response.data[:tagline] = 'Yum!'
 
 		files = []
-		request.each_body do |body, metadata|
+		request.each_body( true ) do |body, metadata|
 			uuid = self.daemon.store_resource( body, metadata )
 			metadata[:uuid] = uuid
 			files << [ uuid, metadata ]

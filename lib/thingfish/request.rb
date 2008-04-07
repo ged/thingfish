@@ -298,10 +298,9 @@ class ThingFish::Request
 		bodykey = self.make_body_key( body )
 		
 		unless original_body = @body_key_mapping[ bodykey ]
-			errmsg = "Cannot append a resource related to %p(%p): %p isn't one of %p" % [
+			errmsg = "Cannot append a resource related to %p: %p isn't one of %p" % [
 				body,
 				bodykey,
-				related_body,
 				@body_key_mapping.keys,
 		 	  ]
 			self.log.error( errmsg )
@@ -320,13 +319,13 @@ class ThingFish::Request
 	### of the entity bodies yielded by #each_body
 	def append_metadata_for( resource, metadata )
 		# Convert the body to the key of the related resources hash
-		bodykey = self.make_body_key( body )
+		bodykey = self.make_body_key( resource )
 		
 		unless original_body = @body_key_mapping[ bodykey ]
 			errmsg = "Cannot append metadata related to %p(%p): %p isn't one of %p" % [
 				body,
 				bodykey,
-				related_body,
+				resource,
 				@body_key_mapping.keys,
 		 	  ]
 			self.log.error( errmsg )
@@ -343,7 +342,7 @@ class ThingFish::Request
 		if body.respond_to?( :string )
 			return Digest::MD5.hexdigest( body.string )
 		else
-			return body.path
+			return "%s:%d" % [ body.path, body.object_id * 2 ]
 		end
 	end
 	
@@ -543,14 +542,15 @@ class ThingFish::Request
 
 			# We have to explicitly case this because StringIO doesn't behave like a
 			# real IO when #dup'ed; closing the original also closes the copy.
-			case body
-			when StringIO
-				block.call( StringIO.new(body.string), merged )
-			else
-				block.call( body.dup, merged )
-			end
-			
-			# Merge any metadata for the 
+			clone = case body
+				when StringIO
+					StringIO.new( body.string )
+				else
+					body.dup
+				end
+
+			@body_key_mapping[ self.make_body_key(clone) ] = body
+			block.call( clone, merged )
 			
 			# Recurse if the appended resources should be included
 			if include_appended

@@ -57,6 +57,19 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
+	### Make sure the version of TMail that's loaded is one that will work
+	def initialize( *args ) # :notnew:
+		vvec = [ TMail::VERSION::MAJOR, TMail::VERSION::MINOR, TMail::VERSION::TINY ]
+		tmail_verstring = "%03d.%03d.%03d" % vvec
+		if tmail_verstring < '001.002.001' 
+			self.log.warn "This plugin is only tested with TMail 1.2.1 or greater. " +
+				"You apparently have %d.%d.%d." % vvec
+		end
+
+		super
+	end
+
+
 	######
 	public
 	######

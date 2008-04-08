@@ -38,9 +38,12 @@ include ThingFish::SpecHelpers
 #####################################################################
 describe ThingFish::DefaultHandler do
 
-	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+	before( :all ) do
+		setup_logging( :fatal )
+	end
+
+	after( :all ) do
+		reset_logging()
 	end
 	
 	before(:each) do

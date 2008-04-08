@@ -1,0 +1,40 @@
+Return-Path: <example@squidge.com>
+Mailing-List: contact klonkweasel-help@lists.squidge.com; run by ezmlm
+Delivered-To: mailing list klonkweasel@lists.squidge.com
+Received: (qmail 3573 invoked from network); 11 Sep 2007 01:14:31 -0000
+Received: from unknown (HELO zimbra01.squidge.com) (10.4.2.55)
+  by lists.squidge.com with SMTP; 11 Sep 2007 01:14:31 -0000
+Received: from localhost (localhost.localdomain [127.0.0.1])
+	by zimbra01.squidge.com (Postfix) with ESMTP id 2B947C92A62
+	for <klonkweasel@lists.squidge.com>; Mon, 10 Sep 2007 18:14:31 -0700 (PDT)
+X-Virus-Scanned: amavisd-new at 
+X-Spam-Score: -4.384
+X-Spam-Level: 
+X-Spam-Status: No, score=-4.384 tagged_above=-10 required=4
+	tests=[ALL_TRUSTED=-1.8, AWL=0.015, BAYES_00=-2.599]
+Received: from zimbra01.squidge.com ([127.0.0.1])
+	by localhost (zimbra01.squidge.com [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id I0zZQHBFhqvx for <klonkweasel@lists.squidge.com>;
+	Mon, 10 Sep 2007 18:14:31 -0700 (PDT)
+Received: by zimbra01.squidge.com (Postfix, from userid 101)
+	id 037F0C9315E; Mon, 10 Sep 2007 18:14:31 -0700 (PDT)
+Received: from zimbra01.squidge.com (localhost.localdomain [127.0.0.1])
+	by zimbra01.squidge.com (Postfix) with ESMTP id EB0B7C92A62
+	for <klonkweasel@squidge.com>; Mon, 10 Sep 2007 18:14:30 -0700 (PDT)
+Date: Mon, 10 Sep 2007 18:14:30 -0700 (PDT)
+From: Example User <example@squidge.com>
+To: klonkweasel <klonkweasel@squidge.com>
+Message-ID: <6410929.583831189473270716.JavaMail.root@zimbra01.squidge.com>
+Subject: Dishwasher Status
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.1.74]
+
+Are there any cups left in the dishwasher?
+
+No, seriously people. Don't make me come hurt you.
+
+- E. User
+
+

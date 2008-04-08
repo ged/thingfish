@@ -44,6 +44,7 @@ begin
 	require 'rdf/redland/schemas/rdfs'
 	require 'rdf/redland/dc'
 	require 'uuidtools'
+	require 'set'
 
 	require 'thingfish'
 	require 'thingfish/exceptions'
@@ -245,11 +246,12 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = Schemas::THINGFISH_NS[ propname ]
+		prop_url = map_property( propname )
 
 		statements = @model.find( uuid_urn, prop_url, nil )
-		self.log.debug "Got statements: %p" % [ statements ]
+		self.log.debug "Got statements: %p" % [ statements.collect {|s| s.to_s } ]
 		
+		self.log.debug "Statements array is %sempty." % [ statements.empty? ? "" : "not "]
 		return statements.empty? ? false : true
 	end
 
@@ -258,7 +260,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = Schemas::THINGFISH_NS[ propname ]
+		prop_url = map_property( propname )
 
 		res = @model.create_resource( uuid_urn )
 		
@@ -275,7 +277,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		resource.delete_properties
 
 		hash.each do |propname, value|
-			prop_url = Schemas::THINGFISH_NS[ propname ]
+			prop_url = map_property( propname )
 			resource.update_property( prop_url, value )
 		end
 	end
@@ -288,7 +290,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		resource = @model.create_resource( uuid_urn )
 
 		hash.each do |propname, value|
-			prop_url = Schemas::THINGFISH_NS[ propname ]
+			prop_url = map_property( propname )
 			resource.update_property( prop_url, value )
 		end
 	end
@@ -298,7 +300,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = Schemas::THINGFISH_NS[ propname ]
+		prop_url = map_property( propname )
 
 		res = @model.create_resource( uuid_urn )
 
@@ -316,7 +318,8 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		
 		proplist = {}
 		res.get_properties do |prop, value|
-			key = prop.to_s
+			key = unmap_uri( prop.uri )
+			self.log.debug "Property is: %p" % [ key ]
 			
 			if proplist[key]
 				if proplist[key].is_a?( Array )
@@ -337,25 +340,33 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### MetaStore API: Removes +propname+ from given +uuid+
 	def delete_property( uuid, propname )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = Schemas::THINGFISH_NS[ propname ]
+		prop_url = map_property( propname )
 
-		@model.delete( uuid_urn, prop_url, nil )
+		res = @model.create_resource( uuid_urn )
+		res.delete_property( prop_url )
 	end
 	
 	
-	### MetaStore API: Removes all properties from given +uuid+
-	def delete_properties( uuid )
+	### MetaStore API: Removes the specified +properties+ associated with the given +uuid+.
+	def delete_properties( uuid, *properties )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		@model.delete( uuid_urn, nil, nil )
+		res = @model.create_resource( uuid_urn )
+
+		properties.collect {|prop| map_property(prop) }.each do |prop_url|
+			res.delete_property( prop_url )
+		end
+	end	
+
+
+	### MetaStore API: Removes all predicates for a given +uuid+.
+	### There is no difference between removing all predicates for a given
+	### subject and removing the subject itself in an RDF model.
+	def delete_resource( uuid )
+		uuid_urn = Schemas::UUID[ uuid.to_s ]
+		res = @model.create_resource( uuid_urn )
+		res.delete_properties
 	end
 
-
-	### MetaStore API: Removes all properties associated with the given +uuid+,
-	### as well as the entry itself. This is an alias for #delete_properties, as
-	### there is no difference between removing all predicates for a given
-	### subject and removing the subject itself in an RDF model.
-	alias_method :delete_resource, :delete_properties
-	
 
 	### MetaStore API: Return all property keys in store
 	def get_all_property_keys
@@ -363,33 +374,50 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		
 		# I don't know how to do this any other way than a full scan. Surely there
 		# must be one?
-		@model.predicates do |subj, pred, obj|
+		@model.triples do |subj, pred, obj|
 			predicates.add( pred )
 		end
 		
-		return predicates.to_a
+		return predicates.to_a.collect {|uri| unmap_uri(uri) }
 	end
 	
 
 	### Return a uniquified Array of all values in the metastore for the
-	### specified +key+.
-	def get_all_property_values( key )
-		predicate_url = Schemas::THINGFISH_NS[ key ]
+	### specified +prop+.
+	def get_all_property_values( prop )
+		prop_url = map_property( prop )
 		values = Set.new
 		
-		@model.find( nil, predicate_url, nil ) do |_, _, object|
-			values.add( object )
+		@model.find( nil, prop_url, nil ) do |_, _, object|
+			values.add( object.value )
 		end
 		
 		return values.to_a
 	end
 
 
-	# [<tt>find_by_exact_properties()</tt>]
-	#   Return an array of uuids whose metadata matched the criteria
-	#   specified by +hash+. The criteria should be key-value pairs which describe
-	#   exact metadata pairs.  This is an exact match search.
+	### Return an array of uuids whose metadata matched the criteria specified
+	### by +hash+. The criteria should be key-value pairs which describe
+	### exact metadata pairs. This is an exact match search.
+	def find_by_exact_properties( hash )
+		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
+			key, value = *pair
+			property = map_property( key.to_s )
 
+			stmts = @model.find( nil, property, value )
+
+			if ary
+				ary &= stmts.collect {|stmt| stmt.subject }
+			else
+				ary = stmts.collect {|stmt| stmt.subject }
+			end
+			
+			ary
+		end
+		
+		return uuids ? uuids.collect {|uuid| } : []		
+	end
+	
 
 	# [<tt>find_by_matching_properties()</tt>]
 	#   Return an array of uuids whose metadata matched the criteria
@@ -413,6 +441,23 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	#######
 	private
 	#######
+
+	### Map the given +propname+ into a registered namespace, falling back to 
+	### the ThingFish namespace if it doesn't exist in any registered schema.
+	def map_property( propname )
+		return Schemas::THINGFISH_NS[ propname.to_s ]
+	end
+	
+
+	### Map the URI back into a simple keyword Symbol.
+	def unmap_uri( uri )
+		uristring = uri.to_s.sub( /^\[([^\]]+)\]$/ ) { $1 }
+		uri = URI.parse( uristring )
+		property = uri.fragment || uri.path[ %r{/(\w+)$}, 1 ] or
+			raise "Couldn't map %p into a property" % [ uristring ]
+		return property.to_sym
+	end
+	
 
 	### Make a Redland-style option string from an option hash.
 	def make_optstring( options )

@@ -45,11 +45,11 @@ describe ThingFish::RdfMetaStore do
 	DEFAULTS = ThingFish::RdfMetaStore::DEFAULT_OPTIONS
 
 	before(:all) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 	end
 
 	before( :each ) do
-		pending "still experimental"
+        pending "Still experimental"
 		@triplestore = mock( "triplestore", :null_object => true )
 	end
 
@@ -83,7 +83,7 @@ describe ThingFish::RdfMetaStore do
 	end
 
 
-	describe " an instance" do
+	describe " with default configuration values " do
 
 		Schemas = ThingFish::RdfMetaStore::Schemas
 
@@ -100,6 +100,7 @@ describe ThingFish::RdfMetaStore do
 		after( :each ) do
 			# @store.clear
 		end
+
 
 		### Shared behavior specification
 		it_should_behave_like "A MetaStore"

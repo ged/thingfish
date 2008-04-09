@@ -41,12 +41,12 @@ include ThingFish::Constants,
 #####################################################################
 
 describe ThingFish::<%= @name.capitalize %>Handler do
-	before(:all) do
-		@basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+	include ThingFish::SpecHelpers
+
+	before( :all ) do
+		setup_logging( :fatal )
 	end
-	
+		
 	before(:each) do
 		resdir = @basedir + 'resources'
 	    @handler  = ThingFish::Handler.create( '<%= @name %>', 'resource_dir' => resdir )
@@ -65,7 +65,7 @@ describe ThingFish::<%= @name.capitalize %>Handler do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 	

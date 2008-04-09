@@ -306,8 +306,8 @@ module Manual
 					outputdir.to_s
 			 	]) do |task|
 			
-				source = Pathname.new( task.source ).relative_path_from( Pathname.getwd )
-				target = Pathname.new( task.name ).relative_path_from( Pathname.getwd )
+				source = Pathname.new( task.source )
+				target = Pathname.new( task.name )
 				log "  #{ source } -> #{ target }"
 					
 				page = Manual::Page.new( source, layoutsdir )

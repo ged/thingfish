@@ -375,10 +375,13 @@ class ThingFish::Request
 	
 	### Check the body IO objects to ensure they're still open.
 	def check_body_ios
-		self.entity_bodies.each do |body, _|
-			if body.closed?
-				self.log.warn "Entity body closed: %p" % [ body ]
-				body.open 
+		[ self.entity_bodies, self.related_resources ].each do |hash|
+			hash.each do |body, _|
+				if body.closed?
+					self.log.warn "Entity body closed: %p" % [ body ]
+					body.open 
+				end
+				body.rewind
 			end
 		end
 	end
@@ -559,7 +562,7 @@ class ThingFish::Request
 			end
 		end
 	end
-	
+
 
 	### Parse the files and form parameters from a multipart (upload) form request 
 	### body. It throws ThingFish::RequestErrors on malformed input, or if you

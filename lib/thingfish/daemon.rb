@@ -383,7 +383,10 @@ class ThingFish::Daemon < Mongrel::HttpServer
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
 			ensure
-				response.body.rewind if response.body.respond_to?( :rewind )
+				if response.body.respond_to?( :rewind )
+					response.body.open if response.body.closed?
+					response.body.rewind
+				end
 			end
 		end
 	end

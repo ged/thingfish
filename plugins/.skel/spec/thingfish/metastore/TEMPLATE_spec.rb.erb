@@ -18,6 +18,7 @@ begin
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'spec/lib/metastore_behavior'
+	
 	require 'thingfish/metastore/<%= @name %>'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -35,12 +36,21 @@ end
 
 
 describe ThingFish::<%= @name.capitalize%>MetaStore do
-	include ThingFish::TestConstants
-	include ThingFish::SpecHelpers
+	include ThingFish::TestConstants,
+	        ThingFish::SpecHelpers
+
+	before( :all ) do
+		setup_logging( :fatal )
+	end
 
 	before(:each) do
 	    @store = ThingFish::MetaStore.create( '<%= @name %>' )
 	end
+
+	after( :all ) do
+		reset_logging()
+	end
+	
 	
 	### Shared behaviors
 	it_should_behave_like "A MetaStore"

@@ -31,7 +31,7 @@ Path to the installed Tidy shared library.  If not specified, uses the OSX defau
 == Authors
 
  * Michael Granger <mgranger@laika.com>
- * Mahlon Smith <mahlon@laika.com>
+ * Mahlon E. Smith <mahlon@laika.com>
 
 == License
 

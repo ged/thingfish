@@ -60,7 +60,8 @@ module ThingFish
 	
 	class Metastore
 		def initialize
-			@store = Redland::HashStore.new( 'memory', 'thingfish' )
+#			@store = Redland::HashStore.new( 'memory', 'thingfish' )
+			@store = Redland::TripleStore.new( 'sqlite', './store.db', 'thingfish' )
 			@model = Redland::Model.new( @store )
 		end
 		
@@ -81,6 +82,7 @@ end
 
 USERS = %w[mahlon michael bob luna]
 store = ThingFish::Metastore.new
+=begin
 
 30.times do |i|
 	uuid = UUID.timestamp_create
@@ -99,8 +101,12 @@ USERS.each do |user|
 	puts "User '%s':" % [user]
 	puts "  " + store.find( ownerprop, user ).collect {|ps| ps.resource.to_s }.join("\n  ")
 end
+=end
 
-#pp store.model.dump_model
+store.model.delete( 'http://thingfish/ac4f0c30-057a-11dd-ae14-0016cba18fb9',
+                    'http://opensource.laika.com/rdf/2007/02/thingfish-schema#permissions', nil )
+
+pp store.model.dump_model
 
 
 

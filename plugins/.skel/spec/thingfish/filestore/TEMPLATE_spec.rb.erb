@@ -17,6 +17,7 @@ begin
 
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'spec/lib/filestore_behavior'
 
 	require 'thingfish'
@@ -39,10 +40,10 @@ end
 include ThingFish::Constants
 
 describe ThingFish::<%= @name.capitalize %>FileStore do
+	include ThingFish::SpecHelpers
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 		
 	before( :each ) do
@@ -53,7 +54,7 @@ describe ThingFish::<%= @name.capitalize %>FileStore do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 	
 	### Behaviors

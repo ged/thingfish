@@ -45,10 +45,12 @@ begin
 	require 'rdf/redland/dc'
 	require 'uuidtools'
 	require 'set'
+	require 'uri'
 
 	require 'thingfish'
 	require 'thingfish/exceptions'
 	require 'thingfish/metastore'
+	require 'thingfish/constants'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -61,6 +63,8 @@ end
 ### ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in
 ### a RDF knowledgebase.
 class ThingFish::RdfMetaStore < ThingFish::MetaStore
+	include ThingFish::Constants,
+		ThingFish::Constants::Patterns
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -75,6 +79,27 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		:name => 'thingfish',
 	}
 
+	
+	# A few (hopefully) gentle additions for Redland::Uri
+	module Redland::UriUtils
+		include ThingFish::Constants::Patterns
+		
+		### Return the Redland::Uri object as a URI object.
+		def to_ruby_uri
+			URI.parse( self.to_s[ /^\[([^\[]+)\]$/, 1] )
+		end
+		
+		
+		### If the receiver is a UUID URN, return it after stripping the schema part
+		### of the URI. Otherwise, returns nil.
+		def to_uuid
+			self.to_s[ UUID_URN, 1 ]
+		end
+		
+		append_features Redland::Uri
+	end
+	
+
 	# TODO: Change to parse vocabularies, thereby allowing user to add their
 	# own via the config. Order of lookup would be:
 	#   * User vocabularies
@@ -82,7 +107,6 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	#   * Fallback to ThingFish namespace
 
 	def map_to_predicate( key )
-		
 	end
 	
 	def unmap_from_predicate( predicate )
@@ -189,7 +213,10 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new RDF Metastore. The options supported depend on what features you've
+	### Create a new RDF Metastore that will use the given +datadir+ and +spooldir+ for
+	### its store and for any temporary files, respectively.
+	### 
+	### The +config+ options supported depend on what features you've
 	### compiled into your Redland library, and which store you choose. 
 	### 
 	### Common options:
@@ -400,22 +427,34 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### by +hash+. The criteria should be key-value pairs which describe
 	### exact metadata pairs. This is an exact match search.
 	def find_by_exact_properties( hash )
-		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
+		self.log.debug "Searching for %p" % [ hash ]
+		
+		uris = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
 			key, value = *pair
 			property = map_property( key.to_s )
+			self.log.debug "  finding %s nodes in the model whose object is %p" %
+				[ property, value ]
 
 			stmts = @model.find( nil, property, value )
+			self.log.debug "  found %d matching statements" % [ stmts.length ]
 
 			if ary
-				ary &= stmts.collect {|stmt| stmt.subject }
+				nodes = stmts.collect {|stmt| stmt.subject.uri.to_s }
+				self.log.debug "  intersecting %p with %p" % [ nodes, ary ]
+				ary &= nodes
 			else
-				ary = stmts.collect {|stmt| stmt.subject }
+				nodes = stmts.collect {|stmt| stmt.subject.uri.to_s }
+				self.log.debug "  initializing resource array with %p" % [ nodes ]
+				ary = nodes
 			end
 			
 			ary
 		end
 		
-		return uuids ? uuids.collect {|uuid| } : []		
+		self.log.debug "Search yielded %d resulting resource URIs" % [ uris.length ]
+
+		return [] unless uris
+		return uris.collect {|uri| uri[ UUID_URN, 1 ] }
 	end
 	
 

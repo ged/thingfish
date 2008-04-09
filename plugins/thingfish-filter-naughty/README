@@ -1,34 +1,22 @@
-== Thingfish::SequelMetaStore
+== Thingfish::NaughtyFilter
 
-This is a metastore plugin for ThingFish which saves metadata to a database,
-via the Sequel "database toolkit".
+My purpose is to attempt destruction and chaos.  I defile your
+bodies. (Request and response bodies, that is.)
 
-See http://sequel.rubyforge.org/files/sequel/README.html for more information on Sequel.
+Ok.  This is for end-to-end request and response filter chaining, to
+ensure that a filter in the middle of the chain can't adversely affect
+the expected operation of the server.
 
-== Dependencies
-
- $ sudo gem install sequel
-
-You will also need the bindings specific to the database you wish to use.
-
- $ sudo gem install postgres
- $ sudo gem install sqlite3-ruby
- $ sudo gem install [whatever]
+As we identify more 'bad behavior' with usage, we'll add it to this filter.
 
 == Configuration
 
-    plugins:
-        metastore:
-            name: sequel
-            sequel_connect: postgres://user:password@host/database
+There is really no reason to use this in everyday ThingFish.  Please don't.
 
 === Config Keys ===
 
-[name]::
-  Set to 'sequel' to use this plugin.
-[sequel_connect]::
-  Optional.  Defaults to an in-memory SQLite database.  This needs to
-  be a valid Sequel connection URI.
+[enable]:: 
+  yes, I understand this is just for testing
 
 == Authors
 
@@ -37,7 +25,7 @@ You will also need the bindings specific to the database you wish to use.
 
 == License
 
-Copyright (c) 2007, LAIKA, Inc
+Copyright (c) 2008 LAIKA, Inc
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

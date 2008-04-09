@@ -172,9 +172,13 @@ module ThingFish::Constants
 		HEX4  = /[[:xdigit:]]{4}/
 		HEX2  = /[[:xdigit:]]{2}/
 
+		# Pattern for matching a plain UUID string
 		UUID_REGEXP = /#{HEX8}-#{HEX4}-#{HEX4}-#{HEX4}-#{HEX12}/
+		
+		# Pattern for matching UUID URNs, capturing the UUID string
+		UUID_URN = /urn:uuid:(#{UUID_REGEXP})/i
 
-		# Pattern that matches requests to /ÇuuidÈ
+		# Pattern that matches requests to /«a uuid»; captures the UUID string
 		UUID_URL = %r{^/(#{UUID_REGEXP})$}
 
 		# Network IO patterns

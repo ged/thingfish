@@ -1,4 +1,20 @@
-#!/usr/bin/env ruby
+# !/usr/bin/env ruby
+# 
+# This is a little wrapper that starts thingfishd with a user-specific
+# config file. It first tries to look up your usename using the 'etc'
+# library, and if that succeeds it looks for a config file in
+# etc/thingfish.conf-<your username>. If the username lookup fails
+# for some reason, it falls back to etc/thingfish.conf-testing. If
+# the config file doesn't exist, it will advise you about what file
+# it's looking for and exit.
+# 
+# This script is purely for development -- it modifies the $LOAD_PATH
+# to allow one to start the server without having the plugin libraries
+# installed. The intended production installation will use RubyGems
+# to install the necessary libraries and command-line scripts in the
+# correct places, allowing one to use the `thingfishd` script to start
+# the server with no further necessary incantations.
+# 
 
 BEGIN {
 	$LOAD_PATH.unshift( 'lib' )
@@ -14,9 +30,6 @@ require 'thingfish/daemon'
 require 'thingfish/config'
 
 include UtilityFunctions
-
-# This is a little wrapper that starts thingfishd with the config in
-# etc/thingfish.conf-testing, like run did originally.
 
 plugin_libs = Pathname.glob( 'plugins/*/lib' )
 # puts plugin_libs

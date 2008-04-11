@@ -37,7 +37,7 @@ def add_namespace( url )
 
 end
 
-MusicBrainz = add_namespace( 'http://www.ldodds.com/projects/musicbrainz/schema/index.rdf' )
+MusicBrainz = add_namespace( 'http://www.ldodds.com/projects/musicbrainz/schema/index.rdf#' )
 
 start_irb_session( binding() )
 

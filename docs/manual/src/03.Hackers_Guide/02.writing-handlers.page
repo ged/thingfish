@@ -1,12 +1,19 @@
-h1. Hacker's Guide
+---
+title: "Hacker's Guide: Writing a ThingFish Handler"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "Writing a ThingFish Handler" %>
+h2. <%= page.config['title'] %>
 
 h3. What does a handler look like?
 
 Glad you asked.  Here's a teeny one that we'll build on.
 
-#:example#{language: ruby, caption: A minimal handler!}#
+<?example { language: ruby, caption: A minimal handler! } ?>
 require 'thingfish/constants'
 require 'thingfish/handler'
 
@@ -20,7 +27,7 @@ class TimeHandler < ThingFish::Handler
 		response.status = HTTP::OK
 	end
 end
-#:example#
+<?end example?>
 
 Let's go over the interesting parts of this.
 
@@ -49,11 +56,11 @@ URI is requested.  This is done in the _thingfish.conf_ file, under the _handler
 section.  If you wanted to install it under a single URI called _/what-time-is-it_,
 here's how you'd do it.
 
-#:example#{language: yaml, caption: Our handler's config section}#
+<?example { language: yaml, caption: Our handler's config section } ?>
 plugins:
     handlers:
         - time: /what-time-is-it
-#:example#
+<?end example?>
 
 That's it!  If your daemon is logging messages at the _debug_ level or higher, you
 should see a message similar to this at startup, showing that the handler was found
@@ -91,7 +98,7 @@ With the above implementation, you'd get the same response for every possible UR
 thing?  Let's add some more functionality to our little handler by checking the request's
 @path_info@, and providing some different variations on the time:
 
-#:example#{language: ruby, caption: A slightly-less-minimal handler!}#
+<?example { language: ruby, caption: A slightly-less-minimal handler! } ?>
 require 'thingfish/constants'
 require 'thingfish/handler'
 
@@ -121,7 +128,7 @@ class TimeHandler < ThingFish::Handler
 		response.status = HTTP::OK
 	end
 end
-#:example#
+<?end example?>
 
 |_. line number |_. what's it doing? |
 | 11 | Like with Apache or other webservers, the request's @path_info@ is the parts of
@@ -153,7 +160,7 @@ We'll do that by mixing in @ThingFish::ResourceLoader@, which adds a few methods
 handler class to make loading up static files easier. We'll use simple string 
 interpolation for our templating for now.
 
-#:example#{language: ruby, caption: A fancy handler! (Well kind of)}#
+<?example { language: ruby, caption: A fancy handler! (Well kind of) } ?>
 require 'thingfish/constants'
 require 'thingfish/handler'
 require 'thingfish/mixins'
@@ -192,11 +199,11 @@ class TimeHandler < ThingFish::Handler
 		response.status = HTTP::OK
 	end
 end
-#:example#
+<?end example?>
 
 And the template we'll use looks like:
 
-#:example#{language: html, caption: timehandler.html -- A template for our fancier handler!}#
+<?example { language: html, caption: timehandler.html -- A template for our fancier handler! } ?>
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -220,7 +227,7 @@ And the template we'll use looks like:
 
 </body>
 </html>
-#:example#
+<?end example?>
 
 |_\2. Handler Code |
 | 8 | Including the @ThingFish::ResourceLoader@ mixin sets up the resource directory for
@@ -255,7 +262,7 @@ the added advantage of being distributed with Ruby itself.
 We'll change the call from @#get_resource@ to @#get_erb_resource@ instead, which loads the 
 file and returns a new ERb object created from it instead of a String.
 
-#:example#{language: ruby, caption: A fancy handler!}#
+<?example { language: ruby, caption: A fancy handler! } ?>
 require 'thingfish/constants'
 require 'thingfish/handler'
 require 'thingfish/mixins'
@@ -294,11 +301,11 @@ class TimeHandler < ThingFish::Handler
 		response.status = HTTP::OK
 	end
 end
-#:example#
+<?end example?>
 
 And then we'll change the @%s@ placeholders into ERb directives in the template:
 
-#:example#{language: rhtml, caption: timehandler.rhtml -- an ERb template!}#
+<?example { language: rhtml, caption: timehandler.rhtml -- an ERb template! } ?>
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -322,7 +329,7 @@ And then we'll change the @%s@ placeholders into ERb directives in the template:
 
 </body>
 </html>
-#:example#
+<?end example?>
 
 |_\2. Handler Code |
 | 7 | Still including the @ThingFish::ResourceLoader@ mixin. |
@@ -340,7 +347,7 @@ h3. Linking to Other Handlers
 Sometimes you'll want one handler to provide a link to another handler, but since the URI
 handlers live at can change, here's how to discover where another handler is installed:
 
-#:example#{language: rhtml, caption: Finding another handler's URI}#
+<?example { language: rhtml, caption: Finding another handler's URI } ?>
 <%%
 	search_uri = @config.find_handler_uri('search')
 	if search_uri
@@ -349,7 +356,7 @@ handlers live at can change, here's how to discover where another handler is ins
 		not in this list.</p>
 <%% end %>
 
-#:example#
+<?end example?>
 </pre>
 
 
@@ -360,14 +367,14 @@ unordered arguments (as opposed to noun-type arguments that are sent in the URL)
 want to retrieve them from the request's query parameters. You can do this via the 
 @ThingFish::Request@ object's @#query_args@ method:
 
-#:example#{language: ruby, caption: Fetching query arguments from the request.}#
+<?example { language: ruby, caption: Fetching query arguments from the request. } ?>
 request = ThingFish::Request.new
 request.query_args                                    # =>
-#:example#
+<?end example?>
 
 The method returns a Hash -- multiple values are contained in Arrays and single values are Strings.
 
-#:example#{language: ruby, caption: A handler example that checks query arguments.}#
+<?example { language: ruby, caption: A handler example that checks query arguments. } ?>
 require 'thingfish/constants'
 require 'thingfish/handler'
 require 'thingfish/mixins'
@@ -417,20 +424,20 @@ class TimeHandler < ThingFish::Handler
 		response.status = HTTP::OK
 	end
 end
-#:example#
+<?end example?>
 
 
 h3. Index page content
 
-#:example#{language: ruby, caption: A simple index page content provider callback}#
+<?example { language: ruby, caption: A simple index page content provider callback } ?>
 def make_index_content( uri )
 	return "Oh snap!  What <a href=\"#{uri}\">time</a> is it?<br />"
 end
-#:example#
+<?end example?>
 
 h3. Content Negotiation
 
-#:example#{language: ruby, caption: Returning a complex datatype for content negotiation.}#
+<?example { language: ruby, caption: Returning a complex datatype for content negotiation. } ?>
 require 'thingfish'
 require 'thingfish/handler'
 
@@ -442,7 +449,7 @@ class MyHandler
 		res.body = Time.now
 	end
 end
-#:example#
+<?end example?>
 
 
 h3. Access to Other Parts of the System
@@ -453,30 +460,30 @@ loaded FileStore, MetaStore, and Config objects and sets them in instance variab
 
 h3. Accessing the Config
 
-#:example#{language: ruby, caption: Accessing the config object.}#
+<?example { language: ruby, caption: Accessing the config object. } ?>
 def handle_get_request( req, res )
 	loaded_filters = @config.plugins.filters
 end
-#:example#
+<?end example?>
 
 
 
 h3. Accessing the Metastore
 
-#:example#{language: ruby, caption: Accessing the metastore.}#
+<?example { language: ruby, caption: Accessing the metastore. } ?>
 def handle_get_request( req, res )
 	uuids = @metastore.find_by_matching_properties( :format => 'image/*' )
 end
-#:example#
+<?end example?>
 
 
 h3. Accessing the Filestore
 
-#:example#{language: ruby, caption: Accessing the filestore.}#
+<?example { language: ruby, caption: Accessing the filestore. } ?>
 def handle_get_request( req, res )
 	fh = @filestore.fetch_io( uuid )
 end
-#:example#
+<?end example?>
 
 
 fn1(footnote). We'd prefer a templating system that avoided coupling together the

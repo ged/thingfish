@@ -1,6 +1,13 @@
-h1. Hacker's Guide
+---
+title: "Hacker's Guide: Server Architecture"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "Server Architecture" %>
+h2. <%= page.config['title'] %>
 
 The server has five major components:
 

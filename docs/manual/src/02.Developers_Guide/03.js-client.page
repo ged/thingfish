@@ -1,6 +1,13 @@
-h1. Developer's Guide
+---
+title: "Developer's Guide: The Javascript Client Library"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "The Javascript Client Library" %>
+h2. <%= page.config['title'] %>
 
 «Coming Soon!»
 

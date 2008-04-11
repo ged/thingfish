@@ -94,7 +94,14 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 
 	### Filter reponses
 	def handle_response( response, request )
-		# No-op
+		# Only filter if the client wants what we can convert to, and the response body
+		# is something we know how to convert
+		return unless request.accept?( 'text/plain' ) &&
+			self.accept?( response.content_type )
+		
+		self.log.debug "Converting a %s response to text/plain" %
+			[ response.content_type ]				
+		response.content_type = 'text/plain'
 	end
 
 

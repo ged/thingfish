@@ -1,5 +1,12 @@
-h1. Developer's Guide
+---
+title: "Developer's Guide: Writing Your Own Client Library"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "Writing Your Own Client Library" %>
+h2. <%= page.config['title'] %>
 
 «Coming Soon!»

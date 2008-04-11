@@ -1,6 +1,13 @@
-h1. Hacker's Guide
+---
+title: "Hacker's Guide: Writing a ThingFish Filter"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "Writing a ThingFish Filter" %>
+h2. <%= page.config['title'] %>
 
 « Coming Soon! »
 

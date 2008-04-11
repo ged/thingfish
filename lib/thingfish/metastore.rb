@@ -297,6 +297,14 @@ class ThingFish::MetaStore
 		
 		return props
 	end
+
+
+	### Transform the specified +glob+ pattern to a Regexp suitable for matching
+	### against values in the metastore. Currently only supports '*' globbing.
+	def glob_to_regexp( glob )
+		pat = glob.to_s.gsub( '*', '.*' )
+		return Regexp.new( '^' + pat + '$', Regexp::IGNORECASE )
+	end
 	
 
 end # class ThingFish::MetaStore

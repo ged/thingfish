@@ -17,6 +17,7 @@ begin
 
 	require 'spec/runner'
 	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'spec/lib/filter_behavior'
 
 	require 'thingfish'

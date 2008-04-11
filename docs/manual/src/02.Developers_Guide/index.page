@@ -1,6 +1,13 @@
-<% @page_title = "Developer's Guide" %>
+---
+title: Developer's Guide
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title %>
+h1. <%= page.config['title'] %>
 
 This is a collection of tutorials on how to access a ThingFish server from the command 
 line and from your own code, as well as how to write a client library for languages which

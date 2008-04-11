@@ -280,12 +280,12 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### key-value pairs in +hash+.
 	def find_by_matching_properties( hash )
 		uuids = hash.inject(nil) do |ary, pair|
-			key, pattern = *pair
+			key, glob = *pair
 			key = key.to_sym
 
 			matching_uuids = []
 			key = key.to_sym
-			re = Regexp.new( '^' + pattern.to_s.gsub('*', '.*') + '$', Regexp::IGNORECASE )
+			re = self.glob_to_regexp( glob )
 						
 			@lock.lock do
 				@metadata.transaction(true) do

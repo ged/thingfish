@@ -49,7 +49,6 @@ describe ThingFish::RdfMetaStore do
 	end
 
 	before( :each ) do
-        pending "Still experimental"
 		@triplestore = mock( "triplestore", :null_object => true )
 	end
 
@@ -105,7 +104,7 @@ describe ThingFish::RdfMetaStore do
 		### Shared behavior specification
 		it_should_behave_like "A MetaStore"
 
-	
+
 		### Schema stuff
 	
 		it "loads RDF vocabularies specified in the config"

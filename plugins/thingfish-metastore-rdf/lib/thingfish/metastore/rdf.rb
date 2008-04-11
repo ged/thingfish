@@ -79,8 +79,18 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		:name => 'thingfish',
 	}
 
+	# The SPARQL query template to use for searching
+	QUERY_TEMPLATE = <<-END
+		SELECT ?uuid
+		WHERE
+		{
+			?uuid %s .
+			%s
+		}
+	END
+
 	
-	# A few (hopefully) gentle additions for Redland::Uri
+	### A few (hopefully) gentle additions for Redland::Uri
 	module Redland::UriUtils
 		include ThingFish::Constants::Patterns
 		
@@ -106,10 +116,18 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	#   * Standard vocabularies (DC, DCMI, etc.)
 	#   * Fallback to ThingFish namespace
 
-	def map_to_predicate( key )
+	### Map the given +key+ to a URI in one of the loaded vocabularies and return
+	### it as a Redland::Node.
+	def self::map_to_predicate( key )
+		return Schemas::THINGFISH_NS[ key.to_s ]
 	end
 	
-	def unmap_from_predicate( predicate )
+	
+	### Unmap the given +predicate+ URI into a simple keyword.
+	def self::unmap_from_predicate( predicate )
+		uri = URI.parse( predicate.uri.to_s )
+		return uri.fragment unless uri.fragment.nil?
+		return uri.path[ %r{.*/(.*)}, 1 ]
 	end
 	
 
@@ -117,63 +135,63 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	# DCMI Type Vocabulary, or RDF Schema equivalents.
 	PredicateMap = {
 		# Dublin Core
-		:title                 => 'http://purl.org/dc/elements/1.1/title',
-		:creator               => 'http://purl.org/dc/elements/1.1/creator',
-		:subject               => 'http://purl.org/dc/elements/1.1/subject',
-		:description           => 'http://purl.org/dc/elements/1.1/description',
-		:publisher             => 'http://purl.org/dc/elements/1.1/publisher',
 		:contributor           => 'http://purl.org/dc/elements/1.1/contributor',
+		:coverage              => 'http://purl.org/dc/elements/1.1/coverage',
+		:creator               => 'http://purl.org/dc/elements/1.1/creator',
 		:date                  => 'http://purl.org/dc/elements/1.1/date',
-		:type                  => 'http://purl.org/dc/elements/1.1/type',
+		:description           => 'http://purl.org/dc/elements/1.1/description',
 		:format                => 'http://purl.org/dc/elements/1.1/format',
 		:identifier            => 'http://purl.org/dc/elements/1.1/identifier',
-		:source                => 'http://purl.org/dc/elements/1.1/source',
 		:language              => 'http://purl.org/dc/elements/1.1/language',
+		:publisher             => 'http://purl.org/dc/elements/1.1/publisher',
 		:relation              => 'http://purl.org/dc/elements/1.1/relation',
-		:coverage              => 'http://purl.org/dc/elements/1.1/coverage',
 		:rights                => 'http://purl.org/dc/elements/1.1/rights',
+		:source                => 'http://purl.org/dc/elements/1.1/source',
+		:subject               => 'http://purl.org/dc/elements/1.1/subject',
+		:title                 => 'http://purl.org/dc/elements/1.1/title',
+		:type                  => 'http://purl.org/dc/elements/1.1/type',
 		
 		# DCMI Elements
-		:audience              => 'http://purl.org/dc/terms/audience',
-		:alternative           => 'http://purl.org/dc/terms/alternative',
-		:tableOfContents       => 'http://purl.org/dc/terms/tableOfContents',
 		:abstract              => 'http://purl.org/dc/terms/abstract',
-		:created               => 'http://purl.org/dc/terms/created',
-		:valid                 => 'http://purl.org/dc/terms/valid',
+		:accessRights          => 'http://purl.org/dc/terms/accessRights',
+		:accrualMethod         => 'http://purl.org/dc/terms/accrualMethod',
+		:accrualPeriodicity    => 'http://purl.org/dc/terms/accrualPeriodicity',
+		:accrualPolicy         => 'http://purl.org/dc/terms/accrualPolicy',
+		:alternative           => 'http://purl.org/dc/terms/alternative',
+		:audience              => 'http://purl.org/dc/terms/audience',
 		:available             => 'http://purl.org/dc/terms/available',
-		:issued                => 'http://purl.org/dc/terms/issued',
-		:modified              => 'http://purl.org/dc/terms/modified',
-		:extent                => 'http://purl.org/dc/terms/extent',
-		:medium                => 'http://purl.org/dc/terms/medium',
-		:isVersionOf           => 'http://purl.org/dc/terms/isVersionOf',
-		:hasVersion            => 'http://purl.org/dc/terms/hasVersion',
-		:isReplacedBy          => 'http://purl.org/dc/terms/isReplacedBy',
-		:replaces              => 'http://purl.org/dc/terms/replaces',
-		:isRequiredBy          => 'http://purl.org/dc/terms/isRequiredBy',
-		:requires              => 'http://purl.org/dc/terms/requires',
-		:isPartOf              => 'http://purl.org/dc/terms/isPartOf',
-		:hasPart               => 'http://purl.org/dc/terms/hasPart',
-		:isReferencedBy        => 'http://purl.org/dc/terms/isReferencedBy',
-		:references            => 'http://purl.org/dc/terms/references',
-		:isFormatOf            => 'http://purl.org/dc/terms/isFormatOf',
-		:hasFormat             => 'http://purl.org/dc/terms/hasFormat',
+		:bibliographicCitation => 'http://purl.org/dc/terms/bibliographicCitation',
 		:conformsTo            => 'http://purl.org/dc/terms/conformsTo',
-		:spatial               => 'http://purl.org/dc/terms/spatial',
-		:temporal              => 'http://purl.org/dc/terms/temporal',
-		:mediator              => 'http://purl.org/dc/terms/mediator',
+		:created               => 'http://purl.org/dc/terms/created',
 		:dateAccepted          => 'http://purl.org/dc/terms/dateAccepted',
 		:dateCopyrighted       => 'http://purl.org/dc/terms/dateCopyrighted',
 		:dateSubmitted         => 'http://purl.org/dc/terms/dateSubmitted',
 		:educationLevel        => 'http://purl.org/dc/terms/educationLevel',
-		:accessRights          => 'http://purl.org/dc/terms/accessRights',
-		:bibliographicCitation => 'http://purl.org/dc/terms/bibliographicCitation',
-		:license               => 'http://purl.org/dc/terms/license',
-		:rightsHolder          => 'http://purl.org/dc/terms/rightsHolder',
-		:provenance            => 'http://purl.org/dc/terms/provenance',
+		:extent                => 'http://purl.org/dc/terms/extent',
+		:hasFormat             => 'http://purl.org/dc/terms/hasFormat',
+		:hasPart               => 'http://purl.org/dc/terms/hasPart',
+		:hasVersion            => 'http://purl.org/dc/terms/hasVersion',
 		:instructionalMethod   => 'http://purl.org/dc/terms/instructionalMethod',
-		:accrualMethod         => 'http://purl.org/dc/terms/accrualMethod',
-		:accrualPeriodicity    => 'http://purl.org/dc/terms/accrualPeriodicity',
-		:accrualPolicy         => 'http://purl.org/dc/terms/accrualPolicy',
+		:isFormatOf            => 'http://purl.org/dc/terms/isFormatOf',
+		:isPartOf              => 'http://purl.org/dc/terms/isPartOf',
+		:isReferencedBy        => 'http://purl.org/dc/terms/isReferencedBy',
+		:isReplacedBy          => 'http://purl.org/dc/terms/isReplacedBy',
+		:isRequiredBy          => 'http://purl.org/dc/terms/isRequiredBy',
+		:issued                => 'http://purl.org/dc/terms/issued',
+		:isVersionOf           => 'http://purl.org/dc/terms/isVersionOf',
+		:license               => 'http://purl.org/dc/terms/license',
+		:mediator              => 'http://purl.org/dc/terms/mediator',
+		:medium                => 'http://purl.org/dc/terms/medium',
+		:modified              => 'http://purl.org/dc/terms/modified',
+		:provenance            => 'http://purl.org/dc/terms/provenance',
+		:references            => 'http://purl.org/dc/terms/references',
+		:replaces              => 'http://purl.org/dc/terms/replaces',
+		:requires              => 'http://purl.org/dc/terms/requires',
+		:rightsHolder          => 'http://purl.org/dc/terms/rightsHolder',
+		:spatial               => 'http://purl.org/dc/terms/spatial',
+		:tableOfContents       => 'http://purl.org/dc/terms/tableOfContents',
+		:temporal              => 'http://purl.org/dc/terms/temporal',
+		:valid                 => 'http://purl.org/dc/terms/valid',
 
 		# DCMI Types
 		:Collection            => 'http://purl.org/dc/dcmitype/Collection',
@@ -181,13 +199,13 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		:Event                 => 'http://purl.org/dc/dcmitype/Event',
 		:Image                 => 'http://purl.org/dc/dcmitype/Image',
 		:InteractiveResource   => 'http://purl.org/dc/dcmitype/InteractiveResource',
+		:MovingImage           => 'http://purl.org/dc/dcmitype/MovingImage',
+		:PhysicalObject        => 'http://purl.org/dc/dcmitype/PhysicalObject',
 		:Service               => 'http://purl.org/dc/dcmitype/Service',
 		:Software              => 'http://purl.org/dc/dcmitype/Software',
 		:Sound                 => 'http://purl.org/dc/dcmitype/Sound',
-		:Text                  => 'http://purl.org/dc/dcmitype/Text',
-		:PhysicalObject        => 'http://purl.org/dc/dcmitype/PhysicalObject',
 		:StillImage            => 'http://purl.org/dc/dcmitype/StillImage',
-		:MovingImage           => 'http://purl.org/dc/dcmitype/MovingImage',
+		:Text                  => 'http://purl.org/dc/dcmitype/Text',
 	}
 	
 	DEFAULT_VOCABULARIES = %w[
@@ -458,12 +476,54 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	end
 	
 
-	# [<tt>find_by_matching_properties()</tt>]
-	#   Return an array of uuids whose metadata matched the criteria
-	#   specified by +hash+. The criteria should be key-value pairs which describe
-	#   exact metadata pairs.  This is a wildcard search.
+	### Return an array of uuids whose metadata matched the criteria
+	### specified by +hash+. The criteria should be key-value pairs which describe
+	### partial metadata pairs.  This is a wildcard search.
+	def find_by_matching_properties( hash )
+		
+		# Flatten the hash of query args into an array of tuples
+		pairs = []
+		hash.reject {|_,val| val.nil? }.each do |key, vals|
+			[vals].flatten.each do |val|
+				pairs << [ key, val ]
+			end
+		end
+		
+		self.log.debug "Building a query using pairs: %p" % [ pairs ]
+		predicates = Set.new
+		filters = Set.new
 
+		# Create a set of predicates and filters out of the tuples.
+		pairs.each do |key, pattern|
+			property = map_property( key )
+			predicates.add( "<#{property.uri}> ?#{key}" )
+			
+			re = self.glob_to_regexp( pattern )
+			string_re = re.inspect[ %r{/(.*)/i}, 1 ]
+			filters.add( %Q:FILTER regex(?#{key}, "#{string_re}", "i"): )
+		end
 
+		# Now combine the predicates and filters into a SPARQL query
+		querystring = QUERY_TEMPLATE % [
+			predicates.to_a.join( " ;\n" ),
+			filters.to_a.join( " .\n" ),
+		  ]
+		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
+		query = Redland::Query.new( querystring )
+		res = @model.query_execute( query )
+
+		# Map results into simple UUID strings
+		uuids = []
+		until res.finished?
+			urn = res.binding_value_by_name( 'uuid' )
+			self.log.debug "Get result URN: %s" % [ urn.uri ]
+			uuids << urn.uri.to_uuid
+			res.next
+		end
+		
+		return uuids
+	end
+	
 
 	### Output the current model to the log
 	def log_model
@@ -484,7 +544,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### Map the given +propname+ into a registered namespace, falling back to 
 	### the ThingFish namespace if it doesn't exist in any registered schema.
 	def map_property( propname )
-		return Schemas::THINGFISH_NS[ propname.to_s ]
+		return ThingFish::RdfMetaStore.map_to_predicate( propname )
 	end
 	
 

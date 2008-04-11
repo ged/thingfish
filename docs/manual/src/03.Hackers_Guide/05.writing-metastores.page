@@ -1,7 +1,13 @@
-h1. Hacker's Guide
+---
+title: "Hacker's Guide: Writing a ThingFish MetaStore"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "Writing a ThingFish MetaStore" %>
-
+h2. <%= page.config['title'] %>
 
 « Coming Soon! »
 

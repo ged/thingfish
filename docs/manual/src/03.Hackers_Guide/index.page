@@ -1,4 +1,13 @@
-h1. <% @page_title = "Hacker's Guide" %>
+---
+title: Hacker's Guide
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
+
+h1. <%= page.config['title'] %>
 
 This is a collection of tutorials on how to add your own functionality to ThingFish via its pluggable components.
 

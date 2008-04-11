@@ -235,7 +235,7 @@ licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3
 	Commons Attribution 3.0 License</a>.
 </div>
 
-[getting_started]../01.Getting_Started/01.downloading.html
-[developers_guide]../02.Developers_Guide/
-[hackers_guide]../03.Hackers_Guide/
+[getting_started]getting-started.html
+[developers_guide]02.Developers_Guide/index.html
+[hackers_guide]03.Hackers_Guide/index.html
 

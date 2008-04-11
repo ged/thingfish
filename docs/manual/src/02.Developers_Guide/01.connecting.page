@@ -1,13 +1,11 @@
 ---
-title: Connecting to the Server
+title: "Developer's Guide: Connecting to the Server"
 layout: default
 filters:
   - erb
-  - textile
   - examples
+  - textile
 ---
-
-h1. Developer's Guide
 
 h2. <%= page.config['title'] %>
 
@@ -41,15 +39,32 @@ h4. Default Handler
 	<dt>GET /</dt>
 	<dd>
 	  Fetch information about the server. The format of the information depends on the requested
-	  type -- a `text/html` request will display a server overview for web browsers, while
-	  code-centric content types like `application/json` and `text/x-yaml` will return a serialized
+	  type -- a @text/html@ request will display a server overview for web browsers, while
+	  code-centric content types like @application/json@ and @text/x-yaml@ will return a serialized
 	  hash of server information. This information can be later used to build REST queries to
 	  access ThingFish's other services.
 
-<?example { language: yaml, caption: "Server introspection hash" } ?>
-version: 0.2.0
+<?example { language: ruby, caption: "Server introspection hash" } ?>
+{
+	"version"=>"0.2.1",
+	"filters" => {
+		'filtername' => {
+			"rev"       => 466,
+			"accepts"   => [],
+			"version"   => [1, 0],
+			"supports"  => [],
+			"generates" => ["mime/type"]},
+		},
+		# ... other filters
+	},
+	"handlers"=> {
+		"handlername" => ["/uri1", "/uri2"],
+		# ... other handlers
+	}
+}
 <?end?>
 
+	TODO: Document the particulars of what each part of the hash means.
 	</dd>
 
 	<dt>GET /«uuid»</dt>

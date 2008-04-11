@@ -1,11 +1,18 @@
-h1. Developer's Guide
+---
+title: "Developer's Guide: The Ruby Client Library"
+layout: default
+filters:
+  - erb
+  - examples
+  - textile
+---
 
-h2. <%= @page_title = "The Ruby Client Library" %>
+h2. <%= page.config['title'] %>
 
 The @ThingFish::Client@ class is the main Ruby interface to the ThingFish store. It can be
 used to upload, download, and query the server for resources:
 
-#:example#{ language: ruby, caption: Example}#
+<?example {  language: ruby, caption: Example } ?>
 #!/usr/bin/env ruby
 
 require 'thingfish/client'
@@ -32,7 +39,7 @@ resource.write_to_file                      # =>
 # Search for resources
 entries = client.find( :format => 'image/jpeg', :owner => 'mgranger' )
 entries.each {|e| e.write_to_file }
-#:example#
+<?end example?>
 	
 
 h3. Creating the Client
@@ -40,7 +47,7 @@ h3. Creating the Client
 The first step is to configure the client, which you can do by providing the
 connection parameters as either distinct values or a URL:
 
-#:example#{ language: ruby, caption: Creating the client object }#
+<?example {  language: ruby, caption: Creating the client object  } ?>
 require 'thingfish/client'
 
 # Create a new client which will connect to thingfish.laika.com on the 
@@ -60,14 +67,14 @@ client.port = 5000
 client.user = 'mgranger'
 client.password = 'myS00perSekrit'
 
-#:example#
+<?end example?>
 
 h3. Storing Data
 
 Once you have a configured client object, you can store data on the server by passing
 either the data or a IO object open to the data to the @#store@ method of the client:
 
-#:example#{ language: ruby, caption: Storing a PNG on the server }#
+<?example {  language: ruby, caption: Storing a PNG on the server  } ?>
 #!/usr/bin/env ruby
 
 require 'thingfish/client'
@@ -77,7 +84,7 @@ resource = client.store( File.open("rss.png"), :format => 'image/png' )
 
 resource.uuid # => "a52ec552-2c50-11dc-8e32-abc548881c84"
 
-#:example#
+<?end example?>
 
 The @#store@ method returns a @ThingFish::Resource@, which can then be used to query
 the object stored on the server for its UUID and any other metadata added to it.
@@ -87,7 +94,7 @@ h3. Fetching Resources
 
 fetch resources from the server via their UUID:
 
-#:example#{ caption: Fetching a resource by UUID, language: ruby }#
+<?example {  caption: Fetching a resource by UUID, language: ruby  } ?>
 require 'thingfish/client'
 
 client = ThingFish::Client.new( 'thingfish.laika.com' )
@@ -97,4 +104,4 @@ resource.uuid                               # => 'a3f4e060-dffa-11db-a8e7-4bd975
 resource.format                             # => 'image/png'
 resource.data[0..10]                        # => "\211PNG\r\n\032\n\000\000\000"
 
-#:example#
+<?end example?>

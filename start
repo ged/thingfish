@@ -1,4 +1,4 @@
-# !/usr/bin/env ruby
+#!/usr/bin/env ruby
 # 
 # This is a little wrapper that starts thingfishd with a user-specific
 # config file. It first tries to look up your usename using the 'etc'

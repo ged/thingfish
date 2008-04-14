@@ -246,65 +246,40 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
-	### MetaStore API: Return an array of UUIDs whose metadata exactly matches the
-	### key-value pairs in +hash+.
-	def find_by_exact_properties( hash )
-		uuids = hash.inject(nil) do |ary, pair|
-			key, value = *pair
-			key = key.to_sym
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
+	### specified by +key+ and +value+. This is an exact match search.
+	def find_exact_uuids( key, value )
+		key = key.to_sym
+		matching_uuids = []
 
-			matching_uuids = []
-			key = key.to_sym
-			@lock.lock do
-				@metadata.transaction(true) do
-					@metadata.roots.each do |uuid|
-						matching_uuids << uuid if @metadata[ uuid ][ key ] == value
-					end
+		@lock.lock do
+			@metadata.transaction(true) do
+				@metadata.roots.each do |uuid|
+					matching_uuids << uuid if @metadata[ uuid ][ key ] == value
 				end
 			end
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
 		end
-		
-		return uuids ? uuids : []
+			
+		return matching_uuids
 	end
 
 
-	### MetaStore API: Return an array of UUIDs whose metadata wildcard matches the
-	### key-value pairs in +hash+.
-	def find_by_matching_properties( hash )
-		uuids = hash.inject(nil) do |ary, pair|
-			key, glob = *pair
-			key = key.to_sym
-
-			matching_uuids = []
-			key = key.to_sym
-			re = self.glob_to_regexp( glob )
-						
-			@lock.lock do
-				@metadata.transaction(true) do
-					@metadata.roots.each do |uuid|
-						matching_uuids << uuid if re.match( @metadata[ uuid ][ key ] )
-					end
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### specified by +key+ and +value+. This is a wildcard search.
+	def find_matching_uuids( key, value )
+		key = key.to_sym
+		matching_uuids = []
+		re = self.glob_to_regexp( value )
+					
+		@lock.lock do
+			@metadata.transaction(true) do
+				@metadata.roots.each do |uuid|
+					matching_uuids << uuid if re.match( @metadata[ uuid ][ key ] )
 				end
 			end
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
 		end
-		
-		return uuids ? uuids : []
+
+		return matching_uuids
 	end
 		
 end # class ThingFish::MarshalledMetaStore

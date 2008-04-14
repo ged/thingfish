@@ -153,54 +153,31 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
-	### specified by +hash+. The criteria should be key-value pairs which describe
-	### exact metadata pairs.
-	def find_by_exact_properties( hash )
-		uuids = hash.inject(nil) do |ary, pair|
-			key, value = *pair
-			key = key.to_sym
+	### specified by +key+ and +value+. This is an exact match search.
+	def find_exact_uuids( key, value )
+		key = key.to_sym
 
-			matching_uuids = @metadata.keys.find_all do |uuid|
-				@metadata[ uuid ][ key ].to_s == value
-			end
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
+		matching_uuids = @metadata.keys.find_all do |uuid|
+			@metadata[ uuid ][ key ].to_s == value
 		end
-		
-		return uuids ? uuids : []
+
+		return matching_uuids
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata matched the criteria
-	### specified by +hash+. The criteria should be key-value pairs which describe
-	### wildcarded metadata pairs.
-	def find_by_matching_properties( hash )
-		uuids = hash.inject(nil) do |ary, pair|
-			key, pattern = *pair
-			key = key.to_sym
-			re = Regexp.new( '^' + pattern.to_s.gsub('*', '.*') + '$', Regexp::IGNORECASE )
-			
-			matching_uuids = @metadata.keys.find_all do |uuid|
-				re.match( @metadata[ uuid ][ key ].to_s )
-			end
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### specified by +key+ and +value+. This is a wildcard search.
+	def find_matching_uuids( key, value )
+		key = key.to_sym
+		re = self.glob_to_regexp( value )
+		
+		matching_uuids = @metadata.keys.find_all do |uuid|
+			re.match( @metadata[ uuid ][ key ].to_s )
 		end
 		
-		return uuids ? uuids : []
+		return matching_uuids
 	end
 
 end # class ThingFish::MemoryMetaStore

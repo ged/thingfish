@@ -186,38 +186,38 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
+	SQL_GET_PROPERTY = %q{
+		SELECT v.val
+		FROM metaval AS v, metakey as m, resources AS r
+		WHERE
+			m.id = v.m_id AND
+			r.id = v.r_id AND
+			v.r_id = :id  AND
+			m.key = :propname
+	}
+
 	### MetaStore API: Return the property associated with +uuid+ specified by 
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
-		get_sql = %q{
-			SELECT v.val
-			FROM metaval AS v, metakey as m, resources AS r
-			WHERE
-				m.id = v.m_id AND
-				r.id = v.r_id AND
-				v.r_id = :id  AND
-				m.key = :propname
-		}
-
 		r_id = get_id( :resource, uuid )
-		return @metadata.get_first_value( get_sql, r_id, propname )
+		return @metadata.get_first_value( SQL_GET_PROPERTY, r_id, propname )
 	end
 
 	
+	SQL_GET_PROPERTIES = %q{
+		SELECT m.key, v.val
+		FROM metaval AS v, metakey as m, resources AS r
+		WHERE
+			m.id = v.m_id AND
+			r.id = v.r_id AND
+			v.r_id = :id
+	}
+
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
-		get_sql = %q{
-			SELECT m.key, v.val
-			FROM metaval AS v, metakey as m, resources AS r
-			WHERE
-				m.id = v.m_id AND
-				r.id = v.r_id AND
-				v.r_id = :id
-		}
-
 		r_id = get_id( :resource, uuid )
-		return @metadata.execute( get_sql, r_id ).inject({}) do |hash, row|
+		return @metadata.execute( SQL_GET_PROPERTIES, r_id ).inject({}) do |hash, row|
 			hash[ row.first.to_sym ] = row.last
 			hash
 		end
@@ -226,8 +226,9 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 
 	### MetaStore API: Returns +true+ if the given +uuid+ exists in the metastore.
 	def has_uuid?( uuid )
-		select_sql = 'SELECT id FROM resources WHERE uuid = :uuid'
-		return @metadata.get_first_value( select_sql, uuid ) ? true : false
+		return @metadata.get_first_value( 'SELECT id FROM resources WHERE uuid = :uuid', uuid ) ? 
+			true :
+			false
 	end
 	
 	
@@ -237,142 +238,101 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	SQL_DELETE_PROPERTY = %q{
+		DELETE FROM metaval
+		WHERE
+			r_id = ( SELECT id FROM resources WHERE uuid = :uuid )
+			AND
+			m_id = ( SELECT id FROM metakey WHERE key = :propname )
+	}
+
 	### MetaStore API: Removes +propname+ from given +uuid+
 	def delete_property( uuid, propname )
-		delete_sql = %q{
-			DELETE FROM metaval
-			WHERE
-				r_id = ( SELECT id FROM resources WHERE uuid = :uuid )
-				AND
-				m_id = ( SELECT id FROM metakey WHERE key = :propname )
-		}
-
-		begin
-			@metadata.execute( delete_sql, uuid, propname )
-		rescue SQLite3::SQLException
-			# no-op - not being able to find the uuid or propname in SQL
-			# in this case is not a problem.
-		end
+		@metadata.execute( SQL_DELETE_PROPERTY, uuid, propname )
+	rescue SQLite3::SQLException
+		# no-op - not being able to find the uuid or propname in SQL
+		# in this case is not a problem.
 	end
 	
 	
+	SQL_DELETE_PROPERTIES = %Q{
+		DELETE FROM metaval
+		WHERE
+			r_id = ( SELECT id FROM resources WHERE uuid = :uuid )
+			AND
+			m_id IN( SELECT id FROM metakey WHERE key IN( %s ) )
+	}
+
 	### MetaStore API: Removes the properties specified by +propnames+ from those
 	### associated with +uuid+.
 	def delete_properties( uuid, *propnames )
 		placeholders = ['?'] * propnames.length
-		delete_sql = %Q{
-			DELETE FROM metaval
-			WHERE
-				r_id = ( SELECT id FROM resources WHERE uuid = :uuid )
-				AND
-				m_id IN( SELECT id FROM metakey WHERE key IN( #{placeholders.join(',')} ) )
-		}
-
-		begin
-			@metadata.execute( delete_sql, uuid, *propnames )
-		rescue SQLite3::SQLException
-			# no-op - not being able to find the uuid or propname in SQL
-			# in this case is not a problem.
-		end
+		delete_sql = SQL_DELETE_PROPERTIES % [ placeholders.join(',') ]
+		@metadata.execute( delete_sql, uuid, *propnames )
+	rescue SQLite3::SQLException
+		# no-op - not being able to find the uuid or propname in SQL
+		# in this case is not a problem.
 	end
 	
 	
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
-		delete_sql = %q{
-			DELETE FROM resources
-			WHERE uuid = :uuid
-		}
 		# trigger cleans up the other tables
-		@metadata.execute( delete_sql, uuid )
+		@metadata.execute( 'DELETE FROM resources WHERE uuid = :uuid', uuid )
 	end
 
 
 	### MetaStore API: Returns a list of all property keys in the database.
 	def get_all_property_keys
-		select_sql = %q{
-			SELECT DISTINCT key
-			FROM metakey
-		}
-		
-		return @metadata.execute( select_sql ).flatten.collect { |k| k.to_sym }
+		return @metadata.execute( 'SELECT DISTINCT key FROM metakey' ).
+			flatten.collect { |k| k.to_sym }
 	end
+
 	
+	SQL_GET_ALL_PROPERTY_VALUES = %q{
+		SELECT DISTINCT v.val FROM metaval AS v, metakey AS k
+		WHERE 
+			v.m_id = k.id AND 
+			k.key  = :key
+	}	
 
 	### MetaStore API: Return a uniquified Array of all values in the metastore for
 	### the specified +key+.
 	def get_all_property_values( key )
-		select_sql = %q{
-			SELECT DISTINCT v.val FROM metaval AS v, metakey AS k
-			WHERE 
-				v.m_id = k.id AND 
-				k.key  = :key
-		}
-		
-		return @metadata.execute( select_sql, key ).flatten.compact
+		return @metadata.execute( SQL_GET_ALL_PROPERTY_VALUES, key ).flatten.compact
 	end
-	
-	
-	### MetaStore API: Return an array of uuids whose metadata +key+ is
-	### exactly +value+.
-	def find_by_exact_properties( hash )
-		select_sql = %q{
-			SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
-			WHERE
-				k.key  = :key AND
-				k.id   = v.m_id AND
-				v.val  = :value AND
-				v.r_id = r.id
-		}
-
-		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
-			key, value = *pair
-			key = key.to_s
-
-			matching_uuids = @metadata.execute( select_sql, key, value ).flatten
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
-		end
 		
-		return uuids ? uuids : []		
+	
+	SQL_SELECT_EXACT = %q{
+		SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
+		WHERE
+			k.key  = :key AND
+			k.id   = v.m_id AND
+			v.val  = :value AND
+			v.r_id = r.id
+	}
+
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
+	### specified by +key+ and +value+. This is an exact match search.
+	def find_exact_uuids( key, value )
+		return @metadata.execute( SQL_SELECT_EXACT, key.to_s, value ).flatten
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata +key+ is
-	### a wildcard match of +value+.
-	def find_by_matching_properties( hash )
-		select_sql = %q{
-			SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
-			WHERE
-				k.key  = :key AND
-				k.id   = v.m_id AND
-				v.val  like :value AND
-				v.r_id = r.id
-		}
+	SQL_SELECT_MATCHING = %q{
+		SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
+		WHERE
+			k.key  = :key AND
+			k.id   = v.m_id AND
+			v.val  like :value AND
+			v.r_id = r.id
+	}
 
-		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
-			key, pattern = *pair
-			key = key.to_s
-
-			value = pattern.to_s.gsub( '*', '%' )
-			matching_uuids = @metadata.execute( select_sql, key, value ).flatten
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
-		end
-		
-		return uuids ? uuids : []		
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### specified by +key+ and +value+. This is a wildcard search.
+	def find_matching_uuids( key, value )
+		value = value.to_s.gsub( '*', '%' )
+		return @metadata.execute( SQL_SELECT_MATCHING, key.to_s, value ).flatten
 	end
 
 

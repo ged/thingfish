@@ -238,56 +238,26 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 	
-	### MetaStore API: Return an array of uuids whose metadata +key+ is
-	### exactly +value+.
-	def find_by_exact_properties( hash )
-		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
-			key, value = *pair
-			key = key.to_s
-
-			matching_uuids = @metadata[ :resources, :metakey, :metaval ].
-				filter( :metakey__key  => key, 
-						:metakey__id   => :metaval__m_id, 
-						:metaval__val  => value, 
-						:metaval__r_id => :resources__id ).map( :uuid )
-
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
-		end
-		
-		return uuids ? uuids : []		
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
+	### specified by +key+ and +value+. This is an exact match search.
+	def find_exact_uuids( key, value )
+		return @metadata[ :resources, :metakey, :metaval ].
+			filter( :metakey__key  => key.to_s, 
+					:metakey__id   => :metaval__m_id, 
+					:metaval__val  => value, 
+					:metaval__r_id => :resources__id ).map( :uuid )
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata +key+ is
-	### a wildcard match of +value+.
-	def find_by_matching_properties( hash )
-		uuids = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
-			key, pattern = *pair
-			key = key.to_s
-
-			value = pattern.to_s.gsub( '*', '%' )
-			matching_uuids = @metadata[ :resources, :metakey, :metaval ].
-				filter { :metakey__key  == key			  &&
-						 :metakey__id   == :metaval__m_id &&
-						 :metaval__val  =~ value		  &&
-						 :metaval__r_id == :resources__id }.map( :uuid )
-			
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-			
-			ary
-		end
-		
-		return uuids ? uuids : []		
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### specified by +key+ and +value+. This is a wildcard search.
+	def find_matching_uuids( key, value )
+		value = value.to_s.gsub( '*', '%' )
+		return @metadata[ :resources, :metakey, :metaval ].
+			filter { :metakey__key  == key.to_s		  &&
+					 :metakey__id   == :metaval__m_id &&
+					 :metaval__val  =~ value		  &&
+					 :metaval__r_id == :resources__id }.map( :uuid )
 	end
 
 
@@ -341,7 +311,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 	
 	### Return the id of a given resource or metakey, or if none exist,
-	### create a new row and return the id.
+	### create a new row and return the id.  +key+ must be :resources or :uuid.
 	def get_id( key, value )
 		
 		# Return the previously cached ID
@@ -360,7 +330,6 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		
 		# Create a new row for the requested object, and return the new ID.
 		#
-		self.log.debug "Creating new %s row: %s" % [ key, value ]
 		return @metadata[ key ] << { column => value.to_s }
 	end
 end

@@ -114,16 +114,16 @@ describe ThingFish::MetaStore do
 			}.should raise_error( NotImplementedError, /#get_all_property_values/ )
 		end
 		
-		it "raises NotImplementedError for #find_by_exact_properties" do
+		it "raises NotImplementedError for #find_exact_uuids" do
 			lambda {
-				@metastore.find_by_exact_properties( :namespace => 'foo' )
-			}.should raise_error( NotImplementedError, /#find_by_exact_properties/ )
+				@metastore.find_exact_uuids( :namespace => 'foo' )
+			}.should raise_error( NotImplementedError, /#find_exact_uuids/ )
 		end
 
-		it "raises NotImplementedError for #find_by_matching_properties" do
+		it "raises NotImplementedError for #find_matching_uuids" do
 			lambda {
-				@metastore.find_by_matching_properties( :namespace => 'f*' )
-			}.should raise_error( NotImplementedError, /#find_by_matching_properties/ )
+				@metastore.find_matching_uuids( :namespace => 'f*' )
+			}.should raise_error( NotImplementedError, /#find_matching_uuids/ )
 		end
 		
 		it "returns a ResourceProxy to use when interacting with a resource's metadata set" do

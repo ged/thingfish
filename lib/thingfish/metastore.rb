@@ -62,14 +62,17 @@ require 'thingfish/exceptions'
 #   Return an Array of all property keys in the store.
 # [<tt>get_all_property_values( key )</tt>]
 #   Return a uniquified Array of all values in the metastore for the specified +key+.
-# [<tt>find_by_exact_properties()</tt>]
+
+
+# Simple metastore plugins should either implement the below methods, or override
+# the #find_by_exact_properties() and #find_by_matching_properties() methods.
+#
+# [<tt>find_exact_uuids()</tt>]
 #   Return an array of uuids whose metadata matched the criteria
-#   specified by +hash+. The criteria should be key-value pairs which describe
-#   exact metadata pairs.  This is an exact match search.
-# [<tt>find_by_matching_properties()</tt>]
+#   specified by +key+ and +value+. This is an exact match search.
+# [<tt>find_matching_uuids()</tt>]
 #   Return an array of uuids whose metadata matched the criteria
-#   specified by +hash+. The criteria should be key-value pairs which describe
-#   exact metadata pairs.  This is a wildcard search.
+#   specified by +key+ and +value+. This is a wildcard search.
 #
 class ThingFish::MetaStore
 	include PluginFactory,
@@ -263,6 +266,22 @@ class ThingFish::MetaStore
 		self.delete_property( uuid, key )
 	end
 	
+	
+	### Return an array of UUIDs whose metadata exactly matches the key-value pairs in +hash+.
+	def find_by_exact_properties( hash )
+		self.intersect_each_tuple( hash ) do |key,value|
+			self.find_exact_uuids( key, value )
+		end
+	end
+
+
+	### Return an array of UUIDs whose metadata wildcard matches the key-value pairs in +hash+.
+	def find_by_matching_properties( hash )
+		self.intersect_each_tuple( hash ) do |key,value|
+			self.find_matching_uuids( key, value )
+		end
+	end
+	
 
 	### Mandatory MetaStore API
 	virtual :has_uuid?,
@@ -277,8 +296,8 @@ class ThingFish::MetaStore
 		:delete_resource,
 		:get_all_property_keys,
 		:get_all_property_values,
-		:find_by_exact_properties,
-		:find_by_matching_properties
+		:find_exact_uuids,
+		:find_matching_uuids
 
 
 	#########
@@ -307,6 +326,36 @@ class ThingFish::MetaStore
 	end
 	
 
+	### Remove nil values from the given +hash+, then yield key/value pairs as tuples. The block is
+	### expected to return UUIDs that match the yielded tuple. The returned UUID sets are then
+	### intersected, and any UUIDs common to all matched tuples are returned.
+	def intersect_each_tuple( hash )
+		tuples = hash.reject {|k,v| v.nil? }.inject([]) do |ary, pair|
+			key,vals = *pair
+			[vals].flatten.each do |val|
+				ary << [ key, val ]
+			end
+			
+			ary
+		end
+		
+		uuids = tuples.inject(nil) do |ary, pair|
+			key, value = *pair
+			key = key.to_s
+
+			matching_uuids = yield( key, value )
+			
+			if ary
+				ary &= matching_uuids
+			else
+				ary = matching_uuids
+			end
+			
+			ary
+		end
+	
+		return uuids ? uuids : []
+	end
 end # class ThingFish::MetaStore
 
 

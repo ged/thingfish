@@ -60,8 +60,8 @@ module ThingFish
 	
 	class Metastore
 		def initialize
-#			@store = Redland::HashStore.new( 'memory', 'thingfish' )
-			@store = Redland::TripleStore.new( 'sqlite', './store.db', 'thingfish' )
+			@store = Redland::HashStore.new( 'memory', 'thingfish' )
+#			@store = Redland::TripleStore.new( 'sqlite', './store.db', 'thingfish' )
 			@model = Redland::Model.new( @store )
 		end
 		
@@ -82,7 +82,6 @@ end
 
 USERS = %w[mahlon michael bob luna]
 store = ThingFish::Metastore.new
-=begin
 
 30.times do |i|
 	uuid = UUID.timestamp_create
@@ -101,12 +100,28 @@ USERS.each do |user|
 	puts "User '%s':" % [user]
 	puts "  " + store.find( ownerprop, user ).collect {|ps| ps.resource.to_s }.join("\n  ")
 end
-=end
 
-store.model.delete( 'http://thingfish/ac4f0c30-057a-11dd-ae14-0016cba18fb9',
-                    'http://opensource.laika.com/rdf/2007/02/thingfish-schema#permissions', nil )
+query_string = %Q{
+	PREFIX tf: <http://opensource.laika.com/rdf/2007/02/thingfish-schema#>
+	PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+	
+	SELECT ?uuid
+	WHERE
+	{ 
+            ?uuid tf:owner ?o;
+                  tf:permissions ?perm .
+			
+            FILTER regex(?o, "^m", "i") .
+	    FILTER (xsd:integer(?perm) >= 500000) .
+	}
+}
 
-pp store.model.dump_model
-
-
+puts
+q = Redland::Query.new( query_string, 'sparql' )
+res = store.model.query_execute( q )
+puts "Query results!"
+until res.finished?
+	puts res.binding_value_by_name( 'uuid' )
+	res.next
+end
 

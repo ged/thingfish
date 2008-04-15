@@ -150,7 +150,7 @@ describe ThingFish::Daemon do
 		describe " response handling" do
 
 			it "returns a valid http 404 response if no filter or handler sets the response status" do
-				@request.should_receive( :accepts? ).with( XHTML_MIMETYPE ).
+				@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).
 					and_return( false )
 
 				@response.should_receive( :content_type= ).and_return( 'text/plain' )
@@ -177,7 +177,7 @@ describe ThingFish::Daemon do
 				# send_error_response
 				@response.should_receive( :reset )
 				@response.should_receive( :status= ).with( HTTP::NOT_ACCEPTABLE )
-				@request.should_receive( :accepts? ).with( XHTML_MIMETYPE ).and_return( false )
+				@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).and_return( false )
 
 				@response.should_receive( :content_type= ).with( 'text/plain' )
 
@@ -544,8 +544,8 @@ describe ThingFish::Daemon do
 					and_raise( RuntimeError.new("some error") )
 
 				@response.should_receive( :is_handled? ).and_return( false )
-				@request.should_receive( :accepts? ).with( XHTML_MIMETYPE ).and_return( true )
-				@response.should_receive( :content_type= ).with( XHTML_MIMETYPE )
+				@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).and_return( true )
+				@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
 				@response.stub!( :data ).and_return( {} )
 				@request.stub!( :path_info ).and_return( '/poon' )
 				@response.should_receive( :body= ).with( /<html.*some error/mi )
@@ -581,7 +581,7 @@ describe ThingFish::Daemon do
 					and_raise( RuntimeError.new("some error") )
 
 				@response.should_receive( :is_handled? ).and_return( false )
-				@request.should_receive( :accepts? ).with( XHTML_MIMETYPE ).and_return( false )
+				@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).and_return( false )
 				@response.should_receive( :content_type= ).with( 'text/plain' )
 				@response.should_receive( :body= ).with( /500.*error/i )
 
@@ -617,8 +617,8 @@ describe ThingFish::Daemon do
 					and_raise( ThingFish::RequestError.new("bad client! no cupcake!") )
 		
 				@response.should_receive( :is_handled? ).and_return( false )
-				@request.should_receive( :accepts? ).with( XHTML_MIMETYPE ).and_return( true )
-				@response.should_receive( :content_type= ).with( XHTML_MIMETYPE )
+				@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).and_return( true )
+				@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
 
 				# Status line
 				@response.should_receive( :status= ).with( HTTP::BAD_REQUEST )

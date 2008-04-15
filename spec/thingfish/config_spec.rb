@@ -607,6 +607,27 @@ describe ThingFish::Config do
 		end
 		
 	end
+
+
+	describe " with strict HTML enabled" do
+
+		STRICT_HTML_ENABLED_CONFIG = %{
+		---
+		use_strict_html_mimetype: true
+		}.gsub( /^\t\t/, '' )
+
+		before(:each) do
+		    @config = ThingFish::Config.new( STRICT_HTML_ENABLED_CONFIG )
+		end
+		
+		
+		it "redefines the CONFIGURED_HTML_MIMETYPE constant" do
+			ThingFish::Constants.should_receive( :const_set ).
+				with( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
+			@config.install
+		end
+	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

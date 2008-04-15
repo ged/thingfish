@@ -44,9 +44,7 @@ h6 { font-weight: bold; }
 
 p           { margin: 0 0 1.5em; }
 p.last      { margin-bottom: 0; }
-p img       { float: left; margin: 1.5em 1.5em 1.5em 0; padding: 0; }
 p img.top   { margin-top: 0; }
-img         { margin: 0 0 1.5em; }
 
 a {
 	color: #b6d7da;

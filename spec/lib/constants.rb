@@ -36,7 +36,7 @@ module ThingFish::TestConstants
 		TEST_PROP2			  = 'turn_ons'
 		TEST_PROPVALUE2		  = 'long walks on the beach'
 		TEST_CHECKSUM		  = Digest::MD5.hexdigest( TEST_CONTENT )
-		TEST_CONTENT_TYPE	  = XHTML_MIMETYPE
+		TEST_CONTENT_TYPE	  = CONFIGURED_HTML_MIMETYPE
 		TEST_UUID_OBJ	      = UUID.parse( '60acc01e-cd82-11db-84d1-7ff059e49450' )
 		TEST_ACCEPT_HEADER    = 'application/x-yaml, application/json; q=0.2, text/xml; q=0.75'
 		TEST_TITLE            = 'Muffin the Panda Goes To School'

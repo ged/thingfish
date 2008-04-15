@@ -416,14 +416,14 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		response.status = statuscode
 
 		# Build a pretty response if the client groks HTML
-		if request.accepts?( XHTML_MIMETYPE )
+		if request.accepts?( CONFIGURED_HTML_MIMETYPE )
 			template = self.get_error_response_template( statuscode ) or
 				raise "Can't find an error template"
 			content = [ template.result( binding() ) ]
 			
 			response.data[:tagline] = 'Oh, crap!'
 			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
-			response.content_type = XHTML_MIMETYPE
+			response.content_type = CONFIGURED_HTML_MIMETYPE
 
 			wrapper = self.get_erb_resource( 'template.rhtml' )
 			

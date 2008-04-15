@@ -71,6 +71,8 @@ class ThingFish::Config
 			:metrics => [],
 		},
 
+		:use_strict_html_mimetype => false,
+		
 		:daemon  => false,
 		:pidfile => nil,
 		:defaulthandler => {
@@ -170,6 +172,11 @@ class ThingFish::Config
 			ThingFish.logger = Logger.new( logoutput )
 			ThingFish.logger.formatter = ThingFish::LogFormatter.new( ThingFish.logger )
 			ThingFish.logger.level = level
+		end
+		
+		# Set the mimetype for HTML documents
+		if self.use_strict_html_mimetype
+			ThingFish::Constants.const_set( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
 		end
 	end
 

@@ -32,7 +32,7 @@ require 'thingfish/acceptparam'
 
 
 ### An HTML-conversion filter for ThingFish. It converts Ruby objects in the body 
-### of responses to HTML if the client accepts XHTML_MIMETYPE.
+### of responses to HTML if the client accepts CONFIGURED_HTML_MIMETYPE.
 class ThingFish::HtmlFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants,
@@ -73,11 +73,11 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response
 		# body is something we know how to convert
-		return unless request.explicitly_accepts?( XHTML_MIMETYPE ) &&
+		return unless request.explicitly_accepts?( CONFIGURED_HTML_MIMETYPE ) &&
 			self.accept?( response.content_type )
 
 		self.log.debug "Converting a %s response to %s" %
-			[ response.content_type, XHTML_MIMETYPE ]
+			[ response.content_type, CONFIGURED_HTML_MIMETYPE ]
 		
 		# Find the handlers that can make html
 		content = []
@@ -97,7 +97,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		template = self.get_erb_resource( 'template.rhtml' )
 		
 		response.body = template.result( binding() )
-		response.content_type = XHTML_MIMETYPE
+		response.content_type = CONFIGURED_HTML_MIMETYPE
 	end
 
 
@@ -115,7 +115,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 			'supports'  => [],
 			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
 			'accepts'   => [],
-			'generates' => [XHTML_MIMETYPE],
+			'generates' => [CONFIGURED_HTML_MIMETYPE],
 		  }
 	end
 	

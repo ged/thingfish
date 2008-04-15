@@ -122,7 +122,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 			and_return( true )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
-			and_return( XHTML_MIMETYPE )
+			and_return( CONFIGURED_HTML_MIMETYPE )
 
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )

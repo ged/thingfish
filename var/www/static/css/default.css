@@ -24,7 +24,7 @@ html {
 body {
 	height: 100%;
 	line-height: 1.5;
-	background: #323435 url(/images/leftbar.png) repeat-y left bottom;
+	background: #1b1d1e;
 	font: 12px/1.6em "Lucida Grande", Tahoma, Sans-Serif;
 	color: #ffffff;
 	margin: 0;
@@ -169,7 +169,7 @@ ol li + li {
 #tagline {
 	bottom: 12px;
 	margin: 0;
-	background: #323435 url(/images/shadow.png) repeat-x center top;
+	background: #1b1d1e url(/images/shadows/smaller-50.png) repeat-x center top;
 	color: #fff4cf;
 	font-size: 10px;
 	text-align: right;
@@ -181,18 +181,24 @@ ol li + li {
 }
 
 #content {
-	background: #323435 url(/images/leftbar.png) repeat-y left bottom;
 	position: relative;
 }
 
 #footer {
 	clear: both;
+	position: fixed;
+	bottom: 0;
+	width: 100%;
 	font: 10px "Helvetica Neue";
 	color: #fff4cf;
-	padding: 0 1.5em 1em 2em;
-	background: #323435 url(/images/leftbar.png) repeat-y left bottom;
+	padding: 0;
+	background: #323435;
+	border-top: 1px solid #555;
 }
 
+#footer p {
+	padding: 2px 1em 0;
+}
 #footer .svnid {
 	float: right;
 }
@@ -281,14 +287,13 @@ ol li + li {
 /* @group Right Column */
 
 .right {
+	background: #323435;
 	color: #fff4cf;
-	border-left: 1px solid #151617;
-	margin: 0 0 0 250px;
+	margin: 0 0 50px 250px;
 	padding: 1em 2em 2em 20px;
 	font-size: 14px;
 	-webkit-border-top-left-radius: 15px;
 	-webkit-border-bottom-left-radius: 15px;
-	background-color: #323435;
 }
 
 .right h1 {
@@ -312,8 +317,9 @@ ol li + li {
 }
 
 .right h3 {
-	padding: 0;
-	margin: 1.5em 0 2px;
+	padding: 0 0 0 0.5em;
+	margin: 2em 0 10px 0;
+	border-left: 10px solid #424e4f;
 }
 
 .right h2 .title-link,

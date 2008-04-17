@@ -3,52 +3,29 @@
 # $Id$
 # 
 
-require 'rubygems/remote_installer'
+require 'rubygems/dependency_installer'
+require 'rubygems/source_index'
+require 'rubygems/requirement'
 require 'rubygems/doc_manager'
-
-# Monkeypatch to work around the bug in #install -- after 1.0,
-# new_installer() no longer takes arguments other than the destination_file.
-class Gem::RemoteInstaller
-	def install(gem_name, version_requirement = Gem::Requirement.default,
-		force = false, install_dir = Gem.dir)
-		unless version_requirement.respond_to?(:satisfied_by?)
-			version_requirement = Gem::Requirement.new [version_requirement]
-		end
-
-		installed_gems = []
-
-		begin
-			spec, source = find_gem_to_install(gem_name, version_requirement)
-			dependencies = find_dependencies_not_installed(spec.dependencies)
-
-			installed_gems << install_dependencies(dependencies, force, install_dir)
-
-			cache_dir = @options[:cache_dir] || File.join(install_dir, "cache")
-			destination_file = File.join(cache_dir, spec.full_name + ".gem")
-
-			download_gem(destination_file, source, spec)
-
-			installer = new_installer( destination_file )
-			installed_gems.unshift( installer.install )
-		rescue Gem::RemoteInstallationSkipped => e
-			alert_error e.message
-		end
-
-		installed_gems.flatten
-	end
-end
-
 
 ### Install the specified +gems+ if they aren't already installed.
 def install_gems( *gems )
 	gems.flatten!
 	
+	defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
+		:generate_rdoc     => true,
+		:generate_ri       => true,
+		:install_dir       => Gem.dir,
+		:format_executable => false,
+		:test              => false,
+		:version           => Gem::Requirement.default,
+	  })
+    
 	# Check for root
 	if Process.euid != 0
 		$stderr.puts "This probably won't work, as you aren't root, but I'll try anyway"
 	end
 
-	installer = Gem::RemoteInstaller.new( :include_dependencies => true )
 	gemindex = Gem::SourceIndex.from_installed_gems
 
 	gems.each do |gemname|
@@ -58,19 +35,18 @@ def install_gems( *gems )
 			next
 		end
 
-		log "Trying to install #{gemname}..."
-		gems = installer.install( gemname )
-		gems.compact!
-		log "Installed: %s" % [gems.collect {|spec| spec.full_name}.join(', ')]
+		log "Trying to install #{gemname.inspect}..."
+		installer = Gem::DependencyInstaller.new
+		installer.install( gemname )
 
-		gems.each do |gem|
-			Gem::DocManager.new( gem, '-w4 -SNH' ).generate_ri
-			Gem::DocManager.new( gem, '-w4 -SNH' ).generate_rdoc
+		installer.installed_gems.each do |spec|
+			log "Installed: %s" % [ spec.full_name ]
 		end
+
 	end
 end
 
-	
+
 
 ### Task: install gems for development tasks
 DEPENDENCIES = %w[

@@ -148,7 +148,63 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		
 		return rev > installed_rev ? true : false
 	end
+
+
+
+
+	### Return the schema that describes the database as a String, loading
+	### it from the plugin resources if necessary
+	def schema
+		unless @schema
+			@schema = self.get_resource( SCHEMA_RESOURCE_NAME )
+			self.log.debug "Schema loaded as: %p" % [@schema]
+			@schema.gsub!( /\$Rev(?:: (\d+))?\s*\$/ ) do |match|
+				$1 ? $1 : '0'
+			end
+			self.log.debug "After transformation of  the rev: %p" % [@schema]
+		end
+		
+		return @schema
+	end
 	
+	
+	### Extract the revision number from the schema resource and return it.
+	def schema_rev
+		if self.schema.match( /user_version\s*=\s*(\d+)/i )
+			return Integer( $1 )
+		else
+			return nil
+		end
+	end
+	
+	
+	### Returns the revision number of the schema that was installed for the 
+	### current db.
+	def installed_schema_rev
+		return @metadata.user_version
+	end
+	
+	
+	### Delete all resources from the database, but preserve the keys
+	def clear
+		@metadata.execute( 'DELETE FROM resources' )
+	end
+	
+	
+	### Execute a block in the scope of a transaction, committing it when the block returns.
+	### If an exception is raised in the block, the transaction is aborted.
+	def transaction( &block )
+		if @metadata.transaction_active?
+			block.call
+		else
+			@metadata.transaction( &block ) 
+		end
+	end
+
+
+	### 
+	### Simple MetaStore API
+	### 
 
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
@@ -336,56 +392,24 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### Return the schema that describes the database as a String, loading
-	### it from the plugin resources if necessary
-	def schema
-		unless @schema
-			@schema = self.get_resource( SCHEMA_RESOURCE_NAME )
-			self.log.debug "Schema loaded as: %p" % [@schema]
-			@schema.gsub!( /\$Rev(?:: (\d+))?\s*\$/ ) do |match|
-				$1 ? $1 : '0'
-			end
-			self.log.debug "After transformation of  the rev: %p" % [@schema]
+	SQL_DUMP_STORE = %q{
+		SELECT uuid, key, val
+		FROM metaval
+		INNER JOIN metakey ON (metakey.id = metaval.m_id)
+		INNER JOIN resources ON (resources.id = metaval.r_id)
+	}
+
+	### MetaStore API: Return a hash of all the values in the store, keyed by UUID.
+	def dump_store
+		dumpstruct = Hash.new {|h,k| h[k] = {} }
+		
+		@metadata.execute( SQL_DUMP_STORE ).each do |uuid, key, val|
+			dumpstruct[ uuid ][ key.to_sym ] = val
 		end
 		
-		return @schema
+		return dumpstruct
 	end
 	
-	
-	### Extract the revision number from the schema resource and return it.
-	def schema_rev
-		if self.schema.match( /user_version\s*=\s*(\d+)/i )
-			return Integer( $1 )
-		else
-			return nil
-		end
-	end
-	
-	
-	### Returns the revision number of the schema that was installed for the 
-	### current db.
-	def installed_schema_rev
-		return @metadata.user_version
-	end
-	
-	
-	### Delete all resources from the database, but preserve the keys
-	def clear
-		@metadata.execute( 'DELETE FROM resources' )
-	end
-	
-	
-	### Execute a block in the scope of a transaction, committing it when the block returns.
-	### If an exception is raised in the block, the transaction is aborted.
-	def transaction( &block )
-		if @metadata.transaction_active?
-			block.call
-		else
-			@metadata.transaction( &block ) 
-		end
-	end
-
-
 
 	#########
 	protected

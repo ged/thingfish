@@ -275,7 +275,23 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	######
 
 	attr_reader :store, :model
+
+
+	### Output the current model to the log
+	def log_model
+		self.log.debug do
+			dumplines = []
+			@model.triples {|s,p,o| dumplines << "#{s}:#{p}:#{o}" }
+			
+			"Model is: \n  %s" % [ dumplines.join("\n  ") ]
+		end
+	end
 	
+
+
+	###
+	### Simple Metastore API
+	### 
 
 	### Returns +true+ if the given +uuid+ exists in the metastore.
 	def has_uuid?( uuid )
@@ -427,7 +443,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	end
 	
 
-	### Return a uniquified Array of all values in the metastore for the
+	### MetaStore API: Return a uniquified Array of all values in the metastore for the
 	### specified +prop+.
 	def get_all_property_values( prop )
 		prop_url = map_property( prop )
@@ -441,7 +457,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	end
 
 
-	### Return an array of uuids whose metadata matched the criteria specified
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria specified
 	### by +hash+. The criteria should be key-value pairs which describe
 	### exact metadata pairs. This is an exact match search.
 	def find_by_exact_properties( hash )
@@ -476,7 +492,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	end
 	
 
-	### Return an array of uuids whose metadata matched the criteria
+	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +hash+. The criteria should be key-value pairs which describe
 	### partial metadata pairs.  This is a wildcard search.
 	def find_by_matching_properties( hash )
@@ -524,15 +540,22 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		return uuids
 	end
 	
-
-	### Output the current model to the log
-	def log_model
-		self.log.debug do
-			dumplines = []
-			@model.triples {|s,p,o| dumplines << "#{s}:#{p}:#{o}" }
+	
+	### Metastore API: Dump all values in the store as a Hash keyed by UUID.
+	def dump_store
+		dumpstruct = {}
+		
+		# I don't know how to do this any other way than a full scan. Surely there
+		# must be one?
+		@model.triples do |subj, pred, obj|
+			keyword = self.class.unmap_from_predicate( pred )
+			uuid = subj.uri.to_uuid
 			
-			"Model is: \n  %s" % [ dumplines.join("\n  ") ]
+			dumpstruct[ uuid ] ||= {}
+			dumpstruct[ uuid ][ keyword.to_sym ] = obj.literal.to_s
 		end
+
+		return dumpstruct
 	end
 	
 

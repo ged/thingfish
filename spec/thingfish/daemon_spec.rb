@@ -777,11 +777,11 @@ describe ThingFish::Daemon do
 		end
 
 		it "uses default config IP" do
-			@daemon.host.should equal( ThingFish::Config::DEFAULTS[:ip])
+			@daemon.host.should == ThingFish::Config::DEFAULTS[:ip]
 		end
 
 		it "uses default config port" do
-			@daemon.port.should equal( ThingFish::Config::DEFAULTS[:port])
+			@daemon.port.should == ThingFish::Config::DEFAULTS[:port]
 		end
 	end
 
@@ -836,7 +836,7 @@ describe ThingFish::Daemon do
 		end
 
 		it "uses default config IP" do
-			@daemon.host.should equal( ThingFish::Config::DEFAULTS[:ip])
+			@daemon.host.should == ThingFish::Config::DEFAULTS[:ip]
 		end
 
 		it "binds to the test port" do

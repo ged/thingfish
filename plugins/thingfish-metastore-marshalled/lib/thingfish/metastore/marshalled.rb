@@ -281,7 +281,25 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 		return matching_uuids
 	end
+	
+	
+	### MetaStore API: Return a Hash of all data in the metastore, keyed by UUID.
+	def dump_store
+		rval = nil
 		
+		@lock.lock do
+			@metadata.transaction( true ) do
+				rval = @metadata.roots.inject({}) do |dumpstruct, uuid|
+					dumpstruct[ uuid ] = @metadata[ uuid ].dup
+					dumpstruct
+				end
+			end
+		end
+		
+		return rval
+	end
+	
+	
 end # class ThingFish::MarshalledMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

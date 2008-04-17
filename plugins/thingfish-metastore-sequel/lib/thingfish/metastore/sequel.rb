@@ -94,6 +94,11 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		self.init_db
 	end
 
+
+	######
+	public
+	######
+
 	# The Sequel object that is backing the metastore
 	attr_reader :metadata
 
@@ -101,11 +106,20 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def_delegators :@metadata, :transaction
 	
 
+	### Delete all resources from the database, but preserve the keys
+	def clear
+		self.transaction do
+			@id_cache[ :resources ] = {}
+			@metadata[ :resources ].delete
+			@metadata[ :metaval   ].delete
+		end
+	end
 
-	######
-	public
-	######
 
+
+	### 
+	### Simple Metastore API
+	### 
 
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
@@ -261,15 +275,21 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### Delete all resources from the database, but preserve the keys
-	def clear
-		self.transaction do
-			@id_cache[ :resources ] = {}
-			@metadata[ :resources ].delete
-			@metadata[ :metaval   ].delete
+	### MetaStore API: Dump the entire contents of the store as a Hash keyed by UUID.
+	def dump_store
+		dumpstruct = Hash.new {|h,k| h[k] = {} }
+		
+		dataset = @metadata[:metaval].
+			join( :metakey, :id => :m_id ).
+			join( :resources, :id => :metaval__r_id )
+	
+		dataset.select( :uuid, :key, :val ).each do |row|
+			dumpstruct[ row[:uuid] ][ row[:key].to_sym ] = row[:val]
 		end
+		
+		return dumpstruct
 	end
-
+	
 
 
 	#########

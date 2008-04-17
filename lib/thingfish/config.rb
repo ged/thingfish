@@ -128,12 +128,12 @@ class ThingFish::Config
 
 	### Create a new ThingFish::Config object. If the optional +source+ argument
 	### is specified, parse the config from it.
-	def initialize( source=nil, name=nil )
+	def initialize( source=nil, name=nil, &block )
 
 		if source
 			@struct = self.make_configstruct_from_source( source )
 		else
-			confighash = DEFAULTS.dup
+			confighash = Marshal.load( Marshal.dump(DEFAULTS) )
 			@struct = ConfigStruct.new( confighash )
 		end
 
@@ -141,6 +141,8 @@ class ThingFish::Config
 		@profiledir_path = nil
 		@time_created    = Time.now
 		@name            = name.to_s if name
+		
+		self.instance_eval( &block ) if block
 	end
 
 

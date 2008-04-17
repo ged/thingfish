@@ -250,6 +250,37 @@ describe "A MetaStore", :shared => true do
 	end
 
 
+	describe "import/export API" do
+
+		it "can dump the contents of the store as a Hash" do
+			@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+			@store.set_property( TEST_UUID,  :bitrate, '160' )
+			@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+
+			@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+			@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+			dumpstruct = @store.transaction { @store.dump_store }
+
+			dumpstruct.should be_an_instance_of( Hash )
+			# dumpstruct.keys.should == [ TEST_UUID, TEST_UUID2 ] # For debugging only
+			dumpstruct.keys.should have(2).members
+			dumpstruct.keys.should include( TEST_UUID, TEST_UUID2 )
+
+			dumpstruct[ TEST_UUID ].should be_an_instance_of( Hash )
+			dumpstruct[ TEST_UUID ].keys.should have(3).members
+			dumpstruct[ TEST_UUID ].keys.should include( :title, :bitrate, :namespace )
+			dumpstruct[ TEST_UUID ].values.should include( TEST_TITLE, '160', 'devlibrary' )
+			
+			dumpstruct[ TEST_UUID2 ].should be_an_instance_of( Hash )
+			dumpstruct[ TEST_UUID2 ].keys.should have(2).members
+			dumpstruct[ TEST_UUID2 ].keys.should include( :title, :namespace )
+			dumpstruct[ TEST_UUID2 ].values.should include( TEST_TITLE, 'private' )
+		end
+
+	end
+	
+
 	describe " (safety methods)" do
 		
 		it "eliminates system attributes from properties passed through #set_safe_properties" do
@@ -332,6 +363,7 @@ describe "A MetaStore", :shared => true do
 		
 		ran_block.should be_true()
 	end
+
 
 end
 

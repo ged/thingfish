@@ -54,8 +54,9 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 
-
+	### 
 	### Mandatory MetaStore API
+	### 
 	
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_uuid?( uuid )
@@ -179,6 +180,13 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 		
 		return matching_uuids
 	end
+	
+	
+	### MetaStore API: Return all values in the store as a Hash keyed by UUID.
+	def dump_store
+		@metadata.dup
+	end
+	
 
 end # class ThingFish::MemoryMetaStore
 

@@ -62,8 +62,9 @@ require 'thingfish/exceptions'
 #   Return an Array of all property keys in the store.
 # [<tt>get_all_property_values( key )</tt>]
 #   Return a uniquified Array of all values in the metastore for the specified +key+.
-
-
+# [<tt>dump_store()</tt>]
+#   Return a Hash of all metadata in the store, keyed by UUID.
+# 
 # Simple metastore plugins should either implement the below methods, or override
 # the #find_by_exact_properties() and #find_by_matching_properties() methods.
 #
@@ -74,6 +75,10 @@ require 'thingfish/exceptions'
 #   Return an array of uuids whose metadata matched the criteria
 #   specified by +key+ and +value+. This is a wildcard search.
 #
+# ---
+# To add:
+# [<tt>load_store( hash )</tt>]
+#   Replace the contents of the store with the given hash of metadata, keyed by UUID.
 class ThingFish::MetaStore
 	include PluginFactory,
 	        ThingFish::Loggable,
@@ -297,7 +302,8 @@ class ThingFish::MetaStore
 		:get_all_property_keys,
 		:get_all_property_values,
 		:find_exact_uuids,
-		:find_matching_uuids
+		:find_matching_uuids,
+		:dump_store
 
 
 	#########

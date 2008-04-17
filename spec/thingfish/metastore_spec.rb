@@ -126,6 +126,12 @@ describe ThingFish::MetaStore do
 			}.should raise_error( NotImplementedError, /#find_matching_uuids/ )
 		end
 		
+		it "raises NotImplementedError for #dump_store" do
+			lambda {
+				@metastore.dump_store
+			}.should raise_error( NotImplementedError, /#dump_store/ )
+		end
+		
 		it "returns a ResourceProxy to use when interacting with a resource's metadata set" do
 		    @metastore[ TEST_UUID ].
 				should be_a_kind_of( ThingFish::MetaStore::ResourceProxy )

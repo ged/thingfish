@@ -7,19 +7,29 @@
 # * Mahlon E. Smith
 # 
 
+require 'open3'
+require 'digest/md5'
 require 'rake/tasklib'
 require 'thingfish/client'
 require 'thingfish/config'
+require 'thingfish/daemon'
 
 
 class BenchmarkTask < Rake::Task
+
+	BENCH_CONFIG_DEFAULTS = {
+		:concurrency => 5,
+		:count => 300,
+	}
+
 
 	### Create a new benchmark task
 	def initialize( *args )
 		super
 
-		@datapoints = []
+		@datapoints = {}
 		@rundata = {}
+		@daemon = nil
 		@config = nil
 	end
 
@@ -60,20 +70,40 @@ class BenchmarkTask < Rake::Task
 	### run eval the specified block in the context of the task with the config set
 	### in the @config instance variable.
 	def with_config( configobj, benchmark_config={}, &block )
-		log "Running the %s benchmark with config %p" % [ self.name, configobj ]
+		trace "Running the %s benchmark with config %p" % [ self.name, configobj ]
 		begin
+			trace "Using config object 0x%0x" % [ configobj.object_id * 2 ]
 			@config = configobj
-			@config.install
-			@benchmark_config = benchmark_config
-			log "Defined config object 0x%0x" % [ configobj.object_id * 2 ]
+			@daemon = ThingFish::Daemon.new( @config )
+
+			log "Starting configured ThingFish daemon"
+			Signal.trap( 'INT'  ) { @daemon.shutdown("Interrupted") }
+			Signal.trap( 'TERM' ) { @daemon.shutdown("Terminated") }
+			@daemon_thread = @daemon.run
+			
+			@benchmark_config = BENCH_CONFIG_DEFAULTS.merge( benchmark_config )
 			self.instance_eval( &block )
+			
+			process_results( @datapoints )
 		ensure
-			log "Clearing out the config objects"
+			trace "Clearing out the config objects"
+			@daemon.shutdown("Benchmarks done") if @daemon
+
 			@benchmark_config = nil
 			@config = nil
 		end
 	end
 
+
+	### Process the results into a useful format
+	def process_results( datapoints )
+		$stderr.puts "Results: "
+		datapoints.each do |name, rows|
+			$stderr.puts "  #{name}:\n  ",
+				rows.collect {|row| "  %s" % row.join(',') }.join("\n")
+		end
+	end
+	
 
 	### Define a datapoint in the current benchmark for a given config
 	def datapoint( name, http_method=:get, uri="/", options={} )
@@ -83,6 +113,37 @@ class BenchmarkTask < Rake::Task
 			[ http_method.to_s.upcase, uri, name]
 		log " config: 0x%0x, concurrency: %d, iterations: %d" %
 			[ @config.object_id * 2, @benchmark_config[:concurrency], @benchmark_config[:count] ]
+		
+		configsum = Digest::MD5.hexdigest( @config.to_h.to_yaml )
+		resultsfile = BASEDIR + "ab-results.#{configsum}.#{Process.pid}.tsv"
+		
+		# Stuff to add to the benchmark config
+		# - timed benchmark instead of count
+		# - Arbitrary request header manipulation
+		# - AB verbosity
+		ab = [
+			'/usr/sbin/ab',
+			'-g', resultsfile.to_s,
+			'-n', @benchmark_config[:count].to_s,
+			'-c', @benchmark_config[:concurrency].to_s,
+			"#{@config.ip}:#{@config.port}#{uri}"
+		  ]
+		
+		trace "Running command: #{ab.join(' ')}"
+		Open3.popen3( *ab ) do |stdin, stdout, stderr|
+			trace "In the open3 block"
+			stdin.close
+			trace( stderr.gets ) until stderr.eof?
+			trace( stdout.gets ) until stdout.eof?
+		end
+		trace( "ab exited with code: %d" % [ $? ] )
+		
+		@datapoints[ name ] = []
+		resultsfile.each_line do |line|
+			@datapoints[ name ] << line.chomp.split( /\t/ )
+		end
+	ensure
+		resultsfile.delete if resultsfile && resultsfile.exist?
 	end
 	
 	
@@ -96,7 +157,6 @@ class BenchmarkTask < Rake::Task
 		client = ThingFish::Client.new( "http://#{@config.ip}:#{@config.port}/" )
 		return yield( client )
 	end
-	
 	
 end
 
@@ -117,7 +177,7 @@ end
 
 
 begin
-	gem 'gruff'
+	#gem 'gruff'
 
 	namespace :benchmarks do
 
@@ -139,15 +199,16 @@ begin
 		benchmark :barebones => [TESTIMAGE.to_s] do
 			config = ThingFish::Config.new do |config|
 				config.ip = '127.0.0.1'
-				config.port = 3474
+				config.port = 55555
 				config.logging.level = 'error'
 				config.logging.logfile = 'stderr'
 				config.plugins.handlers << 
 					{"simplemetadata"=>{"resource_dir"=>"var/www", "uris"=>"/metadata"}} <<
 					{"simplesearch"=>{"resource_dir"=>"var/www", "uris"=>"/search"}}
+				config.plugins.filters << ['ruby']
 			end
 
-			with_config( config, :count => 5000, :concurrency => 5 ) do
+			with_config( config, :count => 50, :concurrency => 5 ) do
 				resource = prep do |client|
 					res = ThingFish::Resource.from_file( TESTIMAGE, :format => 'image/jpeg' )
 					res.extent = TESTIMAGE.size
@@ -155,9 +216,10 @@ begin
 					res
 				end
 				
-				datapoint 'Default GET', :get, "/#{resource.uuid}"
-				datapoint 'Default POST', :post, '/', :entity_body => TESTIMAGE
-				datapoint 'Default POST', :put, "/#{resource.uuid}", :entity_body => TESTIMAGE
+				datapoint 'Default GET', :get, "/"
+				datapoint 'Resource GET a resource', :get, "/#{resource.uuid}"
+				datapoint 'Resource POST', :post, '/', :entity_body => TESTIMAGE
+				datapoint 'Resource PUT', :put, "/#{resource.uuid}", :entity_body => TESTIMAGE
 				datapoint 'Search Handler', :get, '/search?format=image/jpeg'
 				datapoint 'Metadata Handler', :get, "/metadata/#{resource.uuid}"
 			end
@@ -174,3 +236,5 @@ rescue LoadError => err
 end
 
 task :benchmarks => [ 'benchmarks:all' ]
+
+

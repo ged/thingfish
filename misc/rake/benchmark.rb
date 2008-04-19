@@ -14,6 +14,8 @@ require 'thingfish/client'
 require 'thingfish/config'
 require 'thingfish/daemon'
 
+require 'gruff'
+
 
 class BenchmarkTask < Rake::Task
 
@@ -97,10 +99,50 @@ class BenchmarkTask < Rake::Task
 
 	### Process the results into a useful format
 	def process_results( datapoints )
-		$stderr.puts "Results: "
-		datapoints.each do |name, rows|
-			$stderr.puts "  #{name}:\n  ",
-				rows.collect {|row| "  %s" % row.join(',') }.join("\n")
+		timestamp = Time.now.strftime('%Y%m%d-%H%M%S')
+		benchmarkname = self.name[ /.*:(.*)$/, 1 ]
+		
+		savefile = BASEDIR + "#{benchmarkname}-benchmark.%s" % [ timestamp ]
+		savefile.open( File::CREAT|File::EXCL|File::WRONLY ) do |fh|
+			Marshal.dump( datapoints, fh )
+		end
+
+		datapoints.each do |name, timedata|
+			datasets = timedata.transpose
+
+			g = Gruff::StackedArea.new( 1200 )
+			g.theme_keynote
+			g.title = "ThingFish Benchmark -- #{name}"
+			g.title_font_size = 14
+			g.y_axis_increment = 10
+			g.y_axis_label = "Time (ms)"
+			g.x_axis_label = "%d Requests Over %0.3f seconds" % [
+				datasets.first.length - 1,
+				(Float( datasets[1][-1] ) - Float( datasets[1][1] )) / 1000000.0
+			  ]
+
+			# plot "http_benchmark.txt" using 7 with lines title "ctime", \
+			#      "http_benchmark.txt" using 8 with lines title "dtime", \
+			#      "http_benchmark.txt" using 9 with lines title "ttime", \
+			#      "http_benchmark.txt" using 10 with lines title "wait"
+
+			max = 0
+			datasets[ 2..5 ].each do |data|
+				values = data[1..-1].collect {|i| Integer(i) }
+				max += values.max
+				g.data( data[0], values )
+			end
+
+			g.maximum_value = max
+			g.labels = {
+				0 => "0",
+				(datasets.first.length - 2) => (datasets.first.length - 2).to_s
+			}
+
+			graphname = "%s-%s" % [ benchmarkname, name.gsub(/\W+/, '_') ]
+			graph_file = BASEDIR + "#{graphname}-#{timestamp}.png"
+			log "Writing graph to #{graph_file}"
+			g.write( graph_file.to_s )
 		end
 	end
 	
@@ -109,10 +151,15 @@ class BenchmarkTask < Rake::Task
 	def datapoint( name, http_method=:get, uri="/", options={} )
 		raise "Not in a config section" unless @config
 		
-		log "Running ab '%s %s' for the '%s' datapoint" %
-			[ http_method.to_s.upcase, uri, name]
-		log " config: 0x%0x, concurrency: %d, iterations: %d" %
-			[ @config.object_id * 2, @benchmark_config[:concurrency], @benchmark_config[:count] ]
+		log "Adding the '#{name}' datapoint"
+		trace " ab config '%s %s' on %s port %d: concurrency: %d, iterations: %d" % [
+			http_method.to_s.upcase,
+			uri,
+			@config[:ip],
+			@config[:port],
+			@benchmark_config[:concurrency],
+			@benchmark_config[:count]
+		  ]
 		
 		configsum = Digest::MD5.hexdigest( @config.to_h.to_yaml )
 		resultsfile = BASEDIR + "ab-results.#{configsum}.#{Process.pid}.tsv"
@@ -137,6 +184,7 @@ class BenchmarkTask < Rake::Task
 			trace( stdout.gets ) until stdout.eof?
 		end
 		trace( "ab exited with code: %d" % [ $? ] )
+		
 		
 		@datapoints[ name ] = []
 		resultsfile.each_line do |line|
@@ -177,7 +225,6 @@ end
 
 
 begin
-	#gem 'gruff'
 
 	namespace :benchmarks do
 
@@ -208,7 +255,7 @@ begin
 				config.plugins.filters << ['ruby']
 			end
 
-			with_config( config, :count => 50, :concurrency => 5 ) do
+			with_config( config, :count => 500, :concurrency => 5 ) do
 				resource = prep do |client|
 					res = ThingFish::Resource.from_file( TESTIMAGE, :format => 'image/jpeg' )
 					res.extent = TESTIMAGE.size
@@ -216,12 +263,12 @@ begin
 					res
 				end
 				
-				datapoint 'Default GET', :get, "/"
-				datapoint 'Resource GET a resource', :get, "/#{resource.uuid}"
-				datapoint 'Resource POST', :post, '/', :entity_body => TESTIMAGE
-				datapoint 'Resource PUT', :put, "/#{resource.uuid}", :entity_body => TESTIMAGE
-				datapoint 'Search Handler', :get, '/search?format=image/jpeg'
-				datapoint 'Metadata Handler', :get, "/metadata/#{resource.uuid}"
+				datapoint 'GET /',                :get,  "/"
+				datapoint 'GET /«uuid»',          :get,  "/#{resource.uuid}"
+				datapoint 'POST /',               :post, '/', :entity_body => TESTIMAGE
+				datapoint 'PUT /«uuid»',          :put,  "/#{resource.uuid}", :entity_body => TESTIMAGE
+				datapoint 'GET /search',          :get,  '/search?format=image/jpeg'
+				datapoint 'GET /metadata/«uuid»', :get,  "/metadata/#{resource.uuid}"
 			end
 		end
 	end

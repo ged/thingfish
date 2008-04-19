@@ -14,9 +14,6 @@ require 'thingfish/client'
 require 'thingfish/config'
 require 'thingfish/daemon'
 
-require 'gruff'
-
-
 class BenchmarkTask < Rake::Task
 
 	BENCH_CONFIG_DEFAULTS = {
@@ -33,6 +30,13 @@ class BenchmarkTask < Rake::Task
 		@rundata = {}
 		@daemon = nil
 		@config = nil
+		
+		begin
+			require 'gruff'
+			@have_gruff = true
+		rescue LoadError
+			@have_gruff = false
+		end
 	end
 
 	
@@ -106,6 +110,8 @@ class BenchmarkTask < Rake::Task
 		savefile.open( File::CREAT|File::EXCL|File::WRONLY ) do |fh|
 			Marshal.dump( datapoints, fh )
 		end
+
+		return unless @have_gruff
 
 		datapoints.each do |name, timedata|
 			datasets = timedata.transpose

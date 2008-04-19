@@ -411,6 +411,13 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			self.log.debug( debugtrace )
 		end
 
+		# If the client is already closed, let's not bother creating the
+		# response, since there is no client to receive it.
+		if client.closed?
+			self.log.warn 'Aborting without response: client socket closed'
+			return
+		end
+		
 		self.log.debug "Preparing error response (%p)" % [ statuscode ]
 		response.reset
 		response.status = statuscode

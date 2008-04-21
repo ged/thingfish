@@ -245,12 +245,13 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Return a uniquified Array of all values in the metastore for
 	### the specified +key+.
 	def get_all_property_values( key )
-		return @metadata[ :metaval, :metakey ].
+		dataset = @metadata[ :metaval, :metakey ].
 			filter( :metaval__m_id => :metakey__id, :metakey__key => key ).
-			distinct.select( :metaval__val ).
-			map( :val ).compact
+			distinct
+		
+		return dataset.select( :metaval__val => :val ).map( :val ).compact
 	end
-	
+
 	
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.

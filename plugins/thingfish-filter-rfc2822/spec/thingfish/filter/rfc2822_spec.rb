@@ -61,37 +61,6 @@ describe ThingFish::Rfc2822Filter do
 
 	describe " with a simple message body" do
 
-		SIMPLE_MESSAGE_METADATA = {
-			:rfc822_content_transfer_encoding => "7bit",
-			:rfc822_content_type => "text/plain; charset=utf-8",
-			:rfc822_date => "Mon, 10 Sep 2007 18:14:30 -0700",
-			:rfc822_delivered_to => "mailing list klonkweasel@lists.squidge.com",
-			:rfc822_from => "Example User <example@squidge.com>",
-			:rfc822_mailing_list => "contact klonkweasel-help@lists.squidge.com; run by ezmlm",
-			:rfc822_message_id => "<6410929.583831189473270716.JavaMail.root@zimbra01.squidge.com>",
-			:rfc822_mime_version => "1.0",
-			:rfc822_received =>
-				"; Mon, 10 Sep 2007 18:14:31 -0700\n"\
-				"from unknown by lists.squidge.com with SMTP; Mon, 10 Sep 2007 18:14:31 -0700\n"\
-				"from localhost by zimbra01.squidge.com with ESMTP id 2B947C92A62 "\
-					"for <klonkweasel@lists.squidge.com>; Mon, 10 Sep 2007 18:14:31 -0700\n"\
-				"from zimbra01.squidge.com by localhost with ESMTP id I0zZQHBFhqvx "\
-					"for <klonkweasel@lists.squidge.com>; Mon, 10 Sep 2007 18:14:31 -0700\n"\
-				"by zimbra01.squidge.com id 037F0C9315E; Mon, 10 Sep 2007 18:14:31 -0700\n"\
-				"from zimbra01.squidge.com by zimbra01.squidge.com with ESMTP id EB0B7C92A62 "\
-					"for <klonkweasel@squidge.com>; Mon, 10 Sep 2007 18:14:30 -0700",
-			:rfc822_return_path => "<example@squidge.com>",
-			:rfc822_subject => "Dishwasher Status",
-			:rfc822_to => "klonkweasel <klonkweasel@squidge.com>",
-			:rfc822_x_originating_ip => "[10.5.1.74]",
-			:rfc822_x_spam_level => "",
-			:rfc822_x_spam_score => "-4.384",
-			:rfc822_x_spam_status => "No, score=-4.384 tagged_above=-10 required=4 " \
-				"tests=[ALL_TRUSTED=-1.8, AWL=0.015, BAYES_00=-2.599]",
-			:rfc822_x_virus_scanned => "amavisd-new at ",
-		  }
-		
-
 		before( :each ) do
 			@testmessage = (@datadir + 'simple.eml').open
 
@@ -103,54 +72,41 @@ describe ThingFish::Rfc2822Filter do
 			@request.stub!( :each_body ).and_yield( @testmessage, @request_metadata )
 		end
 
-		it "can extract mail-message headers to prefixed metadata" do
-			@request.should_receive( :append_metadata_for ).with( @testmessage, SIMPLE_MESSAGE_METADATA )
+
+		it "extracts metadata keys from the mail headers" do
+			metadata = nil
+			@request.should_receive( :append_metadata_for ).and_return {|msg, md| metadata = md }
+
 			@filter.handle_request( @request, @response )
+
+			metadata[ :rfc822_content_transfer_encoding ].should == "7bit"
+			metadata[ :rfc822_content_type ].should == "text/plain; charset=utf-8"
+			metadata[ :rfc822_delivered_to ].should == "mailing list klonkweasel@lists.squidge.com"
+			metadata[ :rfc822_from ].should == "Example User <example@squidge.com>"
+			metadata[ :rfc822_mailing_list ].
+				should == "contact klonkweasel-help@lists.squidge.com; run by ezmlm"
+			metadata[ :rfc822_message_id ].
+				should == "<6410929.583831189473270716.JavaMail.root@zimbra01.squidge.com>"
+			metadata[ :rfc822_mime_version ].should == "1.0"
+			metadata[ :rfc822_return_path ].should == "<example@squidge.com>"
+			metadata[ :rfc822_subject ].should == "Dishwasher Status"
+			metadata[ :rfc822_to ].should == "klonkweasel <klonkweasel@squidge.com>"
+			metadata[ :rfc822_x_originating_ip ].should == "[10.5.1.74]"
+			metadata[ :rfc822_x_spam_level ].should == ""
+			metadata[ :rfc822_x_spam_score ].should == "-4.384"
+			metadata[ :rfc822_x_spam_status ].should == "No, score=-4.384 tagged_above=-10 required=4 " \
+				"tests=[ALL_TRUSTED=-1.8, AWL=0.015, BAYES_00=-2.599]"
+			metadata[ :rfc822_x_virus_scanned ].should == "amavisd-new at "
+
+			metadata[ :rfc822_date ].should =~ /\w+, \d+ \w+ \d{4} \d\d:\d\d:\d\d [+\-]\d{4}/
+			metadata[ :rfc822_received ].should =~ %r{lists.squidge.com with SMTP}
+			metadata[ :rfc822_received ].should =~ %r{zimbra01.squidge.com with ESMTP id 2B947C92A62}
 		end
 	
 	end
 
 
 	describe " with a multipart/mixed message body" do
-
-		MIXED_MESSAGE_METADATA = {
-			:rfc822_received => "; Tue, 11 Sep 2007 16:27:42 -0700\n"\
-				"from unknown by lists.squidge.com with SMTP; Tue, 11 Sep 2007 16:27:42 -0700\n"\
-				"from localhost by zimbra01.squidge.com with ESMTP id ED0B4216000B; "\
-					"Tue, 11 Sep 2007 16:27:41 -0700\n"\
-				"from zimbra01.squidge.com by localhost with ESMTP id mKCdZN8190wR; "\
-					"Tue, 11 Sep 2007 16:27:41 -0700\n"\
-				"by zimbra01.squidge.com id 33C4A2160006; Tue, 11 Sep 2007 16:27:41 -0700\n"\
-				"from zimbra01.squidge.com by zimbra01.squidge.com with ESMTP id 19DC12160005; "\
-					"Tue, 11 Sep 2007 16:27:41 -0700",
-			:rfc822_delivered_to => "mailing list klonkweasel@lists.squidge.com",
-			:rfc822_x_spam_score => "-4.064",
-			:rfc822_return_path => "<example@squidge.com>",
-			:rfc822_x_spam_status => "No, score=-4.064 tagged_above=-10 required=4 "\
-				"tests=[ALL_TRUSTED=-1.8, AWL=-0.040, BAYES_00=-2.599, HTML_30_40=0.374, "\
-				"HTML_MESSAGE=0.001]",
-			:rfc822_from => "Example User <example@squidge.com>",
-			:rfc822_in_reply_to => "<26710539.674321189553026355.JavaMail.root@zimbra01.squidge.com>",
-			:rfc822_subject => "9.11.07 Weekly SQUIDGE Media Update",
-			:rfc822_x_virus_scanned => "amavisd-new at ",
-			:rfc822_mailing_list => "contact klonkweasel-help@lists.squidge.com; run by ezmlm",
-			:rfc822_to => "klonkweasel <klonkweasel@squidge.com>, "\
-				"Sleepy Dwarf <sleepy@dwarves.com>, "\
-				"Gargleflop Bothangus <gb@example.com>, "\
-				"Kalmditch Reiser <kalmrei@example.com>, "\
-				"Harthunk Lidlin <hl33212@example.net>, "\
-				"Bingo Karsomovic <daddylongtoes@example.com>, "\
-				"Yin Yhinhintinamin <jjunk@example.com>, "\
-				"Quasitenbithelen Snookeri <otherguy@example.com>",
-			:rfc822_message_id => "<21021437.674731189553260979.JavaMail.root@zimbra01.squidge.com>",
-			:rfc822_content_type=>'multipart/mixed; '\
-				'boundary="----=_Part_16039_15903964.1189553260972"',
-			:rfc822_x_originating_ip => "[10.4.1.96]",
-			:rfc822_mime_version => "1.0",
-			:rfc822_x_spam_level => "",
-			:rfc822_date => "Tue, 11 Sep 2007 16:27:40 -0700",
-		  }
-
 
 		before( :each ) do
 			@testmessage = (@datadir + 'mixed.eml').open
@@ -196,7 +152,7 @@ describe ThingFish::Rfc2822Filter do
 			  } )
 
 			@request.should_receive( :append_metadata_for ).
-				with( @testmessage, MIXED_MESSAGE_METADATA )
+				with( @testmessage, an_instance_of(Hash) )
 			@filter.handle_request( @request, @response )
 		end
 	

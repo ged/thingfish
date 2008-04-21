@@ -1,0 +1,160 @@
+--- ab.c.original	2008-04-21 08:46:05.000000000 -0700
++++ ab.c	2008-04-21 09:21:47.000000000 -0700
+@@ -761,8 +761,10 @@
+     if (keepalive)
+         printf("Keep-Alive requests:    %ld\n", doneka);
+     printf("Total transferred:      %ld bytes\n", totalread);
+-    if (posting > 0)
++    if (posting == 1)
+         printf("Total POSTed:           %ld\n", totalposted);
++    if (posting == 2)
++        printf("Total PUTed:           %ld\n", totalposted);
+     printf("HTML transferred:       %ld bytes\n", totalbread);
+ 
+     /* avoid divide by zero */
+@@ -1030,10 +1032,14 @@
+     printf("<tr %s><th colspan=2 %s>Total transferred:</th>"
+        "<td colspan=2 %s>%ld bytes</td></tr>\n",
+        trstring, tdstring, tdstring, totalread);
+-    if (posting > 0)
++    if (posting == 1)
+         printf("<tr %s><th colspan=2 %s>Total POSTed:</th>"
+            "<td colspan=2 %s>%ld</td></tr>\n",
+            trstring, tdstring, tdstring, totalposted);
++    if (posting == 2)
++        printf("<tr %s><th colspan=2 %s>Total PUTed:</th>"
++           "<td colspan=2 %s>%ld</td></tr>\n",
++           trstring, tdstring, tdstring, totalposted);
+     printf("<tr %s><th colspan=2 %s>HTML transferred:</th>"
+        "<td colspan=2 %s>%ld bytes</td></tr>\n",
+        trstring, tdstring, tdstring, totalbread);
+@@ -1480,6 +1486,7 @@
+ 
+ static void test(void)
+ {
++	char *verb = "GET";
+     apr_time_t now;
+     apr_int16_t rv;
+     long i;
+@@ -1544,23 +1551,45 @@
+ 
+     /* setup request */
+     if (posting <= 0) {
++        switch (posting) {
++			case -2:
++				verb = "DELETE";
++				break;
++			case -1:
++				verb = "HEAD";
++				break;
++			case 0:
++				verb = "GET";
++				break;
++		}
++
+         snprintf_res = apr_snprintf(request, sizeof(_request),
+             "%s %s HTTP/1.0\r\n"
+             "%s" "%s" "%s"
+             "%s" "\r\n",
+-            (posting == 0) ? "GET" : "HEAD",
++            verb,
+             (isproxy) ? fullurl : path,
+             keepalive ? "Connection: Keep-Alive\r\n" : "",
+             cookie, auth, hdrs);
+     }
+     else {
++        switch (posting) {
++			case 1:
++				verb = "POST";
++				break;
++			case 2:
++				verb = "PUT";
++				break;
++		}
++
+         snprintf_res = apr_snprintf(request,  sizeof(_request),
+-            "POST %s HTTP/1.0\r\n"
++            "%s %s HTTP/1.0\r\n"
+             "%s" "%s" "%s"
+             "Content-length: %" APR_SIZE_T_FMT "\r\n"
+             "Content-type: %s\r\n"
+             "%s"
+             "\r\n",
++			verb,
+             (isproxy) ? fullurl : path,
+             keepalive ? "Connection: Keep-Alive\r\n" : "",
+             cookie, auth,
+@@ -1579,7 +1608,7 @@
+     /*
+      * Combine headers and (optional) post file into one contineous buffer
+      */
+-    if (posting == 1) {
++    if (posting >= 1) {
+         char *buff = malloc(postlen + reqlen + 1);
+         if (!buff) {
+             fprintf(stderr, "error creating request buffer: out of memory\n");
+@@ -1779,10 +1808,12 @@
+     fprintf(stderr, "    -c concurrency  Number of multiple requests to make\n");
+     fprintf(stderr, "    -t timelimit    Seconds to max. wait for responses\n");
+     fprintf(stderr, "    -p postfile     File containing data to POST\n");
++    fprintf(stderr, "    -u putfile      File containing data to PUT\n");
+     fprintf(stderr, "    -T content-type Content-type header for POSTing\n");
+     fprintf(stderr, "    -v verbosity    How much troubleshooting info to print\n");
+     fprintf(stderr, "    -w              Print out results in HTML tables\n");
+-    fprintf(stderr, "    -i              Use HEAD instead of GET\n");
++    fprintf(stderr, "    -i              Send a HEAD request\n");
++    fprintf(stderr, "    -D              Send a DELETE request\n");
+     fprintf(stderr, "    -x attributes   String to insert as table attributes\n");
+     fprintf(stderr, "    -y attributes   String to insert as tr attributes\n");
+     fprintf(stderr, "    -z attributes   String to insert as td or th attributes\n");
+@@ -1962,7 +1993,7 @@
+ #endif
+ 
+     apr_getopt_init(&opt, cntxt, argc, argv);
+-    while ((status = apr_getopt(opt, "n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq"
++    while ((status = apr_getopt(opt, "n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq:Du:"
+ #ifdef USE_SSL
+             "Z:f:"
+ #endif
+@@ -1984,10 +2015,13 @@
+                 concurrency = atoi(optarg);
+                 break;
+             case 'i':
+-                if (posting == 1)
+-                err("Cannot mix POST and HEAD\n");
++                if (posting != 0) err("Cannot mix HTTP methods\n");
+                 posting = -1;
+                 break;
++            case 'D':
++                if (posting != 0) err("Cannot mix HTTP methods\n");
++                posting = -2;
++                break;
+             case 'g':
+                 gnuplot = strdup(optarg);
+                 break;
+@@ -2002,7 +2036,7 @@
+                 break;
+             case 'p':
+                 if (posting != 0)
+-                    err("Cannot mix POST and HEAD\n");
++                    err("Cannot mix HTTP methods\n");
+                 if (0 == (r = open_postfile(optarg))) {
+                     posting = 1;
+                 }
+@@ -2010,6 +2044,16 @@
+                     exit(r);
+                 }
+                 break;
++            case 'u':
++                if (posting != 0)
++                    err("Cannot mix HTTP methods\n");
++                if (0 == (r = open_postfile(optarg))) {
++                    posting = 2;
++                }
++                else if (postdata) {
++                    exit(r);
++                }
++                break;
+             case 'v':
+                 verbosity = atoi(optarg);
+                 break;

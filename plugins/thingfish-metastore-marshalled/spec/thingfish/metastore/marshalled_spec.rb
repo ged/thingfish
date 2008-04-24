@@ -36,9 +36,13 @@ end
 
 
 describe ThingFish::MarshalledMetaStore do
-	include ThingFish::TestConstants
-	include ThingFish::SpecHelpers
+	include ThingFish::TestConstants,
+		ThingFish::SpecHelpers
 
+	before( :all ) do
+		setup_logging( :fatal )
+	end
+	
 	before(:each) do
 		@tmpdir = make_tempdir()
 		@spooldir = @tmpdir + 'spool'
@@ -48,6 +52,12 @@ describe ThingFish::MarshalledMetaStore do
 	after(:each) do
 		@tmpdir.rmtree
 	end
+
+	after( :all ) do
+		reset_logging()
+	end
+
+
 
 	it_should_behave_like "A MetaStore"
 end

@@ -143,7 +143,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			# Wipe existing properties
 			@metadata[ :metaval ].
 				filter( :r_id => @metadata[ :resources ].
-						filter( :uuid => uuid.to_s ).select( :id ) ).delete
+				filter( :uuid => uuid.to_s ).select( :id ) ).delete
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
@@ -290,7 +290,46 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		
 		return dumpstruct
 	end
+
+
+	### Metastore API: Replace all values in the store with those in the given hash.
+	def load_store( hash )
+		self.transaction do
+			self.clear
+		
+			hash.each do |uuid, properties|
+				r_id = get_id( :resources, uuid )
+
+				properties.each do |propname, value|
+					m_id = get_id( :metakey, propname )
+					@metadata[ :metaval ] << [ r_id, m_id, value.to_s ]
+				end
+			end
+
+		end
+	end
 	
+	
+	### Metastore API: Yield all the metadata in the store one resource at a time
+	def each_resource # :yields: uuid, properties_hash
+		@metadata[ :resources ].select( :uuid, :id ).each do |row|
+			self.log.debug "Building properties for %s" % [ row[:uuid] ]
+			
+			ds = @metadata[:metaval].
+				join( :metakey, :id => :m_id ).
+				filter( :r_id => row[:id] )
+
+			properties = ds.select( :key, :val ).inject({}) do |hash, pair|
+				self.log.debug "  adding property: %p" % [ pair ]
+				hash[ pair[:key].to_sym ] = pair[:val]
+				hash
+			end
+			
+			self.log.debug "Yielding %p for UUID %s" % [ properties, row[:uuid] ]
+			yield( row[:uuid], properties )
+		end
+	end
+
 
 
 	#########

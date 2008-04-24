@@ -64,6 +64,8 @@ require 'thingfish/exceptions'
 #   Return a uniquified Array of all values in the metastore for the specified +key+.
 # [<tt>dump_store()</tt>]
 #   Return a Hash of all metadata in the store, keyed by UUID.
+# [<tt>load_store( hash )</tt>]
+#   Replace the contents of the store with the given hash of metadata, keyed by UUID.
 # 
 # Simple metastore plugins should either implement the below methods, or override
 # the #find_by_exact_properties() and #find_by_matching_properties() methods.
@@ -74,16 +76,12 @@ require 'thingfish/exceptions'
 # [<tt>find_matching_uuids()</tt>]
 #   Return an array of uuids whose metadata matched the criteria
 #   specified by +key+ and +value+. This is a wildcard search.
-#
-# ---
-# To add:
-# [<tt>load_store( hash )</tt>]
-#   Replace the contents of the store with the given hash of metadata, keyed by UUID.
 class ThingFish::MetaStore
-	include PluginFactory,
+	include Enumerable,
+	        PluginFactory,
 	        ThingFish::Loggable,
 	        ThingFish::AbstractClass,
-			ThingFish::HtmlInspectableObject
+	        ThingFish::HtmlInspectableObject
 
 
 	# SVN Revision
@@ -286,6 +284,35 @@ class ThingFish::MetaStore
 			self.find_matching_uuids( key, value )
 		end
 	end
+
+
+	### Yield the metadata in the store to the provided block one resource at a time.
+	def migrate
+		self.each_resource do |uuid, properties|
+			yield( uuid, properties )
+		end
+	end
+	
+	
+	### Migrate all the data from the specified +other_metastore+, replacing all the
+	### current values.
+	def migrate_from( other_metastore )
+		self.transaction do
+			self.clear
+
+			self.log.info "Migrating metadata from %s:0x%08x to %s:0x%08x" % [
+				other_metastore.class.name,
+				other_metastore.object_id * 2,
+				self.class.name,
+				self.object_id * 2
+			  ]
+			other_metastore.migrate do |uuid, properties|
+				self.log.info "  copying %s: %d properties" % [ uuid, properties.length ]
+				self.set_properties( uuid, properties )
+			end
+		end
+	end
+	
 	
 
 	### Mandatory MetaStore API
@@ -303,7 +330,10 @@ class ThingFish::MetaStore
 		:get_all_property_values,
 		:find_exact_uuids,
 		:find_matching_uuids,
-		:dump_store
+		:dump_store,
+		:load_store,
+		:each_resource,
+		:clear
 
 
 	#########
@@ -362,6 +392,7 @@ class ThingFish::MetaStore
 	
 		return uuids ? uuids : []
 	end
+
 end # class ThingFish::MetaStore
 
 

@@ -409,6 +409,50 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		
 		return dumpstruct
 	end
+
+
+	### Metastore API: Replace all values in the store with those in the given hash.
+	def load_store( hash )
+		self.clear
+		
+		hash.each do |uuid, properties|
+			r_id = get_id( :resource, uuid )
+			
+			properties.each do |propname, value|
+				m_id = get_id( :metakey, propname )
+				@metadata.execute(%q{
+					REPLACE INTO metaval
+						VALUES ( :r_id, :m_id, :value ) },
+					r_id, m_id, value
+				)
+
+			end
+		end
+	end
+	
+	
+	SQL_EACH_RESOURCE = %q{
+		SELECT key, val
+		FROM metaval
+			JOIN metakey ON (metakey.id = metaval.m_id)
+		WHERE (r_id = :id)
+	}
+
+	### Metastore API: Yield all the metadata in the store one resource at a time
+	def each_resource # :yields: uuid, properties_hash
+		@metadata.execute( 'SELECT id, uuid FROM resources' ).each do |id, uuid|
+			self.log.debug "Gathering properties for %s" % [ uuid ]
+
+			properties = @metadata.execute( SQL_EACH_RESOURCE, id ).inject({}) do |props,pair|
+				self.log.debug "  adding property %p" % [ pair ]
+				props[ pair[0].to_sym ] = pair[1]
+				props
+			end
+
+			self.log.debug "Yielding %s: %p" % [ uuid, properties ]
+			yield( uuid, properties )
+		end
+	end
 	
 
 	#########

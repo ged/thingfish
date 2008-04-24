@@ -11,6 +11,7 @@ BEGIN {
 
 begin
 	require 'spec/runner'
+	require 'spec/lib/helpers'
 	require 'thingfish'
 	require 'thingfish/metastore/memory'
 	require 'spec/lib/metastore_behavior'
@@ -27,10 +28,10 @@ end
 #####################################################################
 
 describe "An instance of MemoryMetaStore" do
+	include ThingFish::SpecHelpers
 
-	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+	before( :all ) do
+		setup_logging( :fatal )
 	end
 	
 	before(:each) do
@@ -38,7 +39,7 @@ describe "An instance of MemoryMetaStore" do
 	end
 
 	after(:all) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 	
 	

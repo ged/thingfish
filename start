@@ -44,7 +44,7 @@ else
 end
 
 config = nil
-configfile = "etc/thingfish.conf-#{suffix}"
+configfile = ARGV.shift || "etc/thingfish.conf-#{suffix}"
 if File.exist?( configfile )
 	config = ThingFish::Config.load( configfile )
 else

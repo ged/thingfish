@@ -58,6 +58,12 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	### Mandatory MetaStore API
 	### 
 	
+	### MetaStore API: Clear all resources from the store.
+	def clear
+		@metadata.clear
+	end
+	
+	
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_uuid?( uuid )
 		return @metadata.key?( uuid.to_s )
@@ -188,6 +194,18 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 	
 
+	### Metastore API: Replace all values in the store with those in the given hash.
+	def load_store( hash )
+		@metadata.replace( hash.dup )
+	end
+	
+
+	### Metastore API: Yield all the metadata in the store one resource at a time
+	def each_resource( &block )  # :yields: uuid, properties_hash
+		@metadata.each( &block )
+	end
+
+	
 end # class ThingFish::MemoryMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

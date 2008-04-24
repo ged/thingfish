@@ -85,7 +85,7 @@ describe ThingFish::RdfMetaStore do
 	describe " with default configuration values " do
 
 		Schemas = ThingFish::RdfMetaStore::Schemas
-
+		
 
 		STORE_OPTIONS = {
 			:store => 'hashes',

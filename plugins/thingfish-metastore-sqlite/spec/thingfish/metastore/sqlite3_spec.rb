@@ -28,18 +28,17 @@ rescue LoadError
 	raise
 end
 
-include ThingFish::SpecHelpers
-include ThingFish::TestConstants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe "A SQLite3 MetaStore" do
+	include ThingFish::SpecHelpers,
+		ThingFish::TestConstants
 	
-	before(:all) do
-		ThingFish.logger = Logger.new( $stderr )
-		ThingFish.logger.level = Logger::FATAL
+	before( :all ) do
+		setup_logging( :fatal )
 
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent.parent + 'resources'
 		@tmpdir = make_tempdir()
@@ -54,8 +53,10 @@ describe "A SQLite3 MetaStore" do
 	after(:all) do
 		@store.commit
 		@tmpdir.rmtree
-		ThingFish.reset_logger
+
+		reset_logging()
 	end
+
 
 	it_should_behave_like "A MetaStore"
 	

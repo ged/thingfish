@@ -26,8 +26,23 @@ end
 
 
 describe "A MetaStore", :shared => true do
-	include ThingFish::TestConstants
-	include ThingFish::SpecHelpers
+	include ThingFish::TestConstants,
+	        ThingFish::SpecHelpers
+
+	unless defined?( TEST_DUMPSTRUCT )
+		TEST_DUMPSTRUCT = {
+			TEST_UUID => {
+				:title => TEST_TITLE,
+				:bitrate => '160',
+				:namespace => 'devlibrary',
+			},
+
+			TEST_UUID2 => {
+				:title => TEST_TITLE,
+				:namespace => 'private',
+			},
+		}
+	end
 
 	it "can set and get a property belonging to a UUID" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
@@ -249,8 +264,35 @@ describe "A MetaStore", :shared => true do
 		found.first.should == TEST_UUID
 	end
 
+	
+	it "can iterate over all of its resources, yielding them as uuid/prophash pairs" do
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :bitrate, '160' )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
 
-	describe "import/export API" do
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+		
+		results = {}
+		@store.each_resource do |uuid, properties|
+			results[ uuid ] = properties
+		end
+		
+		results.should have(2).members
+		results.keys.should include( TEST_UUID, TEST_UUID2 )
+		results[ TEST_UUID ].keys.should have(3).members 
+		results[ TEST_UUID ][:title].should == TEST_TITLE
+		results[ TEST_UUID ][:bitrate].should == '160'
+		results[ TEST_UUID ][:namespace].should == 'devlibrary'
+		
+		results[ TEST_UUID2 ].keys.should have(2).members 
+		results[ TEST_UUID2 ][:title].should == TEST_TITLE
+		results[ TEST_UUID2 ][:namespace].should == 'private'
+	end
+	
+
+
+	describe "import/export/migration API" do
 
 		it "can dump the contents of the store as a Hash" do
 			@store.set_property( TEST_UUID,  :title, TEST_TITLE )
@@ -276,6 +318,74 @@ describe "A MetaStore", :shared => true do
 			dumpstruct[ TEST_UUID2 ].keys.should have(2).members
 			dumpstruct[ TEST_UUID2 ].keys.should include( :title, :namespace )
 			dumpstruct[ TEST_UUID2 ].values.should include( TEST_TITLE, 'private' )
+		end
+
+		it "clears any current metadata when loading a metastore dump" do
+			@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+			@store.set_property( TEST_UUID,  :bitrate, '160' )
+			@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+
+			@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+			@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+			@store.transaction { @store.load_store({}) }
+			
+			@store.should_not have_uuid( TEST_UUID )
+			@store.should_not have_uuid( TEST_UUID2 )
+		end
+
+		it "can load the store from a Hash" do
+			@store.transaction { @store.load_store(TEST_DUMPSTRUCT) }
+			
+			@store.get_property( TEST_UUID,  :title ).should == TEST_TITLE
+			@store.get_property( TEST_UUID,  :bitrate ).should == '160'
+			@store.get_property( TEST_UUID,  :namespace ).should == 'devlibrary'
+
+			@store.get_property( TEST_UUID2, :title ).should == TEST_TITLE
+			@store.get_property( TEST_UUID2, :namespace ).should == 'private'
+		end
+		
+		
+		it "can migrate directly from another metastore" do
+			other_store = mock( "other metastore mock" )
+			expectation = other_store.should_receive( :migrate )
+			TEST_DUMPSTRUCT.each do |uuid, properties|
+				expectation.and_yield( uuid, properties )
+			end
+			
+			@store.migrate_from( other_store )
+
+			@store.get_property( TEST_UUID,  :title ).should == TEST_TITLE
+			@store.get_property( TEST_UUID,  :bitrate ).should == '160'
+			@store.get_property( TEST_UUID,  :namespace ).should == 'devlibrary'
+
+			@store.get_property( TEST_UUID2, :title ).should == TEST_TITLE
+			@store.get_property( TEST_UUID2, :namespace ).should == 'private'
+		end
+
+		it "helps another metastore migrate its data" do
+			@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+			@store.set_property( TEST_UUID,  :bitrate, '160' )
+			@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+
+			@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+			@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+			results = {}
+			@store.migrate do |uuid, properties|
+				results[ uuid ] = properties
+			end
+			
+			results.should have(2).members
+			results.keys.should include( TEST_UUID, TEST_UUID2 )
+			results[ TEST_UUID ].keys.should have(3).members 
+			results[ TEST_UUID ][:title].should == TEST_TITLE
+			results[ TEST_UUID ][:bitrate].should == '160'
+			results[ TEST_UUID ][:namespace].should == 'devlibrary'
+
+			results[ TEST_UUID2 ].keys.should have(2).members 
+			results[ TEST_UUID2 ][:title].should == TEST_TITLE
+			results[ TEST_UUID2 ][:namespace].should == 'private'
 		end
 
 	end

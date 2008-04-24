@@ -96,7 +96,10 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		
 		### Return the Redland::Uri object as a URI object.
 		def to_ruby_uri
-			URI.parse( self.to_s[ /^\[([^\[]+)\]$/, 1] )
+			uristring = self.to_s.sub( /^\[([^\]]+)\]$/ ) { $1 }
+			URI.parse( uristring )
+		rescue URI::InvalidURIError => err
+			raise err, "#{self.to_s}: could not be parsed as a URI", err.backtrace
 		end
 		
 		
@@ -118,16 +121,25 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 
 	### Map the given +key+ to a URI in one of the loaded vocabularies and return
 	### it as a Redland::Node.
-	def self::map_to_predicate( key )
+	def self::map_to_node( key )
 		return Schemas::THINGFISH_NS[ key.to_s ]
 	end
 	
 	
-	### Unmap the given +predicate+ URI into a simple keyword.
-	def self::unmap_from_predicate( predicate )
-		uri = URI.parse( predicate.uri.to_s )
-		return uri.fragment unless uri.fragment.nil?
-		return uri.path[ %r{.*/(.*)}, 1 ]
+	### Unmap the given Redland::uri into a simple Symbol keyword.
+	def self::unmap_from_node( rdfuri )
+		uri = case rdfuri
+		      when Redland::Uri
+		      	uri = rdfuri.to_ruby_uri
+		      when Redland::Node
+		      	uri = rdfuri.uri.to_ruby_uri
+		      else
+		      	raise "Ack."
+		      end
+			
+		property = uri.fragment || uri.path[ %r{/(\w+)$}, 1 ] or
+			raise "Couldn't map %p into a property" % [ uristring ]
+		return property.to_sym
 	end
 	
 
@@ -286,6 +298,14 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			"Model is: \n  %s" % [ dumplines.join("\n  ") ]
 		end
 	end
+
+
+	### Permanently remove all statements from the backing model.
+	def clear
+		@model.statements do |stmt|
+			@model.delete_statement( stmt )
+		end
+	end
 	
 
 
@@ -293,7 +313,50 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### Simple Metastore API
 	### 
 
-	### Returns +true+ if the given +uuid+ exists in the metastore.
+	SORTED_TRIPLES_QUERY = %q{
+		SELECT ?uuid, ?pred, ?obj
+		WHERE { ?uuid ?pred ?obj }
+		ORDER BY ?uuid
+	}
+
+	NULL_NODE = Redland::BNode.new
+
+
+	### Metastore API: Yield all the metadata in the store one resource at a time
+	def each_resource # :yields: uuid, properties_hash
+		query = Redland::Query.new( SORTED_TRIPLES_QUERY, 'sparql' )
+		
+		current_uuid = NULL_NODE
+		propset = nil
+		
+		res = @model.query_execute( query )
+
+		until res.finished?
+			uuid = res.binding_value_by_name( 'uuid' )
+			key =  unmap_uri( res.binding_value_by_name('pred') )
+			value = res.binding_value_by_name( 'obj' ).to_s
+			self.log.debug "Adding [%s -> %s] to the proplist for %s" %
+				[ key, value, uuid.uri ]
+
+			# Yield the set of values found for the previous UUID if we're on to a
+			# new one
+			if uuid != current_uuid
+				yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
+				propset = {}
+			end
+			
+			current_uuid = uuid
+			propset[ key ] = value
+
+			res.next
+		end
+		
+		# Yield the final set
+		yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
+	end
+
+
+	### Metastore API: Returns +true+ if the given +uuid+ exists in the metastore.
 	def has_uuid?( uuid )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
 
@@ -548,7 +611,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		# I don't know how to do this any other way than a full scan. Surely there
 		# must be one?
 		@model.triples do |subj, pred, obj|
-			keyword = self.class.unmap_from_predicate( pred )
+			keyword = self.class.unmap_from_node( pred )
 			uuid = subj.uri.to_uuid
 			
 			dumpstruct[ uuid ] ||= {}
@@ -556,6 +619,23 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		end
 
 		return dumpstruct
+	end
+	
+
+	### Metastore API: Replace all values in the store with those in the given hash.
+	def load_store( hash )
+		self.clear
+
+		hash.each do |uuid, properties|
+			uuid_urn = Schemas::UUID[ uuid.to_s ]
+			resource = @model.create_resource( uuid_urn )
+
+			properties.each do |propname, value|
+				prop_url = map_property( propname )
+				resource.add_property( prop_url, value )
+			end
+		end
+
 	end
 	
 
@@ -567,17 +647,13 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### Map the given +propname+ into a registered namespace, falling back to 
 	### the ThingFish namespace if it doesn't exist in any registered schema.
 	def map_property( propname )
-		return ThingFish::RdfMetaStore.map_to_predicate( propname )
+		return ThingFish::RdfMetaStore.map_to_node( propname )
 	end
 	
 
 	### Map the URI back into a simple keyword Symbol.
 	def unmap_uri( uri )
-		uristring = uri.to_s.sub( /^\[([^\]]+)\]$/ ) { $1 }
-		uri = URI.parse( uristring )
-		property = uri.fragment || uri.path[ %r{/(\w+)$}, 1 ] or
-			raise "Couldn't map %p into a property" % [ uristring ]
-		return property.to_sym
+		return ThingFish::RdfMetaStore.unmap_from_node( uri )
 	end
 	
 

@@ -37,6 +37,7 @@ begin
 	require 'pathname'
 	require 'pstore'
 	require 'lockfile'
+	require 'set'
 
 	require 'thingfish'
 	require 'thingfish/exceptions'
@@ -84,9 +85,13 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### Create a new MarshalledMetaStore
 	def initialize( datadir, spooldir, options={} )
 		super
-
-		datadir.mkpath
+		
+		@datadir  = datadir
 		@datafile = @datadir + 'metadata'
+
+		# Ensure the directory and file exist
+		@datadir.mkpath
+		@datafile.open( 'a', 0600 ) {|fh| :no_op }
 
 		@metadata  = PStore.new( @datafile.to_s )
 		@lock_opts = @options[:lock] || DEFAULT_LOCK_OPTIONS
@@ -97,6 +102,30 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	######
 	public
 	######
+
+	### Clear all properties from the metastore
+	def clear
+		@lock.lock do
+			@metadata.transaction do
+				@metadata.roots.each do |uuid|
+					@metadata.delete( uuid )
+				end
+			end
+		end
+	end
+
+
+	### Yield all the metadata in the store one resource at a time
+	def each_resource
+		@lock.lock do
+			@metadata.transaction( true ) do
+				@metadata.roots.each do |uuid|
+					yield( uuid, @metadata[uuid].dup )
+				end
+			end
+		end
+	end
+	
 
 	### MetaStore API: Set the property associated with +uuid+ specified by 
 	### +propname+ to the given +value+.
@@ -212,20 +241,22 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
+
 	### MetaStore API: Return all property keys in store
 	def get_all_property_keys
 
 		# PStore doesn't implement a collect(), so we need a manual collector.
-		keys = []
+		keys = Set.new
 
 		@lock.lock do
 			@metadata.transaction(true) do
 				@metadata.roots.each do |uuid|
-					keys << @metadata[ uuid ].keys
+					keys.merge( @metadata[ uuid ].keys )
 				end
 			end
 		end
-		return keys.flatten.uniq
+		
+		return keys.to_a
 	end
 	
 	
@@ -297,6 +328,33 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		end
 		
 		return rval
+	end
+
+
+	### MetaStore API: Load the given +hash+ as the MetaStore's data, discarding 
+	### any previous metadata.
+	def load_store( hash )
+		@lock.lock do
+
+			new_datafile = Pathname.new( "#{@datafile}.new" )
+			new_metadata = PStore.new( new_datafile.to_s )
+
+			new_metadata.transaction do
+				self.log.debug "Loading a dump structure as new metadata (%d uuids)" %
+					[ hash.keys.length ]
+				hash.each do |uuid, metadata|
+					self.log.debug "  loading %s (%d keys)" % [ uuid, metadata.length ]
+					new_metadata[ uuid ] = metadata.dup
+				end
+			end
+			
+			self.log.info "Replacing existing metastore file %s with %s" %
+				[ @datafile, new_datafile ]
+			@datafile.unlink
+			new_datafile.rename( @datafile )
+
+			@metadata = PStore.new( @datafile )
+		end
 	end
 	
 	

@@ -148,7 +148,11 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		raise ThingFish::ConfigError, "Hash depth must be 1, 2, 4, or 8." \
 		 	unless [ 1, 2, 4, 8 ].include?( @hashdepth )
 		
-		@total_size = find_filestore_size()
+		if @options[:maxsize]
+			@total_size = find_filestore_size()
+		else
+			@total_size = 0
+		end
 	end
 
 
@@ -350,7 +354,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		maxsize = @options[:maxsize] ? "%0.2fMB" % [@options[:maxsize]/1.megabyte.to_f] : nil
 		self.log.info "FileStore currently using %0.2fMB%s" %
 			[sum / 1.megabyte.to_f, maxsize ? " of #{maxsize}" : "" ]
-		
+
 		return sum
 	end
 	

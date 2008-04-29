@@ -353,7 +353,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			@datafile.unlink
 			new_datafile.rename( @datafile )
 
-			@metadata = PStore.new( @datafile )
+			@metadata = PStore.new( @datafile.to_s )
 		end
 	end
 	

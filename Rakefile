@@ -30,7 +30,7 @@ require 'pathname'
 $dryrun = false
 
 # Pathname constants
-BASEDIR       = Pathname.new( __FILE__ ).dirname.relative_path_from( Pathname.getwd )
+BASEDIR       = Pathname.new( __FILE__ ).expand_path.dirname.relative_path_from( Pathname.getwd )
 BINDIR        = BASEDIR + 'bin'
 LIBDIR        = BASEDIR + 'lib'
 DOCSDIR       = BASEDIR + 'docs'
@@ -76,13 +76,6 @@ PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
 
 RELEASE_NAME  = "REL #{PKG_VERSION}"
 
-# Load task plugins
-require RAKE_TASKDIR + 'svn.rb'
-require RAKE_TASKDIR + 'verifytask.rb'
-Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
-	require tasklib
-end
-
 if Rake.application.options.trace
 	$trace = true
 	log "$trace is enabled"
@@ -92,6 +85,14 @@ if Rake.application.options.dryrun
 	$dryrun = true
 	log "$dryrun is enabled"
 	Rake.application.options.dryrun = false
+end
+
+# Load task plugins
+require RAKE_TASKDIR + 'svn.rb'
+require RAKE_TASKDIR + 'verifytask.rb'
+Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
+	trace "Loading task lib #{tasklib}"
+	require tasklib
 end
 
 ### Default task
@@ -116,21 +117,32 @@ end
 
 
 ### Task: manual
-Manual::GenTask.new do |manual|
-	manual.metadata.version = PKG_VERSION
-	manual.base_dir = MANUALDIR
-	manual.source_dir = 'src'
-end
-task :manual do
-	outputdir = MANUALDIR + 'output'
-	targetdir = STATICWWWDIR + 'manual'
+begin
+	require 'misc/rake/lib/manual'
+	
+	Manual::GenTask.new do |manual|
+		manual.metadata.version = PKG_VERSION
+		manual.base_dir = MANUALDIR
+		manual.source_dir = 'src'
+	end
+	task :manual do
+		outputdir = MANUALDIR + 'output'
+		targetdir = STATICWWWDIR + 'manual'
 
-	rmtree( targetdir )
-	cp_r( outputdir, targetdir, :verbose => true )
+		rmtree( targetdir )
+		cp_r( outputdir, targetdir, :verbose => true )
+	end
+	task :clobber_manual do
+		rmtree( STATICWWWDIR + 'manual', :verbose => true )
+	end
+rescue LoadError => err
+	task :no_manual do
+		$stderr.puts "Manual-generation tasks not defined: %s" % [ err.message ]
+	end
+	
+	task :manual => :no_manual
 end
-task :clobber_manual do
-	rmtree( STATICWWWDIR + 'manual', :verbose => true )
-end
+
 
 
 ### Cruisecontrol task

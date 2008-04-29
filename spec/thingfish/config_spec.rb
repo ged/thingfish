@@ -254,6 +254,12 @@ describe ThingFish::Config do
 			and_return( :a_metastore )
 		@config.create_configured_metastore.should == :a_metastore
 	end
+	
+	it "autogenerates accessors for non-existant struct members" do
+		@config.plugins.filestore.maxsize = 1024
+		@config.plugins.filestore.maxsize.should == 1024
+	end
+	
 
 	
 	# With no source

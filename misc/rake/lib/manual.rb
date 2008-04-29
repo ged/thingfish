@@ -18,7 +18,6 @@ require 'singleton'
 require 'rake/tasklib'
 require 'erb'
 
-
 ### Namespace for Manual-generation classes
 module Manual
 

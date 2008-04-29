@@ -690,7 +690,7 @@ class ThingFish::Config
 		### Handle calls to key-methods
 		def method_missing( sym, *args )
 			key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
-			return nil unless @hash.key?( key )
+			return nil unless sym.to_s =~ /=$/ || @hash.key?( key )
 
 			self.class.class_eval {
 				define_method( key ) {

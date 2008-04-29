@@ -23,12 +23,18 @@ begin
 	require 'thingfish'
 	require 'thingfish/metastore'
 	require 'thingfish/metastore/rdf'
+	
+	$have_rdf = true
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
 		retry
 	end
-	raise
+
+	class ThingFish::RdfMetaStore
+		DEFAULT_OPTIONS = {}
+	end
+	$have_rdf = false
 end
 
 
@@ -49,6 +55,7 @@ describe ThingFish::RdfMetaStore do
 	end
 
 	before( :each ) do
+		pending "no Redland libraries installed" unless $have_rdf
 		@triplestore = mock( "triplestore", :null_object => true )
 	end
 
@@ -84,15 +91,13 @@ describe ThingFish::RdfMetaStore do
 
 	describe " with default configuration values " do
 
-		Schemas = ThingFish::RdfMetaStore::Schemas
-		
-
 		STORE_OPTIONS = {
 			:store => 'hashes',
 			:hash_type => 'memory',
 		  }
 
 		before( :each ) do
+			pending "no Redland libraries installed" unless $have_rdf
 		    @store = ThingFish::MetaStore.create( 'rdf', nil, nil, STORE_OPTIONS )
 		end
 

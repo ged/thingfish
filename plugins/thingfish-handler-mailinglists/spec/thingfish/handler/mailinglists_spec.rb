@@ -118,6 +118,38 @@ describe ThingFish::MailinglistsHandler do
 		@handler.handle_get_request( @request, @response )
 	end
 	
+	it "responds with a 404 when requesting /listname for a non-existant list" do
+		@request.should_receive( :path_info ).and_return( "/beesammiches" )
+		@response.should_receive( :status= ).with( HTTP::NOT_FOUND )
+		
+		@metastore.should_receive( :find_exact_uuids ).and_return( [] )
+		@handler.handle_get_request( @request, @response )
+	end
+	
+	it "responds with a Hash of count and list_post_date when requesting /listname" do
+		@request.should_receive( :path_info ).and_return( "/beesammiches" )
+		
+		@response.should_receive( :status= ).with( HTTP::OK )
+		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+		
+		@metastore.should_receive( :find_exact_uuids ).twice.and_return( %w[1 2 3] )
+		@metastore.should_receive( :get_property ).with( '1', :rfc822_date ).
+			and_return( 'Sun, 3 Feb 2008 21:40:46 -0800' )
+		@metastore.should_receive( :get_property ).with( '2', :rfc822_date ).
+			and_return( 'Sun, 3 Feb 2008 23:28:42 -0800' )
+		@metastore.should_receive( :get_property ).with( '3', :rfc822_date ).
+			and_return( 'Sun, 3 Jun 2007 00:05:08 -0700' )
+		
+		@response.should_receive( :body= ).with( 
+			{
+				'count' => 3,
+				'last_post_date' => Date.parse( 'Sun, 3 Feb 2008 23:28:42 -0800' )
+			}
+		)
+		
+		@handler.handle_get_request( @request, @response )
+	end
+	
 	it "responds with a 404 for when requesting /listname/count for a non-existant list" do
 		@request.should_receive( :path_info ).and_return( "/beesammiches/count" )
 		

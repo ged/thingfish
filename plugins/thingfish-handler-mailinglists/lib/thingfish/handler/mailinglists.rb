@@ -66,8 +66,10 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 			self.handle_get_root_request( request, response )
 	
 		when %r{^/(\w+)$}
+			list_name = $1
+
 			# return a Hash of mailing list details
-			self.handle_get_list_name_request( request, response )
+			self.handle_get_list_details_request( request, response, list_name )
 			
 		when %r{^/(\w+)/count$}
 			list_name = $1
@@ -98,17 +100,39 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	end
 	
 	
-	### Count the messages in the archive for a given list name
-	def handle_get_list_message_count_request( request, response, list_name )
-		uuids = @metastore.find_exact_uuids( 'list_name' => list_name )
+	### Return both the message count and last post date for the specified
+	### +list_name+.
+	def handle_get_list_details_request( request, response, list_name )
+		count = get_message_count( list_name )
 		
-		if uuids.empty?
+		if count.nil?
+			response.status = HTTP::NOT_FOUND
+			return
+		else
+			last_post_date = get_last_post_date( list_name )
+			
+			response.status = HTTP::OK
+			response.content_type = RUBY_MIMETYPE
+			response.body = {
+				'count'          => count,
+				'last_post_date' => last_post_date
+			}
+		end
+	end
+
+
+	### Return the number of messages in the archive for the specified
+	### +list_name+.
+	def handle_get_list_message_count_request( request, response, list_name )
+		count = get_message_count( list_name )
+		
+		if count.nil?
 			response.status = HTTP::NOT_FOUND
 			return
 		else
 			response.status = HTTP::OK
 			response.content_type = RUBY_MIMETYPE
-			response.body = uuids.size
+			response.body = count
 		end
 	end
 
@@ -116,17 +140,40 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	### Return the date of the last post to the list with the specified 
 	### +list_name+.
 	def handle_get_list_last_post_date_request( request, response, list_name )
-		uuids = @metastore.find_exact_uuids( 'list_name' => list_name )
-		if uuids.empty?
+		last_post_date = get_last_post_date( list_name )
+		
+		if last_post_date.nil?
 			response.status = HTTP::NOT_FOUND
 			return
+		else
+			response.status = HTTP::OK
+			response.content_type = RUBY_MIMETYPE
+			response.body = last_post_date
 		end
+	end
+	
+	
+	#########
+	protected
+	#########
+	
+	### Return the number of messages in the archive for the specified
+	### +list_name+.
+	def get_message_count( list_name )
+		uuids = @metastore.find_exact_uuids( 'list_name' => list_name )
+
+		return nil if uuids.empty?
+		return uuids.size
+	end
+
+
+	### Return the date of the last post to the list with the specified 
+	### +list_name+.
+	def get_last_post_date( list_name )
+		uuids = @metastore.find_exact_uuids( 'list_name' => list_name )
 		
-		last = uuids.collect {|uuid| Date.parse(@metastore.get_property(uuid, :rfc822_date)) }.max
-		
-		response.status = HTTP::OK
-		response.content_type = RUBY_MIMETYPE
-		response.body = last
+		return nil if uuids.empty?
+		return uuids.collect {|uuid| Date.parse(@metastore.get_property(uuid, :rfc822_date)) }.max
 	end
 
 end # class ThingFish::MailinglistsHandler

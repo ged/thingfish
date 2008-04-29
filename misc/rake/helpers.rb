@@ -4,7 +4,7 @@
 
 require 'pathname'
 require 'readline'
-
+require 'open3'
 
 # Set some ANSI escape code constants (Shamelessly stolen from Perl's
 # Term::ANSIColor by Russ Allbery <rra@stanford.edu> and Zenin <zenin@best.com>
@@ -280,16 +280,22 @@ def find_pattern_in_file( regexp, file )
 end
 
 
-### Get a list of the file or files to run rspec on.
-def rspec_files
-	if ENV['class']
-		classname = ENV['class']
-		spec_file = SPECSDIR + "#{classname}_spec.rb"
-		raise "Can't find the spec file for the class '#{classname}'" unless spec_file.exist?
-		return [ spec_file ]
-	else
-		return SPEC_FILES
+### Search line-by-line in the output of the specified +cmd+ for the given +regexp+,
+### returning the first match, or nil if no match was found. If the +regexp+ has any 
+### capture groups, those will be returned in an Array, else the whole matching line
+### is returned.
+def find_pattern_in_pipe( regexp, *cmd )
+	output = []
+	
+	Open3.popen3( *cmd ) do |stdin, stdout, stderr|
+		stdin.close
+
+		output << stdout.gets until stdout.eof?
+		output << stderr.gets until stderr.eof?
 	end
+	
+	result = output.find { |line| regexp.match(line) } 
+	return $1 || result
 end
 
 

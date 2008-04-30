@@ -21,17 +21,26 @@ module Benchmark
 	### An object class for encapsulating a single datapoint in a benchmark dataset
 	class Datapoint
 
+		### Column constants: indexes into members of the @times array
+		EPOCHTIME = 0
+		CTIME     = 1
+		DTIME     = 2
+		TTIME     = 3
+		WAIT      = 4
+
+
 		### Create a new Datapoint for the given +http_method+ (which should be a 
 		### Symbol like :get or :put), +uri+, and +options+ hash. Uses the specified
 		### +name+ when used in text or graphical output.
-		def initialize( name, http_method, uri, ab_output, options={} )
-			@name = name
-			@http_method = http_method
-			@uri = uri
-			@ab_output = ab_output
-			@options = options
+		def initialize( name, http_method, uri, ab_output, bench_config, options={} )
+			@name         = name
+			@http_method  = http_method
+			@uri          = uri
+			@ab_output    = ab_output
+			@bench_config = bench_config
+			@options      = options
 		
-			@times = []
+			@times        = []
 		end
 
 
@@ -50,15 +59,143 @@ module Benchmark
 		
 		# The statistics that ab generates on stdout
 		attr_reader :ab_output
+
+		# The config hash for the benchmark this datapoint is a member of
+		attr_reader :bench_config
 		
 		# The options that were used to configure the requests run for the datapoint 
 		attr_reader :options
 
 
-		### Append a row of times output from 'ab'
+		### Append a row of output from 'ab' to the times for this datapoint
 		def <<( row )
-			@times << row
+			@times << row.chomp.split( /\t/ )[ 1..-1 ].collect {|i| Integer(i) }
 			return self
+		end
+		
+		
+		### Return the Time of the start of the benchmark
+		def start_time
+			epochseconds = @times.first[EPOCHTIME] / 1_000_000.0
+			return Time.at( epochseconds )
+		end
+		
+		
+		### Return the Time of the end of the benchmark
+		def finish_time
+			epochseconds = @times.last[EPOCHTIME] / 1_000_000.0
+			return Time.at( epochseconds )
+		end
+		
+		
+		### Return the number of requests processed in this benchmark
+		def count
+			@times.length
+		end
+		
+		
+		### Return the concurrency 'ab' used when running the benchmark
+		def concurrency
+			@bench_config[:concurrency]
+		end
+		
+		
+		### Return the number of seconds the benchmark took (as a Float)
+		def runtime
+			return self.finish_time - self.start_time
+		end
+		
+		
+		### Return the number of requests per second executed in this datapoint.
+		def requests_per_second
+			return self.count / self.runtime
+		end
+		
+		
+		### Generate timing statistics methods for the given +column+ of `ab` output.
+		def self::def_time_methods( column, name=column )
+			columnidx = const_get( column.to_s.upcase ) or
+				raise ScriptError, "no column constant called #{column.to_s.upcase}"
+
+			define_method( "#{name}_times" ) do
+				@times.transpose[ columnidx ]
+			end
+			alias_method "#{column}s", "#{name}_times" unless name == column
+			
+			define_method( "min_#{name}_time" ) do
+				@times.transpose[columnidx].min
+			end
+			alias_method "min_#{column}", "min_#{name}_time"
+			
+			define_method( "max_#{name}_time" ) do
+				@times.transpose[columnidx].max
+			end
+			alias_method "max_#{column}", "max_#{name}_time"
+			
+			define_method( "mean_#{name}_time" ) do
+				@times.transpose[columnidx].inject(0) {|sum,n| sum + n } / self.count.to_f
+			end
+			alias_method "mean_#{column}", "mean_#{name}_time"
+			
+			define_method( "#{name}_time_standard_deviation" ) do
+				standard_deviation( self.send("#{name}_times") )
+			end
+			alias_method "#{column}_standard_deviation", "#{name}_time_standard_deviation"
+			
+			define_method( "#{name}_time_histogram" ) do
+				return @times.transpose[columnidx].inject({}) {|hist,n|
+					hist[ n / 10 ] ||= 0
+					hist[ n / 10 ] += 1
+					hist
+				}
+			end
+		end
+		
+		
+		def_time_methods :dtime, :processing
+		def_time_methods :ctime, :connecting
+		def_time_methods :ttime, :total
+		def_time_methods :wait
+
+
+		### Return a brief synopsis of the times currently in the datapoint
+		def synopsis
+			return "%0.5f seconds @%0.1f req/s (mean) [proc mean: %dms +/- %0.2fms]" % [
+				self.runtime,
+				self.requests_per_second,
+				self.mean_processing_time,
+				self.processing_time_standard_deviation,
+			]
+		end
+		
+		
+		#######
+		private
+		#######
+
+		### Calculate the variance in a +population+. 
+		### Stolen from http://warrenseen.com/blog/2006/03/13/how-to-calculate-standard-deviation/
+		def variance( population )
+			n = 0
+			mean = 0.0
+			s = 0.0
+
+			population.each do |x|
+				n = n + 1
+				delta = x - mean
+				mean = mean + (delta / n)
+				s = s + delta * (x - mean)
+			end
+
+			# if you want to calculate std deviation
+			# of a sample change this to "s / (n-1)"
+			return s / n.to_f
+		end
+
+
+		### Calculate the standard deviation of a +population+
+		def standard_deviation( population )
+			Math.sqrt( variance(population) )
 		end
 	end
 
@@ -302,8 +439,39 @@ module Benchmark
 			dpname = name.gsub( /\W+/, "_" ).downcase.sub( /_$/, '' )
 			resultsfile = @outputdir + "%s.%s.tsv" % [ benchmarkname(), dpname ]
 		
+			ab = make_ab_command( uri, http_method, resultsfile, options )
+			trace( ab.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+
+			ab_output = []
+			Open3.popen3( *ab ) do |stdin, stdout, stderr|
+				trace "In the open3 block"
+				stdin.close
+				trace( stderr.gets ) until stderr.eof?
+				until stdout.eof?
+					output_line = stdout.gets
+					ab_output << output_line if output_line =~ /:\s+\w/
+					trace( output_line ) 
+				end
+			end
+			trace( "ab exited with code: %d" % [ $? ] )
+		
+			datapoint = Datapoint.new( name, http_method, uri, ab_output, @benchmark_config, options )
+			resultsfile.each_line do |line|
+				next if line =~ /^starttime/
+				datapoint << line
+			end
+		
+			log( "  " + datapoint.synopsis )
+		
+			@dataset << datapoint
+		end
+	
+	
+		### Create a command line suitable for running ab against the given +uri+, taking
+		### command-line arguments from the ThingFish +config+ and +benchmark_config+.
+		def make_ab_command( uri, http_method, resultsfile, options )
 			abprog = which( 'ab' ) or fail "ab: no such file or directory"
-			
+
 			# ab capability check
 			find_pattern_in_pipe( /-D\s+Send a DELETE request/, abprog, '-h' ) or
 				fail "Benchmarks require patched ab, see: #{AB_PATCH_LOCATION}"
@@ -337,30 +505,10 @@ module Benchmark
 			end
 			
 			ab.push( "#{@config.ip}:#{@config.port}#{uri}" )
-
-			trace "Running command: #{ab.join(' ')}"
-			ab_output = []
-			Open3.popen3( *ab ) do |stdin, stdout, stderr|
-				trace "In the open3 block"
-				stdin.close
-				trace( stderr.gets ) until stderr.eof?
-				until stdout.eof?
-					output_line = stdout.gets
-					ab_output << output_line if output_line =~ /:\s+\w/
-					trace( output_line ) 
-				end
-			end
-			trace( "ab exited with code: %d" % [ $? ] )
 		
-			datapoint = Benchmark::Datapoint.new( name, http_method, uri, ab_output, options )
-			resultsfile.each_line do |line|
-				next if line =~ /^starttime/
-				datapoint << line.chomp.split( /\t/ )[2..5]			
-			end
-		
-			@dataset << datapoint
+			return ab
 		end
-	
+		
 	
 		### Create a ThingFish::Client object that will talk to the configured ThingFish daemon
 		### and yield it to the block to do any necessary preparation for the benchmark. The
@@ -368,8 +516,9 @@ module Benchmark
 		def prep
 			raise "Not in a config section" unless @config
 		
-			log "Creating a client object for benchmark prep"
-			client = ThingFish::Client.new( "http://#{@config.ip}:#{@config.port}/" )
+			uri = "http://#{@config.ip}:#{@config.port}/"
+			log "Creating a client object for benchmark prep: #{uri}"
+			client = ThingFish::Client.new( uri )
 			return yield( client )
 		end
 	
@@ -378,6 +527,7 @@ module Benchmark
 		def benchmarkname
 			return self.name[ /.*:(.*)$/, 1 ]
 		end
+		
 	end # class Task
 
 end # module Benchmark

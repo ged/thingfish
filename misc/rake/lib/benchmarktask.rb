@@ -278,12 +278,6 @@ module Benchmark
 		end
 
 
-		class Gruff::MyLine < Gruff::Line
-			
-			
-		end
-		
-
 		### Create a graph that shows a histogram of request times.
 		def generate_gruff_histogram_graph( outputdir )
 			g = Gruff::Line.new( 1200 )

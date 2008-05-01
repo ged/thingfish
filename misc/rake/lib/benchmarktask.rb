@@ -18,6 +18,13 @@ require 'thingfish/daemon'
 
 module Benchmark
 	
+	begin
+		require 'gruff'
+		HAVE_GRUFF = true
+	rescue LoadError
+		HAVE_GRUFF = false
+	end
+	
 	### An object class for encapsulating a single datapoint in a benchmark dataset
 	class Datapoint
 
@@ -144,8 +151,8 @@ module Benchmark
 			
 			define_method( "#{name}_time_histogram" ) do
 				return @times.transpose[columnidx].inject({}) {|hist,n|
-					hist[ n / 10 ] ||= 0
-					hist[ n / 10 ] += 1
+					hist[ n ] ||= 0
+					hist[ n ] += 1
 					hist
 				}
 			end
@@ -212,13 +219,6 @@ module Benchmark
 			@datapoints = []
 			@config = config
 			@benchmark_config = benchmark_config
-
-			begin
-				require 'gruff'
-				@have_gruff = true
-			rescue LoadError
-				@have_gruff = false
-			end
 		end
 
 
@@ -260,42 +260,95 @@ module Benchmark
 		end
 
 
+		### Return the name of the dataset after trimming off the leading namespace.
+		def simplename
+			return self.name.sub(/.*:/, '')
+		end
+		
+
 		### Create pretty graphs using the Gruff library.
 		def generate_gruff_graphs( outputdir )
-			unless @have_gruff
+			unless HAVE_GRUFF
 				trace "Skipping Gruff graph generation: Gruff does not appear to be installed."
 				return
 			end
 
-			@datapoints.each do |name, timedata|
-				datasets = timedata.transpose
+			self.generate_gruff_requesttime_graphs( outputdir )
+			self.generate_gruff_histogram_graph( outputdir )
+		end
+
+
+		class Gruff::MyLine < Gruff::Line
+			
+			
+		end
+		
+
+		### Create a graph that shows a histogram of request times.
+		def generate_gruff_histogram_graph( outputdir )
+			g = Gruff::Line.new( 1200 )
+			g.theme_keynote
+			g.title = "ThingFish Wait Time Histogram -- #{simplename()}"
+			g.title_font_size = 14
+			g.y_axis_label = "# of Reqests"
+			g.x_axis_label = "Time (ms)"
+			g.marker_font_size = 12
+			g.legend_font_size = 10
+			g.hide_dots = true
+
+			range = (0..@datapoints.collect {|dp| dp.max_wait }.max)
+			valuehash = range.inject({}) {|h,i| h[i] = 0; h }
+
+			@datapoints.each do |datapoint|
+				table = valuehash.dup
+				datapoint.wait_time_histogram.each do |time, count|
+					table[ time ] = count
+				end
+				g.data( datapoint.name, table.sort_by {|t,c| t }.transpose[1] )
+			end
+
+			labels = {}
+			range.step( range.end / 15 ) {|i| labels[i] = i.to_s }
+			g.labels = labels
+
+			graph_file = outputdir + "#{simplename()}-histogram.png"
+			log "Writing graph to #{graph_file}"
+			g.write( graph_file.to_s )
+		end
+		
+		
+		### Create a graph for each datapoint showing total request times
+		def generate_gruff_requesttime_graphs( outputdir )
+			@datapoints.each do |datapoint|
+				graphname = "%s-%s" % [ simplename(), datapoint.name.gsub(/\W+/, '_') ]
 
 				g = Gruff::StackedArea.new( 1200 )
 				g.theme_keynote
-				g.title = "ThingFish Benchmark -- #{name}"
+				g.title = "ThingFish Benchmark -- #{datapoint.name} (#{simplename()})"
 				g.title_font_size = 14
-				g.y_axis_increment = 10
+				g.maximum_value = datapoint.max_total_time + datapoint.max_wait_time
+				g.minimum_value = 0
 				g.y_axis_label = "Time (ms)"
-				g.x_axis_label = "%d Requests Over %0.3f seconds" % [
-					datasets.first.length - 1,
-					(Float( datasets[1][-1] ) - Float( datasets[1][1] )) / 1000000.0
+				g.x_axis_label = "%d Requests Over %0.3f seconds, %0.2f requests/s (mean)" % [
+					datapoint.count,
+					datapoint.runtime,
+					datapoint.requests_per_second
 				  ]
 
-				max = 0
-				datasets[ 2..5 ].each do |data|
-					values = data[1..-1].collect {|i| Integer(i) }
-					max += values.max
-					g.data( data[0], values )
+				labels = {}
+				(0..datapoint.count).step( datapoint.count / 5 ) do |n|
+					labels[ n ] = n.to_s
 				end
+				g.labels = labels
 
-				g.maximum_value = max
-				g.labels = {
-					0 => "0",
-					(datasets.first.length - 2) => (datasets.first.length - 2).to_s
-				}
+				trace "  adding connecting times to the graph: %p" % [ datapoint.connecting_times[0,5] ]
+				g.data( "Connection", datapoint.connecting_times )
+				trace "  adding wait times to the graph: %p" % [ datapoint.wait_times[0,5] ]
+				g.data( "Wait", datapoint.wait_times )
+				trace "  adding processing times to the graph: %p" % [ datapoint.processing_times[0,5] ]
+				g.data( "Processing", datapoint.processing_times )
 
-				graphname = "%s-%s" % [ benchmarkname(), name.gsub(/\W+/, '_') ]
-				graph_file = BASEDIR + "#{graphname}-#{@timestamp}.png"
+				graph_file = outputdir + "#{graphname}.png"
 				log "Writing graph to #{graph_file}"
 				g.write( graph_file.to_s )
 			end
@@ -421,6 +474,12 @@ module Benchmark
 			return savefile
 		end
 	
+	
+		### Return a normalized version of the configured benchmark name.
+		def benchmarkname
+			return self.name[ /.*:(.*)$/, 1 ]
+		end
+		
 
 		### Define a datapoint in the current benchmark for a given config
 		def datapoint( name, http_method=:get, uri="/", options={} )
@@ -523,11 +582,6 @@ module Benchmark
 		end
 	
 	
-		### Return a normalized version of the benchmark name suitable for use in path names.
-		def benchmarkname
-			return self.name[ /.*:(.*)$/, 1 ]
-		end
-		
 	end # class Task
 
 end # module Benchmark

@@ -10,6 +10,8 @@
 begin
 	require 'misc/rake/lib/benchmarktask'
 
+	BENCHMARKDIR = BASEDIR + 'benchmarks'
+
 	namespace :benchmarks do
 
 		desc "Run all benchmarks"
@@ -17,7 +19,8 @@ begin
 			log "Running all benchmark tasks"
 			subtasks = Rake::Task.tasks.select {|t| t.name =~ /^benchmarks:/ }
 			subtasks.each do |task|
-				next if task.name == 'benchmarks:all'
+				next if task.name =~ /benchmarks:(all|graphs)/
+				trace "  considering invoking task #{task}"
 				task.invoke
 			end
 		end
@@ -61,6 +64,18 @@ begin
 			end
 
 		end
+		
+
+		task :graphs do
+			datafiles = Pathname.glob( BENCHMARKDIR + '**/*.data' )
+
+			datafiles.each do |datafile|
+				log "Generating graphs from #{datafile}"
+				dataset = Marshal.load( File.open(datafile, 'r') )
+				dataset.generate_gruff_graphs( datafile.dirname )
+			end
+		end
+		
 	end
 rescue LoadError => err
 	task :no_benchmarks do
@@ -69,6 +84,8 @@ rescue LoadError => err
 
 	namespace :benchmarks do
 		task :all => :no_benchmarks
+		task :graphs => :no_benchmarks
+		task :barebones => :no_benchmarks
 	end
 end
 

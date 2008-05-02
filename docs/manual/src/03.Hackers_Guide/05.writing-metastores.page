@@ -1,6 +1,7 @@
 ---
 title: "Hacker's Guide: Writing a ThingFish MetaStore"
 layout: default
+index: 5
 filters:
   - erb
   - examples

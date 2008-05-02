@@ -2,6 +2,7 @@
 title: Introduction
 layout: default
 tagline: No, this is.
+index: 1
 filters:
   - erb
   - textile

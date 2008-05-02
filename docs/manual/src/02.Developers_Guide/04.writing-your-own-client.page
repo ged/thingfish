@@ -1,6 +1,7 @@
 ---
 title: "Developer's Guide: Writing Your Own Client Library"
 layout: default
+index: 4
 filters:
   - erb
   - examples

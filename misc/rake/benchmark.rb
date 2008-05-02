@@ -65,7 +65,7 @@ begin
 
 		end
 		
-
+		desc "Create Gruff graphs for all existing benchmark data"
 		task :graphs do
 			datafiles = Pathname.glob( BENCHMARKDIR + '**/*.data' )
 

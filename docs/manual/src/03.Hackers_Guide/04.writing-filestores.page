@@ -1,6 +1,7 @@
 ---
 title: "Hacker's Guide: Writing a ThingFish FileStore"
 layout: default
+index: 4
 filters:
   - erb
   - examples

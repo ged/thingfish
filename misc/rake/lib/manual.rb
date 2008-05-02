@@ -2,15 +2,15 @@
 # Manual-generation Rake tasks and classes
 # $Id$
 # 
-# Author: Michael Granger <ged@FaerieMUD.org>
+# Authors:
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 # 
 # This was born out of a frustration with other static HTML generation modules
 # and systems. I've tried webby, webgen, rote, staticweb, staticmatic, and
 # nanoc, but I didn't find any of them really suitable (except rote, which was
 # excellent but apparently isn't maintained and has a fundamental
 # incompatibilty with Rake because of some questionable monkeypatching.)
-# 
-# So, since nothing seemed to scratch my itch, I'm going to scratch it myself.
 # 
 
 require 'pathname'
@@ -60,6 +60,7 @@ module Manual
 		DEFAULT_CONFIG = {
 			'filters' => [ 'textile', 'erb' ],
 			'layout'  => 'default.page',
+			'cleanup' => true,
 		  }.freeze
 
 		# Pattern to match a source page with a YAML header
@@ -73,13 +74,14 @@ module Manual
 		# Options to pass to libtidy
 		TIDY_OPTIONS = {
 			:show_warnings     => true,
-			:indent            => false,
+			:indent            => true,
 			:indent_attributes => false,
 			:indent_spaces     => 4,
 			:vertical_space    => true,
 			:tab_size          => 4,
 			:wrap_attributes   => true,
 			:wrap              => 100,
+			:char_encoding     => 'utf8'
 		  }
 
 
@@ -123,18 +125,27 @@ module Manual
 		def generate( metadata )
 			content = self.generate_content( @source, metadata )
 
-			# :TODO: Read config from page for layout, filters, etc.
 			templatepath = @layouts_dir + 'default.page'
 			template = ERB.new( templatepath.read )
 			page = self
 
 			html = template.result( binding() )
-
-			# return self.cleanup( html )
+			
+			# Use Tidy to clean up the html if 'cleanup' is turned on, but remove the Tidy
+			# meta-generator propaganda/advertising.
+			html = self.cleanup( html ).sub( %r:<meta name="generator"[^>]*tidy[^>]*/>:im, '' ) if
+				self.config['cleanup']
+				
 			return html
 		end
 
 
+		### Return the page title as specified in the YAML options
+		def title
+			return self.config['title'] || self.sourcefile.basename
+		end
+		
+		
 		### Run the various filters on the given input and return the transformed
 		### content.
 		def generate_content( input, metadata )
@@ -167,8 +178,8 @@ module Manual
 				tidy.options.output_xhtml = true
 
 				xml = tidy.clean( source )
-				puts tidy.errors
-				puts tidy.diagnostics
+				log( tidy.errors ) if tidy.errors
+				trace tidy.diagnostics
 				return xml
 			end
 		rescue LoadError => err
@@ -186,6 +197,83 @@ module Manual
 			end
 		end
 
+	end
+
+
+	### A catalog of Manual::Page objects that can be referenced by various criteria.
+	class PageCatalog
+
+		### Create a new PageCatalog that will load Manual::Page objects for .page files 
+		### in the specified +sourcedir+.
+		def initialize( sourcedir, layoutsdir )			
+			@sourcedir = sourcedir
+			@layoutsdir = layoutsdir
+			
+			@pages = []
+			@path_index = {}
+			@title_index = {}
+			@hierarchy = {}
+			
+			self.find_and_load_pages
+		end
+		
+		attr_reader :path_index, :title_index, :heirachy, :pages
+		
+		
+		# {
+		# 	'Introduction' => <intro page obj>,
+		# 	'Developers Guide' => {
+		# 		'' => <index page obj>,
+		# 		'Connecting' => <connecting page obj>
+		# 	}
+		# }
+		# 
+		# heirarchy.each do |title, page_or_section|
+		# 	if page_or_section.section?
+		# 		<a href="page_or_section[''].path">
+		# 	else
+		# 		<a href="page.path">page.title</a>
+		# 	end
+		# 	
+		# end
+		# 
+		
+		######
+		public
+		######
+
+		# The Array of all Manual::Page objects
+		attr_reader :pages
+		
+		
+		### Find all .page files under the configured +sourcedir+ and create a new
+		### Manual::Page object for each one.
+		def find_and_load_pages
+			Pathname.glob( @sourcedir + '**/*.page' ).each do |pagefile|
+				page = Manual::Page.new( pagefile, @layoutsdir )
+				@pages << page
+				@path_index[ pagefile ] = page
+				@title_index[ page.title ] = page
+				
+				# Place the page in the page hierarchy by using inject to find and/or create the 
+				# necessary subhashes. The last run of inject will return the leaf hash in which
+				# the page will live
+				hierpath = pagefile.relative_path_from( @sourcedir )
+				section = hierpath.dirname.split[1..-1].inject( @hierarchy ) do |hier, component|
+					hier[ component ] ||= {}
+					hier[ component ]
+				end
+
+				# 'index.page' files serve as the configuration for the section in which they
+				# live, so they get treated specially.
+				if pagefile.basename('.page') == 'index'
+					section[ nil ] = page
+				else
+					section[ page.title ] = page
+				end
+			end
+		end
+		
 	end
 
 
@@ -267,6 +355,51 @@ module Manual
 
 		attr_reader :name
 
+
+		### Set up the tasks for building the manual
+		def define
+
+			# Set up a description if the caller hasn't already defined one
+			unless Rake.application.last_comment
+				desc "Generate the manual"
+			end
+
+			# Make Pathnames of the directories relative to the base_dir
+			basedir     = Pathname.new( @base_dir )
+			sourcedir   = basedir + @source_dir
+			layoutsdir  = basedir + @layouts_dir
+			outputdir   = basedir + @output_dir
+			resourcedir = basedir + @resource_dir
+			libdir      = basedir + @lib_dir
+
+			load_filter_libraries( libdir )
+			catalog = Manual::PageCatalog.new( sourcedir, layoutsdir )
+			
+			# require 'pp'
+			# pp catalog
+
+			# Declare the tasks outside the namespace that point in
+			task @name => "#@name:build"
+			task "clobber_#@name" => "#@name:clobber"
+
+			namespace( self.name ) do
+				setup_resource_copy_tasks( resourcedir, outputdir )
+				manual_pages = setup_page_conversion_tasks( sourcedir, outputdir, catalog )
+				
+				task :build => [ :copy_resources, *manual_pages ]
+				
+				task :clobber do
+					RakeFileUtils.verbose( $verbose ) do
+						rm_f manual_pages.to_a
+					end
+					remove_dir( outputdir ) if ( outputdir + '.buildtime' ).exist?
+				end
+				task :rebuild => [ :clobber, :build ]
+	        end
+
+		end # def define
+		
+		
 		### Load the filter libraries provided in the given +libdir+
 		def load_filter_libraries( libdir )
 			Pathname.glob( libdir + '*.rb' ) do |filterlib|
@@ -278,12 +411,11 @@ module Manual
 
 		### Set up the main HTML-generation task that will convert files in the given +sourcedir+ to
 		### HTML in the +outputdir+
-		def setup_page_conversion_tasks( sourcedir, outputdir, layoutsdir )
-			source_glob = sourcedir + '**/*.page'
-			trace "Looking for sources that match: %s" % [ source_glob ]
-
-			# Find the list of source .page files
-			manual_sources = FileList[ source_glob ]
+		def setup_page_conversion_tasks( sourcedir, outputdir, catalog )
+			
+			# we need to figure out what HTML pages need to be generated so we can set up the
+			# dependency that causes the rule to be fired for each one when the task is invoked.
+			manual_sources = FileList[ catalog.path_index.keys.map {|pn| pn.to_s} ]
 			trace "   found %d source files" % [ manual_sources.length ]
 			
 			# Map .page files to their equivalent .html output
@@ -291,13 +423,13 @@ module Manual
 			manual_pages = manual_sources.pathmap( html_pathmap )
 			trace "Mapping sources like so: \n  %p -> %p" %
 				[ manual_sources.first, manual_pages.first ]
-
+			
 			# Output directory task
 			directory( outputdir.to_s )
 			file outputdir.to_s do
 				touch outputdir + '.buildtime'
 			end
-
+	
 			# Rule to generate .html files from .page files
 			rule( 
 				%r{#{outputdir}/.*\.html$} => [
@@ -309,7 +441,8 @@ module Manual
 				target = Pathname.new( task.name )
 				log "  #{ source } -> #{ target }"
 					
-				page = Manual::Page.new( source, layoutsdir )
+				page = catalog.path_index[ source ]
+				trace "  page object is: %p" % [ page ]
 					
 				target.dirname.mkpath
 				target.open( File::WRONLY|File::CREAT|File::TRUNC ) do |io|
@@ -339,45 +472,6 @@ module Manual
 		end
 		
 
-		### Set up the tasks for building the manual
-		def define
-
-			# Set up a description if the caller hasn't already defined one
-			unless Rake.application.last_comment
-				desc "Generate the manual"
-			end
-
-			# Make Pathnames of the directories relative to the base_dir
-			basedir     = Pathname.new( @base_dir )
-			sourcedir   = basedir + @source_dir
-			layoutsdir  = basedir + @layouts_dir
-			outputdir   = basedir + @output_dir
-			resourcedir = basedir + @resource_dir
-			libdir      = basedir + @lib_dir
-
-			load_filter_libraries( libdir )
-
-			# Declare the tasks outside the namespace that point in
-			task @name => "#@name:build"
-			task "clobber_#@name" => "#@name:clobber"
-
-			namespace( self.name ) do
-				setup_resource_copy_tasks( resourcedir, outputdir )
-				manual_pages = setup_page_conversion_tasks( sourcedir, outputdir, layoutsdir )
-				
-				task :build => [ :copy_resources, *manual_pages ]
-				
-				task :clobber do
-					RakeFileUtils.verbose( $verbose ) do
-						rm_f manual_pages.to_a
-					end
-					remove_dir( outputdir ) if ( outputdir + '.buildtime' ).exist?
-				end
-				task :rebuild => [ :clobber, :build ]
-	        end
-
-		end # def define
-		
 	end # class Manual::GenTask
 	
 end

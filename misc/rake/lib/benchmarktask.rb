@@ -284,7 +284,7 @@ module Benchmark
 			g.theme_keynote
 			g.title = "ThingFish Wait Time Histogram -- #{simplename()}"
 			g.title_font_size = 14
-			g.y_axis_label = "# of Reqests"
+			g.y_axis_label = "# of Requests"
 			g.x_axis_label = "Time (ms)"
 			g.marker_font_size = 12
 			g.legend_font_size = 10

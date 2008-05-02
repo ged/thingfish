@@ -1,6 +1,7 @@
 ---
 title: "Hacker's Guide: Writing a ThingFish Filter"
 layout: default
+index: 3
 filters:
   - erb
   - examples

@@ -1,6 +1,7 @@
 ---
 title: "Developer's Guide: The Javascript Client Library"
 layout: default
+index: 3
 filters:
   - erb
   - examples

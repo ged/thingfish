@@ -1,6 +1,7 @@
 ---
 title: "Hacker's Guide: Server Architecture"
 layout: default
+index: 1
 filters:
   - erb
   - examples

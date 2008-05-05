@@ -18,6 +18,7 @@ require 'singleton'
 require 'rake/tasklib'
 require 'erb'
 
+
 ### Namespace for Manual-generation classes
 module Manual
 
@@ -47,6 +48,12 @@ module Manual
 				super
 			end
 
+
+			### Export any static resources required by this filter to the given +output_dir+.
+			def export_resources( output_dir )
+				# No-op by default
+			end
+			
 
 			### Process the +page+'s source with the filter and return the altered content.
 			def process( source, page, metadata )
@@ -86,13 +93,16 @@ module Manual
 
 
 		### Create a new page-generator for the given +sourcefile+, which will use
-		### ones of the templates in +layouts_dir+ as a wrapper.
-		def initialize( sourcefile, layouts_dir )
-			@sourcefile = Pathname.new( sourcefile )
+		### ones of the templates in +layouts_dir+ as a wrapper. The +basepath+ 
+		### is the path to the base output directory.
+		def initialize( sourcefile, layouts_dir, basepath='.' )
+			@sourcefile  = Pathname.new( sourcefile )
 			@layouts_dir = Pathname.new( layouts_dir )
+			@basepath    = basepath
 
 			rawsource = @sourcefile.read
 			@config, @source = self.read_page_config( rawsource )
+
 			# $stderr.puts "Config is: %p" % [@config],
 			# 	"Source is: %p" % [ @source[0,100] ]
 			@filters = self.load_filters( @config['filters'] )
@@ -104,6 +114,9 @@ module Manual
 		######
 		public
 		######
+		
+		# The relative path to the base directory, for prepending to page paths
+		attr_reader :basepath
 		
 		# The Pathname object that specifys the page source file
 		attr_reader :sourcefile
@@ -250,7 +263,10 @@ module Manual
 		### Manual::Page object for each one.
 		def find_and_load_pages
 			Pathname.glob( @sourcedir + '**/*.page' ).each do |pagefile|
-				page = Manual::Page.new( pagefile, @layoutsdir )
+				path_to_base = pagefile.dirname.relative_path_from( @sourcedir )
+
+				page = Manual::Page.new( pagefile, @layoutsdir, path_to_base )
+
 				@pages << page
 				@path_index[ pagefile ] = page
 				@title_index[ page.title ] = page
@@ -386,7 +402,8 @@ module Manual
 				setup_resource_copy_tasks( resourcedir, outputdir )
 				manual_pages = setup_page_conversion_tasks( sourcedir, outputdir, catalog )
 				
-				task :build => [ :copy_resources, *manual_pages ]
+				desc "Build the manual"
+				task :build => [ :copy_resources, :generate_pages ]
 				
 				task :clobber do
 					RakeFileUtils.verbose( $verbose ) do
@@ -394,6 +411,8 @@ module Manual
 					end
 					remove_dir( outputdir ) if ( outputdir + '.buildtime' ).exist?
 				end
+				
+				desc "Remove any previously-generated parts of the manual and rebuild it"
 				task :rebuild => [ :clobber, :build ]
 	        end
 
@@ -450,28 +469,45 @@ module Manual
 				end
 			end
 			
+			# Group all the manual page output files targets into a containing task
+			desc "Generate any pages of the manual that have changed"
+			task :generate_pages => manual_pages
 			return manual_pages
 		end
 		
 		
-		### Set up a rule for copying files from the resources directory to the output dir.
-		def setup_resource_copy_tasks( resourcedir, outputdir )
+		### Copy method for resources -- passed as a block to the various file tasks that copy
+		### resources to the output directory.
+		def copy_resource( task )
+			source = task.prerequisites[ 1 ]
+			target = task.name
 			
-			task :copy_resources => [ outputdir.to_s ] do
-				when_writing( "Copying resources" ) do
-					verbose do
-						files = FileList[ resourcedir + '*' ]
-						files.exclude( /\.svn/ )
-						unless files.empty?
-							trace "  Copying resource files: #{files}"
-							cp_r files, outputdir, :verbose => true
-						end
-					end
-				end
+			when_writing do
+				log "  #{source} -> #{target}"
+				mkpath File.dirname( target )
+				cp source, target, :verbose => $trace
 			end
 		end
+			
 		
+		### Set up a rule for copying files from the resources directory to the output dir.
+		def setup_resource_copy_tasks( resourcedir, outputdir )
+			resources = FileList[ resourcedir + '**/*.{js,css,png,gif,jpg,html}' ]
+			resources.exclude( /\.svn/ )
+			target_pathmap = "%%{%s,%s}p" % [ resourcedir, outputdir ]
+			targets = resources.pathmap( target_pathmap )
+			copier = self.method( :copy_resource ).to_proc
+			
+			# Create a file task to copy each file to the output directory
+			resources.each_with_index do |resource, i|
+				file( targets[i] => [ outputdir.to_s, resource ], &copier )
+			end
 
+			# Now group all the resource file tasks into a containing task
+			desc "Copy manual resources to the output directory"
+			task :copy_resources => targets
+		end
+		
 	end # class Manual::GenTask
 	
 end

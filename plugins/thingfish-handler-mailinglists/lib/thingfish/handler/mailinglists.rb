@@ -56,6 +56,11 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	# SVN Id
 	SVNId = %q$Id$
 
+	# Patterns for matching list names
+	LIST_NAME_PATTERN = /[\w+.-]+/i
+	LIST_HOST_PATTERN = /[\w+.-]+\.[a-z]{2,}/i
+	LIST_ADDR_PATTERN = /\b#{LIST_NAME_PATTERN}@#{LIST_HOST_PATTERN}\b/
+
 
 	### Handler API: handle a GET request with an inspection page.
 	def handle_get_request( request, response )
@@ -65,19 +70,19 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 			# return an Array of mailing lists we know about?
 			self.handle_get_root_request( request, response )
 	
-		when %r{^/(\w+)$}
+		when %r{^/(#{LIST_ADDR_PATTERN})$}
 			list_name = $1
 
 			# return a Hash of mailing list details
 			self.handle_get_list_details_request( request, response, list_name )
 			
-		when %r{^/(\w+)/count$}
+		when %r{^/(#{LIST_ADDR_PATTERN})/count$}
 			list_name = $1
 
 			# return count of messages in this list
 			self.handle_get_list_message_count_request( request, response, list_name )
 
-		when %r{^/(\w+)/last_post_date$}
+		when %r{^/(#{LIST_ADDR_PATTERN})/last_post_date$}
 			list_name = $1
 
 			# return date object representing last post date
@@ -170,7 +175,7 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	### Return the date of the last post to the list with the specified 
 	### +list_name+.
 	def get_last_post_date( list_name )
-		uuids = @metastore.find_exact_uuids( 'list_name' => list_name )
+		uuids = @metastore.find_exact_uuids( 'list_name', list_name )
 		
 		return nil if uuids.empty?
 		return uuids.collect {|uuid| Date.parse(@metastore.get_property(uuid, :rfc822_date)) }.max

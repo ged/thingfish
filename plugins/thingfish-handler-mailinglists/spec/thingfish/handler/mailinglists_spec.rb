@@ -60,7 +60,7 @@ describe ThingFish::MailinglistsHandler do
 		
 	before(:each) do
 		# resdir = @basedir + 'resources'
-	    @handler  = ThingFish::Handler.create( 'mailinglists' )#, 'resource_dir' => resdir )
+	    @handler  = ThingFish::Handler.create( 'mailinglists' )
 		@request  = mock( "request", :null_object => true )
 		@response = mock( "response", :null_object => true )
 
@@ -106,7 +106,7 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with an Integer count when requesting /listname/count" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches/count" )
+		@request.should_receive( :path_info ).and_return( "/bee-sammiches@guns.com/count" )
 		
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
@@ -119,7 +119,7 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with a 404 when requesting /listname for a non-existant list" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches" )
+		@request.should_receive( :path_info ).and_return( "/bee.sammiches@guns.museum" )
 		@response.should_receive( :status= ).with( HTTP::NOT_FOUND )
 		
 		@metastore.should_receive( :find_exact_uuids ).and_return( [] )
@@ -127,7 +127,7 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with a Hash of count and list_post_date when requesting /listname" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches" )
+		@request.should_receive( :path_info ).and_return( "/bee+sammiches@big-guns.nu" )
 		
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
@@ -151,7 +151,8 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with a 404 for when requesting /listname/count for a non-existant list" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches/count" )
+		@request.should_receive( :path_info ).
+			and_return( "/flash-photography@guns.deadhooker.drunk.com.au/count" )
 		
 		@response.should_receive( :status= ).with( HTTP::NOT_FOUND )
 		
@@ -160,9 +161,11 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with a Date when requesting /listname/last_post_date" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches/last_post_date" )
+		@request.should_receive( :path_info ).and_return( "/beesammiches@guns.com/last_post_date" )
 		
-		@metastore.should_receive( :find_exact_uuids ).and_return( %w[1 2 3 4 5] )
+		@metastore.should_receive( :find_exact_uuids ).
+			with( 'list_name', 'beesammiches@guns.com' ).
+			and_return( %w[1 2 3 4 5] )
 		@metastore.should_receive( :get_property ).with( '1', :rfc822_date ).
 			and_return( 'Sun, 3 Feb 2008 21:40:46 -0800' )
 		@metastore.should_receive( :get_property ).with( '2', :rfc822_date ).
@@ -182,7 +185,7 @@ describe ThingFish::MailinglistsHandler do
 	end
 	
 	it "responds with a 404 for when requesting /listname/last_post_date for a non-existant list" do
-		@request.should_receive( :path_info ).and_return( "/beesammiches/last_post_date" )
+		@request.should_receive( :path_info ).and_return( "/beesammiches@guns.com/last_post_date" )
 		
 		@response.should_receive( :status= ).with( HTTP::NOT_FOUND )
 		

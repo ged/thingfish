@@ -1,7 +1,7 @@
 ---
-title: "Developer's Guide: The Javascript Client Library"
+title: "Writing a ThingFish FileStore"
 layout: default
-index: 3
+index: 4
 filters:
   - erb
   - examples
@@ -10,5 +10,6 @@ filters:
 
 h2. <%= page.config['title'] %>
 
-«Coming Soon!»
+« Coming Soon! »
+
 

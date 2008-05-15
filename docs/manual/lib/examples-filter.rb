@@ -57,7 +57,7 @@ class ExamplesFilter < Manual::Page::Filter
 			(?:					# Optional instruction body
 			\s+
 			(					# [$1]
-				[^?]*			# Anything but a queston mark
+				[^?]*			# Anything but a question mark
 				|				# -or-
 				\?(?!>)			# question mark not followed by a closing angle bracket
 			)

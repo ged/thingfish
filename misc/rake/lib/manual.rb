@@ -152,7 +152,6 @@ module Manual
 			
 			# Use Tidy to clean up the html if 'cleanup' is turned on, but remove the Tidy
 			# meta-generator propaganda/advertising.
-			$stderr.puts "HTML before cleanup is: %p" % [ html ]
 			html = self.cleanup( html ).sub( %r:<meta name="generator"[^>]*tidy[^>]*/>:im, '' ) if
 				self.config['cleanup']
 				
@@ -301,8 +300,6 @@ module Manual
 
 		### Sort and traverse the specified +hash+ recursively, yielding for each entry.
 		def traverse_hierarchy( path, hash, &builder )
-			$stderr.puts "Traversing hierarchy with keys: %p" % [ hash.keys ]
-
 			# Now generate the index in the sorted order
 			sort_hierarchy( hash ).each do |subpath, page_or_section|
 				if page_or_section.is_a?( Hash )
@@ -367,7 +364,6 @@ module Manual
 			end
 			
 			# Recurse
-			$stderr.puts "About to recurse for %p" % [ path ]
 			self.traverse_hierarchy( path, section, &builder )
 			
 			# Call the callback with :section_end

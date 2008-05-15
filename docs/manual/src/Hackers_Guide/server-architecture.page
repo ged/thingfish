@@ -4,6 +4,7 @@ layout: default
 index: 1
 filters:
   - erb
+  - links
   - examples
   - textile
 ---
@@ -45,7 +46,7 @@ You can, however, add one or more other handlers to the chain that will handle
 requests for metadata, search strategies, or anything else you might want to
 do. ThingFish comes with a number of these that can be loaded via the config.
 
-See the "Writing Handlers":02.writing-handlers.html section
+See the <?link "Writing Handlers":Writing a ThingFish Handler ?> section
 for more on how to do this.
 
 
@@ -56,7 +57,7 @@ they transform outgoing content to a form which the requester has asked for if i
 isn't in that format already (HTTP content negotiation), or automatically extract
 metadata from incoming file data.
 
-See the "Writing Filters":03.writing-filters.html section for
+See the <? "Writing Filters":Writing a ThingFish Filter ?> section for
 more information.
 
 
@@ -67,8 +68,8 @@ file data in some storage medium behind the scenes. ThingFish comes with two
 different ones: a memory-based one that stores everything in memory, and a simple
 filesystem-based one that stores everything on disk in a hashed directory tree.
 
-For more about writing a custom Filestore, see the "Writing FileStores":./04.writing-filestores.html
-section.
+For more about writing a custom Filestore, see the
+<?link "Writing FileStores":Writing a ThingFish FileStore ?> section.
 
 
 h3{color: #ccae2f}. Metastore
@@ -78,7 +79,7 @@ files. ThingFish comes with two metastore backends which are complimentary to
 the included filestore plugins -- one that stores everything in an in-memory
 datastructure, and one that stores it on disk.
 
-The "Writing MetaStores":05.writing-metastores.html section
+The <?link "Writing MetaStores":Writing a ThingFish MetaStore ?> section
 contains instructions on how to write your own.
 
 

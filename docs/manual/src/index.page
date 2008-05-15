@@ -1,10 +1,11 @@
 ---
 title: Introduction
 layout: default
-tagline: No, this is.
+tagline: Learn me. Love me.
 index: 1
 filters:
   - erb
+  - links
   - examples
   - textile
 ---
@@ -29,14 +30,14 @@ maintenance it requires, and what troubleshooting steps you can take if somethin
 doesn't work.
 
 You can skim the rest of this introduction to familiarize yourself with the structure of
-the system, but the "Getting Started":getting_started section describes installation and
+the system, but the <?link Getting Started ?> section describes installation and
 setup procedures, so you should probably start there if you just want to get to work.
 
 
 h3. Web Developers
 
 If you're a web developer seeking to use an installed ThingFish server, the 
-"Developer's Guide":developers_guide is for you. You'll most likely want to skim the rest 
+<?link Developer's Guide ?> is for you. You'll most likely want to skim the rest 
 of the introduction as well, as it describes several important concepts that will make
 using the service a bit more intuitive.
 
@@ -44,7 +45,7 @@ using the service a bit more intuitive.
 h3. Plugin Developers
 
 If ThingFish isn't exactly what you need, chances are you can whip it into shape with a
-few plugins. ThingFish is made to be customized, and the "Hacker's Guide":hackers_guide is
+few plugins. ThingFish is made to be customized, and the <?link Hacker's Guide ?> is
 the roadmap to the internals you'll need to know about (and probably some you don't) when
 extending or replacing its built-in functionality.
 
@@ -235,8 +236,3 @@ The content of this manual, including images, video, and any example source code
 licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative 
 	Commons Attribution 3.0 License</a>.
 </div>
-
-[getting_started]getting-started.html
-[developers_guide]02.Developers_Guide/index.html
-[hackers_guide]03.Hackers_Guide/index.html
-

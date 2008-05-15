@@ -65,7 +65,7 @@ module Manual
 
 		### The default page configuration if none is specified.
 		DEFAULT_CONFIG = {
-			'filters' => [ 'textile', 'erb' ],
+			'filters' => [ 'erb', 'links', 'textile' ],
 			'layout'  => 'default.page',
 			'cleanup' => true,
 		  }.freeze
@@ -225,13 +225,13 @@ module Manual
 			@catalog.traverse_page_hierarchy do |type, title, path|
 				case type
 				when :section
-					items << %Q{<li class="section-title"><a href="#{path}">#{title}</a><br/>}
+					items << %Q{<li class="section-title"><a href="#{self.basepath + path}/">#{title}</a><br/>}
 					items << '<ul class="index-section">'
 				when :section_end
 					items << '</ul></li>'
 
 				when :entry
-					items << %Q{<li><a href="#{path}">#{title}</a></li>}
+					items << %Q{<li><a href="#{self.basepath + path}.html">#{title}</a></li>}
 
 				else
 					raise "Unknown index entry type %p" % [ type ]
@@ -256,10 +256,11 @@ module Manual
 			@sourcedir = sourcedir
 			@layoutsdir = layoutsdir
 			
-			@pages = []
-			@path_index = {}
+			@pages       = []
+			@path_index  = {}
+			@uri_index   = {}
 			@title_index = {}
-			@hierarchy = {}
+			@hierarchy   = {}
 			
 			self.find_and_load_pages
 		end
@@ -274,6 +275,10 @@ module Manual
 		
 		# An index of the pages in the catalog by title
 		attr_reader :title_index
+		
+		# An index of the pages in the catalog by the URI of their source relative to the source 
+		# directory
+		attr_reader :uri_index
 		
 		# The hierarchy of pages in the catalog, suitable for generating an on-page
 		attr_reader :hierarchy
@@ -290,7 +295,7 @@ module Manual
 		###
 		def traverse_page_hierarchy( &builder ) # :yields: type, title, path
 			raise LocalJumpError, "no block given" unless builder
-			self.traverse_hierarchy( '', self.hierarchy, &builder )
+			self.traverse_hierarchy( Pathname.new(''), self.hierarchy, &builder )
 		end
 
 
@@ -385,15 +390,16 @@ module Manual
 				path_to_base = @sourcedir.relative_path_from( pagefile.dirname )
 
 				page = Manual::Page.new( self, pagefile, @layoutsdir, path_to_base )
+				hierpath = pagefile.relative_path_from( @sourcedir )
 
 				@pages << page
-				@path_index[ pagefile ] = page
-				@title_index[ page.title ] = page
+				@path_index[ pagefile ]     = page
+				@title_index[ page.title ]  = page
+				@uri_index[ hierpath.to_s ] = page
 				
 				# Place the page in the page hierarchy by using inject to find and/or create the 
 				# necessary subhashes. The last run of inject will return the leaf hash in which
 				# the page will live
-				hierpath = pagefile.relative_path_from( @sourcedir )
 				section = hierpath.dirname.split[1..-1].inject( @hierarchy ) do |hier, component|
 					hier[ component ] ||= {}
 					hier[ component ]
@@ -523,7 +529,7 @@ module Manual
 				end
 				
 				desc "Remove any previously-generated parts of the manual and rebuild it"
-				task :rebuild => [ :clobber, :build ]
+				task :rebuild => [ :clobber, self.name ]
 	        end
 
 		end # def define

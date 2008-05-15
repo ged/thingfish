@@ -1,3 +1,0 @@
-plugins:
-    handlers:
-        - time: /what-time-is-it

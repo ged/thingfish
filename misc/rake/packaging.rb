@@ -32,6 +32,8 @@ gemspec = Gem::Specification.new do |gem|
 		collect {|f| f.relative_path_from(BASEDIR).to_s }
 	gem.test_files 	= SPEC_FILES.
 		collect {|f| f.relative_path_from(BASEDIR).to_s }
+	gem.executables = BIN_FILES	.
+		collect {|f| f.relative_path_from(BINDIR).to_s }
 
 	gem.autorequire	= 'thingfish'
 

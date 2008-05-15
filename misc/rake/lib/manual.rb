@@ -60,7 +60,7 @@ module Manual
 				raise NotImplementedError,
 					"%s does not implement the #process method" % [ self.class.name ]
 			end
-		end
+		end # class Filter
 
 
 		### The default page configuration if none is specified.
@@ -94,8 +94,10 @@ module Manual
 
 		### Create a new page-generator for the given +sourcefile+, which will use
 		### ones of the templates in +layouts_dir+ as a wrapper. The +basepath+ 
-		### is the path to the base output directory.
-		def initialize( sourcefile, layouts_dir, basepath='.' )
+		### is the path to the base output directory, and the +catalog+ is the
+		### Manual::PageCatalog to which the page belongs.
+		def initialize( catalog, sourcefile, layouts_dir, basepath='.' )
+			@catalog     = catalog
 			@sourcefile  = Pathname.new( sourcefile )
 			@layouts_dir = Pathname.new( layouts_dir )
 			@basepath    = basepath
@@ -114,6 +116,9 @@ module Manual
 		######
 		public
 		######
+		
+		# The Manual::PageCatalog to which the page belongs
+		attr_reader :catalog
 		
 		# The relative path to the base directory, for prepending to page paths
 		attr_reader :basepath
@@ -138,7 +143,8 @@ module Manual
 		def generate( metadata )
 			content = self.generate_content( @source, metadata )
 
-			templatepath = @layouts_dir + 'default.page'
+			layout = self.config['layout'].sub( /\.page$/, '' )
+			templatepath = @layouts_dir + "%s.page" % [ layout ]
 			template = ERB.new( templatepath.read )
 			page = self
 
@@ -146,6 +152,7 @@ module Manual
 			
 			# Use Tidy to clean up the html if 'cleanup' is turned on, but remove the Tidy
 			# meta-generator propaganda/advertising.
+			$stderr.puts "HTML before cleanup is: %p" % [ html ]
 			html = self.cleanup( html ).sub( %r:<meta name="generator"[^>]*tidy[^>]*/>:im, '' ) if
 				self.config['cleanup']
 				
@@ -191,7 +198,8 @@ module Manual
 				tidy.options.output_xhtml = true
 
 				xml = tidy.clean( source )
-				log( tidy.errors ) if tidy.errors
+				errors = tidy.errors
+				error_message( errors.join ) unless errors.empty?
 				trace tidy.diagnostics
 				return xml
 			end
@@ -208,6 +216,33 @@ module Manual
 					Manual::Page::Filter.derivatives.key?( key )
 				Manual::Page::Filter.derivatives[ key ].instance
 			end
+		end
+
+
+		### Build the index relative to the specified +page+ and return it as a String
+		def make_index_html
+			items = [ '<ul class="index">' ]
+
+			@catalog.traverse_page_hierarchy do |type, title, path|
+				case type
+				when :section
+					items << %Q{<li class="section-title"><a href="#{path}">#{title}</a><br/>}
+					items << '<ul class="index-section">'
+				when :section_end
+					items << '</ul></li>'
+
+				when :entry
+					items << %Q{<li><a href="#{path}">#{title}</a></li>}
+
+				else
+					raise "Unknown index entry type %p" % [ type ]
+				end
+
+			end
+
+			items << '</ul>'
+
+			return items.join("\n")
 		end
 
 	end
@@ -230,42 +265,130 @@ module Manual
 			self.find_and_load_pages
 		end
 		
-		attr_reader :path_index, :title_index, :heirachy, :pages
-		
-		
-		# {
-		# 	'Introduction' => <intro page obj>,
-		# 	'Developers Guide' => {
-		# 		'' => <index page obj>,
-		# 		'Connecting' => <connecting page obj>
-		# 	}
-		# }
-		# 
-		# heirarchy.each do |title, page_or_section|
-		# 	if page_or_section.section?
-		# 		<a href="page_or_section[''].path">
-		# 	else
-		# 		<a href="page.path">page.title</a>
-		# 	end
-		# 	
-		# end
-		# 
 		
 		######
 		public
 		######
 
-		# The Array of all Manual::Page objects
+		# An index of the pages in the catalog by Pathname
+		attr_reader :path_index
+		
+		# An index of the pages in the catalog by title
+		attr_reader :title_index
+		
+		# The hierarchy of pages in the catalog, suitable for generating an on-page
+		attr_reader :hierarchy
+		
+		# An Array of all Manual::Page objects found
 		attr_reader :pages
 		
+		
+		### Traverse the catalog's #hierarchy, yielding to the given +builder+
+		### block for each entry, as well as each time a sub-hash is entered or
+		### exited, setting the +type+ appropriately. Valid values for +type+ are:
+		###	 
+		###		:entry, :section, :section_end
+		###
+		def traverse_page_hierarchy( &builder ) # :yields: type, title, path
+			raise LocalJumpError, "no block given" unless builder
+			self.traverse_hierarchy( '', self.hierarchy, &builder )
+		end
+
+
+		#########
+		protected
+		#########
+
+		### Sort and traverse the specified +hash+ recursively, yielding for each entry.
+		def traverse_hierarchy( path, hash, &builder )
+			$stderr.puts "Traversing hierarchy with keys: %p" % [ hash.keys ]
+
+			# Now generate the index in the sorted order
+			sort_hierarchy( hash ).each do |subpath, page_or_section|
+				if page_or_section.is_a?( Hash )
+					self.handle_section_callback( path + subpath, page_or_section, &builder )
+				else
+					next if subpath == INDEX_PATH
+					self.handle_page_callback( path + subpath, page_or_section, &builder )
+				end
+			end
+		end
+
+
+		### Return the specified hierarchy of pages as a sorted Array of tuples. 
+		### Sort the hierarchy using the 'index' config value of either the
+		### page, or the directory's index page if it's a directory.
+		def sort_hierarchy( hierarchy )
+			hierarchy.sort_by do |subpath, page_or_section|
+
+				# Directory
+				if page_or_section.is_a?( Hash )
+
+					# Use the index of the index page if it exists
+					if page_or_section[INDEX_PATH]
+						idx = page_or_section[INDEX_PATH].config['index']
+						trace "Index page's index for directory '%s' is: %p" % [ subpath, idx ]
+						idx || subpath
+					else
+						trace "Using the path for the sort of directory %p" % [ subpath ]
+						subpath
+					end
+					
+				# Page
+				else
+					if subpath == INDEX_PATH
+						trace "Sort index for index page %p is 0" % [ subpath ]
+						0
+					else
+						idx = page_or_section.config['index']
+						trace "Sort index for page %p is: %p" % [ subpath, idx ]
+						idx || subpath
+					end
+				end
+
+			end # sort_by
+		end
+		
+
+		INDEX_PATH = Pathname.new('index')
+
+		### Build up the data structures necessary for calling the +builder+ callback
+		### for an index section and call it, then recurse into the section contents.
+		def handle_section_callback( path, section, &builder )
+			
+			# Call the callback with :section -- determine the section title from
+			# the 'index.page' file underneath it, or the directory name if no 
+			# index.page exists.
+			if section.key?( INDEX_PATH )
+				builder.call( :section, section[INDEX_PATH].title, path )
+			else
+				title = File.dirname( path ).gsub( /_/, ' ' )
+				builder.call( :section, title, path )
+			end
+			
+			# Recurse
+			$stderr.puts "About to recurse for %p" % [ path ]
+			self.traverse_hierarchy( path, section, &builder )
+			
+			# Call the callback with :section_end
+			builder.call( :section_end, '', path )
+		end
+		
+		
+		### Yield the specified +page+ to the builder
+		def handle_page_callback( path, page )
+			yield( :entry, page.title, path )
+		end
+		
+
 		
 		### Find all .page files under the configured +sourcedir+ and create a new
 		### Manual::Page object for each one.
 		def find_and_load_pages
 			Pathname.glob( @sourcedir + '**/*.page' ).each do |pagefile|
-				path_to_base = pagefile.dirname.relative_path_from( @sourcedir )
+				path_to_base = @sourcedir.relative_path_from( pagefile.dirname )
 
-				page = Manual::Page.new( pagefile, @layoutsdir, path_to_base )
+				page = Manual::Page.new( self, pagefile, @layoutsdir, path_to_base )
 
 				@pages << page
 				@path_index[ pagefile ] = page
@@ -280,13 +403,7 @@ module Manual
 					hier[ component ]
 				end
 
-				# 'index.page' files serve as the configuration for the section in which they
-				# live, so they get treated specially.
-				if pagefile.basename('.page') == 'index'
-					section[ nil ] = page
-				else
-					section[ page.title ] = page
-				end
+				section[ pagefile.basename('.page') ] = page
 			end
 		end
 		
@@ -391,9 +508,6 @@ module Manual
 			load_filter_libraries( libdir )
 			catalog = Manual::PageCatalog.new( sourcedir, layoutsdir )
 			
-			# require 'pp'
-			# pp catalog
-
 			# Declare the tasks outside the namespace that point in
 			task @name => "#@name:build"
 			task "clobber_#@name" => "#@name:clobber"
@@ -461,7 +575,7 @@ module Manual
 				log "  #{ source } -> #{ target }"
 					
 				page = catalog.path_index[ source ]
-				trace "  page object is: %p" % [ page ]
+				#trace "  page object is: %p" % [ page ]
 					
 				target.dirname.mkpath
 				target.open( File::WRONLY|File::CREAT|File::TRUNC ) do |io|

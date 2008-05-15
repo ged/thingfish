@@ -67,28 +67,20 @@ That's it!  If your daemon is logging messages at the _debug_ level or higher, y
 should see a message similar to this at startup, showing that the handler was found
 and installed under the proper URI:
 
-<div class="example">
-<div class="CodeRay">
-<pre>
+<pre class="example">
 Handler map is:
     /: [ThingFish::DefaultHandler, ThingFish::StaticContentHandler]  
     /what-time-is-it: [TimeHandler]
 </pre>
-</div>
-</div>
 
 Making the actual request should log the following:
 
-<div class="example">
-<div class="CodeRay">
-<pre>
+<pre class="example">
 Dispatching to 1 handlers
 TimeHandler: 127.0.0.1 GET /what-time-is-it
 Searching for a GET handler method: TimeHandler#handle_get_request
 Response: HTTP/1.1 200 OK
 </pre>
-</div>
-</div>
 
 h3. Building on top of this
 
@@ -358,7 +350,6 @@ handlers live at can change, here's how to discover where another handler is ins
 <%% end %>
 
 <?end example?>
-</pre>
 
 
 h3. Fetching Query Arguments

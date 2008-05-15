@@ -10,19 +10,27 @@
 # 
 # 
 
-require 'pathname'
+
+BEGIN {
+	require 'pathname'
+	BASEDIR = Pathname.new( __FILE__ ).dirname.parent
+
+	loadpath = BASEDIR + 'loadpath.rb'
+	require loadpath if loadpath.exist?
+	
+	utils = BASEDIR + 'utils.rb'
+	require utils if utils.exist?
+}
+
 require 'optparse'
 require 'ostruct'
 require 'erb'
 require 'etc'
 require 'fileutils'
 
-BASEDIR = Pathname.new( __FILE__ ).dirname.parent
+require 'thingfish'
 
-require BASEDIR + 'loadpath.rb'
-require BASEDIR + 'utils.rb'
-
-
+### ThingFish plugin generator class
 class PluginGenerator
 	include FileUtils, UtilityFunctions
 	

@@ -2,10 +2,6 @@
 title: Developer's Guide
 layout: default
 index: 3
-filters:
-  - erb
-  - examples
-  - textile
 ---
 
 h1. <%= page.config['title'] %>

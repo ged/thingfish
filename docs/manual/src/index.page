@@ -5,8 +5,8 @@ tagline: No, this is.
 index: 1
 filters:
   - erb
-  - textile
   - examples
+  - textile
 ---
 
 h1. <%= page.config['title'] %>
@@ -18,8 +18,8 @@ REST API over HTTP.
 
 h2. Intended Audience
 
-This manual is primarily for three different kinds of people: System Administrators,
-Web Developers, and ThingFish Plugin Developers.
+This manual is for three different kinds of people: System Administrators, Web Developers, and
+ThingFish Plugin Developers.
 
 h3. System Administrators
 

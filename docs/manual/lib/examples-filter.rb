@@ -24,7 +24,7 @@ end
 ### 
 ### Examples are enclosed in XML processing instructions like so:
 ###
-###   <?example language: ruby, testable: true, caption: "A fine example" ?>
+###   <?example {language: ruby, testable: true, caption: "A fine example"} ?>
 ###      a = 1
 ###      puts a
 ###   <?end example ?>

@@ -92,6 +92,27 @@ describe ThingFish::Daemon do
 	end
 
 
+	### Startup
+	
+	it "starts its filestore and metastore when it is started" do
+		config = ThingFish::Config.new
+		daemon = ThingFish::Daemon.new( @config )
+
+		Process.should_receive( :euid ).at_least( :once ).and_return(266)
+
+		filestore = mock( "filestore", :null_object => true )
+		daemon.instance_variable_set( :@filestore, filestore )
+		metastore = mock( "metastore", :null_object => true )
+		daemon.instance_variable_set( :@metastore, metastore )
+
+		filestore.should_receive( :startup )
+		metastore.should_receive( :startup )
+		
+		daemon.run
+	end
+
+	
+
 	### End-to-end 
 	describe " configured with defaults" do
 
@@ -824,6 +845,7 @@ describe ThingFish::Daemon do
 			Process.should_receive( :euid= ).with( 1000 )
 			@daemon.run
 		end
+
 	end
 
 

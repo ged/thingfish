@@ -144,6 +144,11 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	def run
 		daemonize( @config.pidfile ) if @config.daemon
 		become_user( @config.user )  if Process.euid.zero? and ! @config.user.nil?
+		
+		# Do any storage preparation tasks that may be required after dropping privileges.
+		@filestore.startup
+		@metastore.startup
+		
 		super
 	end
 

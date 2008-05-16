@@ -36,7 +36,10 @@ describe "An instance of a derivative filestore class" do
 		@filestore = ThingFish::FileStore.create( 'test', nil, nil )
 	end
 
-
+	it "knows how to perform startup tasks" do
+		@filestore.should respond_to( :startup )
+	end
+	
 	### Required derivative daemon interface specs
 
 	it "raises a NotImplementedError for write operations" do

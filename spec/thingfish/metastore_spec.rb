@@ -40,6 +40,9 @@ describe ThingFish::MetaStore do
 			@metastore = ThingFish::MetaStore.create( 'test', nil, nil )
 		end
 	
+		it "knows how to perform startup tasks" do
+			@metastore.should respond_to( :startup )
+		end
 	
 		it "raises NotImplementedError for #has_uuid?" do
 			lambda {

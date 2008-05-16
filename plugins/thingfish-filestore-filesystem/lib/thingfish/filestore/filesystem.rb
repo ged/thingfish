@@ -21,6 +21,9 @@
 # [+bufsize+]
 #   The size of the buffer to use when reading incoming data (in bytes). Defaults to
 #   ThingFish::FilesystemFileStore::DEFAULT_BUFSIZE.
+# [+cachesizes+]
+#   Maintain total sizes in top level hash directories? Defaults to
+#   ThingFish::FilesystemFileStore::DEFAULT_CACHESIZES
 # [+locking+]
 #   The configuration for the locking system. Defaults are in 
 #   ThingFish::FilesystemFileStore::DEFAULT_LOCKING_OPTIONS.
@@ -102,6 +105,8 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	# The buffer chunker size
 	DEFAULT_BUFSIZE = 8192
 
+	# Store hashdir sizes in each top level hashdir?
+	DEFAULT_CACHESIZES = false
 
 	# The default options to use when creating locks. See the docs for Lockfile for
 	# more info on what these values mean
@@ -140,19 +145,16 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		
 		super
 
-		@hashdepth = options[:hashdepth] || DEFAULT_HASHDEPTH
-		@bufsize   = options[:bufsize]   || DEFAULT_BUFSIZE
-		@lock_opts = options[:locking]   || DEFAULT_LOCKING_OPTIONS
+		@hashdepth  = options[:hashdepth]  || DEFAULT_HASHDEPTH
+		@bufsize    = options[:bufsize]    || DEFAULT_BUFSIZE
+		@lock_opts  = options[:locking]    || DEFAULT_LOCKING_OPTIONS
+		@cachesizes = options[:cachesizes] || DEFAULT_CACHESIZES
 		
 		raise ThingFish::ConfigError, "Max hash depth (8) exceeded" if @hashdepth > 8
 		raise ThingFish::ConfigError, "Hash depth must be 1, 2, 4, or 8." \
 		 	unless [ 1, 2, 4, 8 ].include?( @hashdepth )
 		
-		if @options[:maxsize]
-			@total_size = find_filestore_size()
-		else
-			@total_size = 0
-		end
+		@total_size = 0
 	end
 
 
@@ -163,7 +165,14 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 
 	# The number of hashed subdirectories to use
 	attr_reader :hashdepth
-	
+
+
+	### Perform any startup tasks that should take place after the daemon has an opportunity
+	### to daemonize and switch effective user.
+	def startup
+		@total_size = self.find_filestore_size if @options[:maxsize]
+	end	
+
 
 	### Mandatory FileStore interface
 
@@ -172,11 +181,11 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		raise ThingFish::FileStoreQuotaError, "FileStore quota limit exceeded" if
 			@options[:maxsize] && @total_size + data.length > @options[:maxsize]
 
-		self.open_writer( uuid ) do |fh|
+		path = self.open_writer( uuid ) do |fh|
 			fh.write( data )
 		end
 		
-		@total_size += data.length
+		self.update_size( path, data.length )
 		return Digest::MD5.hexdigest( data )
 	end
 
@@ -187,7 +196,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		uploadsize = 0
 
 		digest = Digest::MD5.new
-		self.open_writer( uuid ) do |fh|
+		path = self.open_writer( uuid ) do |fh|
 	
 			# Buffered read
 			buf = ''
@@ -204,7 +213,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 			end
 		end
 
-		@total_size += uploadsize
+		self.update_size( path, uploadsize )
 		return digest.hexdigest
 	end
 	
@@ -239,7 +248,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		path = self.hashed_path( uuid )
 		bytes = path.size
 		if path.unlink
-			@total_size -= bytes
+			self.update_size( path, -bytes )
 			return true
 		else
 			return false
@@ -292,8 +301,9 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	end
 
 
-	### Yield a lock-protected IO object open for writing to the file that 
-	### corresponds to +uuid+ to the supplied block.
+	### Yield a lock-protected IO object open for writing to the file that
+	### corresponds to +uuid+ to the supplied block.  Returns a Pathname
+	### object to the file.
 	def open_writer( uuid )
 		path = self.hashed_path( uuid )
 		
@@ -321,6 +331,8 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 				io.close unless io.closed?
 			end
 		end
+
+		return path
 	end
 
 
@@ -336,29 +348,113 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	end
 
 
-	#######
-	private
-	#######
+
+	#########
+	protected
+	#########
+
+
+	### Given a +filepath+ as a Pathname object, modify the total_size
+	### accessor and the size cache file by +amt+.  Don't perform any
+	### updates if size caching is disabled. Returns the updated +@total_size+.
+	###
+	def update_size( filepath, amt )
+
+		@total_size += amt
+
+		if @cachesizes
+			scache = self.sizecache( filepath )
+
+			Lockfile.new( "#{ scache }.lock", @lock_opts ) do
+				newsize = scache.exist? ? scache.read.to_i + amt : amt
+
+				scache.open('w') do |fh|
+					fh.write( newsize )
+				end
+			end
+		end
+
+		return @total_size
+	end
+
+
+	### Given a +filepath+ Pathname object to a resource,
+	### return a Pathname to the size cache file responsible for it.
+	###
+	### This will store .size files in the uppermost hashed directory, i.e.:
+	###		datadir/66f67ce6    --> datadir/66f67ce6/.size
+	###		datadir/66f6/7ce6   --> datadir/66f6/.size
+	###		datadir/66/f6/7c/e6 --> datadir/66/.size
+	###
+	def sizecache( filepath )
+ 		dir = (1..@hashdepth - 1).inject( filepath.dirname ) { |pn, _| pn.parent }
+		return dir + '.size'
+	end
+
+
+	### Find all previously generated size cache files.  Return a hash
+	### of Pathname keys and size values.
+	###
+	def get_sizecache_files
+		cachefiles = {}
+
+		Pathname.glob( "#{@datadir}/*/.size" ) do |scache|
+			cachefiles[ scache ] = scache.read.to_i
+		end
+
+		return cachefiles
+	end
+
 
 	### Stat the files that are currently in the filestore and return the sum of 
-	### their size.
+	### their size.  Build cache files if enabled in the configuration for speedier
+	### future startup times.
+	###
 	def find_filestore_size
 		sum = 0
-		
+		cachefiles = self.get_sizecache_files
+
 		self.log.info "Calculating current size of FileStore (this could take a moment...)"
-		@datadir.find do |path|
-			next unless path.file? && path.basename.to_s =~ /^#{UUID_REGEXP}$/
-			sum += path.size
+
+		# If caching is configured and there are cache files, use them instead
+		# of traversing the entirety of the filestore.
+		#
+		if @cachesizes and ! cachefiles.empty?
+			self.log.debug 'Using filestore cache to determine total size...'
+			sum = cachefiles.values.inject { |sum, val| sum + val }
 		end
-		
+
+		# Remove cache files if they exist and caching is disabled, since the files
+		# won't be maintained.
+		#
+		unless @cachesizes or cachefiles.empty?
+			self.log.debug 'Removing previously cached filestore size files'
+			cachefiles.each_key { |file| file.unlink }
+		end
+
+		# We don't have a sum, which means we either don't have caching enabled or we
+		# need to generate the cache files. (First run.)  In any event, traverse the
+		# whole filestore.
+		#
+		if sum.zero?
+			self.log.debug 'Traversing filestore to determine total size...'
+			@datadir.find do |path|
+				next unless path.file? && path.basename.to_s =~ /^#{UUID_REGEXP}$/
+				size = path.size
+				sum += size
+
+				# generate/update cache file
+				self.update_size( path, size )
+			end
+		end
+
 		maxsize = @options[:maxsize] ? "%0.2fMB" % [@options[:maxsize]/1.megabyte.to_f] : nil
 		self.log.info "FileStore currently using %0.2fMB%s" %
 			[sum / 1.megabyte.to_f, maxsize ? " of #{maxsize}" : "" ]
 
 		return sum
 	end
-	
-		
+
 end # class ThingFish::FilesystemFileStore
 
 # vim: set nosta noet ts=4 sw=4:

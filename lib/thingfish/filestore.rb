@@ -101,6 +101,13 @@ class ThingFish::FileStore
 	attr_reader :spooldir
 
 
+	### Perform any startup tasks that should take place after the daemon has an opportunity
+	### to daemonize and switch effective user.  This can be overridden from child classes.
+	def startup
+		# default no-op
+	end
+	
+	
 	### Mandatory FileStore API
 	virtual :store, :fetch, :delete, :size, :has_file?
 

@@ -214,6 +214,13 @@ class ThingFish::MetaStore
 	end
 
 
+	### Perform any startup tasks that should take place after the daemon has an opportunity
+	### to daemonize and switch effective user.  This can be overridden from child classes.
+	def startup
+		# default no-op
+	end
+
+
 	### Execute a block in the scope of a transaction, committing it when the block returns.
 	### If an exception is raised in the block, the transaction is aborted. This is a
 	### no-op by default, but left to specific metastores to provide a functional 

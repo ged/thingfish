@@ -57,7 +57,7 @@ they transform outgoing content to a form which the requester has asked for if i
 isn't in that format already (HTTP content negotiation), or automatically extract
 metadata from incoming file data.
 
-See the <? "Writing Filters":Writing a ThingFish Filter ?> section for
+See the <?link "Writing Filters":Writing a ThingFish Filter ?> section for
 more information.
 
 

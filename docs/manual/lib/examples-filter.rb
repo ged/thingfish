@@ -74,7 +74,7 @@ class ExamplesFilter < Manual::Page::Filter
 			require 'pathname'
 			require 'strscan'
 			require 'yaml'
-			require 'coderay'
+			require 'uv'
 			require 'rcodetools/xmpfilter'
 			require 'digest/md5'
 			require 'tmpdir'
@@ -118,7 +118,8 @@ class ExamplesFilter < Manual::Page::Filter
 				# Now find the end of the example or complain
 				contentpos = scanner.pos
 				scanner.skip_until( EndPI ) or
-					raise "Unterminated example at line %d" % [ scanner[0..scanner.pos].count("\n") ]
+					raise "Unterminated example at line %d" % 
+						[ scanner[0..scanner.pos].count("\n") ]
 				
 				# Now build the example and append to the buffer
 				if ( scanner.pos - contentpos > scanner.matched.length )
@@ -159,7 +160,8 @@ class ExamplesFilter < Manual::Page::Filter
 		content = highlight( content.strip, options )
 		caption = %{<div class="caption">} + caption.to_s + %{</div>} if caption
 
-		return %{<notextile><div class="example">%s%s</div></notextile>} % [content, caption || '']
+		return %{<notextile><div class="example">%s%s</div></notextile>} %
+		 	[content, caption || '']
 	end
 
 
@@ -173,6 +175,7 @@ class ExamplesFilter < Manual::Page::Filter
 		# Convert to Symbol keys and value
 		args.keys.each do |k|
 			newval = args.delete( k )
+			next if newval.nil? || (newval.respond_to?(:size) && newval.size == 0)
 			args[ k.to_sym ] = newval.respond_to?( :to_sym ) ? newval.to_sym : newval
 		end
 		return DEFAULTS.merge( args )
@@ -225,12 +228,28 @@ class ExamplesFilter < Manual::Page::Filter
 
 	# Highlights the given +content+ in language +lang+.
 	def highlight( content, options )
-		lang = options.delete( :language )
-		scanner = CodeRay.scan( content, lang.to_sym )
-
-		options[:wrap] = :div
-		return scanner.html( options )
+		lang = options.delete( :language ).to_s
+		if Uv.syntaxes.include?( lang )
+			return Uv.parse( content, "xhtml", lang, true, "deveiate")
+		else
+			begin
+				require 'amatch'
+				pat = Amatch::PairDistance.new( lang )
+				matches = Uv.syntaxes.
+					collect {|syntax| [pat.match(syntax), syntax] }.
+					sort_by {|tuple| tuple[0] }.
+					reverse
+				puts matches[ 0..5 ].inspect
+				puts "No syntax called '#{lang}'.",
+					"Perhaps you meant one of: ",
+					*(matches[ 0..5 ].collect {|m| "  #{m[1]}" })
+			rescue => err
+				$stderr.puts err.message, err.backtrace.join("\n  ")
+				raise "No UV syntax called '#{lang}'."
+			end
+		end
 	end
+	
 end
 
 

@@ -54,7 +54,7 @@ h4. Default Handler
 			"accepts"   => [],
 			"version"   => [1, 0],
 			"supports"  => [],
-			"generates" => ["mime/type"]},
+			"generates" => ["mime/type"],
 		},
 		# ... other filters
 	},

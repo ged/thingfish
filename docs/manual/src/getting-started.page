@@ -341,7 +341,7 @@ before starting the daemon.  This isn't necessary if you've used RubyGems to ins
 ThingFish and ThingFish add-ons, but is useful if everything is extracted to a single
 directory.
 
-<?example { language: bash, caption: A ThingFish run file for use with supervise } ?>
+<?example { language: shell-unix-generic, caption: A ThingFish run file for use with supervise } ?>
 #!/bin/bash
 
 plugin_libs=(plugins/*/lib)

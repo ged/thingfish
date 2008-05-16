@@ -83,7 +83,7 @@ require 'thingfish/client'
 client = ThingFish::Client.new( 'thingfish.laika.com' )
 resource = client.store( File.open("rss.png"), :format => 'image/png' )
 
-resource.uuid # => "a52ec552-2c50-11dc-8e32-abc548881c84"
+resource.uuid             # => "a52ec552-2c50-11dc-8e32-abc548881c84"
 
 <?end example?>
 
@@ -101,8 +101,8 @@ require 'thingfish/client'
 client = ThingFish::Client.new( 'thingfish.laika.com' )
 resource = client.fetch( 'a3f4e060-dffa-11db-a8e7-4bd9759f4985' )
 
-resource.uuid                               # => 'a3f4e060-dffa-11db-a8e7-4bd9759f4985'
-resource.format                             # => 'image/png'
-resource.data[0..10]                        # => "\211PNG\r\n\032\n\000\000\000"
+resource.uuid             # => 'a3f4e060-dffa-11db-a8e7-4bd9759f4985'
+resource.format           # => 'image/png'
+resource.data[0..10]      # => "\211PNG\r\n\032\n\000\000\000"
 
 <?end example?>

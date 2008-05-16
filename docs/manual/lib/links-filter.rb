@@ -78,7 +78,8 @@ class LinksFilter < Manual::Page::Filter
 				return %{<a href="#{href}">#{other_page.title}</a>}
 			end
 		else
-			error_message = "Could not find a link for reference %p" % [ reference ]
+			link_text ||= reference
+			error_message = "Could not find a link for reference '%s'" % [ reference ]
 			$stderr.puts( error_message )
 			return %{<a href="#" title="#{error_message}" class="broken-link">#{link_text}</a>}
 		end

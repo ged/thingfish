@@ -45,7 +45,7 @@ to fiddle with as you see fit. |
 easily be an erb template, or even an @IO@ object.  @IO@ objects will automatically buffer out 
 to the client. |
 | 10 | Set the content type of the response. |
-| 11 | The default response code is a _404 (Not Found)_ – after we're sure we've generated
+| 11 | The default response code is a @404 (Not Found)@ – after we're sure we've generated
 the content we want, setting this to @OK@ stops further processing, and lets the response 
 through successfully. |
 
@@ -53,17 +53,17 @@ h3. Installing the handler
 
 Alright, now that you've got this wicked cool Time handler, how do we tell ThingFish
 to actually use it?  So far, all we really need to do is to load it when a particular
-URI is requested.  This is done in the _thingfish.conf_ file, under the _handlers_
-section.  If you wanted to install it under a single URI called _/what-time-is-it_,
-here's how you'd do it.
+URI is requested.  This is done in the @thingfish.conf@ file, under the @handlers@
+section.  If you wanted to install it under a single URI called @/what-time-is-it@,
+here's how you'd do it:
 
-<?example { language: yaml, caption: Our handler's config section } ?>
+<?example { language: yaml, caption: "Our handler's config section" } ?>
 plugins:
     handlers:
         - time: /what-time-is-it
 <?end example?>
 
-That's it!  If your daemon is logging messages at the _debug_ level or higher, you
+That's it!  If your daemon is logging messages at the @debug@ level or higher, you
 should see a message similar to this at startup, showing that the handler was found
 and installed under the proper URI:
 
@@ -298,7 +298,7 @@ end
 
 And then we'll change the @%s@ placeholders into ERb directives in the template:
 
-<?example { language: rhtml, caption: timehandler.rhtml -- an ERb template! } ?>
+<?example { language: html, caption: timehandler.rhtml -- an ERb template! } ?>
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 	"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -340,7 +340,7 @@ h3. Linking to Other Handlers
 Sometimes you'll want one handler to provide a link to another handler, but since the URI
 handlers live at can change, here's how to discover where another handler is installed:
 
-<?example { language: rhtml, caption: Finding another handler's URI } ?>
+<?example { language: html, caption: Finding another handler's URI } ?>
 <%%
 	search_uri = @config.find_handler_uri('search')
 	if search_uri
@@ -360,8 +360,10 @@ want to retrieve them from the request's query parameters. You can do this via t
 @ThingFish::Request@ object's @#query_args@ method:
 
 <?example { language: ruby, caption: Fetching query arguments from the request. } ?>
-request = ThingFish::Request.new
-request.query_args                                    # =>
+def handle_get_request( request, response )
+	args = request.query_args
+	
+end
 <?end example?>
 
 The method returns a Hash -- multiple values are contained in Arrays and single values are Strings.

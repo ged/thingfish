@@ -218,20 +218,30 @@ module Manual
 		end
 
 
-		### Build the index relative to the specified +page+ and return it as a String
+		### Build the index relative to the receiving page and return it as a String
 		def make_index_html
-			items = [ '<ul class="index">' ]
+			items = [ '<div class="index">' ]
 
-			@catalog.traverse_page_hierarchy do |type, title, path|
+			@catalog.traverse_page_hierarchy( self ) do |type, title, path|
 				case type
 				when :section
-					items << %Q{<li class="section-title"><a href="#{self.basepath + path}/">#{title}</a><br/>}
+					items << %Q{<div class="section">}
+					items << %Q{<h2><a href="#{self.basepath + path}/">#{title}</a></h2>}
 					items << '<ul class="index-section">'
-				when :section_end
-					items << '</ul></li>'
+					
+				when :current_section
+					items << %Q{<div class="section current-section">}
+					items << %Q{<h2><a href="#{self.basepath + path}/">#{title}</a></h2>}
+					items << '<ul class="index-section current-index-section">'
+
+				when :section_end, :current_section_end
+					items << '</ul></div>'
 
 				when :entry
 					items << %Q{<li><a href="#{self.basepath + path}.html">#{title}</a></li>}
+
+				when :current_entry
+					items << %Q{<li class="current-entry">#{title}</li>}
 
 				else
 					raise "Unknown index entry type %p" % [ type ]
@@ -239,7 +249,7 @@ module Manual
 
 			end
 
-			items << '</ul>'
+			items << '</div>'
 
 			return items.join("\n")
 		end
@@ -293,9 +303,17 @@ module Manual
 		###	 
 		###		:entry, :section, :section_end
 		###
-		def traverse_page_hierarchy( &builder ) # :yields: type, title, path
+		### If the optional +from+ value is given, it should be the Manual::Page object
+		### which is considered "current"; if the +from+ object is the same as the 
+		### hierarchy entry being yielded, it will be yielded with the +type+ set to 
+		### one of:
+		### 
+		###     :current_entry, :current_section, :current_section_end
+		###
+		### each of which correspond to the like-named type from above.
+		def traverse_page_hierarchy( from=nil, &builder ) # :yields: type, title, path
 			raise LocalJumpError, "no block given" unless builder
-			self.traverse_hierarchy( Pathname.new(''), self.hierarchy, &builder )
+			self.traverse_hierarchy( Pathname.new(''), self.hierarchy, from, &builder )
 		end
 
 
@@ -304,14 +322,14 @@ module Manual
 		#########
 
 		### Sort and traverse the specified +hash+ recursively, yielding for each entry.
-		def traverse_hierarchy( path, hash, &builder )
+		def traverse_hierarchy( path, hash, from=nil, &builder )
 			# Now generate the index in the sorted order
 			sort_hierarchy( hash ).each do |subpath, page_or_section|
 				if page_or_section.is_a?( Hash )
-					self.handle_section_callback( path + subpath, page_or_section, &builder )
+					self.handle_section_callback( path + subpath, page_or_section, from, &builder )
 				else
 					next if subpath == INDEX_PATH
-					self.handle_page_callback( path + subpath, page_or_section, &builder )
+					self.handle_page_callback( path + subpath, page_or_section, from, &builder )
 				end
 			end
 		end
@@ -356,29 +374,43 @@ module Manual
 
 		### Build up the data structures necessary for calling the +builder+ callback
 		### for an index section and call it, then recurse into the section contents.
-		def handle_section_callback( path, section, &builder )
+		def handle_section_callback( path, section, from=nil, &builder )
+			from_current = false
 			
 			# Call the callback with :section -- determine the section title from
 			# the 'index.page' file underneath it, or the directory name if no 
 			# index.page exists.
 			if section.key?( INDEX_PATH )
-				builder.call( :section, section[INDEX_PATH].title, path )
+				if section[INDEX_PATH] == from
+					from_current = true
+					builder.call( :current_section, section[INDEX_PATH].title, path )
+				else
+					builder.call( :section, section[INDEX_PATH].title, path )
+				end
 			else
 				title = File.dirname( path ).gsub( /_/, ' ' )
 				builder.call( :section, title, path )
 			end
 			
 			# Recurse
-			self.traverse_hierarchy( path, section, &builder )
+			self.traverse_hierarchy( path, section, from, &builder )
 			
 			# Call the callback with :section_end
-			builder.call( :section_end, '', path )
+			if from_current
+				builder.call( :current_section_end, '', path )
+			else
+				builder.call( :section_end, '', path )
+			end
 		end
 		
 		
 		### Yield the specified +page+ to the builder
-		def handle_page_callback( path, page )
-			yield( :entry, page.title, path )
+		def handle_page_callback( path, page, from=nil )
+			if from == page
+				yield( :current_entry, page.title, path )
+			else
+				yield( :entry, page.title, path )
+			end
 		end
 		
 

@@ -35,9 +35,17 @@ def install_gems( *gems )
 			next
 		end
 
+		rgv = Gem::Version.new( Gem::RubyGemsVersion )
+		installer = nil
+		
 		log "Trying to install #{gemname.inspect}..."
-		installer = Gem::DependencyInstaller.new
-		installer.install( gemname )
+		if rgv >= Gem::Version.new( '1.1.1' )
+			installer = Gem::DependencyInstaller.new
+			installer.install( gemname )
+		else
+			installer = Gem::DependencyInstaller.new( gemname )
+			installer.install
+		end
 
 		installer.installed_gems.each do |spec|
 			log "Installed: %s" % [ spec.full_name ]
@@ -50,7 +58,7 @@ end
 
 ### Task: install gems for development tasks
 DEPENDENCIES = %w[
-	mongrel pluginfactory rcov uuidtools rspec lockfile rcodetools uv redcloth
+	mongrel pluginfactory rcov uuidtools rspec lockfile rcodetools ultraviolet redcloth
   ]
 task :install_dependencies do
 	install_gems( *DEPENDENCIES )

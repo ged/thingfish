@@ -2,6 +2,7 @@
 title: "Connecting to the Server"
 layout: default
 index: 1
+tagline: ThingFish, you're so slutty.
 filters:
   - erb
   - examples

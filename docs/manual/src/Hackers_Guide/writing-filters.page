@@ -4,12 +4,27 @@ layout: default
 index: 3
 filters:
   - erb
+  - api
   - examples
   - textile
 ---
 
 h2. <%= page.config['title'] %>
 
-« Coming Soon! »
+h3. How's a filter different than a handler?
 
+For a given URI, a handler is what performs the actual response to the
+client.  Filters are chainable code that has the opportunity to look at
+and optionally modify both the request and the response, regardless of
+URI.
 
+We like to think of filters that operate on incoming data as
+'extraction' filters, as they commonly pull more data out of uploaded
+files for the metastore.  For example, detecting and storing id3
+information for MP3 uploads.
+
+Filters that operate on the response could be thought of as 'conversion'
+filters, such as a filter designed to dynamically convert a TIFF file to
+a JPEG via the client's @Accept@ header.
+
+h3. Rest of this coming soon...

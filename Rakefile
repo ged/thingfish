@@ -30,19 +30,20 @@ require 'pathname'
 $dryrun = false
 
 # Pathname constants
-BASEDIR       = Pathname.new( __FILE__ ).expand_path.dirname.relative_path_from( Pathname.getwd )
-BINDIR        = BASEDIR + 'bin'
-LIBDIR        = BASEDIR + 'lib'
-DOCSDIR       = BASEDIR + 'docs'
-VARDIR        = BASEDIR + 'var'
-MISCDIR       = BASEDIR + 'misc'
-WWWDIR        = VARDIR  + 'www'
-MANUALDIR     = DOCSDIR + 'manual'
-RDOCDIR       = DOCSDIR + 'rdoc'
-STATICWWWDIR  = WWWDIR  + 'static'
-PKGDIR        = BASEDIR + 'pkg'
-ARTIFACTS_DIR = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
-RAKE_TASKDIR  = MISCDIR + 'rake'
+BASEDIR         = Pathname.new( __FILE__ ).expand_path.dirname.relative_path_from( Pathname.getwd )
+BINDIR          = BASEDIR + 'bin'
+LIBDIR          = BASEDIR + 'lib'
+DOCSDIR         = BASEDIR + 'docs'
+VARDIR          = BASEDIR + 'var'
+MISCDIR         = BASEDIR + 'misc'
+WWWDIR          = VARDIR  + 'www'
+STATICWWWDIR    = WWWDIR  + 'static'
+MANUALDIR       = DOCSDIR + 'manual'
+MANUALOUTPUTDIR = STATICWWWDIR    + 'manual'
+RDOCDIR         = MANUALOUTPUTDIR + 'api'
+PKGDIR          = BASEDIR + 'pkg'
+ARTIFACTS_DIR   = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
+RAKE_TASKDIR    = MISCDIR + 'rake'
 
 TEXT_FILES    = %w( Rakefile README LICENSE QUICKSTART ).
 	collect {|filename| BASEDIR + filename }
@@ -117,32 +118,22 @@ end
 
 
 ### Task: manual
-begin
-	require 'misc/rake/lib/manual'
-	
-	Manual::GenTask.new do |manual|
-		manual.metadata.version = PKG_VERSION
-		manual.base_dir = MANUALDIR
-		manual.source_dir = 'src'
-	end
-	task :manual do
-		outputdir = MANUALDIR + 'output'
-		targetdir = STATICWWWDIR + 'manual'
+require 'misc/rake/lib/manual'
 
-		rmtree( targetdir )
-		cp_r( outputdir, targetdir, :verbose => true )
-	end
-	task :clobber_manual do
-		rmtree( STATICWWWDIR + 'manual', :verbose => true )
-	end
-rescue LoadError => err
-	task :no_manual do
-		$stderr.puts "Manual-generation tasks not defined: %s" % [ err.message ]
-	end
-	
-	task :manual => :no_manual
+directory MANUALOUTPUTDIR.to_s
+directory RDOCDIR.to_s
+
+Manual::GenTask.new do |manual|
+	manual.metadata.version = PKG_VERSION
+	manual.metadata.api_dir = RDOCDIR
+	manual.output_dir = MANUALOUTPUTDIR
+	manual.base_dir = MANUALDIR
+	manual.source_dir = 'src'
 end
 
+task :clobber_manual do
+	rmtree( targetdir, :verbose => true )
+end
 
 
 ### Cruisecontrol task

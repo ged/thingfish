@@ -295,7 +295,13 @@ module Manual
 		
 		# An Array of all Manual::Page objects found
 		attr_reader :pages
+
+		# The Pathname location of the .page files.
+		attr_reader :sourcedir
 		
+		# The Pathname location of look and feel templates.
+		attr_reader :layoutsdir
+
 		
 		### Traverse the catalog's #hierarchy, yielding to the given +builder+
 		### block for each entry, as well as each time a sub-hash is entered or
@@ -414,6 +420,7 @@ module Manual
 		end
 		
 
+		### Find and store
 		
 		### Find all .page files under the configured +sourcedir+ and create a new
 		### Manual::Page object for each one.
@@ -535,7 +542,7 @@ module Manual
 			basedir     = Pathname.new( @base_dir )
 			sourcedir   = basedir + @source_dir
 			layoutsdir  = basedir + @layouts_dir
-			outputdir   = basedir + @output_dir
+			outputdir   = @output_dir
 			resourcedir = basedir + @resource_dir
 			libdir      = basedir + @lib_dir
 
@@ -551,7 +558,7 @@ module Manual
 				manual_pages = setup_page_conversion_tasks( sourcedir, outputdir, catalog )
 				
 				desc "Build the manual"
-				task :build => [ :copy_resources, :generate_pages ]
+				task :build => [ :rdoc, :copy_resources, :generate_pages ]
 				
 				task :clobber do
 					RakeFileUtils.verbose( $verbose ) do

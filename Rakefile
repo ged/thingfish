@@ -131,10 +131,6 @@ Manual::GenTask.new do |manual|
 	manual.source_dir = 'src'
 end
 
-task :clobber_manual do
-	rmtree( targetdir, :verbose => true )
-end
-
 
 ### Cruisecontrol task
 desc "Cruisecontrol build"

@@ -93,7 +93,11 @@ require RAKE_TASKDIR + 'svn.rb'
 require RAKE_TASKDIR + 'verifytask.rb'
 Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
 	trace "Loading task lib #{tasklib}"
-	require tasklib
+	begin
+		require tasklib
+	rescue => err
+		fail "Tasklib #{tasklib}: #{err.message}"
+	end
 end
 
 ### Default task

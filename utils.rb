@@ -1,5 +1,5 @@
 #
-#	Install/distribution utility functions
+#	Whatever/distribution utility functions
 #	$Id$
 #
 #	Copyright (c) 2001-2008, The FaerieMUD Consortium.

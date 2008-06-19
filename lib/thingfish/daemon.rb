@@ -234,6 +234,35 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		return uuid
 	end
 	
+	
+	### Recursively store all resources in the specified +request+ that are related to +body+.
+	### Use the specified +uuid+ for the 'related_to' metadata value.
+	def store_related_resources( body, uuid, request )
+		request.related_resources[ body ].each do |related_resource, related_metadata|
+			related_metadata[ :related_to ] = uuid
+			metadata = request.metadata[related_resource].merge( related_metadata )
+
+			subuuid = self.store_resource( related_resource, metadata )
+			self.store_related_resources( related_resource, subuuid, request )
+		end
+	rescue => err
+		self.log.error "%s while storing related resource: %s" % [ err.class.name, err.message ]
+		self.log.debug "Backtrace: %s" % [ err.backtrace.join("\n  ") ]
+	end
+	
+	
+	### Remove any resources that have a +related_to+ of the given UUID, and a +relation+ of 
+	### 'appended'.
+	def purge_related_resources( uuid )
+		uuids = @metastore.find_by_exact_properties( :related_to => uuid.to_s, :relation => 'appended' )
+		uuids.each do |subuuid|
+			self.log.debug "purging appended resource %s for %s" % [ subuuid, uuid ]
+			@metastore.delete_resource( subuuid )
+			@filestore.delete( subuuid )
+		end
+	end
+	
+	
 
 	#########
 	protected
@@ -349,9 +378,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	rescue ThingFish::RequestError => err
 		self.send_error_response( response, request, err.status, client, err )
 
-	rescue => err
+	rescue Exception => err
 		self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
-		
 	end
 	
 
@@ -361,7 +389,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			# self.log.debug "Passing request through %s" % [ filter.class.name ]
 			begin
 				filter.handle_request( request, response )
-			rescue => err
+			rescue Exception => err
 				self.log.error "Request filter raised a %s: %s" % 
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
@@ -383,7 +411,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			# self.log.debug "Passing response through %s" % [ filter.class.name ]
 			begin
 				filter.handle_response( response, request )
-			rescue => err
+			rescue Exception => err
 				self.log.error "Response filter raised a %s: %s" % 
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
@@ -479,8 +507,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 
 		handlers.each do |handler|
 			response.handlers << handler
-			handler.process( request, response )
 			request.check_body_ios
+			handler.process( request, response )
 			break if response.is_handled? || client.closed?
 		end
 	end

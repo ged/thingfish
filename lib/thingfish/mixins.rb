@@ -347,7 +347,7 @@ module ThingFish # :nodoc:
 			def virtual( *syms )
 				syms.each do |sym|
 					define_method( sym ) {
-						raise NotImplementedError,
+						raise ::NotImplementedError,
 							"%p does not provide an implementation of #%s" % [ self.class, sym ],
 							caller(1)
 					}

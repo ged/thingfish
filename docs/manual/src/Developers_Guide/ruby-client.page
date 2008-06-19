@@ -10,6 +10,8 @@ filters:
 
 h2. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 The @ThingFish::Client@ class is the main Ruby interface to the ThingFish store. It can be
 used to upload, download, and query the server for resources:
 

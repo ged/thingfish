@@ -66,7 +66,7 @@ describe ThingFish::RdfMetaStore do
 
 	it "ignores the 'new' key in the config options hash" do
 		# (Alphabetically ordered)
-		stringopts = "hash-type='memory',new='yes',write='yes'"
+		stringopts = "hash-type='memory',new='yes',password='',write='yes'"
 		Redland::TripleStore.should_receive( :new ).
 			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
 			and_return( @triplestore )
@@ -76,15 +76,29 @@ describe ThingFish::RdfMetaStore do
 		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
 
+
 	it "ignores the 'write' key in the config options hash" do
 		# (Alphabetically ordered)
-		stringopts = "hash-type='memory',new='yes',write='yes'"
+		stringopts = "hash-type='memory',new='yes',password='',write='yes'"
 		Redland::TripleStore.should_receive( :new ).
 			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
 			and_return( @triplestore )
 		Redland::Model.stub!( :new ).and_return( :model )
 		
 		config = { :options => {:write => 'no'} }
+		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
+	end
+
+
+	it "doesn't clobber a password if specified in the config options hash" do
+		# (Alphabetically ordered)
+		stringopts = "hash-type='memory',new='yes',password='n\\'robot',write='yes'"
+		Redland::TripleStore.should_receive( :new ).
+			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
+			and_return( @triplestore )
+		Redland::Model.stub!( :new ).and_return( :model )
+		
+		config = { :options => {:password => "n'robot"} }
 		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
 

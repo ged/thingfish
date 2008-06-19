@@ -46,17 +46,7 @@ describe ThingFish::SimpleMetadataHandler do
 		
 		@listener.stub!( :metastore ).and_return( @metastore )
 	end
-	
-	it "raises an exception when the system is using a non-simple metastore" do
-		@metastore.
-			should_receive( :is_a? ).
-			with( ThingFish::SimpleMetaStore ).
-			and_return( false )
 
-		lambda {
-			@handler.listener = @listener
-		}.should raise_error( ThingFish::ConfigError, /simplemetastore/i )
-	end	
 end
 
 describe ThingFish::SimpleMetadataHandler, " set up with a simple metastore" do

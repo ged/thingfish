@@ -698,6 +698,74 @@ describe ThingFish::Daemon do
 			end
 			
 			
+			it "knows how to store related resources" do
+				related_body = mock( "related body IO" )
+				request = mock( "request object" )
+				extracted_metadata = { 'stuff' => 'do good vote charlie' }
+				related_metadata = { 'format' => 'image/png' }
+
+				request.should_receive( :related_resources ).
+					at_least( :once ).
+					and_return({ :body => { related_body => related_metadata } })
+				request.should_receive( :metadata ).
+					and_return({ related_body => extracted_metadata })
+
+				metadata = extracted_metadata.merge( related_metadata )
+				metadata[ :related_to ] = TEST_UUID
+				
+				@daemon.should_receive( :store_resource ).with( related_body, metadata )
+		
+				@daemon.store_related_resources( :body, TEST_UUID, request )
+			end
+
+	
+			it "knows how to purge related resources" do
+				filestore = mock( "filestore", :null_object => true )
+				@daemon.instance_variable_set( :@filestore, filestore )
+				metastore = mock( "metastore", :null_object => true )
+				@daemon.instance_variable_set( :@metastore, metastore )
+				
+				search_criteria = {
+					:related_to => TEST_UUID,
+					:relation   => 'appended'
+				}
+				metastore.should_receive( :find_by_exact_properties ).
+					with( search_criteria ).
+					and_return( [ TEST_UUID2, TEST_UUID3 ])
+
+				metastore.should_receive( :delete_resource ).with( TEST_UUID2 )
+				metastore.should_receive( :delete_resource ).with( TEST_UUID3 )
+				filestore.should_receive( :delete ).with( TEST_UUID2 )
+				filestore.should_receive( :delete ).with( TEST_UUID3 )
+				
+				@daemon.purge_related_resources( TEST_UUID )				
+			end
+			
+			
+			it "doesn't propagate errors that occur while storing a related resource" do
+				related_body = mock( "related body IO" )
+				request = mock( "request object" )
+				extracted_metadata = { 'stuff' => 'do good vote charlie' }
+				related_metadata = { 'format' => 'image/png' }
+
+				request.should_receive( :related_resources ).
+					at_least( :once ).
+					and_return({ :body => { related_body => related_metadata } })
+				request.should_receive( :metadata ).
+					and_return({ related_body => extracted_metadata })
+
+				metadata = extracted_metadata.merge( related_metadata )
+				metadata[ :related_to ] = TEST_UUID
+				
+				@daemon.should_receive( :store_resource ).
+					and_raise( ThingFish::FileStoreQuotaError.new("centipede-infested") )
+		
+				lambda {
+					@daemon.store_related_resources( :body, TEST_UUID, request )
+				}.should_not raise_error()
+			end
+			
+			
 			it "removes spoolfiles on successful uploads" do
 				filestore = mock( "filestore", :null_object => true )
 				@daemon.instance_variable_set( :@filestore, filestore )

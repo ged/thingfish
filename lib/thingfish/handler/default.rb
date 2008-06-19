@@ -241,11 +241,20 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### Handle a request to create a new resource with the request body as 
 	### data (POST to /)
 	def handle_create_request( request, response )
+		
+		if request.entity_bodies.length > 1
+			self.log.error "Can't handle multipart request (%p)" % [ request.entity_bodies ]
+			raise ThingFish::NotImplementedError, "multipart upload not implemented"
+		end
 
 		uuid = nil
-		
-		body, metadata = request.get_body_and_metadata
+
+		# Store the primary resource
+		body, metadata = request.entity_bodies.to_a.flatten
 		uuid = self.daemon.store_resource( body, metadata )
+	
+		# Store any related resources, linked to the primary
+		self.daemon.store_related_resources( body, uuid, request )
 
 		response.status = HTTP::CREATED
 		response.headers[:location] = '/' + uuid.to_s
@@ -266,6 +275,10 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		new_resource = ! @filestore.has_file?( uuid )
 		body, metadata = request.get_body_and_metadata
 		self.daemon.store_resource( body, metadata, uuid )
+		
+		# Purge any old related resources, then store any new ones linked to the primary
+		self.daemon.purge_related_resources( uuid )
+		self.daemon.store_related_resources( body, uuid, request )
 		
 		response.content_type = RUBY_MIMETYPE
 		response.body = @metastore.get_properties( uuid )

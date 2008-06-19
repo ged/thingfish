@@ -49,7 +49,7 @@ describe ThingFish::DefaultHandler do
 	before(:each) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
 		@handler          = ThingFish::DefaultHandler.new( 'resource_dir' => resdir )
-		@listener         = mock( "thingfish daemon", :null_object => true )
+		@daemon           = mock( "thingfish daemon", :null_object => true )
 		@filestore        = mock( "thingfish filestore", :null_object => true )
 		@metastore        = mock( "thingfish metastore", :null_object => true )
 
@@ -57,9 +57,9 @@ describe ThingFish::DefaultHandler do
 		@metastore.stub!( :[] ).and_return( @mockmetadata )
 		@mockmetadata.stub!( :modified ).and_return('Wed Aug 29 21:24:09 -0700 2007')
 
-		@listener.stub!( :filestore ).and_return( @filestore )
-		@listener.stub!( :metastore ).and_return( @metastore )
-		@handler.listener = @listener
+		@daemon.stub!( :filestore ).and_return( @filestore )
+		@daemon.stub!( :metastore ).and_return( @metastore )
+		@handler.listener = @daemon
 
 		@request          = mock( "request", :null_object => true )
 		@request_headers  = mock( "request headers", :null_object => true )
@@ -82,7 +82,7 @@ describe ThingFish::DefaultHandler do
 		uri = URI.parse( 'http://thingfish.laika.com:3474/' )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
-		@listener.should_receive( :handler_info ).and_return( :a_hash_of_info )
+		@daemon.should_receive( :handler_info ).and_return( :a_hash_of_info )
 		@response.should_receive( :body= ).with( an_instance_of(Hash) )
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		
@@ -108,10 +108,9 @@ describe ThingFish::DefaultHandler do
 		metadata = stub( "metadata hash from client" )
 
 		full_metadata = mock( "metadata fetched from the store", :null_object => true )
-		@metastore.should_receive( :get_properties ).
-			and_return( full_metadata )
+		@metastore.should_receive( :get_properties ).and_return( full_metadata )
 
-		@request.should_receive( :get_body_and_metadata ).and_return([ body, metadata ])
+		@request.should_receive( :entity_bodies ).twice.and_return({ body => metadata })
 
 		@response_headers.should_receive( :[]= ).
 			with( :location, %r{/#{TEST_UUID}} )
@@ -119,9 +118,11 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :status= ).once.with( HTTP::CREATED )
 		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 		
-		@listener.should_receive( :store_resource ).
+		@daemon.should_receive( :store_resource ).
 			with( body, metadata ).
 			and_return( TEST_UUID )
+		@daemon.should_receive( :store_related_resources ).
+			with( body, TEST_UUID, @request )
 
 		@handler.handle_post_request( @request, @response )
 	end
@@ -134,8 +135,8 @@ describe ThingFish::DefaultHandler do
 		body = StringIO.new( TEST_CONTENT )
 		md = stub( "metadata hash" )
 		
-		@request.should_receive( :get_body_and_metadata ).and_return([ body, md ])
-		@listener.should_receive( :store_resource ).
+		@request.should_receive( :entity_bodies ).twice.and_return({ body => md })
+		@daemon.should_receive( :store_resource ).
 			with( body, md ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too NARROW, sucka!" }
 
@@ -172,6 +173,17 @@ describe ThingFish::DefaultHandler do
 		@handler.handle_delete_request( @request, @response )
 	end
 	
+
+	it "sends a NOT_IMPLEMENTED response for multipart POST to /" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/" )
+		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
+
+		@request.should_receive( :entity_bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
+
+		lambda {
+			@handler.handle_post_request( @request, @response )
+		}.should raise_error( ThingFish::NotImplementedError, /not implemented/ )
+	end
 
 	
 
@@ -391,10 +403,12 @@ describe ThingFish::DefaultHandler do
 			and_return( true )
 
 		@request.should_receive( :get_body_and_metadata ).once.and_return([ io, {} ])
-		@listener.should_receive( :store_resource ).
+		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
-			
+		@daemon.should_receive( :store_related_resources ).
+			with( io, TEST_UUID_OBJ, @request )
+				
 		@response.should_receive( :status= ).with( HTTP::OK )
 
 		@handler.handle_put_request( @request, @response )
@@ -412,9 +426,11 @@ describe ThingFish::DefaultHandler do
 			and_return( false )
 
 		@request.should_receive( :get_body_and_metadata ).and_return([ io, {} ])
-		@listener.should_receive( :store_resource ).
+		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
+	
+		@daemon.should_receive( :purge_related_resources ).with( TEST_UUID_OBJ )
 			
 		@response.should_receive( :status= ).with( HTTP::CREATED )
 		@response_headers.should_receive( :[]= ).
@@ -431,7 +447,7 @@ describe ThingFish::DefaultHandler do
 		md = stub( "metadata hash" )
 
 		@request.should_receive( :get_body_and_metadata ).and_return([ body, md ])
-		@listener.should_receive( :store_resource ).
+		@daemon.should_receive( :store_resource ).
 			with( body, md, TEST_UUID_OBJ ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
 

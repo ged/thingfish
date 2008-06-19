@@ -11,6 +11,8 @@ filters:
 
 h2. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 h3. How's a filter different than a handler?
 
 For a given URI, a handler is what performs the actual response to the
@@ -27,4 +29,63 @@ Filters that operate on the response could be thought of as 'conversion'
 filters, such as a filter designed to dynamically convert a TIFF file to
 a JPEG via the client's @Accept@ header.
 
-h3. Rest of this coming soon...
+
+h3. What does a filter look like?
+
+Great question!  Here's one that we'll use to point out some filtery concepts.
+
+<?example { language: ruby, caption: A minimal filter. } ?>
+require 'thingfish/constants'
+require 'thingfish/filter'
+
+class ThingFish::YAMLFilter < ThingFish::Filter
+        include ThingFish::Constants
+
+        HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
+        YAML_MIMETYPE = 'text/x-yaml'
+
+        ### Send the local time to the requester in plain text.
+        def handle_get_request( request, response )
+                response.body   = Time.now.to_s
+                response.headers[:content_type] = 'text/plain'
+                response.status = HTTP::OK
+        end
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 4 | All handlers inherit from the @ThingFish::Handler@ parent class.
+The handler name needs to match the filename it is stored in -
+in this case, the file would be called _time.rb_, and stored in a _lib/handler_ directory. |
+| 5 | Import some useful constants, like the @HTTP::OK@ a little further down |
+| 8 | Actions are defined in special methods that match the naming convention
+@handle_«METHOD»_request@.  We're only going to accept @GET@ methods for this example.
+These special methods receive a @ThingFish::Request@@ and a @ThingFish::Response@ object 
+to fiddle with as you see fit. |
+| 9 | We're just using a simple time string as the response here, but this could just as 
+easily be an erb template, or even an @IO@ object.  @IO@ objects will automatically buffer out 
+to the client. |
+| 10 | Set the content type of the response. |
+| 11 | The default response code is a @404 (Not Found)@; after we're sure we've generated
+the content we want, setting this to @OK@ stops further processing, and lets the response 
+through successfully. |
+
+h3. Installing the filter
+
+Alright, now that you've got this wicked cool Time handler, how do we tell ThingFish
+to actually use it?  So far, all we really need to do is to load it when a particular
+URI is requested.  This is done in the @thingfish.conf@ file, under the @handlers@
+section.  If you wanted to install it under a single URI called @/what-time-is-it@,
+here's how you'd do it:
+
+<?example { language: yaml, caption: "Our handler's config section" } ?>
+plugins:
+    handlers:
+        - time: /what-time-is-it
+<?end example?>
+
+
+h3. Appending Related Resources
+
+(Describe how to append things like thumbnails, previews, etc.)
+

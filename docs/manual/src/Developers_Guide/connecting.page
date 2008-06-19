@@ -11,13 +11,15 @@ filters:
 
 h2. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 There are several options for connecting: you can use a client library if one has
 been written for your language, or you can use HTTP to talk to the server directly.
 
 h3. The Basics
 
-To test out the particulars of your connection, you can connect to the daemon with a
-web browser by pointing it at the URL:
+To test out the particulars of your connection, if you have the @html@ filter loaded, you can
+connect to the daemon with a web browser by pointing it at the URL:
 
 <pre>
 http://your-thingfish-server:3474/
@@ -41,10 +43,11 @@ h4. Default Handler
 	<dt>GET /</dt>
 	<dd>
 	  Fetch information about the server. The format of the information depends on the requested
-	  type -- a @text/html@ request will display a server overview for web browsers, while
-	  code-centric content types like @application/json@ and @text/x-yaml@ will return a serialized
-	  hash of server information. This information can be later used to build REST queries to
-	  access ThingFish's other services.
+      type -- a @text/html@ request will display a server overview for web browsers (assuming the
+      @html@ filter is loaded), while code-centric content types like @application/json@ and
+      @text/x-yaml@ will return a serialized hash of server information (assuming the @json@ and
+      @yaml@ filters, respectively, are loaded). This information can later be used to build REST
+      queries to access ThingFish's other services.
 
 <?example { language: ruby, caption: "Server introspection hash" } ?>
 {

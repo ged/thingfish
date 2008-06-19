@@ -594,6 +594,7 @@ table.files tr {
 }
 
 table.files td a {
+	border: 0;
 }
 
 table.files tr#metarow {
@@ -626,3 +627,18 @@ table.files tr#metarow table#metainfo td {
 
 /* @end */
 
+/* @group Auto TOC */
+#auto-toc {
+	float: right;
+	background-color: #323435;
+}
+
+#auto-toc ul {
+	border-left: 2px solid #424E4F;
+	border-bottom: 2px solid #424E4F;	
+	padding: 0 0 7px 7px;
+	margin: 0;
+	list-style-type: none;
+	font-size: 0.8em;
+}
+/* @end */

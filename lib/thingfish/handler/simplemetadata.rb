@@ -207,16 +207,6 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 		return template.result( binding() )
 	end
 	
-	
-	### Overridden: check to be sure the metastore used is a 
-	### ThingFish::SimpleMetaStore.
-	def listener=( listener )
-		raise ThingFish::ConfigError, 
-			"This handler must be used with a ThingFish::SimpleMetaStore." unless
-			listener.metastore.is_a?( ThingFish::SimpleMetaStore )
-		super
-	end
-	
 
 	#########
 	protected

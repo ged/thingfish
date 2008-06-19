@@ -10,6 +10,8 @@ filters:
 
 h1. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 h2. Installation
 
 h3. Requirements
@@ -112,6 +114,8 @@ Because all default storage is in memory, it makes for a nice  "is it working?"
 test.  You'll probably want to get more elaborate with your configuration fairly 
 quickly, however.
 
+Here's an example of a fairly full-featured config:
+
 <?example { language: yaml, caption: Example comprehensive config file } ?>
 ---
 port: 80
@@ -136,8 +140,8 @@ plugins:
         maxsize: 1073741824
         root: /home/thingfish/var
     metastore:
-        name: marshalled
-        root: /home/thingfish/var
+        name: sequel
+        sequel_connect: postgres://thingfish@localhost/tf
     filters:
         - html
         - xml
@@ -152,9 +156,12 @@ plugins:
         - formupload:
             uris: /upload
             resource_dir: /home/thingfish/plugins/thingfish-formuploadhandler/resources
-        - metadata:
+        - simplemetadata:
             uris: /metadata
-            resource_dir: /home/thingfish/var/www
+            resource_dir: var/www
+        - simplesearch:
+            uris: /search
+            resource_dir: var/www
         - status:
             uris: /status
             stat_uris: [/, /inspect, /upload, /metadata, /status]

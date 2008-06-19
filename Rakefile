@@ -93,11 +93,7 @@ require RAKE_TASKDIR + 'svn.rb'
 require RAKE_TASKDIR + 'verifytask.rb'
 Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
 	trace "Loading task lib #{tasklib}"
-	begin
-		require tasklib
-	rescue => err
-		fail "Tasklib #{tasklib}: #{err.message}"
-	end
+	require tasklib
 end
 
 ### Default task
@@ -133,6 +129,10 @@ Manual::GenTask.new do |manual|
 	manual.output_dir = MANUALOUTPUTDIR
 	manual.base_dir = MANUALDIR
 	manual.source_dir = 'src'
+end
+
+task :clobber_manual do
+	rmtree( targetdir, :verbose => true )
 end
 
 

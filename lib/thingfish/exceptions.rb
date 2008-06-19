@@ -55,7 +55,31 @@ module ThingFish
 	# Error in an instance of the client
 	class ClientError < ThingFish::Error; end
 
-	# Something was wrong with a request
+	# 500: The server was unable to handle the request even though it was valid
+	class ServerError < ThingFish::Error
+		include ThingFish::Constants
+		
+		def initialize( *args )
+			super
+			@status = HTTP::SERVER_ERROR
+		end
+		
+		attr_reader :status
+	end
+	
+	# 501: We received a request that we don't quite know how to handle.
+	class NotImplementedError < ThingFish::ServerError
+		include ThingFish::Constants
+		
+		def initialize( *args )
+			super
+			@status = HTTP::NOT_IMPLEMENTED
+		end
+		
+		attr_reader :status
+	end
+	
+	# 400: Something was wrong with a request
 	class RequestError < ThingFish::Error
 		include ThingFish::Constants
 		
@@ -67,7 +91,7 @@ module ThingFish
 		attr_reader :status
 	end
 
-	# Upload exceeded quota
+	# 413: Upload exceeded quota
 	class RequestEntityTooLargeError < ThingFish::RequestError
 		include ThingFish::Constants
 
@@ -77,7 +101,7 @@ module ThingFish
 		end
 	end
 	
-	# Client requested a mimetype we don't know how to convert to
+	# 406: Client requested a mimetype we don't know how to convert to
 	class RequestNotAcceptableError < ThingFish::RequestError
 		include ThingFish::Constants
 

@@ -45,6 +45,7 @@ describe ThingFish::<%= @name.capitalize %>Handler do
 
 	before( :all ) do
 		setup_logging( :fatal )
+		@basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 	end
 		
 	before(:each) do

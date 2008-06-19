@@ -11,6 +11,8 @@ filters:
 
 h2. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 The server has five major components:
 
 !/images/server-architecture.png(Server Architecture Diagram)!

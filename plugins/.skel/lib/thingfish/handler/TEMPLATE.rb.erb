@@ -64,7 +64,7 @@ class ThingFish::<%= @name.capitalize %>Handler < ThingFish::Handler
 
 	### Make an HTML fragment for the body text/html response (HTML filter API).
 	def make_html_content( body, request, response )
-		content = self.get_erb_resource( 'template.rhtml' )
+		template = self.get_erb_resource( 'template.rhtml' )
 		response.headers[ :content_type ] = 'text/html'
 		return template.result( binding() )
 	end

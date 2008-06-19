@@ -12,6 +12,8 @@ filters:
 
 h1. <%= page.config['title'] %>
 
+<div id="auto-toc" />
+
 ThingFish is a network-accessable, searchable, extensible datastore. It can be used to store chunks
 of data on the network in an application-independent way, associate the chunks with other chunks
 through metadata, and then search for the chunk you need later and fetch it again, all through a

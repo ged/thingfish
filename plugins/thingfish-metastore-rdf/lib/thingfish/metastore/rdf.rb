@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 #
-# ThingFish::RdfMetastore -- a metastore plugin for ThingFish that stores metadata in an
+# ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in an
 # RDF knowledgebase.
 #
 # == Synopsis
@@ -329,7 +329,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		current_uuid = NULL_NODE
 		propset = nil
 		
-		res = @model.query_execute( query )
+		res = @model.query_execute( query ) or return
 
 		until res.finished?
 			uuid = res.binding_value_by_name( 'uuid' )
@@ -361,7 +361,6 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
 
 		statements = @model.find( uuid_urn, nil, nil )
-		self.log.debug "Got statements: %p" % [ statements ]
 		
 		return statements.empty? ? false : true
 	end
@@ -373,7 +372,6 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		prop_url = map_property( propname )
 
 		statements = @model.find( uuid_urn, prop_url, nil )
-		self.log.debug "Got statements: %p" % [ statements.collect {|s| s.to_s } ]
 		
 		self.log.debug "Statements array is %sempty." % [ statements.empty? ? "" : "not "]
 		return statements.empty? ? false : true
@@ -388,7 +386,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 
 		res = @model.create_resource( uuid_urn )
 		
-		res.update_property( prop_url, value )
+		res.update_property( prop_url, value.to_s )
 	end
 
 	
@@ -415,7 +413,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 
 		hash.each do |propname, value|
 			prop_url = map_property( propname )
-			resource.update_property( prop_url, value )
+			resource.update_property( prop_url, value.to_s )
 		end
 	end
 	
@@ -443,7 +441,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		proplist = {}
 		res.get_properties do |prop, value|
 			key = unmap_uri( prop.uri )
-			self.log.debug "Property is: %p" % [ key ]
+#			self.log.debug "Property is: %p" % [ key ]
 			
 			if proplist[key]
 				if proplist[key].is_a?( Array )
@@ -456,7 +454,6 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			end
 		end
 		
-		self.log.debug "Returning propset: %p" % [proplist]
 		return proplist
 	end
 	
@@ -493,6 +490,16 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 
 
 	### MetaStore API: Return all property keys in store
+	###
+	### FIXME:  Two big issues here, both of which are -probably- deeper probs with the RDF
+	### bindings.
+	### 	1) The Set is not able to identify identical predicates as identical, so you end up
+	###        with the superset of predicates instead of a unique set.  We may be able to work
+	###        around this in a gross fashion (string comparisons, manual uniquing, etc)
+	###     2) The triples() model method seems to be entirely broken with a postgres backed
+	###        store.  Ouch.  This is a more concerning problem, especially since our main
+	###        mode of ThingFish metastore operation at LAIKA is planned to be RDF+postgres.
+	###
 	def get_all_property_keys
 		predicates = Set.new
 		
@@ -502,7 +509,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			predicates.add( pred )
 		end
 		
-		return predicates.to_a.collect {|uri| unmap_uri(uri) }
+		return predicates.to_a.collect {|uri| unmap_uri(uri) }.uniq
 	end
 	
 
@@ -589,7 +596,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		  ]
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
 		query = Redland::Query.new( querystring )
-		res = @model.query_execute( query )
+		res = @model.query_execute( query ) or return []
 
 		# Map results into simple UUID strings
 		uuids = []
@@ -661,11 +668,16 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	def make_optstring( options )
 
 		# Eliminate pairs we need to control ourselves
-		options[:new] = 'yes'
-		options[:write] = 'yes'
+		options[:new]        = 'yes'
+		options[:write]      = 'yes'
+		
+		# Connections to the postgres backend *require* the password key, even if it's just an
+		# empty string and/or the connection request is trusted in pg_hba.conf.
+		options[:password] ||= nil
 		
 		# Transform keys: :hash_type => 'hash-type'
-		pairs = options.collect {|k,v| [k.to_s.gsub(/_/, '-'), v] }
+		# Escape single quotes since the Redland stringification doesn't take this into account.
+		pairs = options.collect {|k,v| [k.to_s.gsub(/_/, '-'), v.to_s.gsub(/'/, "\\\\'")] }
 
 		# Sort them by key, quote them, and then catenate them all together with commas
 		return pairs.

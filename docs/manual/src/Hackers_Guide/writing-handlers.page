@@ -4,11 +4,15 @@ layout: default
 index: 2
 filters:
   - erb
+  - api
+  - links
   - examples
   - textile
 ---
 
 h2. <%= page.config['title'] %>
+
+<div id="auto-toc" />
 
 h3. What does a handler look like?
 
@@ -162,7 +166,7 @@ class TimeHandler < ThingFish::Handler
 	include ThingFish::Constants,
 		ThingFish::ResourceLoader
 
-	### Send the local time to the requester in plain text.
+	### Send the local time to the requester.
 	def handle_get_request( request, response )
 
 		time = Time.now
@@ -194,6 +198,16 @@ class TimeHandler < ThingFish::Handler
 end
 <?end example?>
 
+|_. line number |_. what's it doing? |
+| 8 | Including the @ThingFish::ResourceLoader@ mixin sets up the resource directory for
+this handler and adds a few methods for dealing with files contained in it. |
+| 15 | Load the HTML file we're going to use as a template. The resources directory for 
+each plugin is in a @thingfish@ directory under Ruby's @datadir@ by default. Each plugin 
+gets its own directory based on its name, so our TimeHandler plugin's resource directory
+is @#{datadir}/thingfish/timehandler/@. This can be changed by setting the @resource_dir@
+key in the handler's config. |
+| 33 | Interpolate the calculated @timestring@ into the template where the first @%s@ is. |
+
 And the template we'll use looks like:
 
 <?example { language: html, caption: timehandler.html -- A template for our fancier handler! } ?>
@@ -222,16 +236,7 @@ And the template we'll use looks like:
 </html>
 <?end example?>
 
-|_\2. Handler Code |
-| 8 | Including the @ThingFish::ResourceLoader@ mixin sets up the resource directory for
-this handler and adds a few methods for dealing with files contained in it. |
-| 15 | Load the HTML file we're going to use as a template. The resources directory for 
-each plugin is in a @thingfish@ directory under Ruby's @datadir@ by default. Each plugin 
-gets its own directory based on its name, so our TimeHandler plugin's resource directory
-is @#{datadir}/thingfish/timehandler/@. This can be changed by setting the @resource_dir@
-key in the handler's config. |
-| 33 | Interpolate the calculated @timestring@ into the template where the first @%s@ is. |
-|_\2. Template (@timehandler.html@) |
+|_. line number |_. what's it doing? |
 | 13 | Really Big Fonts -- +10 pts on the Web 2.0 scorecard! |
 | 20 | This is where @timestring@ will be inserted. |
 
@@ -264,7 +269,7 @@ class TimeHandler < ThingFish::Handler
 	include ThingFish::Constants,
 		ThingFish::ResourceLoader
 
-	### Send the local time to the requester in plain text.
+	### Send the local time to the requester.
 	def handle_get_request( request, response )
 
 		time = Time.now
@@ -296,6 +301,13 @@ class TimeHandler < ThingFish::Handler
 end
 <?end example?>
 
+|_. line number |_. what's it doing? |
+| 7 | Still including the @ThingFish::ResourceLoader@ mixin. |
+| 15-16 | Set the page's title as a simple variable that will be in the Binding; the 
+@timestring@ gets set as before, and is accessable from the template as well. |
+| 33 | Pass the Binding for the current scope into the ERb template and set the response's 
+body to the rendered output. |
+
 And then we'll change the @%s@ placeholders into ERb directives in the template:
 
 <?example { language: html, caption: timehandler.rhtml -- an ERb template! } ?>
@@ -324,18 +336,75 @@ And then we'll change the @%s@ placeholders into ERb directives in the template:
 </html>
 <?end example?>
 
-|_\2. Handler Code |
-| 7 | Still including the @ThingFish::ResourceLoader@ mixin. |
-| 15-16 | Set the page's title as a simple variable that will be in the Binding; the 
-@timestring@ gets set as before, and is accessable from the template as well. |
-| 33 | Pass the Binding for the current scope into the ERb template and set the response's 
-body to the rendered output. |
-|_\2. Template (@timehandler.rhtml@) |
+|_. line number |_. what's it doing? |
 | 7  | We'll set the @title@ dynamically too now. |
 | 20 | This will get the @timestring@ just like before. |
 
 
-h3. Linking to Other Handlers
+h3. Serving Static Content
+
+If your handler has images, javascript, styles, or other static resources you'd like to link from
+the HTML you generate, you can do so easily with the <?api ThingFish::StaticResourcesHandler ?>
+mixin. This mixin installs a fallthrough handler that will serve files from a subdirectory inside of
+the handler's @resources@ directory.
+
+<?example { language: ruby, caption: A handler that also serves static content. } ?>
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+require 'time'
+
+class TimeHandler < ThingFish::Handler
+	include ThingFish::Constants,
+		ThingFish::ResourceLoader,
+		ThingFish::StaticResourcesHandler
+
+	# Set the name of the static content subdirectory
+	static_resources_dir "static_content"
+
+	### Send the local time to the requester.
+	def handle_get_request( request, response )
+
+		uri  = request.path_info
+
+		# Calculate the time string based on the URI like before
+		case uri
+		when '', '/'
+			title = "TimeServer 3000"
+			timestring = Time.now.to_s
+			handler_uri = self.find_handler_uris.first
+
+			template = self.get_erb_resource( 'timehandler.rhtml' )
+			response.body = template.result( binding() )
+
+			response.headers[:content_type] = 'text/html'
+			response.status = HTTP::OK
+
+		else
+		
+			# Fall through to the static handler
+			return
+		end
+
+	end
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 9 | Include the static resources fallback handler. |
+| 12 | Set the name of the directory that will contain static content specific to this handler. 
+The path is relative to the handler's @resource_dir@. If this is not specified, it defaults to
+@'static'@. |
+| 35 | Normally, this declines the request and would result in a NOT_FOUND. Instead, because of the
+ThingFish::StaticResourcesHandler mixin, if the request matches a file in the static resources
+directory, it will be served. |
+
+In the above example, if a request came in for @/what-time-is-it/clock.jpg@, the handler would initially decline it, and the static handler would take over.  If there was a file at
+@static_content/clock.jpg@ under the handler's configured resources directory, the static handler
+would determine the correct mimetype and serve it.
+
+
+h3. Finding Other Handler URIs
 
 Sometimes you'll want one handler to provide a link to another handler, but since the URI
 handlers live at can change, here's how to discover where another handler is installed:
@@ -378,7 +447,7 @@ class TimeHandler < ThingFish::Handler
 	include ThingFish::Constants,
 		ThingFish::ResourceLoader
 
-	### Send the local time to the requester in plain text.
+	### Send the local time to the requester.
 	def handle_get_request( request, response )
 
 		time = Time.now
@@ -423,11 +492,18 @@ end
 
 h3. Index page content
 
+When ThingFish is set up to provide an HTML interface (by enabling the HTML filter), requests to
+the @/@ URI will return an HTML page that serves as an index of all the functionality offered by 
+the server. If you wish your handler to appear in this list, you should override the 
+@make_index_content@ method and return an HTML fragment that includes a link to the handler's
+URI:
+
 <?example { language: ruby, caption: A simple index page content provider callback } ?>
 def make_index_content( uri )
-	return "Oh snap!  What <a href=\"#{uri}\">time</a> is it?<br />"
+	return "<p>Oh snap!  What <a href=\"#{uri}\">time</a> is it?</p>"
 end
 <?end example?>
+
 
 h3. Content Negotiation
 

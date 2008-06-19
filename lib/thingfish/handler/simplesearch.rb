@@ -30,6 +30,7 @@
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/handler'
+require 'thingfish/metastore/simple'
 require 'thingfish/mixins'
 
 
@@ -73,7 +74,11 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	def handle_get_request( request, response )
 		args = request.query_args.reject { |k,v| v.nil? }
 
-		uuids = @metastore.find_by_matching_properties( args )
+		uuids = if args.empty?
+			[]
+		else
+			@metastore.find_by_matching_properties( args )
+		end
 
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
@@ -104,17 +109,6 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 		
 		return content
 	end
-	
-	
-	### Overridden: check to be sure the metastore used is a 
-	### ThingFish::SimpleMetaStore.
-	def listener=( listener )
-		raise ThingFish::ConfigError, 
-			"This handler must be used with a ThingFish::SimpleMetaStore." unless
-			listener.metastore.is_a?( ThingFish::SimpleMetaStore )
-		super
-	end
-	
 end # ThingFish::SearchHandler
 
 # vim: set nosta noet ts=4 sw=4:

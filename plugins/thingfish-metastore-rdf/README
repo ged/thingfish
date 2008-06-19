@@ -21,14 +21,12 @@ of this writing.  Instead, we recommend installing the version available from ht
   plugins:
     metastore:
       name: rdf
-      store: postgresql
-      store_options: 
-        new: yes
-        host: localhost
-        database: tf-rdf
-        user: thingfish
-        password: "ind1g0='"
-
+      options: 
+          store: postgresql
+          host: localhost
+          password: "ind1g0='"
+          database: tf-rdf
+          user: thingfish
 
 === Config Keys ===
 

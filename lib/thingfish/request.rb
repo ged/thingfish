@@ -82,8 +82,8 @@ class ThingFish::Request
 		@form_metadata   = nil
 		@body            = nil
 		@profile         = false
+		@authed_user     = nil
 		
-		@body_key_mapping  = {}
 		@related_resources = Hash.new {|h,k| h[k] = {} }
 		@mongrel_request   = mongrel_request
 		@metadata          = Hash.new {|h,k| h[k] = {} }
@@ -118,6 +118,11 @@ class ThingFish::Request
 	#    <related IO> => { <related metadata> }
 	# }
 	attr_reader :related_resources
+	
+	# The name of the authenticated user
+	attr_accessor :authed_user
+	alias_method :authenticated_user, :authed_user
+	alias_method :remote_user, :authed_user
 	
 	
 	### Return either the original Mongrel request's body, or if the body has been
@@ -255,35 +260,6 @@ class ThingFish::Request
 	alias_method :is_multipart?, :has_multipart_body?
 
 
-	### Get the body IO and the merged hash of metadata
-	def get_body_and_metadata
-		raise ArgumentError, "Can't return a single body for a multipart request" if
-			self.has_multipart_body?
-		
-		default_metadata = {
-			:useragent     => self.headers[ :user_agent ],
-			:uploadaddress => self.remote_addr
-		}
-
-		# Read title out of the content-disposition
-		if self.headers[:content_disposition] &&
-			self.headers[:content_disposition] =~ /filename="(?:.*\\)?(.+?)"/i
-			default_metadata[ :title ] = $1
-		end
-		
-		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
-
-		# Content metadata is determined from http headers
-		merged = extracted_metadata.merge({
-			:format => self.content_type,
-			:extent => self.headers[ :content_length ],
-		})
-		merged.update( default_metadata )
-		
-		return @mongrel_request.body, merged
-	end
-	
-	
 	### Attach additional body and metadata information to the primary
 	### body, that will be stored with related_to metakeys.
 	### 
@@ -293,60 +269,70 @@ class ThingFish::Request
 	###    The new resource body as an IO-like object
 	### +related_metadata+::
 	###    The metadata to attach to the new resource, as a Hash.
-	def append_related_resource( body, related_body, related_metadata={} )
-		# Convert the body to the key of the related resources hash
-		bodykey = self.make_body_key( body )
-		
-		unless original_body = @body_key_mapping[ bodykey ]
-			errmsg = "Cannot append a resource related to %p: %p isn't one of %p" % [
-				body,
-				bodykey,
-				@body_key_mapping.keys,
+	def append_related_resource( resource, related_resource, related_metadata={} )
+
+		unless @entity_bodies.key?( resource ) || @related_resources.key?( resource )
+			errmsg = "Cannot append %p related to %p: it is not a part of the request" % [
+				related_resource,
+				resource,
 		 	  ]
 			self.log.error( errmsg )
 			raise ThingFish::ResourceError, errmsg
 		end
 
 		related_metadata[:relation] ||= 'appended'
-		related_bodykey = self.make_body_key( related_body )
-		self.metadata[ related_body ] = {}
-		@body_key_mapping[ related_bodykey ] = related_body
-		self.related_resources[ original_body ][ related_body ] = related_metadata
+		self.related_resources[ resource ][ related_resource ] = related_metadata
+		
+		# Add the related_resource as a key so future checks are aware that
+		# it is part of this request
+		self.related_resources[ related_resource ] = {}
 	end
 	
-	
+
 	### Append the specified additional +metadata+ for the given +resource+, which should be one
 	### of the entity bodies yielded by #each_body
 	def append_metadata_for( resource, metadata )
-		# Convert the body to the key of the related resources hash
-		bodykey = self.make_body_key( resource )
-		
-		unless original_body = @body_key_mapping[ bodykey ]
-			errmsg = "Cannot append metadata related to %p(%p): %p isn't one of %p" % [
-				body,
-				bodykey,
+
+		unless @entity_bodies.key?( resource ) || @related_resources.key?( resource )
+			errmsg = "Cannot append metadata related to %p: it is not a part of the request" % [
 				resource,
-				@body_key_mapping.keys,
 		 	  ]
 			self.log.error( errmsg )
 			raise ThingFish::ResourceError, errmsg
 		end
 
-		self.metadata[ original_body ].merge!( metadata )
+		self.metadata[ resource ].merge!( metadata )
 	end
+
 	
-	
-	### Generate a key based on the body object that will be the same even after duplication. This
-	### is used to work around our workaround for StringIO's behavior when #dup'ed.
-	def make_body_key( body )
-		if body.respond_to?( :string )
-			return Digest::MD5.hexdigest( body.string )
-		else
-			return "%s:%d" % [ body.path, body.object_id * 2 ]
+	### Returns the entity bodies of the request along with any related metadata as
+	### a Hash:
+	### {
+	###    <body io> => { <body metadata> },
+	###    ...
+	### }
+	def entity_bodies
+		# Parse the request's body parts if they aren't already
+		unless @entity_bodies
+			if self.has_multipart_body?
+				self.log.debug "Parsing multiple entity bodies."
+				@entity_bodies, @form_metadata = self.parse_multipart_body
+			else
+				self.log.debug "Parsing single entity body."
+				body, metadata = self.get_body_and_metadata
+				
+				@entity_bodies = { body => metadata }
+				@form_metadata = {}
+			end
+
+			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
+				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
 		end
+
+		return @entity_bodies
 	end
-	
-	
+
+
 	### Call the provided block once for each entity body of the request, which may
 	### be multiple times in the case of a multipart request. If +include_appended_resources+ 
 	### is +true+, any resources which have been appended will be yielded immediately after the
@@ -375,12 +361,29 @@ class ThingFish::Request
 	
 	### Check the body IO objects to ensure they're still open.
 	def check_body_ios
-		[ self.entity_bodies, self.related_resources ].each do |hash|
-			hash.each do |body, _|
-				if body.closed?
-					self.log.warn "Entity body closed: %p" % [ body ]
-					body.open 
+		self.each_body do |body,_|
+			if body.closed?
+				self.log.warn "Body IO unexpectedly closed -- reopening a new handle"
+								
+				# Create a new IO based on what the original type was
+				clone = case body
+					when StringIO
+						StringIO.new( body.string )
+					else
+						File.open( body.path, 'r' )
+					end
+				
+				# Retain the original IO's metadata
+				@entity_bodies[ clone ] = @entity_bodies.delete( body ) if @entity_bodies.key?( body )
+				@related_resources[ clone ] = @related_resources.delete( body ) if @related_resources.key?( body )
+				@related_resources.each do |_,hash|
+					hash[ clone ] = hash.delete( body ) if hash.key?( body )
 				end
+
+				self.log.debug "Body %p (%d) replaced with %p (%d)" % [ 
+					body, body.object_id, clone, clone.object_id
+				]
+			else
 				body.rewind
 			end
 		end
@@ -466,6 +469,12 @@ class ThingFish::Request
 	end
 	
 	
+	### Return the path portion of the request's URI
+	def path
+		return self.uri.path
+	end
+	
+	
 	### Returns the requester IP address as an IPAddr object.
 	def remote_addr
 		return IPAddr.new( self.params['REMOTE_ADDR'] )
@@ -489,42 +498,35 @@ class ThingFish::Request
 	protected
 	#########
 
-	### Returns the entity bodies of the request along with any related metadata as
-	### a Hash:
-	### {
-	###    <body io> => { <body metadata> },
-	###    ...
-	### }
-	def entity_bodies
-		# Parse the request's body parts if they aren't already
-		unless @entity_bodies
-			if self.has_multipart_body?
-				self.log.debug "Parsing multiple entity bodies."
-				@entity_bodies, @form_metadata = self.parse_multipart_body
-			else
-				self.log.debug "Parsing single entity body."
-				body, metadata = self.get_body_and_metadata
-				
-				@entity_bodies = { body => metadata }
-				@form_metadata = {}
-			end
+	### Get the body IO and the merged hash of metadata
+	def get_body_and_metadata
+		raise ArgumentError, "Can't return a single body for a multipart request" if
+			self.has_multipart_body?
+		
+		default_metadata = {
+			:useragent     => self.headers[ :user_agent ],
+			:uploadaddress => self.remote_addr
+		}
 
-			# Generate keys for each body that can be used to map IO copies given to filters
-			# back to the original body.
-			@entity_bodies.each do |body, _|
-				bodykey = self.make_body_key( body )
-				@body_key_mapping[ bodykey ] = body
-				self.log.debug "Made body key %p from body %p" % [ bodykey, body ]
-			end
-
-			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
-				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
+		# Read title out of the content-disposition
+		if self.headers[:content_disposition] &&
+			self.headers[:content_disposition] =~ /filename="(?:.*\\)?(.+?)"/i
+			default_metadata[ :title ] = $1
 		end
+		
+		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
 
-		return @entity_bodies
+		# Content metadata is determined from http headers
+		merged = extracted_metadata.merge({
+			:format => self.content_type,
+			:extent => self.headers[ :content_length ],
+		})
+		merged.update( default_metadata )
+		
+		return @mongrel_request.body, merged
 	end
 	
-
+	
 	### For each resource => metadata pair returned by the current +iterator+, merge the
 	### toplevel metadata with the resource-specific metadata and pass both to the
 	### block.
@@ -533,27 +535,15 @@ class ThingFish::Request
 		
 		# Call the block for every resource
 		iterator.each do |body, body_metadata|
-			self.log.debug "Prepping %s for yield with metadata: %p" %
-				[ body, body_metadata ]
 			body_metadata[ :format ] ||= DEFAULT_CONTENT_TYPE
 			extracted_metadata = self.metadata[body] || {}
-
+			
 			# Content metadata is determined per-multipart section
 			merged = extracted_metadata.merge( @form_metadata )
 			merged.update( body_metadata )
 			merged.update( immutable_metadata )
 
-			# We have to explicitly case this because StringIO doesn't behave like a
-			# real IO when #dup'ed; closing the original also closes the copy.
-			clone = case body
-				when StringIO
-					StringIO.new( body.string )
-				else
-					body.dup
-				end
-
-			@body_key_mapping[ self.make_body_key(clone) ] = body
-			block.call( clone, merged )
+			block.call( body, merged )
 			
 			# Recurse if the appended resources should be included
 			if include_appended

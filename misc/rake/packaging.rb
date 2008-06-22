@@ -35,8 +35,6 @@ gemspec = Gem::Specification.new do |gem|
 	gem.executables = BIN_FILES	.
 		collect {|f| f.relative_path_from(BINDIR).to_s }
 
-	gem.autorequire	= 'thingfish'
-
   	gem.add_dependency( 'mongrel', '>= 1.0.1' )
   	gem.add_dependency( 'uuidtools', '>= 1.0.0' )
   	gem.add_dependency( 'pluginfactory', '>= 1.0.3' )

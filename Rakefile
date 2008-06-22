@@ -132,7 +132,7 @@ Manual::GenTask.new do |manual|
 end
 
 task :clobber_manual do
-	rmtree( targetdir, :verbose => true )
+	rmtree( MANUALOUTPUTDIR, :verbose => true )
 end
 
 

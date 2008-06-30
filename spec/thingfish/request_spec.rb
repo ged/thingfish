@@ -704,6 +704,49 @@ describe ThingFish::Request do
 			yielded_pairs[ resource1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 		end
 	
+	
+		it "can return a flattened hash of entity bodies and merged metadata" do
+			io1 = mock( "filehandle 1" )
+			io2 = mock( "filehandle 2" )
+
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
+				io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
+			  }
+			form_metadata = {
+				'foo' => 1,
+				:title => "a bogus filename",
+				:useragent => 'Clumpy the Clown',
+			  }
+
+			ThingFish::MultipartMimeParser.stub!( :new ).and_return( parser )
+			@mongrel_request.should_receive( :body ).once.and_return( :body )
+			parser.should_receive( :parse ).once.
+				with( :body, 'greatgoatsofgerta' ).
+				and_return([ entity_bodies, form_metadata ])
+			
+			@request.metadata[ io1 ][ 'appended' ] = 'something'
+			bodies = @request.bodies
+		
+			bodies.keys.should have(2).members
+			bodies.keys.should include( io1, io2 )
+
+			bodies[ io1 ][ :title ].should == 'filename1'
+			bodies[ io1 ][ :format ].should == 'format1'
+			bodies[ io1 ][ :useragent ].should == "Hotdogs"
+			bodies[ io1 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )
+			bodies[ io1 ][ 'foo' ].should == 1
+			bodies[ io1 ][ 'appended' ].should == 'something'
+
+			bodies[ io2 ][ :title ].should == 'filename2'
+			bodies[ io2 ][ :format ].should == "format2"
+			bodies[ io2 ][ :useragent ].should == "Hotdogs"
+			bodies[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
+			bodies[ io2 ][ 'foo' ].should == 1
+		end
+		
+		
 		it "sends each IO body entity of the request and a copy of the merged metadata to " +
 			"the block of the body iterator" do
 			io1 = mock( "filehandle 1" )

@@ -36,12 +36,12 @@ describe ThingFish::MultipartMimeParser do
 	include ThingFish::SpecHelpers
 
 	BOUNDARY = 'sillyBoundary'
-	SPECDIR = Pathname.new( __FILE__ ).dirname.parent
-	DATADIR = SPECDIR + 'data'
+	MIMEPARSER_SPECDIR = Pathname.new( __FILE__ ).dirname.parent
+	MIMEPARSER_DATADIR = MIMEPARSER_SPECDIR + 'data'
 
 	### Create a stub request prepopulated with HTTP headers and form data
 	def load_form( filename )
-		datafile = DATADIR + filename
+		datafile = MIMEPARSER_DATADIR + filename
 		return datafile.open
 	end
 

@@ -136,6 +136,14 @@ task :clobber_manual do
 end
 
 
+### Task: generate ctags
+### This assumes exuberant ctags, since ctags 'native' doesn't support ruby anyway.
+desc "Generate a ctags 'tags' file from ThingFish source"
+task :ctags do
+	run %w{ ctags -R lib plugins misc }
+end
+
+
 ### Cruisecontrol task
 desc "Cruisecontrol build"
 task :cruise => [:clean, :coverage, :package] do |task|

@@ -110,7 +110,7 @@ describe ThingFish::DefaultHandler do
 		full_metadata = mock( "metadata fetched from the store", :null_object => true )
 		@metastore.should_receive( :get_properties ).and_return( full_metadata )
 
-		@request.should_receive( :entity_bodies ).twice.and_return({ body => metadata })
+		@request.should_receive( :bodies ).twice.and_return({ body => metadata })
 
 		@response_headers.should_receive( :[]= ).
 			with( :location, %r{/#{TEST_UUID}} )
@@ -135,7 +135,7 @@ describe ThingFish::DefaultHandler do
 		body = StringIO.new( TEST_CONTENT )
 		md = stub( "metadata hash" )
 		
-		@request.should_receive( :entity_bodies ).twice.and_return({ body => md })
+		@request.should_receive( :bodies ).twice.and_return({ body => md })
 		@daemon.should_receive( :store_resource ).
 			with( body, md ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too NARROW, sucka!" }
@@ -174,11 +174,11 @@ describe ThingFish::DefaultHandler do
 	end
 	
 
-	it "sends a NOT_IMPLEMENTED response for multipart POST to /" do
+	it "raises a NOT_IMPLEMENTED exception for multipart POST to /" do
 		uri = URI.parse( "http://thingfish.laika.com:3474/" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 
-		@request.should_receive( :entity_bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
+		@request.should_receive( :bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
 
 		lambda {
 			@handler.handle_post_request( @request, @response )
@@ -402,7 +402,7 @@ describe ThingFish::DefaultHandler do
 			with( TEST_UUID_OBJ ).
 			and_return( true )
 
-		@request.should_receive( :get_body_and_metadata ).once.and_return([ io, {} ])
+		@request.should_receive( :bodies ).with().twice.and_return({ io, {} })
 		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
@@ -415,6 +415,18 @@ describe ThingFish::DefaultHandler do
 	end
 
 
+	it "raises a NOT_IMPLEMENTED exception for multipart PUT to /#{TEST_UUID}" do
+		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
+		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
+
+		@request.should_receive( :bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
+
+		lambda {
+			@handler.handle_put_request( @request, @response )
+		}.should raise_error( ThingFish::NotImplementedError, /not implemented/ )
+	end
+	
+
 	it "handles PUT to /{uuid} for new resource" do
 		uri = URI.parse( "http://thingfish.laika.com:3474/#{TEST_UUID}" )
 		@request.should_receive( :uri ).at_least( :once ).and_return( uri )
@@ -425,7 +437,7 @@ describe ThingFish::DefaultHandler do
 			with( TEST_UUID_OBJ ).
 			and_return( false )
 
-		@request.should_receive( :get_body_and_metadata ).and_return([ io, {} ])
+		@request.should_receive( :bodies ).twice().and_return({ io, {} })
 		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
@@ -446,7 +458,7 @@ describe ThingFish::DefaultHandler do
 		body = StringIO.new( "~~~" * 1024 )
 		md = stub( "metadata hash" )
 
-		@request.should_receive( :get_body_and_metadata ).and_return([ body, md ])
+		@request.should_receive( :bodies ).twice().and_return({ body, md })
 		@daemon.should_receive( :store_resource ).
 			with( body, md, TEST_UUID_OBJ ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }

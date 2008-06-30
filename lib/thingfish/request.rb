@@ -260,12 +260,13 @@ class ThingFish::Request
 	alias_method :is_multipart?, :has_multipart_body?
 
 
-	### Attach additional body and metadata information to the primary
-	### body, that will be stored with related_to metakeys.
+	### Attach additional resources and metadata information to the primary
+	### resource body; these will be stored with `related_to` metadata pointing
+	### to the original.
 	### 
-	### +body+::
-	###    The uploaded (primary) body
-	### +related_body+::
+	### +resource+::
+	###    The uploaded (primary) resource body
+	### +related_resource+::
 	###    The new resource body as an IO-like object
 	### +related_metadata+::
 	###    The metadata to attach to the new resource, as a Hash.
@@ -305,36 +306,8 @@ class ThingFish::Request
 	end
 
 	
-	### Returns the entity bodies of the request along with any related metadata as
-	### a Hash:
-	### {
-	###    <body io> => { <body metadata> },
-	###    ...
-	### }
-	def entity_bodies
-		# Parse the request's body parts if they aren't already
-		unless @entity_bodies
-			if self.has_multipart_body?
-				self.log.debug "Parsing multiple entity bodies."
-				@entity_bodies, @form_metadata = self.parse_multipart_body
-			else
-				self.log.debug "Parsing single entity body."
-				body, metadata = self.get_body_and_metadata
-				
-				@entity_bodies = { body => metadata }
-				@form_metadata = {}
-			end
-
-			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
-				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
-		end
-
-		return @entity_bodies
-	end
-
-
 	### Call the provided block once for each entity body of the request, which may
-	### be multiple times in the case of a multipart request. If +include_appended_resources+ 
+	### be multiple times in the case of a multipart request. If +include_appended+ 
 	### is +true+, any resources which have been appended will be yielded immediately after the
 	### body to which they are related. Note that this applies even in the current loop -- the
 	### block will get resources that have been appended from the previous block -- so care must
@@ -359,6 +332,19 @@ class ThingFish::Request
 	end
 	
 	
+	### Fetch a flat hash of the entity bodies for the request. If +include_appended+ is +true+, 
+	### include any appended related resources.
+	def bodies( include_appended=false )
+		rval = {}
+
+		self.each_body( include_appended ) do |body, metadata|
+			rval[body] = metadata
+		end
+
+		return rval
+	end
+	
+	
 	### Check the body IO objects to ensure they're still open.
 	def check_body_ios
 		self.each_body do |body,_|
@@ -376,6 +362,7 @@ class ThingFish::Request
 				# Retain the original IO's metadata
 				@entity_bodies[ clone ] = @entity_bodies.delete( body ) if @entity_bodies.key?( body )
 				@related_resources[ clone ] = @related_resources.delete( body ) if @related_resources.key?( body )
+				@metadata[ clone ] = @metadata.delete( body ) if @metadata.key?( body )
 				@related_resources.each do |_,hash|
 					hash[ clone ] = hash.delete( body ) if hash.key?( body )
 				end
@@ -498,32 +485,53 @@ class ThingFish::Request
 	protected
 	#########
 
-	### Get the body IO and the merged hash of metadata
-	def get_body_and_metadata
+	### Returns the entity bodies of the request along with any related metadata as
+	### a Hash:
+	### {
+	###    <body io> => { <body metadata> },
+	###    ...
+	### }
+	def entity_bodies
+		# Parse the request's body parts if they aren't already
+		unless @entity_bodies
+			if self.has_multipart_body?
+				self.log.debug "Parsing multiple entity bodies."
+				@entity_bodies, @form_metadata = self.parse_multipart_body
+			else
+				self.log.debug "Parsing single entity body."
+				body, metadata = self.parse_singlepart_body
+				
+				@entity_bodies = { body => metadata }
+				@form_metadata = {}
+			end
+
+			self.log.debug "Parsed %d bodies and %d form_metadata (%p)" % 
+				[@entity_bodies.length, @form_metadata.length, @form_metadata.keys]
+		end
+
+		return @entity_bodies
+	end
+
+
+	### Get the body IO and the initial metadata from a non-multipart request
+	def parse_singlepart_body
 		raise ArgumentError, "Can't return a single body for a multipart request" if
 			self.has_multipart_body?
 		
-		default_metadata = {
+		metadata = {
 			:useragent     => self.headers[ :user_agent ],
-			:uploadaddress => self.remote_addr
+			:extent        => self.headers[ :content_length ],
+			:uploadaddress => self.remote_addr,
+			:format        => self.content_type
 		}
 
 		# Read title out of the content-disposition
 		if self.headers[:content_disposition] &&
 			self.headers[:content_disposition] =~ /filename="(?:.*\\)?(.+?)"/i
-			default_metadata[ :title ] = $1
+			metadata[ :title ] = $1
 		end
 		
-		extracted_metadata = self.metadata[ @mongrel_request.body ] || {}
-
-		# Content metadata is determined from http headers
-		merged = extracted_metadata.merge({
-			:format => self.content_type,
-			:extent => self.headers[ :content_length ],
-		})
-		merged.update( default_metadata )
-		
-		return @mongrel_request.body, merged
+		return @mongrel_request.body, metadata
 	end
 	
 	

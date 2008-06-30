@@ -24,6 +24,7 @@
 # Please see the LICENSE file for licensing details.
 #
 
+
 begin
 	require 'mp3info'
 
@@ -55,6 +56,24 @@ class ThingFish::MP3Filter < ThingFish::Filter
 	# Null character
 	NULL = "\x0"
 	
+	# Attached picture   "PIC"
+	#    Frame size         $xx xx xx
+	#    ---- mp3info is 'helpfully' cropping out frame size.
+	#    Text encoding      $xx
+	#    Image format       $xx xx xx
+	#    Picture type       $xx
+	#    Description        <textstring> $00 (00)
+	#    Picture data       <binary data>
+	PIC_FORMAT = 'h a3 h Z* a*'
+
+	# Attached picture "APIC"
+	#    Text encoding   $xx
+	#    MIME type       <text string> $00
+	#    Picture type    $xx
+	#    Description     <text string according to encoding> $00 (00)
+	#    Picture data    <binary data>
+	APIC_FORMAT = 'h Z* h Z* a*'
+	
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse('audio/mpeg') ]
 	HANDLED_TYPES.freeze
@@ -82,7 +101,15 @@ class ThingFish::MP3Filter < ThingFish::Filter
 
 		request.each_body do |body, metadata|
 			if self.accept?( metadata[:format] )
-				mp3_metadata = self.extract_id3_metadata( body )
+				
+				id3 = Mp3Info.new( body.path )
+				mp3_metadata = self.extract_id3_metadata( id3 )
+				
+				# Append any album images as related resources
+				self.extract_images( id3 ).each do |io, metadata|
+					request.append_related_resource( body, io, metadata )
+				end
+				
 				request.append_metadata_for( body, mp3_metadata )
 				self.log.debug "Extracted mp3 info: %p" % [ mp3_metadata.keys ]
 			else
@@ -131,48 +158,79 @@ class ThingFish::MP3Filter < ThingFish::Filter
 	protected
 	#########
 
-	### Extract and normalize ID3 metadata from the MPEG layer 3 audio in the given +io+ 
-	### object and return it as a hash.
-	def extract_id3_metadata( io )
-		info = Mp3Info.new( io.path )
+	### Normalize metadata from the MP3Info object and return it as a hash.
+	def extract_id3_metadata( id3 )
 		mp3_metadata = {
-			:mp3_frequency => info.samplerate,
-			:mp3_bitrate   => info.bitrate,
-			:mp3_vbr       => info.vbr,
-			:mp3_title     => info.tag.title,
-			:mp3_artist    => info.tag.artist,
-			:mp3_album     => info.tag.album,
-			:mp3_year      => info.tag.year,
-			:mp3_genre     => info.tag.genre,
-			:mp3_tracknum  => info.tag.tracknum,
-			:mp3_comments  => info.tag.comments,
+			:mp3_frequency => id3.samplerate,
+			:mp3_bitrate   => id3.bitrate,
+			:mp3_vbr       => id3.vbr,
+			:mp3_title     => id3.tag.title,
+			:mp3_artist    => id3.tag.artist,
+			:mp3_album     => id3.tag.album,
+			:mp3_year      => id3.tag.year,
+			:mp3_genre     => id3.tag.genre,
+			:mp3_tracknum  => id3.tag.tracknum,
+			:mp3_comments  => id3.tag.comments,
 		}
 
 		# ID3V2 2.2.0 has three-letter tags, so map those if the artist info isn't set
-		if info.hastag2? && mp3_metadata[:mp3_artist].nil?
-			self.log.debug "   extracting old-style ID3v2 info" % [info.tag2.version]
+		if id3.hastag2?
+			if mp3_metadata[:mp3_artist].nil?
+				self.log.debug "   extracting old-style ID3v2 info" % [id3.tag2.version]
 			
-			mp3_metadata.merge!({
-				:mp3_title     => info.tag2.TT2,
-				:mp3_artist    => info.tag2.TP1,
-				:mp3_album     => info.tag2.TAL,
-				:mp3_year      => info.tag2.TYE,
-				:mp3_tracknum  => info.tag2.TRK,
-				:mp3_comments  => info.tag2.COM,
-				:mp3_genre     => info.tag2.TCO,
-			})
-		end
-
-		if info.hastag2?
-			info.tag2.keys.inject( mp3_metadata ) do |metadata, key|
-				nkey = 'mp3_id3v2_' + key.to_s.downcase.gsub( /\W+/, '_' )
-				metadata[ nkey.to_sym ] = info.tag2[ key ]
-				metadata
+				mp3_metadata.merge!({
+					:mp3_title     => id3.tag2.TT2,
+					:mp3_artist    => id3.tag2.TP1,
+					:mp3_album     => id3.tag2.TAL,
+					:mp3_year      => id3.tag2.TYE,
+					:mp3_tracknum  => id3.tag2.TRK,
+					:mp3_comments  => id3.tag2.COM,
+					:mp3_genre     => id3.tag2.TCO,
+				})
 			end
 		end
 		
 		return sanitize_values( mp3_metadata )
 	end
+
+
+	### Extract image data from id3 information, supports both APIC (2.3) and the older style
+	### PIC (2.2).  Return value is a hash with IO keys and mimetype values.
+	### {
+	###    io  => { format => 'image/jpeg' }
+	###    io2 => { format => 'image/jpeg' }
+	### }
+	def extract_images( id3 )
+		data = {}
+		return data unless id3.hastag2?
+		
+		if id3.tag2.APIC
+			images = [ id3.tag2.APIC ].flatten
+			images.each do |img|
+				blob, mime = img.unpack( APIC_FORMAT ).values_at( 4, 1 )
+				data[ StringIO.new(blob) ] = { 
+					:format => mime,
+					:extent => blob.length,
+					:title  => 'album-art'
+				}
+			end
+			
+		elsif id3.tag2.PIC
+			images = [ id3.tag2.PIC ].flatten
+			images.each do |img|
+				blob, type = img.unpack( PIC_FORMAT ).values_at( 4, 1 )
+				mime = MIMETYPE_MAP[ ".#{type.downcase}" ] or next
+				data[ StringIO.new(blob) ] = {
+					:format => mime,
+					:extent => blob.length,
+					:title  => 'album-art'
+				}
+			end
+		end
+		
+		return data
+	end
+
 	
 	
 	#######
@@ -198,10 +256,6 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		return metadata_hash
 	end
 
-	
-	
 end # class ThingFish::Mp3Filter
 
 # vim: set nosta noet ts=4 sw=4:
-
-

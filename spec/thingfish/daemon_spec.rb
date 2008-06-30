@@ -813,7 +813,7 @@ describe ThingFish::Daemon do
 			end
 		
 		
-			it "cleans up new resources if there's an error while storing" do
+			it "cleans up new resources if there's an error while storing the resource" do
 				UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
 				metadata = mock( "metadata hash", :null_object => true )
@@ -832,6 +832,30 @@ describe ThingFish::Daemon do
 				lambda {
 					@daemon.store_resource( body, metadata )
 				}.should raise_error( RuntimeError, 'Happy time explosion!' )
+			end
+			
+			
+			it "cleans up new resources if there's an error while storing the metadata" do
+				UUID.should_receive( :timestamp_create ).and_return( TEST_UUID_OBJ )
+				body = mock( "body IO" )
+				metadata = mock( "metadata hash", :null_object => true )
+						
+				# Replace the filestore and metastore with mocks
+				filestore = mock( "filestore", :null_object => true )
+				@daemon.instance_variable_set( :@filestore, filestore )
+				metastore = mock( "metastore" )
+				@daemon.instance_variable_set( :@metastore, metastore )
+				md_proxy = mock( "metadata proxy" )
+				
+				metastore.should_receive( :transaction ).and_yield
+				metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( md_proxy )
+				md_proxy.should_receive( :update ).
+				 	and_raise( RuntimeError.new('JeffCon 2008: I was there') )
+				filestore.should_receive( :delete ).with( TEST_UUID_OBJ )
+				
+				lambda {
+					@daemon.store_resource( body, metadata  )
+				}.should raise_error( RuntimeError, 'JeffCon 2008: I was there' )
 			end
 			
 			

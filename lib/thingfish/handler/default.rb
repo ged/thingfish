@@ -242,15 +242,15 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### data (POST to /)
 	def handle_create_request( request, response )
 		
-		if request.entity_bodies.length > 1
-			self.log.error "Can't handle multipart request (%p)" % [ request.entity_bodies ]
+		if request.bodies.length > 1
+			self.log.error "Can't handle multipart request (%p)" % [ request.bodies ]
 			raise ThingFish::NotImplementedError, "multipart upload not implemented"
 		end
 
 		uuid = nil
 
 		# Store the primary resource
-		body, metadata = request.entity_bodies.to_a.flatten
+		body, metadata = request.bodies.to_a.flatten
 		uuid = self.daemon.store_resource( body, metadata )
 	
 		# Store any related resources, linked to the primary
@@ -270,10 +270,15 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 	### Handle updating a file by UUID
 	def handle_update_uuid_request( request, response, uuid )
 		
+		if request.bodies.length > 1
+			self.log.error "Can't handle multipart request" % [ request.bodies ]
+			raise ThingFish::NotImplementedError, "multipart upload not implemented"
+		end
+
 		# :TODO: Handle slow/big uploads by returning '202 Accepted' and spawning
 		#         a handler thread?
 		new_resource = ! @filestore.has_file?( uuid )
-		body, metadata = request.get_body_and_metadata
+		body, metadata = request.bodies.to_a.flatten
 		self.daemon.store_resource( body, metadata, uuid )
 		
 		# Purge any old related resources, then store any new ones linked to the primary

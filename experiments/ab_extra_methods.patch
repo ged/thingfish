@@ -1,111 +1,130 @@
 
-This patch was submitted to Apache:
-	https://issues.apache.org/bugzilla/show_bug.cgi?id=44851
-	
-It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
+This patch is intended for ApacheBench version 2.3, which is distributed
+with Apache 2.2.9.
 
 
---- ab.c.original       2008-04-21 08:46:05.000000000 -0700
-+++ ab.c        2008-04-22 07:16:39.000000000 -0700
-@@ -91,7 +91,7 @@
+--- ab.c.orig	2008-06-19 21:59:04.000000000 -0700
++++ ab.c	2008-06-19 22:44:25.000000000 -0700
+@@ -84,6 +84,10 @@
+    ** Version 2.3
+    **     SIGINT now triggers output_results().
+    **     Contributed by colm, March 30, 2006
++   **
++   ** Version 2.3.1
++   **     PUT and DELETE HTTP method support.
++   **     Contributed by Mahlon E. Smith <mahlon@martini.nu>, June 2008.
+    **/
+ 
+ /* Note: this version string should start with \d+[\d\.]* and be a valid
+@@ -95,7 +99,7 @@
   * ab - or to due to a change in the distribution it is compiled with
   * (such as an APR change in for example blocking).
   */
--#define AP_AB_BASEREVISION "2.0.40-dev"
-+#define AP_AB_BASEREVISION "2.0.41-dev"
+-#define AP_AB_BASEREVISION "2.3"
++#define AP_AB_BASEREVISION "2.3.1"
  
  /*
   * BUGS:
-@@ -254,7 +254,7 @@
- /* --------------------- GLOBALS ---------------------------- */
+@@ -261,7 +265,7 @@
  
  int verbosity = 0;      /* no verbosity by default */
+ int recverrok = 0;      /* ok to proceed after socket receive errors */
 -int posting = 0;        /* GET by default */
-+int method = 0;        /* GET by default */
++int method = 0;         /* -2 => DELETE, -1 => HEAD, 0 => GET (default), 1 => POST, 2 => PUT */
  int requests = 1;       /* Number of requests to make */
  int heartbeatres = 100; /* How often do we say we're alive */
  int concurrency = 1;    /* Number of multiple requests to make */
-@@ -621,7 +621,7 @@
+@@ -631,7 +635,7 @@
              c->connect = tnow;
-             c->rwrite = reqlen;
              c->rwrote = 0;
+             c->rwrite = reqlen;
 -            if (posting)
 +            if (method)
                  c->rwrite += postlen;
          }
          else if (tnow > c->connect + aprtimeout) {
-@@ -761,8 +761,10 @@
+@@ -757,8 +761,10 @@
      if (keepalive)
-         printf("Keep-Alive requests:    %ld\n", doneka);
-     printf("Total transferred:      %ld bytes\n", totalread);
+         printf("Keep-Alive requests:    %d\n", doneka);
+     printf("Total transferred:      %" APR_INT64_T_FMT " bytes\n", totalread);
 -    if (posting > 0)
 +    if (method == 1)
-         printf("Total POSTed:           %ld\n", totalposted);
+         printf("Total POSTed:           %" APR_INT64_T_FMT "\n", totalposted);
 +    if (method == 2)
-+        printf("Total PUT:              %ld\n", totalposted);
-     printf("HTML transferred:       %ld bytes\n", totalbread);
++        printf("Total PUT:              %" APR_INT64_T_FMT "\n", totalposted);
+     printf("HTML transferred:       %" APR_INT64_T_FMT " bytes\n", totalbread);
  
      /* avoid divide by zero */
-@@ -775,7 +777,7 @@
-            (float) (1000 * timetaken / done));
+@@ -771,7 +777,7 @@
+                (double) timetaken * 1000 / done);
          printf("Transfer rate:          %.2f [Kbytes/sec] received\n",
-            (float) (totalread / 1024 / timetaken));
+                (double) totalread / 1024 / timetaken);
 -        if (posting > 0) {
 +        if (method > 0) {
              printf("                        %.2f kb/s sent\n",
-                (float) (totalposted / timetaken / 1024));
+                (double) totalposted / timetaken / 1024);
              printf("                        %.2f kb/s total\n",
-@@ -1030,10 +1032,14 @@
+@@ -1042,10 +1048,14 @@
      printf("<tr %s><th colspan=2 %s>Total transferred:</th>"
-        "<td colspan=2 %s>%ld bytes</td></tr>\n",
+        "<td colspan=2 %s>%" APR_INT64_T_FMT " bytes</td></tr>\n",
         trstring, tdstring, tdstring, totalread);
 -    if (posting > 0)
 +    if (method == 1)
          printf("<tr %s><th colspan=2 %s>Total POSTed:</th>"
-            "<td colspan=2 %s>%ld</td></tr>\n",
+            "<td colspan=2 %s>%" APR_INT64_T_FMT "</td></tr>\n",
             trstring, tdstring, tdstring, totalposted);
 +    if (method == 2)
 +        printf("<tr %s><th colspan=2 %s>Total PUT:</th>"
-+           "<td colspan=2 %s>%ld</td></tr>\n",
++           "<td colspan=2 %s>%" APR_INT64_T_FMT "</td></tr>\n",
 +           trstring, tdstring, tdstring, totalposted);
      printf("<tr %s><th colspan=2 %s>HTML transferred:</th>"
-        "<td colspan=2 %s>%ld bytes</td></tr>\n",
+        "<td colspan=2 %s>%" APR_INT64_T_FMT " bytes</td></tr>\n",
         trstring, tdstring, tdstring, totalbread);
-@@ -1046,7 +1052,7 @@
+@@ -1058,7 +1068,7 @@
          printf("<tr %s><th colspan=2 %s>Transfer rate:</th>"
             "<td colspan=2 %s>%.2f kb/s received</td></tr>\n",
-            trstring, tdstring, tdstring, (float) (totalread) / timetaken);
+            trstring, tdstring, tdstring, (double) totalread / timetaken);
 -        if (posting > 0) {
 +        if (method > 0) {
              printf("<tr %s><td colspan=2 %s>&nbsp;</td>"
                 "<td colspan=2 %s>%.2f kb/s sent</td></tr>\n",
                 trstring, tdstring, tdstring,
-@@ -1480,6 +1486,7 @@
- 
- static void test(void)
- {
-+       char *verb = "GET";
-     apr_time_t now;
-     apr_int16_t rv;
-     long i;
-@@ -1543,24 +1550,46 @@
+@@ -1466,8 +1476,8 @@
+                     cl = strstr(c->cbuff, "Content-length:");
+                 if (cl) {
+                     c->keepalive = 1;
+-                    /* response to HEAD doesn't have entity body */
+-                    c->length = posting >= 0 ? atoi(cl + 16) : 0;
++                    /* response to HEAD and DELETE doesn't have entity body */
++                    c->length = method >= 0 ? atoi(cl + 16) : 0;
+                 }
+                 /* The response may not have a Content-Length header */
+                 if (!cl) {
+@@ -1532,6 +1542,7 @@
+     int i;
+     apr_status_t status;
+     int snprintf_res = 0;
++	char *verb = "GET";
+ #ifdef NOT_ASCII
+     apr_size_t inbytes_left, outbytes_left;
+ #endif
+@@ -1588,24 +1599,44 @@
      }
  
      /* setup request */
 -    if (posting <= 0) {
 +    if (method <= 0) {
 +        switch (method) {
-+                       case -2:
-+                               verb = "DELETE";
-+                               break;
-+                       case -1:
-+                               verb = "HEAD";
-+                               break;
-+                       case 0:
-+                               verb = "GET";
-+                               break;
-+               }
-+
++            case -2:
++                verb = "DELETE";
++                break;
++            case -1:
++                verb = "HEAD";
++                break;
++            case 0:
++                verb = "GET";
++                break;
++        }
          snprintf_res = apr_snprintf(request, sizeof(_request),
              "%s %s HTTP/1.0\r\n"
              "%s" "%s" "%s"
@@ -118,14 +137,13 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
      }
      else {
 +        switch (method) {
-+                       case 1:
-+                               verb = "POST";
-+                               break;
-+                       case 2:
-+                               verb = "PUT";
-+                               break;
-+               }
-+
++            case 1:
++                verb = "POST";
++                break;
++            case 2:
++                verb = "PUT";
++                break;
++        }
          snprintf_res = apr_snprintf(request,  sizeof(_request),
 -            "POST %s HTTP/1.0\r\n"
 +            "%s %s HTTP/1.0\r\n"
@@ -134,11 +152,11 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
              "Content-type: %s\r\n"
              "%s"
              "\r\n",
-+                       verb,
++            verb,
              (isproxy) ? fullurl : path,
              keepalive ? "Connection: Keep-Alive\r\n" : "",
              cookie, auth,
-@@ -1577,9 +1606,9 @@
+@@ -1622,9 +1653,9 @@
      reqlen = strlen(request);
  
      /*
@@ -150,12 +168,14 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
          char *buff = malloc(postlen + reqlen + 1);
          if (!buff) {
              fprintf(stderr, "error creating request buffer: out of memory\n");
-@@ -1779,10 +1808,12 @@
-     fprintf(stderr, "    -c concurrency  Number of multiple requests to make\n");
+@@ -1825,12 +1856,14 @@
      fprintf(stderr, "    -t timelimit    Seconds to max. wait for responses\n");
-     fprintf(stderr, "    -p postfile     File containing data to POST\n");
-+    fprintf(stderr, "    -u putfile      File containing data to PUT\n");
-     fprintf(stderr, "    -T content-type Content-type header for POSTing\n");
+     fprintf(stderr, "    -b windowsize   Size of TCP send/receive buffer, in bytes\n");
+     fprintf(stderr, "    -p postfile     File containing data to POST. Remember also to set -T\n");
++    fprintf(stderr, "    -u putfile      File containing data to PUT.\n");
+     fprintf(stderr, "    -T content-type Content-type header for POSTing, eg.\n");
+     fprintf(stderr, "                    'application/x-www-form-urlencoded'\n");
+     fprintf(stderr, "                    Default is 'text/plain'\n");
      fprintf(stderr, "    -v verbosity    How much troubleshooting info to print\n");
      fprintf(stderr, "    -w              Print out results in HTML tables\n");
 -    fprintf(stderr, "    -i              Use HEAD instead of GET\n");
@@ -164,17 +184,57 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
      fprintf(stderr, "    -x attributes   String to insert as table attributes\n");
      fprintf(stderr, "    -y attributes   String to insert as tr attributes\n");
      fprintf(stderr, "    -z attributes   String to insert as td or th attributes\n");
-@@ -1962,7 +1993,7 @@
+@@ -1931,7 +1964,7 @@
+ 
+ /* ------------------------------------------------------- */
+ 
+-/* read data to POST from file, save contents and length */
++/* read data to POST/PUT from file, save contents and length */
+ 
+ static int open_postfile(const char *pfile)
+ {
+@@ -1942,26 +1975,26 @@
+ 
+     rv = apr_file_open(&postfd, pfile, APR_READ, APR_OS_DEFAULT, cntxt);
+     if (rv != APR_SUCCESS) {
+-        fprintf(stderr, "ab: Could not open POST data file (%s): %s\n", pfile,
++        fprintf(stderr, "ab: Could not open data file (%s): %s\n", pfile,
+                 apr_strerror(rv, errmsg, sizeof errmsg));
+         return rv;
+     }
+ 
+     rv = apr_file_info_get(&finfo, APR_FINFO_NORM, postfd);
+     if (rv != APR_SUCCESS) {
+-        fprintf(stderr, "ab: Could not stat POST data file (%s): %s\n", pfile,
++        fprintf(stderr, "ab: Could not stat data file (%s): %s\n", pfile,
+                 apr_strerror(rv, errmsg, sizeof errmsg));
+         return rv;
+     }
+     postlen = (apr_size_t)finfo.size;
+     postdata = malloc(postlen);
+     if (!postdata) {
+-        fprintf(stderr, "ab: Could not allocate POST data buffer\n");
++        fprintf(stderr, "ab: Could not allocate data buffer\n");
+         return APR_ENOMEM;
+     }
+     rv = apr_file_read_full(postfd, postdata, postlen, NULL);
+     if (rv != APR_SUCCESS) {
+-        fprintf(stderr, "ab: Could not read POST data file: %s\n",
++        fprintf(stderr, "ab: Could not read data file: %s\n",
+                 apr_strerror(rv, errmsg, sizeof errmsg));
+         return rv;
+     }
+@@ -2016,7 +2049,7 @@
  #endif
  
      apr_getopt_init(&opt, cntxt, argc, argv);
--    while ((status = apr_getopt(opt, "n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq"
-+    while ((status = apr_getopt(opt, "n:c:t:T:p:v:kVhwix:y:z:C:H:P:A:g:X:de:Sq:Du:"
+-    while ((status = apr_getopt(opt, "n:c:t:b:T:p:v:rkVhwix:y:z:C:H:P:A:g:X:de:Sq"
++    while ((status = apr_getopt(opt, "n:c:t:b:T:p:v:rkVhwix:y:z:C:H:P:A:g:X:de:SqDu:"
  #ifdef USE_SSL
              "Z:f:"
  #endif
-@@ -1984,9 +2015,12 @@
-                 concurrency = atoi(optarg);
+@@ -2041,9 +2074,12 @@
+                 windowsize = atoi(optarg);
                  break;
              case 'i':
 -                if (posting == 1)
@@ -189,7 +249,7 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
                  break;
              case 'g':
                  gnuplot = strdup(optarg);
-@@ -2001,10 +2035,20 @@
+@@ -2058,10 +2094,20 @@
                  confidence = 0;
                  break;
              case 'p':
@@ -213,4 +273,3 @@ It adds PUT and DELETE support to the apache utility, 'ApacheBench'.
                  }
                  else if (postdata) {
                      exit(r);
-

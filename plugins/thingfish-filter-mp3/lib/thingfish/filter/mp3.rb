@@ -107,6 +107,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 				
 				# Append any album images as related resources
 				self.extract_images( id3 ).each do |io, metadata|
+					metadata[:title] = "Album art for %s - %s" % mp3_metadata.values_at( :mp3_artist, :mp3_title )
 					request.append_related_resource( body, io, metadata )
 				end
 				
@@ -209,9 +210,9 @@ class ThingFish::MP3Filter < ThingFish::Filter
 			images.each do |img|
 				blob, mime = img.unpack( APIC_FORMAT ).values_at( 4, 1 )
 				data[ StringIO.new(blob) ] = { 
-					:format => mime,
-					:extent => blob.length,
-					:title  => 'album-art'
+					:format   => mime,
+					:extent   => blob.length,
+					:relation => 'album-art'
 				}
 			end
 			
@@ -221,9 +222,9 @@ class ThingFish::MP3Filter < ThingFish::Filter
 				blob, type = img.unpack( PIC_FORMAT ).values_at( 4, 1 )
 				mime = MIMETYPE_MAP[ ".#{type.downcase}" ] or next
 				data[ StringIO.new(blob) ] = {
-					:format => mime,
-					:extent => blob.length,
-					:title  => 'album-art'
+					:format   => mime,
+					:extent   => blob.length,
+					:relation => 'album-art'
 				}
 			end
 		end

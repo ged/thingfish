@@ -257,10 +257,11 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	end
 	
 	
-	### Remove any resources that have a +related_to+ of the given UUID, and a +relation+ of 
-	### 'appended'.
-	def purge_related_resources( uuid )
-		uuids = @metastore.find_by_exact_properties( :related_to => uuid.to_s, :relation => 'appended' )
+	### Remove any resources that have a +related_to+ of the given UUID, and
+	### the given +relation+ (or any relation if none is specified)
+	def purge_related_resources( uuid, relation=nil )
+		uuids = @metastore.find_by_exact_properties( :related_to => uuid.to_s, :relation => relation )
+		self.log.debug "Found UUIDS for purging: %p" % [ uuids ]
 		uuids.each do |subuuid|
 			self.log.debug "purging appended resource %s for %s" % [ subuuid, uuid ]
 			@metastore.delete_resource( subuuid )

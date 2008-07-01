@@ -50,11 +50,6 @@ end
 describe ThingFish::Daemon do
 	include ThingFish::SpecHelpers
 	
-	before(:all) do
-		setup_logging( :fatal )
-	end
-	
-
 	before( :each ) do
 		# Have to set up logging each time, 'cause Daemon alters it in some examples
 		setup_logging( :fatal )
@@ -719,7 +714,7 @@ describe ThingFish::Daemon do
 			end
 
 	
-			it "knows how to purge related resources" do
+			it "knows how to purge specific related resources" do
 				filestore = mock( "filestore", :null_object => true )
 				@daemon.instance_variable_set( :@filestore, filestore )
 				metastore = mock( "metastore", :null_object => true )
@@ -727,7 +722,7 @@ describe ThingFish::Daemon do
 				
 				search_criteria = {
 					:related_to => TEST_UUID,
-					:relation   => 'appended'
+					:relation   => 'thumbnail'
 				}
 				metastore.should_receive( :find_by_exact_properties ).
 					with( search_criteria ).
@@ -738,10 +733,33 @@ describe ThingFish::Daemon do
 				filestore.should_receive( :delete ).with( TEST_UUID2 )
 				filestore.should_receive( :delete ).with( TEST_UUID3 )
 				
-				@daemon.purge_related_resources( TEST_UUID )				
+				@daemon.purge_related_resources( TEST_UUID, 'thumbnail' )
 			end
 			
-			
+	
+			it "knows how to purge all related resources" do
+				filestore = mock( "filestore" )
+				@daemon.instance_variable_set( :@filestore, filestore )
+				metastore = mock( "metastore" )
+				@daemon.instance_variable_set( :@metastore, metastore )
+				
+				search_criteria = {
+					:related_to => TEST_UUID,
+					:relation => nil
+				}
+				metastore.should_receive( :find_by_exact_properties ).
+					with( search_criteria ).
+					and_return( [ TEST_UUID2, TEST_UUID3 ])
+
+				metastore.should_receive( :delete_resource ).with( TEST_UUID2 )
+				metastore.should_receive( :delete_resource ).with( TEST_UUID3 )
+				filestore.should_receive( :delete ).with( TEST_UUID2 )
+				filestore.should_receive( :delete ).with( TEST_UUID3 )
+				
+				@daemon.purge_related_resources( TEST_UUID )
+			end
+
+
 			it "doesn't propagate errors that occur while storing a related resource" do
 				related_body = mock( "related body IO" )
 				request = mock( "request object" )

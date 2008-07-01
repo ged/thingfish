@@ -373,6 +373,11 @@ class ThingFish::MetaStore
 	### expected to return UUIDs that match the yielded tuple. The returned UUID sets are then
 	### intersected, and any UUIDs common to all matched tuples are returned.
 	def intersect_each_tuple( hash )
+
+		# Trim nil values out of the hash then make a search pair for each key/value combination.
+		#   { 'format' => ['image/png', 'image/jpeg' ], 'extent' => 3400 }
+		# becomes:
+		#   [ ['format', 'image/png'], ['format', 'image/jpeg'], ['extent', 3400] ]
 		tuples = hash.reject {|k,v| v.nil? }.inject([]) do |ary, pair|
 			key,vals = *pair
 			[vals].flatten.each do |val|
@@ -381,7 +386,9 @@ class ThingFish::MetaStore
 			
 			ary
 		end
-		
+
+		# Iterate over each search pair, searching for matches, then narrowing the results by
+		# intersecting the previous resultset with the current one.
 		uuids = tuples.inject(nil) do |ary, pair|
 			key, value = *pair
 			key = key.to_s

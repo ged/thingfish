@@ -176,6 +176,9 @@ describe ThingFish::FormUploadHandler, " (POST request)" do
 			once.
 			and_return( TEST_UUID )
 
+		mockdaemon.should_receive( :store_related_resources ).
+			with( upload1, TEST_UUID, @request )
+
 		@response.should_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :body= ).with( [ [TEST_UUID, metadata] ] )
 	

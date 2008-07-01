@@ -210,7 +210,8 @@ describe ThingFish::MP3Filter do
 			art_hash = { 
 				:format => 'image/jpeg',
 				:extent => 7369,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 
 			@request.stub!( :each_body ).and_yield( io, @request_metadata )
@@ -228,12 +229,14 @@ describe ThingFish::MP3Filter do
 			jpg_art_hash = { 
 				:format => 'image/jpeg',
 				:extent => 7369,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 			png_art_hash = { 
 				:format => 'image/png',
 				:extent => 18031,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 
 			@request.stub!( :each_body ).and_yield( io, @request_metadata )
@@ -255,7 +258,8 @@ describe ThingFish::MP3Filter do
 			art_hash = { 
 				:format => 'image/jpeg',
 				:extent => 7369,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 
 			@request.stub!( :each_body ).and_yield( io, @request_metadata )
@@ -273,12 +277,14 @@ describe ThingFish::MP3Filter do
 			jpg_art_hash = { 
 				:format => 'image/jpeg',
 				:extent => 7369,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 			png_art_hash = { 
 				:format => 'image/png',
 				:extent => 18031,
-				:title  => 'album-art'
+				:title  => 'Album art for Tim Reilly - (unknown)',
+				:relation => 'album-art'
 			}
 
 			@request.stub!( :each_body ).and_yield( io, @request_metadata )

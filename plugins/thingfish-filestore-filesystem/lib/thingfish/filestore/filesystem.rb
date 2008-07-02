@@ -185,6 +185,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 			fh.write( data )
 		end
 		
+		self.log.info "Wrote %d bytes." % [ data.length ]
 		self.update_size( path, data.length )
 		return Digest::MD5.hexdigest( data )
 	end
@@ -213,6 +214,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 			end
 		end
 
+		self.log.info "Wrote %d bytes (buffered)." % [ uploadsize ]
 		self.update_size( path, uploadsize )
 		return digest.hexdigest
 	end

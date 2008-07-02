@@ -140,7 +140,7 @@ class ThingFish::Client
 	#################################################################
 
 	### Create a new ThingFish client object which will interact with the
-	### server at the specified +endpoint+, which can be either the hostane,
+	### server at the specified +endpoint+, which can be either the hostname,
 	### the IP address, or the URI of the server. Also set any options
 	### specified as attributes on the client.
 	def initialize( endpoint=DEFAULT_HOST, options={} )

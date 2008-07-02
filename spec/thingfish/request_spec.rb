@@ -38,7 +38,7 @@ describe ThingFish::Request do
 	
 	TEMPFILE_PATH = '/var/folders/k7/k7DNYX+ZGSOBod3-pJ-Lhk++0+I/-Tmp-/thingfish.65069.0'
 	
-	before(:all) do
+	before( :all ) do
 		setup_logging( :fatal )
 	end
 	
@@ -117,6 +117,7 @@ describe ThingFish::Request do
 		request.accepted_types[2].mediatype.should == 'text/xml'
 	end
 	
+	
 	it "knows when it does not have a multipart/form-data body" do
 		params = @default_params.merge({
 			'Content-type' => 'application/x-bungtruck'
@@ -180,6 +181,29 @@ describe ThingFish::Request do
 		request.metadata.should have_key( upload )
 		request.metadata[ upload ].should have(1).member
 		request.metadata[ upload ][ 'relation' ].should == 'thumbnail'
+	end
+	
+	
+	it "requires appended metadata to be associated with a body that's part of the request" do
+		params = {
+			'HTTP_CONTENT_TYPE'   => 'image/x-bitmap',
+			'HTTP_CONTENT_LENGTH' => 18181,
+			'HTTP_USER_AGENT'     => 'GarglePants/1.0',
+			'REMOTE_ADDR'         => '127.0.0.1',
+		}
+		upload = StringIO.new( TEST_CONTENT )
+		@mongrel_request.stub!( :params ).and_return( params )
+		@mongrel_request.stub!( :body ).and_return( upload )
+		request = ThingFish::Request.new( @mongrel_request, @config )
+
+		mystery_resource = StringIO.new( "mystery content" )
+
+		lambda { 
+			request.each_body do |body, _|
+				metadata = { 'relation' => 'thumbnail' }
+				request.append_metadata_for( mystery_resource, metadata )
+			end
+		}.should raise_error( ThingFish::ResourceError, /cannot append/i )
 	end
 	
 	
@@ -288,7 +312,6 @@ describe ThingFish::Request do
 		@mongrel_request.stub!( :params ).and_return( params )
 		@mongrel_request.stub!( :body ).and_return( upload )
 		request = ThingFish::Request.new( @mongrel_request, @config )
-
 
 		mystery_resource = StringIO.new( "mystery content" )
 		generated_resource = StringIO.new( "generated content" )
@@ -534,9 +557,17 @@ describe ThingFish::Request do
 		
 		request.is_ajax_request?.should == false
 	end
-	
 
-	describe " with cache headers" do
+
+	describe "with regular request headers" do
+
+		before( :all ) do
+			setup_logging( :fatal )
+		end
+
+		after( :all ) do
+			reset_logging()
+		end
 
 		before( :each ) do
 			@config = stub( "config object" )
@@ -544,8 +575,10 @@ describe ThingFish::Request do
 			mongrel_request.stub!( :params ).and_return({
 				'SERVER_NAME'	=> 'thingfish.laika.com',
 				'SERVER_PORT'	=> '3474',
+				'REMOTE_ADDR'   => '127.0.0.1',
 				'REQUEST_PATH'	=> '/',
 				'QUERY_STRING'	=> '',
+				'CONTENT_TYPE'  => 'image/jpeg',
 			})
 			@request_headers = mock( "request headers", :null_object => true )
 
@@ -554,6 +587,59 @@ describe ThingFish::Request do
 		
 			@etag = %{"%s"} % [ TEST_CHECKSUM ]
 			@weak_etag = %{W/"v1.2"}
+		end
+
+
+		### Body IO checks
+		
+		it "can sanity-check the IO objects that contain entity body data for EOF state" do
+			io = mock( "Entity body IO" )
+
+			@request.instance_variable_set( :@entity_bodies, { io => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			
+			io.should_receive( :closed? ).and_return( false )
+			io.should_receive( :rewind )
+			
+			@request.check_body_ios
+		end
+
+
+		it "can replace a File IO object that contains entity body data if it becomes closed" do
+			io = mock( "Entity body File IO" )
+			clone_io = mock( "Cloned entity body File IO" )
+			@request.instance_variable_set( :@entity_bodies, { io => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			
+			io.should_receive( :closed? ).and_return( true )
+			io.should_receive( :is_a? ).with( StringIO ).and_return( false )
+			io.should_receive( :path ).and_return( :filepath )
+			File.should_receive( :open ).with( :filepath, 'r' ).and_return( clone_io )
+			
+			@request.check_body_ios
+			
+			@request.instance_variable_get( :@entity_bodies ).should_not have_key( io )
+			@request.metadata.should_not have_key( io )
+			@request.instance_variable_get( :@entity_bodies ).should have_key( clone_io )
+			@request.metadata.should have_key( clone_io )
+		end
+
+
+		it "can replace a StringIO object that contains entity body data if it becomes closed" do
+			io = mock( "Entity body StringIO" )
+			clone_io = mock( "Cloned entity body StringIO" )
+			@request.instance_variable_set( :@entity_bodies, { io => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			
+			io.should_receive( :closed? ).and_return( true )
+			io.should_receive( :is_a? ).with( StringIO ).and_return( true )
+			io.should_receive( :string ).and_return( :stringdata )
+			StringIO.should_receive( :new ).with( :stringdata ).and_return( clone_io )
+			
+			# clone_io.should_receive( :closed? ).and_return( false )
+			# clone_io.should_receive( :rewind )
+
+			@request.check_body_ios
 		end
 
 	
@@ -671,17 +757,19 @@ describe ThingFish::Request do
 				with( :body, 'greatgoatsofgerta' ).
 				and_return([ entity_bodies, form_metadata ])
 
+			thumb_metadata = {
+				:relation => 'thumbnail',
+				:format   => 'image/jpeg',
+				:title    => 'filename1_thumb.jpg',
+			  }
+				
 			yielded_pairs = {}
-			@request.each_body( true ) do |res, parsed_metadata|
+			@request.each_body do |res, parsed_metadata|
 				if res == io1
-					thumb_metadata = {
-						:relation => 'thumbnail',
-						:format   => 'image/jpeg',
-						:title    => 'filename1_thumb.jpg',
-					  }
-					@request.append_related_resource( io1, resource1, thumb_metadata )
+					@request.append_related_resource( res, resource1, thumb_metadata )
 				end
-					
+			end
+			@request.each_body( true ) do |res, parsed_metadata|
 				yielded_pairs[ res ] = parsed_metadata
 			end
 
@@ -828,6 +916,115 @@ describe ThingFish::Request do
 			yielded_pairs[ io2 ][ :uploadaddress ].should == IPAddr.new( '127.0.0.1' )	
 		end
 	
+
+		### Body IO checks
+		
+		it "can sanity-check multiple IO objects that contain entity body data for EOF state" do
+			io1 = mock( "filehandle 1" )
+			sub_io1 = mock( "extracted filehandle 1" )
+			io2 = mock( "filehandle 2" )
+		
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1", :extent => 100292},
+				io2 => {:title  => "filename2", :extent => 100234}
+			  }
+			related_resources = {
+				io1 => { sub_io1 => {} }
+			  }
+		
+			@request.instance_variable_set( :@entity_bodies, { io1 => {}, io2 => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			@request.instance_variable_set( :@related_resources, related_resources )
+			
+			io1.should_receive( :closed? ).and_return( false )
+			io1.should_receive( :rewind )
+		
+			sub_io1.should_receive( :closed? ).and_return( false )
+			sub_io1.should_receive( :rewind )
+		
+			io2.should_receive( :closed? ).and_return( false )
+			io2.should_receive( :rewind )
+			
+			@request.check_body_ios
+		end
+
+
+		it "can replace an appended File IO object if it becomes closed" do
+			io1 = mock( "filehandle 1" )
+			sub_io1 = mock( "extracted filehandle 1" )
+			clone_sub_io1 = mock( "extracted filehandle 1" )
+			io2 = mock( "filehandle 2" )
+		
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1", :extent => 100292},
+				io2 => {:title  => "filename2", :extent => 100234}
+			  }
+			related_resources = {
+				io1 => { sub_io1 => {} }
+			  }
+		
+			@request.instance_variable_set( :@entity_bodies, { io1 => {}, io2 => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			@request.instance_variable_set( :@related_resources, related_resources )
+			
+			io1.should_receive( :closed? ).and_return( false )
+			io1.should_receive( :rewind )
+		
+			sub_io1.should_receive( :closed? ).and_return( true )
+			sub_io1.should_receive( :is_a? ).with( StringIO ).and_return( false )
+			sub_io1.should_receive( :path ).and_return( :filepath )
+			File.should_receive( :open ).with( :filepath, 'r' ).and_return( clone_sub_io1 )
+			
+			io2.should_receive( :closed? ).and_return( false )
+			io2.should_receive( :rewind )
+			
+			@request.check_body_ios
+
+			@request.related_resources[ io1 ].keys.should == [clone_sub_io1]
+			@request.metadata.should_not have_key( sub_io1 )
+			@request.metadata.should have_key( clone_sub_io1 )
+		end
+		
+		
+		it "can replace a StringIO object that contains entity body data if it becomes closed" do
+			io1 = mock( "filehandle 1" )
+			sub_io1 = mock( "extracted filehandle 1" )
+			clone_sub_io1 = mock( "extracted filehandle 1" )
+			io2 = mock( "filehandle 2" )
+		
+			parser = mock( "multipart parser", :null_object => true )
+			entity_bodies = {
+				io1 => {:title  => "filename1", :extent => 100292},
+				io2 => {:title  => "filename2", :extent => 100234}
+			  }
+			related_resources = {
+				io1 => { sub_io1 => {} }
+			  }
+		
+			@request.instance_variable_set( :@entity_bodies, { io1 => {}, io2 => {} } )
+			@request.instance_variable_set( :@form_metadata, {} )
+			@request.instance_variable_set( :@related_resources, related_resources )
+			
+			io1.should_receive( :closed? ).and_return( false )
+			io1.should_receive( :rewind )
+		
+			sub_io1.should_receive( :closed? ).and_return( true )
+			sub_io1.should_receive( :is_a? ).with( StringIO ).and_return( true )
+			sub_io1.should_receive( :string ).and_return( :datastring )
+			StringIO.should_receive( :new ).with( :datastring ).and_return( clone_sub_io1 )
+			
+			io2.should_receive( :closed? ).and_return( false )
+			io2.should_receive( :rewind )
+			
+			@request.check_body_ios
+
+			@request.related_resources[ io1 ].keys.should == [clone_sub_io1]
+			@request.metadata.should_not have_key( sub_io1 )
+			@request.metadata.should have_key( clone_sub_io1 )
+		end
+
 	end
 
 	describe " sent via XMLHTTPRequest" do

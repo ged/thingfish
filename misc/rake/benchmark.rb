@@ -90,5 +90,6 @@ rescue LoadError => err
 end
 
 task :benchmarks => [ 'benchmarks:all' ]
+task :bench => :benchmarks
 
 

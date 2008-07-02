@@ -88,13 +88,24 @@ if Rake.application.options.dryrun
 	Rake.application.options.dryrun = false
 end
 
-# Load task plugins
+### Load task libraries
 require RAKE_TASKDIR + 'svn.rb'
 require RAKE_TASKDIR + 'verifytask.rb'
 Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
-	trace "Loading task lib #{tasklib}"
-	require tasklib
+	next if tasklib =~ %r{/(helpers|svn|verifytask)\.rb$}
+	begin
+		require tasklib
+	rescue ScriptError => err
+		fail "Task library '%s' failed to load: %s: %s" %
+			[ tasklib, err.class.name, err.message ]
+		trace "Backtrace: \n  " + err.backtrace.join( "\n  " )
+	rescue => err
+		log "Task library '%s' failed to load: %s: %s. Some tasks may not be available." %
+			[ tasklib, err.class.name, err.message ]
+		trace "Backtrace: \n  " + err.backtrace.join( "\n  " )
+	end
 end
+
 
 ### Default task
 task :default  => [:clean, :spec, :verify, :package]
@@ -114,25 +125,6 @@ end
 ### docs, and manual
 multitask :docs => [ :manual, :coverage, :rdoc ] do
 	log "All documentation built."
-end
-
-
-### Task: manual
-require 'misc/rake/lib/manual'
-
-directory MANUALOUTPUTDIR.to_s
-directory RDOCDIR.to_s
-
-Manual::GenTask.new do |manual|
-	manual.metadata.version = PKG_VERSION
-	manual.metadata.api_dir = RDOCDIR
-	manual.output_dir = MANUALOUTPUTDIR
-	manual.base_dir = MANUALDIR
-	manual.source_dir = 'src'
-end
-
-task :clobber_manual do
-	rmtree( MANUALOUTPUTDIR, :verbose => true )
 end
 
 

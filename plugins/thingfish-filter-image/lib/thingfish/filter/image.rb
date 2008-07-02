@@ -50,6 +50,9 @@ class ThingFish::ImageFilter < ThingFish::Filter
 
 	# SVN Id
 	SVNId = %q$Id$
+	
+	# The default dimensions of thumbnails
+	DEFAULT_THUMBNAIL_DIMENSIONS = [ 100, 100 ]
 
 
 	# A struct that can represent the support in the installed ImageMagick for
@@ -116,29 +119,9 @@ class ThingFish::ImageFilter < ThingFish::Filter
 
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
+		options ||= {}
 		
-		# Transform the installed ImageMagick's list of formats into AcceptParams 
-		# for easy comparison later.
-		#   A hash of image formats and their properties. Each key in the returned 
-		#   hash is the name of a supported image format. Each value is a string in 
-		#   the form "BRWA". The details are in this table:
-		#     B 	is "*" if the format has native blob support, and "-" otherwise.
-		#     R 	is "r" if ×Magick can read the format, and "-" otherwise.
-		#     W 	is "w" if ×Magick can write the format, and "-" otherwise.
-		#     A 	is "+" if the format supports multi-image files, and "-" otherwise.
-		@supported_formats = {}
-		Magick.formats.each do |ext,support|
-			operations = MagickOperations.new( ext, support )
-			unless mimetype = MIMETYPE_MAP[ '.' + ext.downcase ]
-				next
-			end
-			
-			# Skip some mediatypes that are too generic to be useful
-			next if IGNORED_MIMETYPES.include?( mimetype )
-			
-			self.log.debug "Registering image format %s (%s)" % [ mimetype, operations ]
-			@supported_formats[ mimetype ] = operations
-		end
+		@supported_formats = find_supported_formats()
 		self.log.debug "Registered mimetype mapping for %d of %d support image types" %
 			[ @supported_formats.keys.length, Magick.formats.length ]
 
@@ -151,6 +134,16 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		@generated_types = @supported_formats.
 			select {|type, op| op.can_write? }.
 			collect {|type, op| ThingFish::AcceptParam.parse(type) }
+		
+		@thumb_dimensions = options[:thumbnail_dimensions] || DEFAULT_THUMBNAIL_DIMENSIONS
+		raise ThingFish::ConfigError, "invalid thumbnail dimensions %p" % [ @thumb_dimensions ] unless
+			@thumb_dimensions.is_a?( Array ) && @thumb_dimensions.all? {|dim| dim.is_a?(Fixnum) }
+		self.log.debug "Thumbnail dimensions are: %p" % [ @thumb_dimensions ]
+		
+		@thumb_dimensions = options[:thumbnail_dimensions] || DEFAULT_THUMBNAIL_DIMENSIONS
+		raise ThingFish::ConfigError, "invalid thumbnail dimensions %p" % [ @thumb_dimensions ] unless
+			@thumb_dimensions.is_a?( Array ) && @thumb_dimensions.all? {|dim| dim.is_a?(Fixnum) }
+		self.log.debug "Thumbnail dimensions are: %p" % [ @thumb_dimensions ]
 		
 		super
 	end
@@ -174,7 +167,9 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		return unless request.http_method == 'PUT' ||
 					  request.http_method == 'POST'
 
-		request.each_body do |body,metadata|
+		request.each_body( true ) do |body,metadata|
+			next if metadata[:relation] == 'thumbnail' # No thumbnails of thumbnails
+
 			if self.accept?( metadata[:format] )
 
 				self.log.debug "Reading an ImageMagick image list from %p" % [ body ]
@@ -183,8 +178,11 @@ class ThingFish::ImageFilter < ThingFish::Filter
 
 				image = images.first
 				image_attributes = self.extract_metadata( image )
-			
 				request.append_metadata_for( body, image_attributes )
+				
+				thumbnail, thumb_metadata = self.create_thumbnail( image, metadata[:title] )
+				self.log.debug "Appending a thumbnail as a related resource"
+				request.append_related_resource( body, StringIO.new(thumbnail), thumb_metadata )
 			else
 				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
 			end
@@ -243,10 +241,48 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			'generates' => generates,
 		  }
 	end
+
+
+	#########
+	protected
+	#########
+
+	### Extract metadata from the given +image+ (a Magick::Image object) and return it in
+	### a Hash.
+	def extract_metadata( image )
+		image_attributes = {}
+		
+		image_attributes['image_height']       = image.rows
+		image_attributes['image_width']        = image.columns
+		image_attributes['image_depth']        = image.depth
+		image_attributes['image_density']      = image.density
+		image_attributes['image_gamma']        = image.gamma
+		image_attributes['image_bounding_box'] = image.bounding_box
+		
+		return image_attributes
+	end
 	
+	
+	### Create a thumbnail from the given +image+ and return it in a string along with any
+	### associated metadata.
+	def create_thumbnail( image, title )
+		self.log.debug "Making thumbnail of max dimensions: [%d X %d]" % @thumb_dimensions
+		thumb = image.resize_to_fit( *@thumb_dimensions )
+		imgdata = thumb.to_blob
 
-
-
+		metadata = self.extract_metadata( thumb )
+		metadata.merge!({
+			:format => thumb.mime_type,
+			:relation => 'thumbnail',
+			:title => "Thumbnail of %s" % [ title || image.inspect ],
+			:extent => imgdata.length,
+		})
+		
+		self.log.debug "Made thumbnail for %p" % [ image ]
+		return imgdata, metadata
+	end
+	
+	
 	#######
 	private
 	#######
@@ -308,27 +344,35 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	end
 
 
-	#########
-	protected
-	#########
+	### Transform the installed ImageMagick's list of formats into AcceptParams 
+	### for easy comparison later.
+	def find_supported_formats
+		formats = {}
 
-
-	### Extract metadata from the given +image+ (a Magick::Image object) and return it in
-	### a Hash.
-	def extract_metadata( image )
-		image_attributes = {}
+		# A hash of image formats and their properties. Each key in the returned 
+		# hash is the name of a supported image format. Each value is a string in 
+		# the form "BRWA". The details are in this table:
+		#   B 	is "*" if the format has native blob support, and "-" otherwise.
+		#   R 	is "r" if ×Magick can read the format, and "-" otherwise.
+		#   W 	is "w" if ×Magick can write the format, and "-" otherwise.
+		#   A 	is "+" if the format supports multi-image files, and "-" otherwise.
+		Magick.formats.each do |ext,support|
+			operations = MagickOperations.new( ext, support )
+			unless mimetype = MIMETYPE_MAP[ '.' + ext.downcase ]
+				next
+			end
+			
+			# Skip some mediatypes that are too generic to be useful
+			next if IGNORED_MIMETYPES.include?( mimetype )
+			
+			self.log.debug "Registering image format %s (%s)" % [ mimetype, operations ]
+			formats[ mimetype ] = operations
+		end
 		
-		image_attributes['image_height']       = image.rows
-		image_attributes['image_width']        = image.columns
-		image_attributes['image_depth']        = image.depth
-		image_attributes['image_density']      = image.density
-		image_attributes['image_gamma']        = image.gamma
-		image_attributes['image_bounding_box'] = image.bounding_box
-		
-		return image_attributes
+		return formats
 	end
 	
-	
+
 end # class ThingFish::ImageFilter
 
 # vim: set nosta noet ts=4 sw=4:

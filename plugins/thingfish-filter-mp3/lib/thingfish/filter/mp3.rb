@@ -75,7 +75,8 @@ class ThingFish::MP3Filter < ThingFish::Filter
 	APIC_FORMAT = 'h Z* h Z* a*'
 	
 	# The Array of types this filter is interested in
-	HANDLED_TYPES = [ ThingFish::AcceptParam.parse('audio/mpeg') ]
+	HANDLED_TYPES = [ 'audio/mpeg', 'audio/mpg', 'audio/mp3' ].
+		collect {|mimetype| ThingFish::AcceptParam.parse(mimetype) }
 	HANDLED_TYPES.freeze
 
 
@@ -161,6 +162,8 @@ class ThingFish::MP3Filter < ThingFish::Filter
 
 	### Normalize metadata from the MP3Info object and return it as a hash.
 	def extract_id3_metadata( id3 )
+		self.log.debug "Extracting MP3 metadata"
+		
 		mp3_metadata = {
 			:mp3_frequency => id3.samplerate,
 			:mp3_bitrate   => id3.bitrate,
@@ -202,10 +205,19 @@ class ThingFish::MP3Filter < ThingFish::Filter
 	###    io2 => { format => 'image/jpeg' }
 	### }
 	def extract_images( id3 )
+		self.log.debug "Extracting embedded images"
 		data = {}
-		return data unless id3.hastag2?
+		
+		unless id3.hastag2?
+			self.log.debug "...no id3v2 tag, so no embedded images possible."
+			return
+		end
+		
+		self.log.debug "...id3v2 tag present..."
 		
 		if id3.tag2.APIC
+			self.log.debug "...extracting APIC (id3v2.3+) image data."
+
 			images = [ id3.tag2.APIC ].flatten
 			images.each do |img|
 				blob, mime = img.unpack( APIC_FORMAT ).values_at( 4, 1 )
@@ -217,6 +229,8 @@ class ThingFish::MP3Filter < ThingFish::Filter
 			end
 			
 		elsif id3.tag2.PIC
+			self.log.debug "...extracting PIC (id3v2.2) image data."
+
 			images = [ id3.tag2.PIC ].flatten
 			images.each do |img|
 				blob, type = img.unpack( PIC_FORMAT ).values_at( 4, 1 )
@@ -227,6 +241,9 @@ class ThingFish::MP3Filter < ThingFish::Filter
 					:relation => 'album-art'
 				}
 			end
+			
+		else
+			self.log.debug "...no known image tag types in tags: %p" % [ id3.tag2.keys.sort ]
 		end
 		
 		return data

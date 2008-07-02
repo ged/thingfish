@@ -1,7 +1,7 @@
 <% unless files.empty? %>
 <h2>Uploaded <%= files.length %> file(s)</h2>
 <ul>
-<% files.sort_by { |mk, mv| mv[:title] }.each do |file, meta| %>
+<% files.sort_by { |mk, mv| mv[:title] || '' }.each do |file, meta| %>
         <li><a href="<%= meta[:uuid] %>" title="<%= meta[:uuid] %>"><%= meta[:title] %></a></li>
 <% end %>
 </ul>

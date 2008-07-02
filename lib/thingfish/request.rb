@@ -325,10 +325,7 @@ class ThingFish::Request
 	### ones. This is to prevent free-form upload metadata from colliding with the 
 	### metadata required for the filestore and metastore themselves.
 	def each_body( include_appended=false, &block )  # :yields: body_io, metadata_hash
-
-		# Build an iterator over entity_bodies and start the traversal of resources
-		iter = Enumerable::Enumerator.new( self.entity_bodies, :each )
-		self.yield_each_resource( iter, include_appended, &block )
+		self.yield_each_resource( self.entity_bodies, include_appended, &block )
 	end
 	
 	
@@ -347,29 +344,31 @@ class ThingFish::Request
 	
 	### Check the body IO objects to ensure they're still open.
 	def check_body_ios
-		self.each_body do |body,_|
+		self.each_body( true ) do |body,_|
 			if body.closed?
 				self.log.warn "Body IO unexpectedly closed -- reopening a new handle"
 								
 				# Create a new IO based on what the original type was
-				clone = case body
-					when StringIO
-						StringIO.new( body.string )
-					else
-						File.open( body.path, 'r' )
-					end
+				clone = nil
+				if body.is_a?( StringIO )
+					clone = StringIO.new( body.string )
+				else
+					clone = File.open( body.path, 'r' )
+				end
 				
-				# Retain the original IO's metadata
+				# Retain the original IO's file and appended metadata
 				@entity_bodies[ clone ] = @entity_bodies.delete( body ) if @entity_bodies.key?( body )
-				@related_resources[ clone ] = @related_resources.delete( body ) if @related_resources.key?( body )
 				@metadata[ clone ] = @metadata.delete( body ) if @metadata.key?( body )
+				
+				# Splice in the cloned IO into both keys and values of the related resources
+				# tree
+				@related_resources[ clone ] = @related_resources.delete( body ) if @related_resources.key?( body )
 				@related_resources.each do |_,hash|
 					hash[ clone ] = hash.delete( body ) if hash.key?( body )
 				end
 
-				self.log.debug "Body %p (%d) replaced with %p (%d)" % [ 
-					body, body.object_id, clone, clone.object_id
-				]
+				self.log.debug "Body %p (%d) replaced with %p (%d)" %
+					[ body, body.object_id, clone, clone.object_id ]
 			else
 				body.rewind
 			end
@@ -538,11 +537,16 @@ class ThingFish::Request
 	### For each resource => metadata pair returned by the current +iterator+, merge the
 	### toplevel metadata with the resource-specific metadata and pass both to the
 	### block.
-	def yield_each_resource( iterator, include_appended, &block )
+	def yield_each_resource( resources, include_appended, &block )
 		immutable_metadata = self.get_immutable_metadata
+		self.log.debug "Yielding for resources: %p" % [ resources ]
 		
 		# Call the block for every resource
-		iterator.each do |body, body_metadata|
+		resources.keys.each do |body|
+			self.log.debug "Resource is: %p" % [ body ]
+			body_metadata = resources[ body ]
+			appended = self.related_resources[ body ].dup if self.related_resources.key?( body )
+		
 			body_metadata[ :format ] ||= DEFAULT_CONTENT_TYPE
 			extracted_metadata = self.metadata[body] || {}
 			
@@ -554,9 +558,8 @@ class ThingFish::Request
 			block.call( body, merged )
 			
 			# Recurse if the appended resources should be included
-			if include_appended
-				iter = Enumerable::Enumerator.new( self.related_resources[ body ], :each )
-				self.yield_each_resource( iter, true, &block )
+			if appended && !appended.empty? && include_appended
+				self.yield_each_resource( appended, true, &block )
 			end
 		end
 	end

@@ -3,17 +3,39 @@
 # $Id$
 # 
 
+BEGIN {
+	require 'pathname'
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	docsdir = basedir + 'docs'
+	docslibdir = docsdir + 'lib'
+	
+	$LOAD_PATH.unshift( docslibdir.to_s ) unless $LOAD_PATH.include?( docslibdir.to_s )
+}
+
 require 'rake/rdoctask'
+
+RDOC_OPTIONS = [
+	'-w', '4',
+	'-SHN',
+	'-i', BASEDIR.to_s,
+	'-m', 'README',
+	'-W', 'http://opensource.laika.com/browser/thingfish/trunk/'
+  ]
 
 # Try to require Darkfish for rdoc, but don't mandate it
 begin
 	require 'rubygems'
 	gem 'darkfish-rdoc'
-rescue LoadError; end # (ignored)
+rescue LoadError => err
+	trace "Darkfish gem failed: #{err.message}"
+end # (ignored)
 
 begin
-	require 'rdoc/generator/darkfish'
-rescue LoadError; end # (ignored)
+	require 'darkfish-rdoc'
+	RDOC_OPTIONS << '-f' << 'darkfish'
+rescue LoadError => err
+	trace "Darkfish failed to load: #{err.message}"
+end # (ignored)
 
 directory RDOCDIR.to_s
 
@@ -22,16 +44,8 @@ Rake::RDocTask.new do |rdoc|
 	rdoc.rdoc_dir = RDOCDIR.to_s
 	rdoc.title    = "ThingFish - A highly-accessable network datastore"
 
-	rdoc.options += [
-		'-w', '4',
-		'-SHN',
-		'-i', BASEDIR.to_s,
-		'-m', 'README',
-		'-W', 'http://opensource.laika.com/browser/thingfish/trunk/'
-	  ]
+	rdoc.options += RDOC_OPTIONS
 
-	rdoc.options += [ '-f', 'darkfish' ] 
-	
 	rdoc.rdoc_files.include 'README'
 	rdoc.rdoc_files.include 'QUICKSTART'
 	rdoc.rdoc_files.include LIB_FILES.collect {|f| f.relative_path_from(BASEDIR).to_s }

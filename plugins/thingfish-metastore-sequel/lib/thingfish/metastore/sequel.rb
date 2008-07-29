@@ -39,6 +39,8 @@
 # Please see the file LICENSE in the base directory for licensing details.
 #
 
+gem 'sequel', '>= 2.2.0'
+
 require 'forwardable'
 require 'pathname'
 require 'sequel'
@@ -214,8 +216,8 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		mk = @metadata[ :metakey ]
 		props = propnames.collect { |prop| prop.to_s }
 
-		mv.filter { :r_id == r.filter( :uuid => uuid.to_s ).select( :id ) &&
-					:m_id == mk.filter( :key => props ).select( :id ) }.delete
+		mv.filter( :r_id => r.filter( :uuid => uuid.to_s ).select( :id ),
+		           :m_id => mk.filter( :key => props ).select( :id ) ).delete
 	end
 	
 	
@@ -269,10 +271,10 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def find_matching_uuids( key, value )
 		value = value.to_s.gsub( '*', '%' )
 		return @metadata[ :resources, :metakey, :metaval ].
-			filter { :metakey__key  == key.to_s		  &&
-					 :metakey__id   == :metaval__m_id &&
-					 :metaval__val  =~ value		  &&
-					 :metaval__r_id == :resources__id }.map( :uuid )
+			filter( (:metaval__val.like(value)) &
+			        {:metakey__key  => key.to_s,
+			         :metakey__id   => :metaval__m_id,
+			         :metaval__r_id => :resources__id} ).map( :uuid )
 	end
 
 

@@ -11,7 +11,7 @@ filters:
 
 h2. <%= page.config['title'] %>
 
-<div id="auto-toc" />
+<div id="auto-toc"></div>
 
 h3. How's a filter different than a handler?
 

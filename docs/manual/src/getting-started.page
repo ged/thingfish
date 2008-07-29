@@ -10,7 +10,7 @@ filters:
 
 h1. <%= page.config['title'] %>
 
-<div id="auto-toc" />
+<div id="auto-toc"></div>
 
 h2. Installation
 

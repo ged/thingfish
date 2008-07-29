@@ -11,7 +11,7 @@ filters:
 
 h2. <%= page.config['title'] %>
 
-<div id="auto-toc" />
+<div id="auto-toc"></div>
 
 There are several options for connecting: you can use a client library if one has
 been written for your language, or you can use HTTP to talk to the server directly.

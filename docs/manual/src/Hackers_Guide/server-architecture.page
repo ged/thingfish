@@ -11,7 +11,7 @@ filters:
 
 h2. <%= page.config['title'] %>
 
-<div id="auto-toc" />
+<div id="auto-toc"></div>
 
 The server has five major components:
 

@@ -58,7 +58,7 @@ end
 
 ### Task: install gems for development tasks
 DEPENDENCIES = %w[
-	mongrel pluginfactory rcov uuidtools rspec lockfile rcodetools ultraviolet redcloth
+	mongrel pluginfactory rcov uuidtools rspec lockfile rcodetools ultraviolet RedCloth
   ]
 task :install_dependencies do
 	install_gems( *DEPENDENCIES )

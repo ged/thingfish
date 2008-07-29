@@ -20,6 +20,7 @@
 
 begin
 	require 'logger'
+	require 'pluginfactory'
 	require 'uuidtools'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -61,6 +62,10 @@ module ThingFish
 
 	@logger = @default_logger
 
+	PluginFactory::logger_callback = lambda do |lvl, msg|
+		@logger.debug "[%s] %s" % [ lvl.to_s, msg ]
+	end
+	
 	class << self
 		# The log formatter that will be used when the logging subsystem is reset
 		attr_accessor :default_log_formatter

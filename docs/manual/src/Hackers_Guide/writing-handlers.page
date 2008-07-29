@@ -12,7 +12,7 @@ filters:
 
 h2. <%= page.config['title'] %>
 
-<div id="auto-toc" />
+<div id="auto-toc"></div>
 
 h3. What does a handler look like?
 

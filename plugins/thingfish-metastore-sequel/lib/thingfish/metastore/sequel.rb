@@ -73,7 +73,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		super
 
 		@id_cache = { :resources => {}, :metakey => {} }
-		
+
 		# Connect to the backend database specified in the
 		# thingfish config file. ('sequel_connect')
 		#
@@ -85,7 +85,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		#
 		@metadata = options[:sequel_connect].nil? ?
 					Sequel.sqlite :
-					Sequel.open( options[:sequel_connect] )
+					Sequel.open( options[:sequel_connect], :max_connections => 1 )
 
 		# Enable query logging in debug mode
 		self.log.debug {

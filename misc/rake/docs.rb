@@ -22,15 +22,8 @@ RDOC_OPTIONS = [
 	'-W', 'http://opensource.laika.com/browser/thingfish/trunk/'
   ]
 
-# Try to require Darkfish for rdoc, but don't mandate it
 begin
-	require 'rubygems'
 	gem 'darkfish-rdoc'
-rescue LoadError => err
-	trace "Darkfish gem failed: #{err.message}"
-end # (ignored)
-
-begin
 	require 'darkfish-rdoc'
 	RDOC_OPTIONS << '-f' << 'darkfish'
 rescue LoadError => err

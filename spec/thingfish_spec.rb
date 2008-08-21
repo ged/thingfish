@@ -33,6 +33,7 @@ include ThingFish::TestConstants
 describe ThingFish do
 
 	it "should know if its default logger is replaced" do
+		ThingFish.reset_logger
 		ThingFish.should be_using_default_logger
 		ThingFish.logger = Logger.new( $stderr )
 		ThingFish.should_not be_using_default_logger

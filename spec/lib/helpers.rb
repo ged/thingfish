@@ -88,13 +88,6 @@ module ThingFish::SpecHelpers
 	end
 	
 	
-	
-	### Reset the logging subsystem.
-	def reset_logging
-		ThingFish.reset_logger
-	end
-	
-	
 	### Alter the output of the default log formatter to be pretty in SpecMate output
 	def setup_logging( level=Logger::FATAL )
 

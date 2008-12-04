@@ -145,7 +145,7 @@ task :cruise => [:clean, 'spec:text', :package] do |task|
 	artifact_dir.mkpath
 	
 	$stderr.puts "Copying coverage stats..."
-	FileUtils.cp_r( 'coverage', artifact_dir )
+	FileUtils.cp_r( 'coverage', artifact_dir ) if File.directory?( 'coverage' )
 	
 	$stderr.puts "Copying packages..."
 	FileUtils.cp_r( FileList['pkg/*'].to_a, artifact_dir )

@@ -19,7 +19,7 @@
 #      end
 #
 #      def store( uuid, io )
-#          # store the +data+ from the given +io+ to the resource specified 
+#          # store the +data+ from the given +io+ to the resource specified
 #          # by the given +uuid+ and return a hex digest for the file
 #      end
 #
@@ -41,7 +41,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'stringio'
@@ -69,12 +70,12 @@ class ThingFish::FileStore
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### PluginFactory interface: Return an Array of prefixes to use when searching 
+	### PluginFactory interface: Return an Array of prefixes to use when searching
 	### for derivatives.
 	def self::derivative_dirs
 		['thingfish/filestore']
 	end
-	
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -96,18 +97,18 @@ class ThingFish::FileStore
 
 	# The directory this filestore will store stuff in (if it uses files)
 	attr_reader :datadir
-	
+
 	# The directory this filestore will use for temporary files
 	attr_reader :spooldir
 
 
 	### Perform any startup tasks that should take place after the daemon has an opportunity
 	### to daemonize and switch effective user.  This can be overridden from child classes.
-	def startup
+	def on_startup
 		# default no-op
 	end
-	
-	
+
+
 	### Mandatory FileStore API
 	virtual :store, :fetch, :delete, :size, :has_file?
 
@@ -118,7 +119,7 @@ class ThingFish::FileStore
 	### Mandatory Admin API
 	virtual :total_size
 
-	
+
 
 	### Optional IO efficiency interface with fallbacks
 
@@ -126,7 +127,7 @@ class ThingFish::FileStore
 	def store_io( uuid, io )
 		return self.store( uuid, io.read )
 	end
-	
+
 
 	### Call the supplied block with an IO object opened to the data for the given
 	### +uuid+.

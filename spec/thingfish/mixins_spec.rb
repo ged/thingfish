@@ -14,7 +14,7 @@ begin
 	require 'spec/runner'
 	require 'spec/lib/helpers'
 	require 'spec/lib/constants'
-	
+
 	require "thingfish/mixins"
 	require "thingfish/handler"
 rescue LoadError
@@ -44,7 +44,7 @@ describe ThingFish::Loggable, " (class)" do
 			def log_test_message( level, msg )
 				self.log.send( level, msg )
 			end
-			
+
 			def logdebug_test_message( msg )
 				self.log_debug.debug( msg )
 			end
@@ -84,7 +84,7 @@ describe ThingFish::StaticResourcesHandler, " which has been mixed into a class"
 	end
 end
 
-describe ThingFish::StaticResourcesHandler, 
+describe ThingFish::StaticResourcesHandler,
 	" which has mixed into a handler class that has set the static resources dir" do
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
@@ -99,27 +99,23 @@ describe ThingFish::StaticResourcesHandler,
 	end
 end
 
-describe ThingFish::StaticResourcesHandler, 
+describe ThingFish::StaticResourcesHandler,
 	" which has been mixed into an instance of a handler class" do
-	
+
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do
 			include ThingFish::StaticResourcesHandler
 			static_resources_dir "static-content"
 		end
-		@test_handler = @test_class.new
+		@test_handler = @test_class.new( '/glah' )
 	end
 
 
 	it "registers another handler at its own location when registered" do
-		classifier = Mongrel::URIClassifier.new
-		classifier.register( '/glah', @test_handler )
+		daemon = mock( "daemon", :null_object => true )
+		daemon.should_receive( :register ).with( '/glah', duck_type(:on_startup, :process), true )
 
-		listener = mock( "listener", :null_object => true )
-		listener.should_receive( :classifier ).and_return( classifier )
-		listener.should_receive( :register ).with( '/glah', duck_type(:request_begins, :process) )
-
-		@test_handler.listener = listener
+		@test_handler.on_startup( daemon )
 	end
 end
 
@@ -132,32 +128,35 @@ describe ThingFish::ResourceLoader do
 end
 
 describe "A class which has mixed in ThingFish::ResourceLoader" do
-	
+
 	before(:all) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 
 		@resdir = make_tempdir()
 		@resdir.mkpath
-		
+
 		@tmpfile = Tempfile.new( 'test.txt', @resdir )
 		@tmpfile.print( TEST_RESOURCE_CONTENT )
 		@tmpfile.close
 		@tmpname = Pathname.new( @tmpfile.path ).basename
-	
+
 		@klass = Class.new {
 			include ThingFish::ResourceLoader
 			public :get_resource, :resource_exists?, :resource_directory?
+			def initialize( resdir )
+				@resource_dir = resdir
+			end
 		}
 	end
-	
+
 	after(:all) do
 		@resdir.rmtree
 		ThingFish.reset_logger
 	end
 
 	before(:each) do
-		@obj = @klass.new( :resource_dir => @resdir )
+		@obj = @klass.new( @resdir )
 	end
 
 	it "should know what its resource directory is" do
@@ -167,7 +166,7 @@ describe "A class which has mixed in ThingFish::ResourceLoader" do
 	it "is able to load stuff from its resources dir" do
 	    @obj.get_resource( @tmpname ).should == TEST_RESOURCE_CONTENT
 	end
-	
+
 	it "can test for the existance of a resource" do
 		@obj.resource_exists?( @tmpname ).should be_true()
 	end
@@ -228,25 +227,25 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 	it "can calculate the number of seconds for various units of time" do
 		1.second.should == 1
 		14.seconds.should == 14
-	
+
 		1.minute.should == SECONDS_IN_A_MINUTE
 		18.minutes.should == SECONDS_IN_A_MINUTE * 18
-	
+
 		1.hour.should == SECONDS_IN_AN_HOUR
 		723.hours.should == SECONDS_IN_AN_HOUR * 723
-	
+
 		1.day.should == SECONDS_IN_A_DAY
 		3.days.should == SECONDS_IN_A_DAY * 3
-	
+
 		1.week.should == SECONDS_IN_A_WEEK
 		28.weeks.should == SECONDS_IN_A_WEEK * 28
-	
+
 		1.fortnight.should == SECONDS_IN_A_FORTNIGHT
 		31.fortnights.should == SECONDS_IN_A_FORTNIGHT * 31
-	
+
 		1.month.should == SECONDS_IN_A_MONTH
 		67.months.should == SECONDS_IN_A_MONTH * 67
-	
+
 		1.year.should == SECONDS_IN_A_YEAR
 		13.years.should == SECONDS_IN_A_YEAR * 13
 	end
@@ -254,7 +253,7 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 
 	it "can calulate various time offsets" do
 		starttime = Time.now
-	
+
 		1.second.after( starttime ).should == starttime + 1
 		18.seconds.from_now.should be_close( starttime + 18, 10 )
 
@@ -274,27 +273,27 @@ describe ThingFish::NumericConstantMethods, " after extending Numeric" do
 	it "can calulate the number of bytes for various data sizes" do
 		1.byte.should == 1
 		4.bytes.should == 4
-	
+
 		1.kilobyte.should == BYTES_IN_A_KILOBYTE
 		22.kilobytes.should == BYTES_IN_A_KILOBYTE * 22
 
 		1.megabyte.should == BYTES_IN_A_MEGABYTE
 		116.megabytes.should == BYTES_IN_A_MEGABYTE * 116
-	
+
 		1.gigabyte.should == BYTES_IN_A_GIGABYTE
 		14.gigabytes.should == BYTES_IN_A_GIGABYTE * 14
-	
+
 		1.terabyte.should == BYTES_IN_A_TERABYTE
 		88.terabytes.should == BYTES_IN_A_TERABYTE * 88
-	
+
 		1.petabyte.should == BYTES_IN_A_PETABYTE
 		34.petabytes.should == BYTES_IN_A_PETABYTE * 34
-	
+
 		1.exabyte.should == BYTES_IN_AN_EXABYTE
 		6.exabytes.should == BYTES_IN_AN_EXABYTE * 6
 	end
 
-	
+
 	it "can display integers as human readable filesize values" do
 		234.size_suffix.should == "234b"
 		3492.size_suffix.should == "3.4K"

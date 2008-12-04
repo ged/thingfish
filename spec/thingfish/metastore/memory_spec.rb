@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -33,7 +33,7 @@ describe "An instance of MemoryMetaStore" do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before(:each) do
 		@store = ThingFish::MetaStore.create( 'memory' )
 	end
@@ -41,9 +41,9 @@ describe "An instance of MemoryMetaStore" do
 	after(:all) do
 		reset_logging()
 	end
-	
-	
-	it_should_behave_like "A MetaStore"	
+
+
+	it_should_behave_like "A MetaStore"
 
 end
 

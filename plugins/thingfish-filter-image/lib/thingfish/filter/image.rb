@@ -1,27 +1,28 @@
 #!/usr/bin/ruby
-# 
+#
 # An image conversion/extraction filter for ThingFish
-# 
+#
 # == Synopsis
-# 
+#
 #   plugins:
 #       filters:
 #          image: ~
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -50,7 +51,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 
 	# SVN Id
 	SVNId = %q$Id$
-	
+
 	# The default dimensions of thumbnails
 	DEFAULT_THUMBNAIL_DIMENSIONS = [ 100, 100 ]
 
@@ -64,7 +65,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		end
 
 		attr_reader :ext, :blob, :read, :write, :multi
-		
+
 		### Return a human-readable description of the operations spec
 		def to_s
 			return [
@@ -74,30 +75,30 @@ class ThingFish::ImageFilter < ThingFish::Filter
 				self.supports_multi?	? "Multi" : nil,
 			].compact.join(',')
 		end
-		
-		
-		### Returns +true+ if the operation string indicates that ImageMagick has native blob 
+
+
+		### Returns +true+ if the operation string indicates that ImageMagick has native blob
 		### support for the associated type
 		def has_native_blob?
 			return (@blob == '*')
 		end
-		
 
-		### Returns +true+ if the operation string indicates that ImageMagick has native blob 
+
+		### Returns +true+ if the operation string indicates that ImageMagick has native blob
 		### support for the associated type
 		def can_read?
 			return (@read == 'r')
 		end
-		
 
-		### Returns +true+ if the operation string indicates that ImageMagick has native blob 
+
+		### Returns +true+ if the operation string indicates that ImageMagick has native blob
 		### support for the associated type
 		def can_write?
 			return (@write == 'w')
 		end
-		
 
-		### Returns +true+ if the operation string indicates that ImageMagick has native blob 
+
+		### Returns +true+ if the operation string indicates that ImageMagick has native blob
 		### support for the associated type
 		def supports_multi?
 			return (@multi == '+')
@@ -120,7 +121,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	### Set up a new Filter object
 	def initialize( options={} ) # :notnew:
 		options ||= {}
-		
+
 		@supported_formats = find_supported_formats()
 		self.log.debug "Registered mimetype mapping for %d of %d support image types" %
 			[ @supported_formats.keys.length, Magick.formats.length ]
@@ -130,42 +131,42 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		@handled_types = @supported_formats.
 			select {|type, op| op.can_read? }.
 			collect {|type, op| ThingFish::AcceptParam.parse(type) }
-			
+
 		@generated_types = @supported_formats.
 			select {|type, op| op.can_write? }.
 			collect {|type, op| ThingFish::AcceptParam.parse(type) }
-		
+
 		@thumb_dimensions = options[:thumbnail_dimensions] || DEFAULT_THUMBNAIL_DIMENSIONS
 		raise ThingFish::ConfigError, "invalid thumbnail dimensions %p" % [ @thumb_dimensions ] unless
 			@thumb_dimensions.is_a?( Array ) && @thumb_dimensions.all? {|dim| dim.is_a?(Fixnum) }
 		self.log.debug "Thumbnail dimensions are: %p" % [ @thumb_dimensions ]
-		
+
 		@thumb_dimensions = options[:thumbnail_dimensions] || DEFAULT_THUMBNAIL_DIMENSIONS
 		raise ThingFish::ConfigError, "invalid thumbnail dimensions %p" % [ @thumb_dimensions ] unless
 			@thumb_dimensions.is_a?( Array ) && @thumb_dimensions.all? {|dim| dim.is_a?(Fixnum) }
 		self.log.debug "Thumbnail dimensions are: %p" % [ @thumb_dimensions ]
-		
+
 		super
 	end
-	
+
 
 	######
 	public
 	######
-	
+
 	# The mediatypes the plugin accepts in a request, as ThingFish::AcceptParam
 	# objects
 	attr_reader :handled_types
-	
+
 	# The mediatypes the plugin can generated in a response, as
 	# ThingFish::AcceptParam objects
 	attr_reader :generated_types
-	
+
 
 	### Filter incoming requests -- generate a thumbnail, extract image metadata.
 	def handle_request( request, response )
-		return unless request.http_method == 'PUT' ||
-					  request.http_method == 'POST'
+		return unless request.http_method == :PUT ||
+					  request.http_method == :POST
 
 		request.each_body( true ) do |body,metadata|
 			next if metadata[:relation] == 'thumbnail' # No thumbnails of thumbnails
@@ -179,7 +180,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 				image = images.first
 				image_attributes = self.extract_metadata( image )
 				request.append_metadata_for( body, image_attributes )
-				
+
 				thumbnail, thumb_metadata = self.create_thumbnail( image, metadata[:title] )
 				self.log.debug "Appending a thumbnail as a related resource"
 				request.append_related_resource( body, StringIO.new(thumbnail), thumb_metadata )
@@ -195,7 +196,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	### the conversion.
 	def handle_response( response, request )
 		# Don't need to modify anything on an upload or delete
-		unless request.http_method == 'GET'
+		unless request.http_method == :GET
 			self.log.debug "Skipping response to a non-GET request (%s)" % [ request.http_method ]
 			return
 		end
@@ -209,7 +210,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		source_image = Magick::Image.from_blob( response.body.read ).first
 		target_ext = @supported_formats[ target_type.mediatype ].ext
 		data = source_image.to_blob {|img| img.format = target_ext }
-		
+
 		response.body = data
 		response.content_type = target_type.mediatype
 		response.headers[:content_length] = data.length
@@ -251,18 +252,18 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	### a Hash.
 	def extract_metadata( image )
 		image_attributes = {}
-		
+
 		image_attributes['image_height']       = image.rows
 		image_attributes['image_width']        = image.columns
 		image_attributes['image_depth']        = image.depth
 		image_attributes['image_density']      = image.density
 		image_attributes['image_gamma']        = image.gamma
 		image_attributes['image_bounding_box'] = image.bounding_box
-		
+
 		return image_attributes
 	end
-	
-	
+
+
 	### Create a thumbnail from the given +image+ and return it in a string along with any
 	### associated metadata.
 	def create_thumbnail( image, title )
@@ -277,12 +278,12 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			:title => "Thumbnail of %s" % [ title || image.inspect ],
 			:extent => imgdata.length,
 		})
-		
+
 		self.log.debug "Made thumbnail for %p" % [ image ]
 		return imgdata, metadata
 	end
-	
-	
+
+
 	#######
 	private
 	#######
@@ -296,7 +297,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			self.log.debug "Skipping %s response: Already in an accepted format" %
 				[ response_mimetype ]
 			return false
-		
+
 		# Don't try to transform any format ImageMagick doesn't know about
 		elsif @supported_formats[ response_mimetype ].nil?
 			self.log.debug "Skipping %s response: Unsupported format (supported: %s)" %
@@ -306,14 +307,14 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		else
 			return true
 		end
-		
+
 	end
-	
+
 
 	### Given a request and response, find and return a format that the installed ImageMagick
 	### library can transform the response's entity body to.
 	def find_supported_transform( request, response_mimetype )
-		
+
 		unless @supported_formats[ response_mimetype ].can_read?
 			self.log.info "No transform for a %s response: The installed ImageMagick can't read it." %
 				[ response_mimetype ]
@@ -321,7 +322,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		end
 
 		# Get the list of image types the client accepts. Note that this doesn't include
-		# */* and image/*, as neither will ever result in a NOT_ACCEPTABLE response. If the client 
+		# */* and image/*, as neither will ever result in a NOT_ACCEPTABLE response. If the client
 		# doesn't have any explicit image preferences, just return as we can't do anything useful.
 		imgtypes = request.accepted_types.
 			find_all {|acceptparam| acceptparam.type == 'image' && !acceptparam.subtype.nil? }
@@ -329,7 +330,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			self.log.info "No transform for a %s response: Request has no explicitly-accepted image types."
 			return nil
 		end
-			
+
 		# Find an acceptable type we know how to write
 		target_type = imgtypes.find do |param|
 				@supported_formats[ param.mediatype ] && @supported_formats[ param.mediatype ].can_write?
@@ -339,18 +340,18 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			self.log.info "No transform for a %s response: Installed ImageMagick can't write any of: %s" %
 				[ response_mimetype, imgtypes.collect {|type| type.mediatype }.join(",") ]
 		end
-		
+
 		return target_type
 	end
 
 
-	### Transform the installed ImageMagick's list of formats into AcceptParams 
+	### Transform the installed ImageMagick's list of formats into AcceptParams
 	### for easy comparison later.
 	def find_supported_formats
 		formats = {}
 
-		# A hash of image formats and their properties. Each key in the returned 
-		# hash is the name of a supported image format. Each value is a string in 
+		# A hash of image formats and their properties. Each key in the returned
+		# hash is the name of a supported image format. Each value is a string in
 		# the form "BRWA". The details are in this table:
 		#   B 	is "*" if the format has native blob support, and "-" otherwise.
 		#   R 	is "r" if ×Magick can read the format, and "-" otherwise.
@@ -361,18 +362,16 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			unless mimetype = MIMETYPE_MAP[ '.' + ext.downcase ]
 				next
 			end
-			
+
 			# Skip some mediatypes that are too generic to be useful
 			next if IGNORED_MIMETYPES.include?( mimetype )
-			
+
 			self.log.debug "Registering image format %s (%s)" % [ mimetype, operations ]
 			formats[ mimetype ] = operations
 		end
-		
+
 		return formats
 	end
-	
-
 end # class ThingFish::ImageFilter
 
 # vim: set nosta noet ts=4 sw=4:

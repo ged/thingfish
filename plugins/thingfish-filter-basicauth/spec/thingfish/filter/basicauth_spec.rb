@@ -55,7 +55,7 @@ describe ThingFish::BasicAuthFilter do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before( :each ) do
 		users = { TEST_VALID_USER => TEST_VALID_PASS }
 		uris = ['/protected']
@@ -64,7 +64,7 @@ describe ThingFish::BasicAuthFilter do
 		@request  = mock( "Thingfish::Request" )
 		@response_headers = mock( "Response Headers" )
 		@request_headers = mock( "Request Headers" )
-		
+
 		@request.stub!( :headers ).and_return( @request_headers )
 		@response.stub!( :headers ).and_return( @response_headers )
 	end
@@ -72,7 +72,7 @@ describe ThingFish::BasicAuthFilter do
 	after( :all ) do
 		reset_logging()
 	end
-	
+
 
 	### Shared behaviors
 	it_should_behave_like "A Filter"
@@ -89,8 +89,8 @@ describe ThingFish::BasicAuthFilter do
 
 		@filter.handle_request( @request, @response )
 	end
-	
-	
+
+
 	it "doesn't modify the request if its uri is incidentally similar to a protected one" do
 		@request.should_receive( :path ).at_least( :once ).
 			and_return( '/protected_contrived' )
@@ -142,7 +142,7 @@ describe ThingFish::BasicAuthFilter do
 
 		@filter.handle_request( @request, @response )
 	end
-	
+
 
 	it "sets the response status to AUTH_REQUIRED if the user provides invalid authentication" do
 		@request.should_receive( :path ).at_least( :once ).
@@ -170,7 +170,7 @@ describe ThingFish::BasicAuthFilter do
 
 		@filter.handle_request( @request, @response )
 	end
-	
+
 
 end
 

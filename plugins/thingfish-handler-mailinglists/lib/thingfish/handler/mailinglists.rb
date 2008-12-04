@@ -9,7 +9,7 @@
 #     handlers:
 #		- mailinglists:
 #           uris: /ml
-# 
+#
 # == Version
 #
 #  $Id$
@@ -24,7 +24,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -63,39 +64,37 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 
 
 	### Handler API: handle a GET request with an inspection page.
-	def handle_get_request( request, response )
-		case request.path_info
-			
-		when '/', ''
+	def handle_get_request( path_info, request, response )
+		case path_info
+		when ''
 			# return an Array of mailing lists we know about?
 			self.handle_get_root_request( request, response )
-	
-		when %r{^/(#{LIST_ADDR_PATTERN})$}
+
+		when %r{^(#{LIST_ADDR_PATTERN})$}
 			list_name = $1
 
 			# return a Hash of mailing list details
 			self.handle_get_list_details_request( request, response, list_name )
-			
-		when %r{^/(#{LIST_ADDR_PATTERN})/count$}
+
+		when %r{^(#{LIST_ADDR_PATTERN})/count$}
 			list_name = $1
 
 			# return count of messages in this list
 			self.handle_get_list_message_count_request( request, response, list_name )
 
-		when %r{^/(#{LIST_ADDR_PATTERN})/last_post_date$}
+		when %r{^(#{LIST_ADDR_PATTERN})/last_post_date$}
 			list_name = $1
 
 			# return date object representing last post date
 			self.handle_get_list_last_post_date_request( request, response, list_name )
 
 		else
-			self.log.error "Unable to handle mailing list GET request: %p" % 
-				[ request.path_info ]
+			self.log.error "Unable to handle mailing list GET request: %p" % [ path_info ]
 			return
 		end
 	end
-	
-	
+
+
 	### Query the metastore for all mailing list names and return those as
 	### an array
 	def handle_get_root_request( request, response )
@@ -103,19 +102,19 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 		response.content_type = RUBY_MIMETYPE
 		response.body = @metastore.get_all_property_values( 'list_name' )
 	end
-	
-	
+
+
 	### Return both the message count and last post date for the specified
 	### +list_name+.
 	def handle_get_list_details_request( request, response, list_name )
 		count = get_message_count( list_name )
-		
+
 		if count.nil?
 			response.status = HTTP::NOT_FOUND
 			return
 		else
 			last_post_date = get_last_post_date( list_name )
-			
+
 			response.status = HTTP::OK
 			response.content_type = RUBY_MIMETYPE
 			response.body = {
@@ -130,7 +129,7 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	### +list_name+.
 	def handle_get_list_message_count_request( request, response, list_name )
 		count = get_message_count( list_name )
-		
+
 		if count.nil?
 			response.status = HTTP::NOT_FOUND
 			return
@@ -142,11 +141,11 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	end
 
 
-	### Return the date of the last post to the list with the specified 
+	### Return the date of the last post to the list with the specified
 	### +list_name+.
 	def handle_get_list_last_post_date_request( request, response, list_name )
 		last_post_date = get_last_post_date( list_name )
-		
+
 		if last_post_date.nil?
 			response.status = HTTP::NOT_FOUND
 			return
@@ -156,12 +155,12 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 			response.body = last_post_date
 		end
 	end
-	
-	
+
+
 	#########
 	protected
 	#########
-	
+
 	### Return the number of messages in the archive for the specified
 	### +list_name+.
 	def get_message_count( list_name )
@@ -172,11 +171,11 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 	end
 
 
-	### Return the date of the last post to the list with the specified 
+	### Return the date of the last post to the list with the specified
 	### +list_name+.
 	def get_last_post_date( list_name )
 		uuids = @metastore.find_exact_uuids( 'list_name', list_name )
-		
+
 		return nil if uuids.empty?
 		return uuids.collect {|uuid| Date.parse(@metastore.get_property(uuid, :rfc822_date)) }.max
 	end

@@ -34,12 +34,12 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::HtmlFilter do
-	
+
 	before( :all ) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'html', {} )
 
@@ -62,7 +62,7 @@ describe ThingFish::HtmlFilter do
 
 	it_should_behave_like "A Filter"
 
-	
+
 	it "uses handler HTML API to convert Ruby-object responses to HTML if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( CONFIGURED_HTML_MIMETYPE ).
@@ -72,21 +72,11 @@ describe ThingFish::HtmlFilter do
 			and_return( RUBY_MIMETYPE )
 
 		body = mock( "response body" )
-		@response.should_receive( :body ).twice.and_return( body )
+		@response.should_receive( :body ).and_return( body )
 
-		@first_handler.should_receive( :respond_to? ).
-			with( :make_html_content ).
+		@last_handler.should_receive( :respond_to? ).with( :make_html_content ).
 			and_return( true )
-		@middle_handler.should_receive( :respond_to? ).
-			with( :make_html_content ).
-			and_return( false )
-		@last_handler.should_receive( :respond_to? ).
-			with( :make_html_content ).
-			and_return( true )
-
-		@first_handler.should_receive( :make_html_content ).
-			with( body, @request, @response ).
-			and_return( 'first_html' )
+		@first_handler.should_not_receive( :make_html_content )
 		@middle_handler.should_not_receive( :make_html_content )
 		@last_handler.should_receive( :make_html_content ).
 			with( body, @request, @response ).
@@ -102,7 +92,7 @@ describe ThingFish::HtmlFilter do
 		# Transform filters shouldn't change the status of the response
 		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
@@ -119,22 +109,15 @@ describe ThingFish::HtmlFilter do
 		body = mock( "response body" )
 		@response.should_receive( :body ).at_least( :once ).and_return( body )
 
-		@first_handler.should_receive( :respond_to? ).
-			with( :make_html_content ).
-			and_return( false )
-		@middle_handler.should_receive( :respond_to? ).
-			with( :make_html_content ).
-			and_return( false )
 		@last_handler.should_receive( :respond_to? ).
 			with( :make_html_content ).
 			and_return( false )
-
 		@first_handler.should_not_receive( :make_html_content )
 		@middle_handler.should_not_receive( :make_html_content )
 		@last_handler.should_not_receive( :make_html_content )
 
 		body.should_receive( :html_inspect ).and_return( "some html" )
-		
+
 		erbtemplate = mock( "ERB wrapper template", :null_object => true )
 		@filter.stub!( :get_erb_resource ).and_return( erbtemplate )
 		erbtemplate.should_receive( :result ).
@@ -148,8 +131,8 @@ describe ThingFish::HtmlFilter do
 
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the client doesn't accept HTML" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( CONFIGURED_HTML_MIMETYPE ).
@@ -158,9 +141,9 @@ describe ThingFish::HtmlFilter do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
-	end	
+	end
 end
 
 # vim: set nosta noet ts=4 sw=4:

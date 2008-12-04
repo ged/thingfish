@@ -5,7 +5,7 @@
 <p>Please contact the administrator of this ThingFish server with the following information:</p>
 
 <pre>
-Current URI: <%= request.path_info %>
+Current URI: <%= request.uri.path %>
 <%= h errtrace %>
 <%= h debugtrace %>
 </pre>

@@ -52,31 +52,39 @@ describe ThingFish::FormUploadHandler do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
+
+		@request = mock( "request object", :null_object => true )
+		@response = mock( "response object", :null_object => true )
+
+		@request_headers = mock( "request headers", :null_object => true )
+		@request.stub!( :headers ).and_return( @request_headers )
+		@response_headers = mock( "response headers", :null_object => true )
+		@response.stub!( :headers ).and_return( @response_headers )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
 
-	
-	
-	
+
+
+
 	# Shared behaviors
 	it_should_behave_like "A Handler"
 
 
 	# Examples
-	
+
 	it "builds content for the index handler" do
 		erb_resource = stub( 'erb resource', :result => 'some index stuff' )
 		@handler.should_receive( :get_erb_resource ).
 			with( /\w+\.rhtml$/ ).
 			and_return( erb_resource )
-		
+
 		@handler.make_index_content( "/" ).should == 'some index stuff'
 	end
 
@@ -94,96 +102,55 @@ describe ThingFish::FormUploadHandler do
 		@handler.make_html_content( :files, @request, @response ).
 			should == "Some template that refers to files and uripath"
 	end
-end
 
 
-describe ThingFish::FormUploadHandler, " (GET request)" do
-	include ThingFish::Constants::Patterns
+	describe " (GET request)" do
 
-	before( :all ) do
-		ThingFish.logger.level = Logger::FATAL
-	end
-	
-	before( :each ) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
-		@request = mock( "request object", :null_object => true )
-		@response = mock( "response object", :null_object => true )
-		@headers = mock( "response headers", :null_object => true )
-		
-		@response.stub!( :headers ).and_return( @headers )
+		it "returns an upload form" do
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+
+			@handler.handle_get_request( '', @request, @response )
+		end
 	end
 
+	describe " (POST request)" do
 
-	it "returns an upload form" do
-		@request.should_receive( :path_info ).and_return( '' )
-		@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
-		@response.should_receive( :status= ).with( HTTP::OK )
-		
-		@handler.handle_get_request( @request, @response )
-	end
-	
-end
+		it "inserts upload file content from request" do
+			mockfilestore = mock( "filestore", :null_object => true )
+			mockmetastore = mock( "metastore", :null_object => true )
 
+			mockdaemon = mock( "daemon", :null_object => true )
+			mockdaemon.should_receive( :filestore ).and_return( mockfilestore )
+			mockdaemon.should_receive( :metastore ).and_return( mockmetastore )
 
-describe ThingFish::FormUploadHandler, " (POST request)" do
-	include ThingFish::Constants::Patterns
+			@handler.on_startup( mockdaemon )
 
-	before( :all ) do
-		ThingFish.logger.level = Logger::FATAL
-	end
-	
-	before( :each ) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
-	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
-		
-		@request = mock( "request object", :null_object => true )
-		@response = mock( "response object", :null_object => true )
+			upload1 = mock( "upload tempfile 1", :null_object => true )
+			metadata = mock( "merged metadata hash", :null_object => true )
+			metadata.should_receive( :[]= ).
+				with( :uuid, TEST_UUID ).
+				at_least( :once )
 
-		@request_headers = mock( "request headers", :null_object => true )
-		@request.stub!( :headers ).and_return( @request_headers )
-		@response_headers = mock( "response headers", :null_object => true )
-		@response.stub!( :headers ).and_return( @response_headers )
-	end
-	
+			@request.should_receive( :each_body ).
+				and_yield( upload1, metadata )
 
-	### Examples
-	
-	it "inserts upload file content from request" do
-		mockfilestore = mock( "filestore", :null_object => true )
-		mockmetastore = mock( "metastore", :null_object => true )
-		
-		mockdaemon = mock( "daemon", :null_object => true )
-		mockdaemon.should_receive( :filestore ).and_return( mockfilestore )
-		mockdaemon.should_receive( :metastore ).and_return( mockmetastore )
-		
-		@handler.listener = mockdaemon
-		
-		upload1 = mock( "upload tempfile 1", :null_object => true )
-		metadata = mock( "merged metadata hash", :null_object => true )
-		metadata.should_receive( :[]= ).
-			with( :uuid, TEST_UUID ).
-			at_least( :once )
+			mockdaemon.should_receive( :store_resource ).
+				with( upload1, metadata ).
+				once.
+				and_return( TEST_UUID )
 
-		@request.should_receive( :path_info ).
-			at_least(:once).
-			and_return( '' )
-		@request.should_receive( :each_body ).
-			and_yield( upload1, metadata )
+			mockdaemon.should_receive( :store_related_resources ).
+				with( upload1, TEST_UUID, @request )
 
-		mockdaemon.should_receive( :store_resource ).
-			with( upload1, metadata ).
-			once.
-			and_return( TEST_UUID )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with( [ [TEST_UUID, metadata] ] )
 
-		mockdaemon.should_receive( :store_related_resources ).
-			with( upload1, TEST_UUID, @request )
+			@handler.handle_post_request( '', @request, @response )
+		end
 
-		@response.should_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :body= ).with( [ [TEST_UUID, metadata] ] )
-	
-		@handler.handle_post_request( @request, @response )
-	end
+	end # "POST request"
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

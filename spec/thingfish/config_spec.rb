@@ -22,6 +22,7 @@ begin
 	require 'thingfish/constants'
 	require 'thingfish/filestore'
 	require 'thingfish/metastore'
+	require 'thingfish/handler'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -43,7 +44,7 @@ describe ThingFish::Config do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before(:each) do
 		@config = ThingFish::Config.new
 	end
@@ -60,7 +61,7 @@ describe ThingFish::Config do
 
 	it "responds to methods which are the same as struct members" do
 		@config.respond_to?( :ip ).should == true
-		@config.plugins.respond_to?( :handlers ).should == true
+		@config.plugins.respond_to?( :urimap ).should == true
 		@config.respond_to?( :pork_sausage ).should == false
 	end
 
@@ -179,7 +180,7 @@ describe ThingFish::Config do
 
 	it "raises an error on a relative logfile path" do
 		@config.logging.logfile = 'foo/bar'
-		lambda { 
+		lambda {
 			@config.parsed_logfile
 		}.should raise_error( ThingFish::ConfigError, /absolute path/ )
 	end
@@ -201,42 +202,8 @@ describe ThingFish::Config do
 	it "is able to iterate over each configured handler" do
 		lambda { @config.each_handler_uri }.should raise_error( LocalJumpError)
 		@config.each_handler_uri do |*args|
-			violated( "Config with no source shouldn't invoke the handlers block")
+			nonexistent_method( "Config with no source shouldn't invoke the handlers block" )
 		end
-	end
-
-	it "raises an error on a handler config of a simple string" do
-		Proc.new {
-			@config.parse_handler_config( 'echo' )
-		}.should raise_error( ThingFish::ConfigError)
-	end
-
-	it "is able to parse a handler specification of a name and uri" do
-		@config.parse_handler_config( {'echo' => '/'} ).should == 
-			[ 'echo', ['/'], {} ]
-	end
-
-	it "is able to parse a handler specification of a name and an array of uris" do
-		@config.parse_handler_config( {'echo' => ['/', '/echo']} ).should == 
-			[ 'echo', ['/', '/echo'], {} ]
-	end
-
-	it "is able to parse a handler specification of a name and an options hash" do
-		options = {
-			'uris' => '/echo',
-			'reverse' => false,
-		}
-		@config.parse_handler_config( {'echo' => options} ).should == 
-			[ 'echo', ['/echo'], options ]
-	end
-
-	it "parses an empty array of URIs for a handler spec with options hash and no 'uris' key" do
-		options = {
-			'reverse' => false,
-		}
-		lambda {
-			@config.parse_handler_config( {'echo' => options} )
-		}.should raise_error( ThingFish::ConfigError)
 	end
 
 	it "is able to build a configured FileStore object" do
@@ -254,14 +221,14 @@ describe ThingFish::Config do
 			and_return( :a_metastore )
 		@config.create_configured_metastore.should == :a_metastore
 	end
-	
+
 	it "autogenerates accessors for non-existant struct members" do
 		@config.plugins.filestore.maxsize = 1024
 		@config.plugins.filestore.maxsize.should == 1024
 	end
-	
 
-	
+
+
 	# With no source
 	describe " created with no source" do
 		before(:each) do
@@ -308,7 +275,7 @@ describe ThingFish::Config do
 		            binddn: cn=auth,dc=wvs
 		            aclbase: ou=thingfish,ou=appperms,dc=wvs
 		            in_front: true
-		        - stats: 
+		        - stats:
 		            uris: [/, /admin, /metadata]
 		        - dav: /mount
 		        - admin: [/admin, /superuser]
@@ -351,13 +318,13 @@ describe ThingFish::Config do
 
 
 		it "should know configured filter order" do
-		
+
 			ThingFish::Filter.should_receive( :create ).
 				exactly(3).times.
 				and_return {|name, opts| name.to_sym }
 
 			filters = @config.create_configured_filters
-		
+
 			filters.should == [:json, :xml, :something]
 		end
 	end
@@ -469,7 +436,7 @@ describe ThingFish::Config do
 
 
 	# illegal handlers section
-	describe " created with an illegal handlers section" do
+	describe " created with an illegal urimap section" do
 		BAD_TEST_CONFIG = %{
 		---
 		port: 3474
@@ -480,18 +447,23 @@ describe ThingFish::Config do
 		    logfile: stderr
 
 		plugins:
-		    handlers:
-		        dav: /mount
-		        admin: [/admin, /superuser]
+		    urimap:
+		        dav: 
+		            - mount: mount
+		        /admin:
+		            - admin: adminaccess
 		}.gsub( /^\t\t/, '' )
 
 
 		before(:each) do
 		    @config = ThingFish::Config.new( BAD_TEST_CONFIG )
 		end
-	
+
 		it "should raise an exception when iterating over handler uris" do
-			lambda { @config.each_handler_uri {} }.should raise_error( ThingFish::ConfigError)
+			ThingFish::Handler.stub!( :create ).and_return( :a_handler )
+			lambda {
+				@config.each_handler_uri {}
+			}.should raise_error( ThingFish::ConfigError, /key \S+ is not a path/i )
 		end
 	end
 
@@ -523,7 +495,7 @@ describe ThingFish::Config do
 		            binddn: cn=auth,dc=wvs
 		            aclbase: ou=thingfish,ou=appperms,dc=wvs
 		            in_front: true
-		        - stats: 
+		        - stats:
 		            uris: [/, /admin, /metadata]
 		        - dav: /mount
 		        - admin: [/admin, /superuser]
@@ -540,7 +512,7 @@ describe ThingFish::Config do
 		before(:each) do
 		    @config = ThingFish::Config.new( NO_FILESTORE_PLUGIN_CONFIG )
 		end
-	
+
 		it "should get the default filestore section" do
 			@config.plugins.filestore.should be_a_kind_of( ThingFish::Config::ConfigStruct)
 		end
@@ -550,13 +522,28 @@ describe ThingFish::Config do
 	# configured handlers
 	describe " with configured handlers" do
 
+		before( :all ) do
+			setup_logging( :fatal )
+		end
+
+		after( :all ) do
+			reset_logging()
+		end
+
 		TEST_HANDLER_URI_CONFIG = %{
 		---
 		plugins:
-		    handlers:
-		        - dav: /mount
-		        - admin: [/admin, /superuser]
-		        - inspect: /admin/inspect
+		    urimap:
+		        /: erblughuhuhuh
+		        /mount: dav
+		        /admin: admin
+		        /admin/inspect:
+		            - inspect: ~
+		        /chunky/macHocksalot/:
+		            - throatspasm:
+		                gag: yes
+		                hock: yeah
+		                spit: never
 		}.gsub( /^\t\t/, '' )
 
 		before(:each) do
@@ -564,20 +551,68 @@ describe ThingFish::Config do
 		end
 
 
+		it "raises an exception if the handler map hasn't been populated when asked for a " +
+		   "handler's uri" do
+			ThingFish::Handler.stub!( :create ).and_return( :the_handler )
+			lambda {
+				@config.find_handler_uri( 'dav' )
+			}.should raise_error( RuntimeError, /isn't populated yet/i )
+		end
+		
+		
+		it "yields tuples for handlers that should be mapped into the urispace" do
+			ThingFish::Handler.should_receive( :create ).with( 'erblughuhuhuh', '', {} ).
+				and_return( :slashhandler )
+			ThingFish::Handler.should_receive( :create ).with( 'dav', '/mount', {} ).
+				and_return( :davhandler )
+			ThingFish::Handler.should_receive( :create ).with( 'admin', '/admin', {} ).
+				and_return( :adminhandler )
+			ThingFish::Handler.should_receive( :create ).with( 'inspect', '/admin/inspect', nil ).
+				and_return( :inspecthandler )
+			ThingFish::Handler.should_receive( :create ).
+				with( 'throatspasm', '/chunky/macHocksalot', an_instance_of(Hash) ).
+				and_return( :hungryhandler )
+			
+			results = []
+			@config.each_handler_uri do |handler, path|
+				results << [ handler, path ]
+			end
+
+			# Gulpy McGrunterson
+			# Cleary Mustacheerton McThroaterson
+			# Swallowy McMucus
+			results.should have(5).members
+			results.should include(
+				[ :slashhandler, '' ],
+				[ :davhandler, '/mount' ],
+				[ :adminhandler, '/admin' ],
+				[ :inspecthandler, '/admin/inspect' ],
+				[ :hungryhandler, '/chunky/macHocksalot' ]
+			)
+		end
+		
+
 		it "can find the uri of installed handler plugins" do
+			ThingFish::Handler.stub!( :create ).and_return( :the_handler )
+			@config.each_handler_uri {}
 			@config.find_handler_uri( 'dav' ).should == '/mount'
 		end
 
 		it "can find the first uri of handler plugins that are installed in more than one place" do
+			ThingFish::Handler.stub!( :create ).and_return( :the_handler )
+			@config.each_handler_uri {}
 			@config.find_handler_uri( 'admin' ).should == '/admin'
 		end
 
 		it "returns nil if asked for the uri of a handler that isn't installed" do
+			ThingFish::Handler.stub!( :create ).and_return( :the_handler )
+			@config.each_handler_uri {}
 			@config.find_handler_uri( 'moonlanding' ).should be_nil()
 		end
 
 	end
-	
+
+
 	describe " with profiling enabled" do
 
 		TEST_PROFILING_ENABLED_CONFIG = %{
@@ -597,12 +632,12 @@ describe ThingFish::Config do
 			@config.datadir = :datadir
 			Pathname.should_receive( :new ).with( :datadir ).at_least(:once).
 				and_return( datadir_pathname )
-			
+
 			spooldir_pathname = stub( "mock spooldir pathname", :mkpath => false )
 			@config.spooldir = :spooldir
 			Pathname.should_receive( :new ).with( :spooldir ).and_return( spooldir_pathname )
 			spooldir_pathname.stub!( :relative? ).and_return( false )
-			
+
 			profiledir_pathname = mock( "profiledir pathname" )
 			Pathname.should_receive( :new ).with( 'profiles' ).and_return( profiledir_pathname )
 
@@ -611,7 +646,7 @@ describe ThingFish::Config do
 
 			@config.setup_data_directories
 		end
-		
+
 	end
 
 
@@ -625,15 +660,15 @@ describe ThingFish::Config do
 		before(:each) do
 		    @config = ThingFish::Config.new( STRICT_HTML_ENABLED_CONFIG )
 		end
-		
-		
+
+
 		it "redefines the CONFIGURED_HTML_MIMETYPE constant" do
 			ThingFish::Constants.should_receive( :const_set ).
 				with( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
 			@config.install
 		end
 	end
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

@@ -51,6 +51,50 @@ module ThingFish::TestConstants
 			{:pine_cone  => 'sandwiches'},
 			{:olive_oil  => 'pudding'},
 		]
+		
+		TESTING_GET_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" )
+		GET / HTTP/1.1
+		Host: localhost:3474
+		User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US;
+			rv:1.9.0.1) Gecko/2008070206 Firefox/3.0.1
+		Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+		Accept-Language: en-us,en;q=0.5
+		Accept-Encoding: gzip,deflate
+		Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+		Keep-Alive: 300
+		Connection: close
+		
+		END_OF_REQUEST
+
+		TESTING_DELETE_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" )
+		DELETE /#{TEST_UUID} HTTP/1.1
+		Host: localhost:3474
+		User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US;
+			rv:1.9.0.1) Gecko/2008070206 Firefox/3.0.1
+		Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+		Accept-Language: en-us,en;q=0.5
+		Accept-Encoding: gzip,deflate
+		Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+		Keep-Alive: 300
+		Connection: close
+		
+		END_OF_REQUEST
+
+		TESTING_POST_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" ) + TEST_CONTENT
+		POST / HTTP/1.1
+		Host: localhost:3474
+		User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US;
+			rv:1.9.0.1) Gecko/2008070206 Firefox/3.0.1
+		Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+		Accept-Language: en-us,en;q=0.5
+		Accept-Encoding: gzip,deflate
+		Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
+		Keep-Alive: 300
+		Content-Type: text/plain
+		Content-Length: #{TEST_CONTENT.length}
+		Connection: close
+		
+		END_OF_REQUEST
 
 		# Fixtured HTTP responses
 		TEST_OK_HTTP_RESPONSE = <<-'EOF'.gsub(/^\s*/, '')
@@ -67,8 +111,13 @@ module ThingFish::TestConstants
 		SPECDIR = Pathname.new( __FILE__ ).dirname
 		DATADIR = SPECDIR + 'data'
 		
-		# Freeze all constants so tests stomping on other tests are detected earlier.
+		# Testing patterns
+		VALID_HTTPDATE = /\w{3}, \d\d \w{3} \d{4} \d\d:\d\d:\d\d \w{3}/
+		
+		# Freeze all constants so one test's constants stomping on 
+		# others are detected earlier.
 		constants.each { |const| const_get( const ).freeze }
+
 	end
 end
 

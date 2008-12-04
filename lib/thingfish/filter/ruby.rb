@@ -1,27 +1,28 @@
 #!/usr/bin/ruby
-# 
+#
 # A Marshalled Ruby object filter for ThingFish
-# 
+#
 # == Synopsis
-# 
+#
 #   plugins:
 #       filters:
 #          ruby: ~
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 
@@ -31,8 +32,8 @@ require 'thingfish/constants'
 require 'thingfish/acceptparam'
 
 
-### A Ruby marshalled-object filter for ThingFish. It marshals and unmarshals Ruby objects in the 
-### body of responses if the client sends a request with an `Accept:` header that includes 
+### A Ruby marshalled-object filter for ThingFish. It marshals and unmarshals Ruby objects in the
+### body of responses if the client sends a request with an `Accept:` header that includes
 ### ThingFish::RUBY_MARSHALLED_MIMETYPE.
 class ThingFish::RubyFilter < ThingFish::Filter
 	include ThingFish::Loggable,
@@ -47,7 +48,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
-	
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -57,7 +58,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	def initialize( options={} ) # :notnew:
 		super
 	end
-	
+
 
 	######
 	public
@@ -68,7 +69,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 
 		# Only filter if the body of the request is a marshalled Ruby object
 		return unless request.content_type == RUBY_MARSHALLED_MIMETYPE
-		
+
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Unmarshalling a ruby object in the entity body"
@@ -102,13 +103,13 @@ class ThingFish::RubyFilter < ThingFish::Filter
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
-	### the filter is interested in. The default returns */*, which indicates that it is 
+	### the filter is interested in. The default returns */*, which indicates that it is
 	### interested in all requests/responses.
 	def handled_types
 		return HANDLED_TYPES
 	end
-	
-	
+
+
 	### Returns a Hash of information about the filter; this is of the form:
 	###   {
 	###     'version'   => [ 1, 8, 6 ],                 # Ruby version
@@ -124,7 +125,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 			Marshal::MINOR_VERSION,
 		  ]]
 		mimetypes = self.handled_types.collect {|accept| accept.to_s }
-		
+
 		return {
 			'version'   => ruby_version,
 			'supports'  => supported_marshal_version,
@@ -133,9 +134,9 @@ class ThingFish::RubyFilter < ThingFish::Filter
 			'generates' => mimetypes,
 		  }
 	end
-	
-	
-	
+
+
+
 end # class ThingFish::YAMLFilter
 
 # vim: set nosta noet ts=4 sw=4:

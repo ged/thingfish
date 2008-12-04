@@ -89,3 +89,6 @@ h3. Appending Related Resources
 
 (Describe how to append things like thumbnails, previews, etc.)
 
+h3. Gotchas(?)
+
+(Filters should be re-entrant -- requests should have dedicated workers instead of stuff in the initializer)

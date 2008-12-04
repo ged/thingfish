@@ -1,52 +1,53 @@
 #!/usr/bin/ruby
-# 
+#
 # The base metastore class for ThingFish
-# 
+#
 # == Synopsis
-# 
+#
 #   require 'thingfish/metastore'
 #
 #   class MyMetaStore < ThingFish::MetaStore
 #       # ...
 #   end
 #
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'pluginfactory'
 require 'thingfish'
 require 'thingfish/mixins'
 require 'thingfish/exceptions'
-	
+
 # The base class for ThingFish MetaStore plugins. Concrete plugin implementations are required to
 # implement the following interface:
-# 
+#
 # [<tt>set_property( uuid, propname, value )</tt>]
 #   Set the property associated with +uuid+ specified by +propname+ to the given +value+.
 # [<tt>set_properties( uuid, hash )</tt>]
-#   Set the properties associated with the given +uuid+ to those in the provided +hash+, 
+#   Set the properties associated with the given +uuid+ to those in the provided +hash+,
 #   eliminating any others already set.
 # [<tt>update_properties( uuid, hash )</tt>]
 #   Merge the properties in the provided hash with those associated with the given +uuid+.
 # [<tt>get_property( uuid, propname )</tt>]
-#   Return the property associated with +uuid+ specified by +propname+. Returns +nil+ if no such 
+#   Return the property associated with +uuid+ specified by +propname+. Returns +nil+ if no such
 #   property exists.
 # [<tt>get_properties( uuid )</tt>]
-#   Get the set of properties associated with the given +uuid+ as a hash keyed by property names 
+#   Get the set of properties associated with the given +uuid+ as a hash keyed by property names
 #   as symbols.
 # [<tt>has_uuid?( uuid )</tt>]
 #   Returns +true+ if the given +uuid+ exists in the metastore.
@@ -66,7 +67,7 @@ require 'thingfish/exceptions'
 #   Return a Hash of all metadata in the store, keyed by UUID.
 # [<tt>load_store( hash )</tt>]
 #   Replace the contents of the store with the given hash of metadata, keyed by UUID.
-# 
+#
 # Simple metastore plugins should either implement the below methods, or override
 # the #find_by_exact_properties() and #find_by_matching_properties() methods.
 #
@@ -97,7 +98,7 @@ class ThingFish::MetaStore
 	### Proxy class for metadata operations for a given resource.
 	class ResourceProxy
 		include Enumerable
-		
+
 		### Create a new ResourceProxy for the given +uuid+ that will perform
 		### operations on the given +store+.
 		def initialize( uuid, store )
@@ -127,7 +128,7 @@ class ThingFish::MetaStore
 			@store.update_properties( @uuid,  hash )
 		end
 		alias_method :merge!, :update
-		
+
 
 		### Returns true if the +other+ object is equivalent to the receiver
 		### (they have the same UUID).
@@ -136,8 +137,8 @@ class ThingFish::MetaStore
 		rescue MethodError
 			return false
 		end
-		
-		
+
+
 		#########
 		protected
 		#########
@@ -152,28 +153,28 @@ class ThingFish::MetaStore
 			when /^(\w+)=$/
 				propname = $1
 				return @store.set_property( @uuid, propname, *args )
-				
+
 			else
 				propname = sym.to_s
 				return @store.get_property( @uuid, propname )
 			end
 		end
-		
+
 	end # class ResourceProxy
 
-	
+
 
 	#################################################################
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### PluginFactory interface: Return an Array of prefixes to use when searching 
+	### PluginFactory interface: Return an Array of prefixes to use when searching
 	### for derivatives.
 	def self::derivative_dirs
 		['thingfish/metastore']
 	end
-	
-	
+
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -196,14 +197,14 @@ class ThingFish::MetaStore
 
 	# The directory this metastore will store stuff in (if it uses files)
 	attr_reader :datadir
-	
+
 	# The directory this metastore will use for temporary files
 	attr_reader :spooldir
 
 	# The class of object to use as the proxy for a given object's metadata
 	attr_accessor :proxy_class
-	
-	
+
+
 	### Return a ResourceProxy for the given +uuid+ that can used to get, set, and
 	### query metadata about the resource associated with +uuid+.
 	def []( uuid )
@@ -216,14 +217,14 @@ class ThingFish::MetaStore
 
 	### Perform any startup tasks that should take place after the daemon has an opportunity
 	### to daemonize and switch effective user.  This can be overridden from child classes.
-	def startup
+	def on_startup
 		# default no-op
 	end
 
 
 	### Execute a block in the scope of a transaction, committing it when the block returns.
 	### If an exception is raised in the block, the transaction is aborted. This is a
-	### no-op by default, but left to specific metastores to provide a functional 
+	### no-op by default, but left to specific metastores to provide a functional
 	### implementation if it is useful/desired.
 	def transaction
 		yield
@@ -237,7 +238,7 @@ class ThingFish::MetaStore
 		self.update_properties( uuid, props )
 	end
 
-	
+
 	### Set the properties associated with the specified +uuid+ to the given +props+
 	### after eliminating any that are necessary for filestore consistency.
 	def set_safe_properties( uuid, props )
@@ -252,31 +253,31 @@ class ThingFish::MetaStore
 	### a property that is used by the system, in which case it is silently ignored.
 	def set_safe_property( uuid, key, value )
 		props = self.prune_system_properties( [key] )
-		raise ThingFish::MetaStoreError, 
+		raise ThingFish::MetaStoreError,
 			"property '#{key}' cannot be updated, as it is used by the system" if props.empty?
 		self.set_property( uuid, key, value )
 	end
-	
 
-	### Delete the given +props+ associated with the specified +uuid+ after eliminating any 
+
+	### Delete the given +props+ associated with the specified +uuid+ after eliminating any
 	### that are necessary for filestore consistency.
 	def delete_safe_properties( uuid, *props )
 		props = self.prune_system_properties( props )
 		self.delete_properties( uuid, *props )
 	end
-	
+
 
 	### Delete the given +key+ from the metadata associated with the specified +uuid+ unless it's
 	### one of the properties used by the system, in which case a ThingFish::MetaStoreError is
 	### raised.
 	def delete_safe_property( uuid, key )
 		props = self.prune_system_properties( key => nil )
-		raise ThingFish::MetaStoreError, 
+		raise ThingFish::MetaStoreError,
 			"property '#{key}' cannot be deleted, as it is used by the system" if props.empty?
 		self.delete_property( uuid, key )
 	end
-	
-	
+
+
 	### Return an array of UUIDs whose metadata exactly matches the key-value pairs in +hash+.
 	def find_by_exact_properties( hash )
 		self.intersect_each_tuple( hash ) do |key,value|
@@ -299,8 +300,8 @@ class ThingFish::MetaStore
 			yield( uuid, properties )
 		end
 	end
-	
-	
+
+
 	### Migrate all the data from the specified +other_metastore+, replacing all the
 	### current values.
 	def migrate_from( other_metastore )
@@ -319,8 +320,8 @@ class ThingFish::MetaStore
 			end
 		end
 	end
-	
-	
+
+
 
 	### Mandatory MetaStore API
 	virtual :has_uuid?,
@@ -347,7 +348,7 @@ class ThingFish::MetaStore
 	protected
 	#########
 
-	### Return a copy of the specified +props+ hash after eliminating any used by the 
+	### Return a copy of the specified +props+ hash after eliminating any used by the
 	### system (as defined by SYSTEM_METADATA_KEYS).
 	def prune_system_properties( props )
 		props = props.dup
@@ -356,7 +357,7 @@ class ThingFish::MetaStore
 			props.delete( key )
 			props.delete( key.to_s )
 		end
-		
+
 		return props
 	end
 
@@ -367,7 +368,7 @@ class ThingFish::MetaStore
 		pat = glob.to_s.gsub( '*', '.*' )
 		return Regexp.new( '^' + pat + '$', Regexp::IGNORECASE )
 	end
-	
+
 
 	### Remove nil values from the given +hash+, then yield key/value pairs as tuples. The block is
 	### expected to return UUIDs that match the yielded tuple. The returned UUID sets are then
@@ -383,7 +384,7 @@ class ThingFish::MetaStore
 			[vals].flatten.each do |val|
 				ary << [ key, val ]
 			end
-			
+
 			ary
 		end
 
@@ -394,16 +395,16 @@ class ThingFish::MetaStore
 			key = key.to_s
 
 			matching_uuids = yield( key, value )
-			
+
 			if ary
 				ary &= matching_uuids
 			else
 				ary = matching_uuids
 			end
-			
+
 			ary
 		end
-	
+
 		return uuids ? uuids : []
 	end
 

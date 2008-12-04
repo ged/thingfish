@@ -23,7 +23,7 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
 #
 
 require 'tmpdir'
@@ -44,7 +44,7 @@ require 'thingfish/metastore'
 ### The configuration reader/writer class for ThingFish::Daemon.
 class ThingFish::Config
 	extend Forwardable
-	
+
 	include ThingFish::Constants,
 	 	ThingFish::Loggable,
 		ThingFish::HtmlInspectableObject
@@ -58,26 +58,31 @@ class ThingFish::Config
 
 	# Define the layout and defaults for the underlying structs
 	DEFAULTS = {
-		:ip        => DEFAULT_BIND_IP,
-		:port      => DEFAULT_PORT,
-		:user      => nil,
-		:datadir   => DEFAULT_DATADIR,
-		:spooldir  => DEFAULT_SPOOLDIR,
-		:bufsize   => DEFAULT_BUFSIZE,
+		:ip           => DEFAULT_BIND_IP,
+		:port         => DEFAULT_PORT,
+		:user         => nil,
+		:datadir      => DEFAULT_DATADIR,
+		:spooldir     => DEFAULT_SPOOLDIR,
+		:bufsize      => DEFAULT_BUFSIZE,
+	    :resource_dir => nil,
+
+		:pipeline_max        => 100,
+		:memory_bodysize_max => 100.kilobytes,
+		:connection_timeout  => 30,
 
 		:profiling => {
-			:enabled => false,
-			:profile_dir => DEFAULT_PROFILEDIR,
-			:metrics => [],
+			:enabled            => false,
+			:connection_enabled => false,
+			:profile_dir        => DEFAULT_PROFILEDIR,
+			:metrics            => []
 		},
 
 		:use_strict_html_mimetype => false,
-		
+
 		:daemon  => false,
 		:pidfile => nil,
 		:defaulthandler => {
-		    :html_index => 'index.rhtml',
-		    :resource_dir => nil,
+			:html_index   => 'index.rhtml'
 		},
 
 		:plugins => {
@@ -87,7 +92,7 @@ class ThingFish::Config
 			:metastore => {
 				:name => 'memory'
 			},
-			:handlers => [],
+			:urimap => {},
 			:filters => [],
 		},
 
@@ -141,7 +146,8 @@ class ThingFish::Config
 		@profiledir_path = nil
 		@time_created    = Time.now
 		@name            = name.to_s if name
-		
+		@handler_map     = {}
+
 		self.instance_eval( &block ) if block
 	end
 
@@ -175,7 +181,7 @@ class ThingFish::Config
 			ThingFish.logger.formatter = ThingFish::LogFormatter.new( ThingFish.logger )
 			ThingFish.logger.level = level
 		end
-		
+
 		# Set the mimetype for HTML documents
 		if self.use_strict_html_mimetype
 			ThingFish::Constants.const_set( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
@@ -254,7 +260,7 @@ class ThingFish::Config
 		return Pathname.new( self.datadir ) + sp
 	end
 
-	
+
 	### Set up the data and spool directories and return them
 	def setup_data_directories
 		self.log.info "Ensuring the configured data directory (%s) exists" % [ self.datadir_path ]
@@ -269,7 +275,7 @@ class ThingFish::Config
 			self.profiledir_path.mkpath
 		end
 	end
-	
+
 
 	### Instantiate, configure, and return the filestore plugin specified by the
 	### configuration.
@@ -280,7 +286,7 @@ class ThingFish::Config
 
 		return ThingFish::FileStore.create( name, self.datadir_path, self.spooldir_path, options )
 	end
-	
+
 
 	### Instantiate, configure, and return the metastore plugin specified by the
 	### configuration.
@@ -288,10 +294,10 @@ class ThingFish::Config
 		options = self.plugins.metastore.to_hash
 		name = options.delete( :name )
 		self.log.info "Creating a %s metastore with options %p" % [ name, options ]
-		
+
 		return ThingFish::MetaStore.create( name, self.datadir_path, self.spooldir_path, options )
 	end
-	
+
 
 	### Instantiate, configure, and return the filter plugins specified by the
 	### configuration.
@@ -302,80 +308,53 @@ class ThingFish::Config
 			ThingFish::Filter.create( name.to_s, options )
 		end
 	end
-	
+
 
 	### Iterate over each configured handler, yielding the handler and uri to the
 	### supplied block.
 	def each_handler_uri
 		raise LocalJumpError, "no block given" unless block_given?
 
-		if self.plugins && self.plugins.handlers
-			raise ThingFish::ConfigError, "Invalid handlers config; should be an Array" unless
-				self.plugins.handlers.is_a?( Array )
-			self.log.debug {"Creating %d configured handlers" % [self.plugins.handlers.nitems]}
+		if self.plugins && self.plugins.urimap
+			urimap = self.plugins.urimap.to_hash
+			self.log.debug {"Creating %d configured handlers" % [self.plugins.urimap.length]}
 
-			self.plugins.handlers.reverse.each do |handler_config|
-				name, uris, options = self.parse_handler_config( handler_config )
-				handler = ThingFish::Handler.create( name, options )
+			self.plugins.urimap.each do |path, handlers|
+				path = path.to_s
+				raise ThingFish::ConfigError, "key %p is not a path" % [ path ] unless
+					path[0] == ?/
+				path.sub!( %r{/$}, '' )
 
-				uris.each do |uri|
-					yield( handler, uri )
+				# Convert map entries like:
+				#    /foo: my_awesome_handler
+				# into the same format as the more-complex style
+				handlers = [{ handlers => {} }] unless handlers.is_a?( Array )
+
+				# Create an instance of a handler for each one
+				handlers.each do |handler_config|
+					handler_config.each do |name, options|
+						self.log.debug "Mapping %p to %p with options = %p" % [ name, path, options ]
+						@handler_map[ name ] ||= path
+						handler = ThingFish::Handler.create( name, path, options )
+						yield( handler, path )
+					end
 				end
 			end
 		else
 			self.log.debug "No handlers configured"
 		end
 
-		return self.plugins.handlers
+		return self.plugins.urimap
 	end
 
 
-	### Parse the given +name+ and +config+, and return the name of the handler 
-	### plugin and any configured URIs. The config can be a single URI string, an 
-	### Array of URI strings, or a Hash with one or more URIs in its 'uris' pair. If 
-	### a Hash is specified, it will also be passed to the plugin's constructor as 
-	### options.
-	def parse_handler_config( config )
-		name, options = config.to_a.first
-		self.log.debug "Handler config %s options parsed as %p" % [ name, options ]
-
-		case options
-
-		# - handlerName: /uri
-		when String
-			return name, Array(options), {}
-
-		# - handlerName: [/uri, /uri2]
-		when Array
-			return name, options, {}
-
-		# - handlerName:
-		#		uris: [/uri, /uri2]
-		#		option1: value
-		#		option2: value
-		when Hash
-			raise ThingFish::ConfigError, "missing uris key for handler '%s'" % [name] \
-				unless options.key?('uris')
-
-			options['uris'] = Array( options['uris'] )
-			return name, options['uris'], options
-
-		else
-			raise ThingFish::ConfigError, "invalid value %p for handler config" % [options]
-		end
-
-	end
-	
-	
 	### Return the first URI the specified +handler+ is installed at, if any. If
 	### there is no such handler installed, returns nil.
 	def find_handler_uri( handler )
-		handler_config = self.plugins.handlers.find {|plug| plug.key?(handler) } or
-			return nil
-		name, uris, options = self.parse_handler_config( handler_config )
-		return uris.first
+		raise ThingFish::ConfigError, "handler map isn't populated yet" if @handler_map.empty?
+		return @handler_map[ handler ]
 	end
-	
+
 
 	### Return the config object as a YAML hash
 	def dump

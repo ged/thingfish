@@ -10,12 +10,13 @@ filters:
 
 h2. <%= page.config['title'] %>
 
+Topics to cover:
 
-Differences between simple metastores and advanced
-
-strong data typing (date range searches)
-multiple values for a metakey (tags)
-native syntax support for POSTed search (SparQL, SQL, etc.)
+* Differences between simple metastores and advanced
+* strong data typing (date range searches)
+* multiple values for a metakey (tags)
+* native syntax support for POSTed search (SparQL, SQL, etc.)
+* Hook #on_startup to do stuff when the Daemon starts up
 
 « Coming Soon! »
 

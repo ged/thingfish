@@ -19,7 +19,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'thingfish'
@@ -38,14 +39,14 @@ module ThingFish
 
 	# Error in a filestore plugin
 	class FileStoreError < ThingFish::PluginError; end
-	
-	# Some action could not be completed because it would make the filestore exceed 
+
+	# Some action could not be completed because it would make the filestore exceed
 	# its allotted quota.
 	class FileStoreQuotaError < ThingFish::FileStoreError; end
 
 	# Error in a metastore plugin
 	class MetaStoreError < ThingFish::PluginError; end
-	
+
 	# Something was wrong with a response
 	class ResponseError < ThingFish::Error; end
 
@@ -58,36 +59,39 @@ module ThingFish
 	# 500: The server was unable to handle the request even though it was valid
 	class ServerError < ThingFish::Error
 		include ThingFish::Constants
-		
+
 		def initialize( *args )
 			super
 			@status = HTTP::SERVER_ERROR
 		end
-		
+
 		attr_reader :status
 	end
 	
+	# 500: Error while dispatching a request
+	class DispatchError < ThingFish::ServerError; end
+
 	# 501: We received a request that we don't quite know how to handle.
 	class NotImplementedError < ThingFish::ServerError
 		include ThingFish::Constants
-		
+
 		def initialize( *args )
 			super
 			@status = HTTP::NOT_IMPLEMENTED
 		end
-		
+
 		attr_reader :status
 	end
-	
+
 	# 400: Something was wrong with a request
 	class RequestError < ThingFish::Error
 		include ThingFish::Constants
-		
+
 		def initialize( *args )
 			super
 			@status = HTTP::BAD_REQUEST
 		end
-		
+
 		attr_reader :status
 	end
 
@@ -100,7 +104,7 @@ module ThingFish
 			@status = HTTP::REQUEST_ENTITY_TOO_LARGE
 		end
 	end
-	
+
 	# 406: Client requested a mimetype we don't know how to convert to
 	class RequestNotAcceptableError < ThingFish::RequestError
 		include ThingFish::Constants
@@ -110,6 +114,6 @@ module ThingFish
 			@status = HTTP::NOT_ACCEPTABLE
 		end
 	end
-	
+
 end
 

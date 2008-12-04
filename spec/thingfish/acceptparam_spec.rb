@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -87,7 +87,7 @@ describe ThingFish::AcceptParam do
 	it "parses valid Accept header values" do
 		ValidHeaders.each do |hdr, expectations|
 			rval = ThingFish::AcceptParam.parse( hdr )
-		
+
 			rval.should be_an_instance_of( ThingFish::AcceptParam )
 			rval.type.should == expectations[:type]
 			rval.subtype.should == expectations[:subtype]
@@ -105,12 +105,12 @@ describe ThingFish::AcceptParam do
 		lambda {
 			rval = ThingFish::AcceptParam.parse( '*/*; q=18' )
 		}.should_not raise_error()
-		
+
 		rval.should be_an_instance_of( ThingFish::AcceptParam )
 		rval.qvalue.should == 1.0
 	end
-	
-	
+
+
 	it "rejects invalid Accept header values" do
 		lambda {
 			ThingFish::AcceptParam.parse( 'porksausage' )
@@ -130,15 +130,15 @@ describe ThingFish::AcceptParam do
 		acceptparam = ThingFish::AcceptParam.parse( header )
 		acceptparam.to_s.should == header
 	end
-	
-	
+
+
 	it "can compare and sort on specificity" do
 		header = "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9," +
 			     "text/html;q=0.9;level=1,text/plain;q=0.8,image/png,*/*;q=0.5"
 		params = header.split(/\s*,\s*/).collect {|par|
 			ThingFish::AcceptParam.parse( par )
 		}.sort
-		
+
 		params[0].to_s.should == 'application/xhtml+xml;q=1.0'
 		params[1].to_s.should == 'application/xml;q=1.0'
 		params[2].to_s.should == 'image/png;q=1.0'
@@ -154,7 +154,7 @@ describe ThingFish::AcceptParam do
 		specific_param = ThingFish::AcceptParam.parse( CONFIGURED_HTML_MIMETYPE )
 		type_wildcard_param = ThingFish::AcceptParam.parse( '*/*' )
 		subtype_wildcard_param = ThingFish::AcceptParam.parse( 'image/*' )
-		
+
 		( specific_param =~ CONFIGURED_HTML_MIMETYPE ).should be_true()
 		( specific_param =~ 'image/png' ).should be_false()
 

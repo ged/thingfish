@@ -1,16 +1,16 @@
 #!/usr/bin/ruby
-# 
+#
 # A search handler for the thingfish daemon. This handler provides a REST
 # interface to searching for resources which match criteria concerning their
 # associated metadata in a ThingFish::SimpleMetastore.
-# 
+#
 # == Synopsis
 #
 #   # thingfish.conf
 #   plugins:
 #     handlers:
 #		- simplesearch: /search
-# 
+#
 # == Version
 #
 #  $Id$
@@ -24,7 +24,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'thingfish'
@@ -34,7 +35,7 @@ require 'thingfish/metastore/simple'
 require 'thingfish/mixins'
 
 
-### The search handler for the thingfish daemon when it's using a 
+### The search handler for the thingfish daemon when it's using a
 ### ThingFish::SimpleMetaStore.
 class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
@@ -59,7 +60,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	#################################################################
 
 	### Set up a new SearchHandler
-	def initialize( options={} )
+	def initialize( path, options={} )
 		super
 
 		@metastore = nil
@@ -69,9 +70,9 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	######
 	public
 	######
-	
+
 	### Handle a GET request
-	def handle_get_request( request, response )
+	def handle_get_request( path_info, request, response )
 		args = request.query_args.reject { |k,v| v.nil? }
 
 		uuids = if args.empty?
@@ -91,13 +92,13 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 		tmpl = self.get_erb_resource( "search/index.rhtml" )
 		return tmpl.result( binding() )
 	end
-	
-	
+
+
 	### Generate an HTML fragment for the uuids in the given +body+.
 	def make_html_content( uuids, request, response )
 		args = request.query_args
 		uri  = request.uri.path
-		
+
 		response.data[:tagline] = 'Interrogate me.'
 		response.data[:title] = 'search'
 		response.data[:head]  = %Q{
@@ -106,9 +107,10 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 		template = self.get_erb_resource( 'search/main.rhtml' )
 		content = template.result( binding() )
-		
+
 		return content
 	end
+	
 end # ThingFish::SearchHandler
 
 # vim: set nosta noet ts=4 sw=4:

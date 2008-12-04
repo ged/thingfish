@@ -22,12 +22,13 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'pathname'
 require 'tmpdir'
-require 'mongrel'
+require 'yaml'
 require 'thingfish'
 
 
@@ -35,7 +36,7 @@ module ThingFish::Constants
 
 	# The subversion ID
 	SVNId = %q$Id$
-	
+
 	# The SVN revision number
 	SVNRev = %q$Rev$
 
@@ -54,25 +55,25 @@ module ThingFish::Constants
 	# The default directory ThingFish will use to store data files, spool files,
 	# its pid, and anything else. (unless configured otherwise)
 	DEFAULT_DATADIR = Dir.tmpdir + '/thingfish'
-	
+
 	# The default location of upload temporary files
 	DEFAULT_SPOOLDIR = 'spool'
-	
+
 	# The default location of Ruby-Prof output
 	DEFAULT_PROFILEDIR = 'profiles'
-	
+
 	# Query argument that enables profiling for the current request
 	PROFILING_ARG = '_profile'
 
 
 	### Constants for HTTP headers
-	
+
 	# The version of the server
 	SERVER_VERSION = ThingFish::VERSION
-	
+
 	# The version + the name of the server
 	SERVER_SOFTWARE = "ThingFish/#{SERVER_VERSION}"
-	
+
 	# Version and name of the server + subversion rev
 	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
 
@@ -84,10 +85,10 @@ module ThingFish::Constants
 	XHTML_MIMETYPE = 'application/xhtml+xml'
 	HTML_MIMETYPE = 'text/html'
 	CONFIGURED_HTML_MIMETYPE = HTML_MIMETYPE
-	
-	# A MIME type that indicates an entity body is a Ruby data structure. 
+
+	# A MIME type that indicates an entity body is a Ruby data structure.
 	RUBY_MIMETYPE = 'x-ruby/data'
-	
+
 	# A MIME type that indicates an entity body contains a marshalled Ruby data structure.
 	RUBY_MARSHALLED_MIMETYPE = 'x-ruby/marshalled-data'
 
@@ -99,7 +100,7 @@ module ThingFish::Constants
 
 	# The format used to create the HTTP response's status line
 	STATUS_LINE_FORMAT = "HTTP/1.1 %d %s\r\n".freeze
-	
+
 	# The format used to generate HTTP headers
 	HEADER_FORMAT      = "%s: %s\r\n".freeze
 
@@ -160,13 +161,90 @@ module ThingFish::Constants
 		VARIANT_ALSO_VARIES   		  = 506
 		INSUFFICIENT_STORAGE  		  = 507
 		NOT_EXTENDED          		  = 510
+
+		# Stolen from Apache 2.2.6's modules/http/http_protocol.c
+		STATUS_NAME = {
+		    100 => "Continue",
+		    101 => "Switching Protocols",
+		    102 => "Processing",
+		    200 => "OK",
+		    201 => "Created",
+		    202 => "Accepted",
+		    203 => "Non-Authoritative Information",
+		    204 => "No Content",
+		    205 => "Reset Content",
+		    206 => "Partial Content",
+		    207 => "Multi-Status",
+		    300 => "Multiple Choices",
+		    301 => "Moved Permanently",
+		    302 => "Found",
+		    303 => "See Other",
+		    304 => "Not Modified",
+		    305 => "Use Proxy",
+		    306 => "Undefined HTTP Status",
+		    307 => "Temporary Redirect",
+		    400 => "Bad Request",
+		    401 => "Authorization Required",
+		    402 => "Payment Required",
+		    403 => "Forbidden",
+		    404 => "Not Found",
+		    405 => "Method Not Allowed",
+		    406 => "Not Acceptable",
+		    407 => "Proxy Authentication Required",
+		    408 => "Request Time-out",
+		    409 => "Conflict",
+		    410 => "Gone",
+		    411 => "Length Required",
+		    412 => "Precondition Failed",
+		    413 => "Request Entity Too Large",
+		    414 => "Request-URI Too Large",
+		    415 => "Unsupported Media Type",
+		    416 => "Requested Range Not Satisfiable",
+		    417 => "Expectation Failed",
+		    418 => "Undefined HTTP Status",
+		    419 => "Undefined HTTP Status",
+		    420 => "Undefined HTTP Status",
+		    421 => "Undefined HTTP Status",
+		    406 => "Not Acceptable",
+		    407 => "Proxy Authentication Required",
+		    408 => "Request Time-out",
+		    409 => "Conflict",
+		    410 => "Gone",
+		    411 => "Length Required",
+		    412 => "Precondition Failed",
+		    413 => "Request Entity Too Large",
+		    414 => "Request-URI Too Large",
+		    415 => "Unsupported Media Type",
+		    416 => "Requested Range Not Satisfiable",
+		    417 => "Expectation Failed",
+		    418 => "Undefined HTTP Status",
+		    419 => "Undefined HTTP Status",
+		    420 => "Undefined HTTP Status",
+		    421 => "Undefined HTTP Status",
+		    422 => "Unprocessable Entity",
+		    423 => "Locked",
+		    424 => "Failed Dependency",
+		    425 => "No code",
+		    426 => "Upgrade Required",
+		    500 => "Internal Server Error",
+		    501 => "Method Not Implemented",
+		    502 => "Bad Gateway",
+		    503 => "Service Temporarily Unavailable",
+		    504 => "Gateway Time-out",
+		    505 => "HTTP Version Not Supported",
+		    506 => "Variant Also Negotiates",
+		    507 => "Insufficient Storage",
+		    508 => "Undefined HTTP Status",
+		    509 => "Undefined HTTP Status",
+		    510 => "Not Extended"
+		}
 		
-		# Renamed from Mongrel, since HTTP_STATUS_CODES doesn't actually
-		# return codes, it returns descriptive names.
-		STATUS_NAME = Mongrel::HTTP_STATUS_CODES
+		
+		# Methods which aren't allowed to have an entity-body
+		SHALLOW_METHODS = [ :GET, :HEAD, :DELETE ]
 	end
-
-
+	
+	
 	module Patterns
 		# Patterns for matching UUIDs and parts of UUIDs
 		HEX12 = /[[:xdigit:]]{12}/
@@ -176,22 +254,25 @@ module ThingFish::Constants
 
 		# Pattern for matching a plain UUID string
 		UUID_REGEXP = /#{HEX8}-#{HEX4}-#{HEX4}-#{HEX4}-#{HEX12}/
-		
+
 		# Pattern for matching UUID URNs, capturing the UUID string
 		UUID_URN = /urn:uuid:(#{UUID_REGEXP})/i
 
 		# Pattern that matches requests to /«a uuid»; captures the UUID string
-		UUID_URL = %r{^/(#{UUID_REGEXP})$}
+		UUID_URL = %r{^(#{UUID_REGEXP})$}
+
+		# Network IO constants
+		CRLF        = "\r\n"
+		EOL         = CRLF
+		BLANK_LINE  = CRLF + CRLF
 
 		# Network IO patterns
-		CRLF = /\r?\n/
-		BLANK_LINE = /#{CRLF}#{CRLF}/
+		CRLF_REGEXP        = /\r?\n/
+		BLANK_LINE_REGEXP  = /#{CRLF_REGEXP}#{CRLF_REGEXP}/
 	end
 
 end # module ThingFish::Constants
 
-
-# The following mimetype map was taken from Mongrel 1.0.1
 
 __END__
 ---

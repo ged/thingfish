@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 	
 	libdir = basedir + "lib"
 	
@@ -43,6 +43,7 @@ describe "A MetaStore", :shared => true do
 			},
 		}
 	end
+
 
 	it "can set and get a property belonging to a UUID" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )

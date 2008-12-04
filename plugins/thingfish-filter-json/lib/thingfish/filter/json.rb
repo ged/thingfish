@@ -1,27 +1,28 @@
 #!/usr/bin/ruby
-# 
+#
 # A JSON conversion filter for ThingFish
-# 
+#
 # == Synopsis
-# 
+#
 #   plugins:
 #       filters:
 #          json: ~
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'json'
@@ -32,7 +33,7 @@ require 'thingfish/constants'
 require 'thingfish/acceptparam'
 
 
-### A JSON-conversion filter for ThingFish. It converts Ruby objects in the body of responses 
+### A JSON-conversion filter for ThingFish. It converts Ruby objects in the body of responses
 ### to JSON if the client accepts 'application/json'.
 class ThingFish::JSONFilter < ThingFish::Filter
 	include ThingFish::Loggable,
@@ -47,12 +48,12 @@ class ThingFish::JSONFilter < ThingFish::Filter
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
-	
+
 	# The JSON mime type.
 	JSON_MIMETYPE = 'application/json'
 	JSON_MIMETYPE.freeze
-	
-	
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -61,7 +62,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 	def initialize( options={} ) # :notnew:
 		super
 	end
-	
+
 
 	######
 	public
@@ -69,11 +70,11 @@ class ThingFish::JSONFilter < ThingFish::Filter
 
 	### Filter incoming requests, converting from JSON to a native ruby object.
 	def handle_request( request, response )
-		
+
 		# Only filter if the client sends what we can convert from.
 		return unless request.content_type &&
 			request.content_type.downcase == JSON_MIMETYPE
-		
+
 		# Absorb errors so filters can continue
 		begin
 			self.log.debug "Converting a %s request to %s" %
@@ -82,7 +83,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 		rescue JSON::ParserError => err
 			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
 				[ err.class.name, request.body, err.message ]
-			self.log.debug err.backtrace.join("\n")	
+			self.log.debug err.backtrace.join("\n")
 		else
 			request.content_type = RUBY_MIMETYPE
 		end
@@ -96,7 +97,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 		# is something we know how to convert
 		return unless request.explicitly_accepts?( JSON_MIMETYPE ) &&
 			self.accept?( response.content_type )
-		
+
 		# Errors converting to JSON should result in a 500.
 		self.log.debug "Converting a %s response to application/json" %
 			[ response.content_type ]
@@ -106,13 +107,13 @@ class ThingFish::JSONFilter < ThingFish::Filter
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
-	### the filter is interested in. The default returns */*, which indicates that it is 
+	### the filter is interested in. The default returns */*, which indicates that it is
 	### interested in all requests/responses.
 	def handled_types
 		return HANDLED_TYPES
 	end
-	
-	
+
+
 	### Returns a Hash of information about the filter; this is of the form:
 	###   {
 	###     'version'   => [1, 0],                   # Filter version
@@ -131,8 +132,8 @@ class ThingFish::JSONFilter < ThingFish::Filter
 			'generates' => accepts,
 		  }
 	end
-	
-	
+
+
 end # class ThingFish::JSONFilter
 
 # vim: set nosta noet ts=4 sw=4:

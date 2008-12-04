@@ -48,6 +48,7 @@ module Benchmark
 			@options      = options
 		
 			@times        = []
+			@sorted_times = nil
 		end
 
 
@@ -74,8 +75,19 @@ module Benchmark
 		attr_reader :options
 
 
+		### Return the timed request data sorted cronologically.
+		def times
+			if @sorted_times.nil?
+				@sorted_times = @times.sort_by {|row| row[EPOCHTIME] }
+			end
+			
+			return @sorted_times
+		end
+		
+
 		### Append a row of output from 'ab' to the times for this datapoint
 		def <<( row )
+			@sorted_times = nil
 			@times << row.chomp.split( /\t/ )[ 1..-1 ].collect {|i| Integer(i) }
 			return self
 		end
@@ -83,14 +95,14 @@ module Benchmark
 		
 		### Return the Time of the start of the benchmark
 		def start_time
-			epochseconds = @times.first[EPOCHTIME] / 1_000_000.0
+			epochseconds = self.times.first[EPOCHTIME] / 1_000_000.0
 			return Time.at( epochseconds )
 		end
 		
 		
 		### Return the Time of the end of the benchmark
 		def finish_time
-			epochseconds = @times.last[EPOCHTIME] / 1_000_000.0
+			epochseconds = self.times.last[EPOCHTIME] / 1_000_000.0
 			return Time.at( epochseconds )
 		end
 		
@@ -125,22 +137,22 @@ module Benchmark
 				raise ScriptError, "no column constant called #{column.to_s.upcase}"
 
 			define_method( "#{name}_times" ) do
-				@times.transpose[ columnidx ]
+				self.times.transpose[ columnidx ]
 			end
 			alias_method "#{column}s", "#{name}_times" unless name == column
 			
 			define_method( "min_#{name}_time" ) do
-				@times.transpose[columnidx].min
+				self.times.transpose[columnidx].min
 			end
 			alias_method "min_#{column}", "min_#{name}_time"
 			
 			define_method( "max_#{name}_time" ) do
-				@times.transpose[columnidx].max
+				self.times.transpose[columnidx].max
 			end
 			alias_method "max_#{column}", "max_#{name}_time"
 			
 			define_method( "mean_#{name}_time" ) do
-				@times.transpose[columnidx].inject(0) {|sum,n| sum + n } / self.count.to_f
+				self.times.transpose[columnidx].inject(0) {|sum,n| sum + n } / self.count.to_f
 			end
 			alias_method "mean_#{column}", "mean_#{name}_time"
 			
@@ -150,7 +162,7 @@ module Benchmark
 			alias_method "#{column}_standard_deviation", "#{name}_time_standard_deviation"
 			
 			define_method( "#{name}_time_histogram" ) do
-				return @times.transpose[columnidx].inject({}) {|hist,n|
+				return self.times.transpose[columnidx].inject({}) {|hist,n|
 					hist[ n ] ||= 0
 					hist[ n ] += 1
 					hist
@@ -442,14 +454,29 @@ module Benchmark
 				trace "Starting configured ThingFish daemon"
 				Signal.trap( 'INT'  ) { @daemon.shutdown("Interrupted") }
 				Signal.trap( 'TERM' ) { @daemon.shutdown("Terminated") }
-				@daemon_thread = @daemon.run
+
+				@daemon_thread = Thread.new do
+					trace "In the daemon thread"
+					begin
+						@daemon.start
+					rescue => err
+						error_message "Thread raised %s: %s" % [ err.class.name, err.message ]
+						trace "left the daemon thread"
+					end
+				end
+				@daemon_thread.abort_on_exception = true
 			
+				trace "Entering with_config block"
 				self.instance_eval( &block )
+				trace "Done with with_config block"
 			
 				save_dataset()
 			ensure
 				trace "Clearing out the config objects"
-				@daemon.shutdown("Benchmarks done") if @daemon
+				if @daemon
+					@daemon.shutdown("Benchmarks done")
+					@daemon_thread.join
+				end
 
 				@benchmark_config = nil
 				@config = nil
@@ -526,8 +553,10 @@ module Benchmark
 			abprog = which( 'ab' ) or fail "ab: no such file or directory"
 
 			# ab capability check
+			trace "Checking for a patched 'ab'"
 			find_pattern_in_pipe( /-D\s+Send a DELETE request/, abprog, '-h' ) or
 				fail "Benchmarks require patched ab, see: #{AB_PATCH_LOCATION}"
+			trace "...patched 'ab' found."
 		
 			ab = [ abprog, '-g', resultsfile.to_s ]
 

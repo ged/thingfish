@@ -62,7 +62,7 @@ describe ThingFish::<%= @name.capitalize %>Handler do
 		@response.stub!( :data ).and_return( @response_data )
 
 		@daemon = mock( "daemon object", :null_object => true )
-		@handler.listener = @daemon
+		@handler.on_startup( @daemon )
 	end
 
 	after( :all ) do

@@ -106,7 +106,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 	# Delegate transactions to the underlying Sequel object.
 	def_delegators :@metadata, :transaction
-	
+
 
 	### Delete all resources from the database, but preserve the keys
 	def clear
@@ -119,11 +119,11 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 
 
-	### 
+	###
 	### Simple Metastore API
-	### 
+	###
 
-	### MetaStore API: Set the property associated with +uuid+ specified by 
+	### MetaStore API: Set the property associated with +uuid+ specified by
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		r_id = get_id( :resources, uuid )
@@ -136,12 +136,12 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
-	
+
 	### MetaStore API: Set the properties associated with the given +uuid+ to those
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		self.transaction do
-			
+
 			# Wipe existing properties
 			@metadata[ :metaval ].
 				filter( :r_id => @metadata[ :resources ].
@@ -151,37 +151,37 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
 
-	### MetaStore API: Merge the provided +propshash+ into the properties associated with the 
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
 	### given +uuid+.
 	def update_properties( uuid, propshash )
 		self.transaction do
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
-		end		
+		end
 	end
-	
-	
-	### MetaStore API: Return the property associated with +uuid+ specified by 
+
+
+	### MetaStore API: Return the property associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		props = self.get_properties( uuid )
 		return props[ propname.to_sym ]
 	end
 
-	
+
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
 		r_id = get_id( :resources, uuid )
 		return @metadata[ :resources, :metakey, :metaval ].
 			filter( :metakey__id   => :metaval__m_id,
-					:resources__id => :metaval__r_id, 
+					:resources__id => :metaval__r_id,
 					:metaval__r_id => r_id ).
 			select( :metakey__key, :metaval__val ).inject({}) do |hash, row|
-				
+
 			hash[ row[:key].to_sym ] = row[:val]
 			hash
 		end
@@ -194,8 +194,8 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			filter( :uuid => uuid.to_s ).
 			select( :id ).first.nil? ? false : true
 	end
-	
-	
+
+
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
 		return get_property( uuid, propname ) != nil
@@ -206,8 +206,8 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def delete_property( uuid, propname )
 		self.delete_properties( uuid, propname )
 	end
-	
-	
+
+
 	### MetaStore API: Removes the properties specified by +propnames+ from those
 	### associated with +uuid+.
 	def delete_properties( uuid, *propnames )
@@ -219,17 +219,17 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		mv.filter( :r_id => r.filter( :uuid => uuid.to_s ).select( :id ),
 		           :m_id => mk.filter( :key => props ).select( :id ) ).delete
 	end
-	
-	
+
+
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
-		self.transaction do			
+		self.transaction do
 			resources = @metadata[ :resources ]
-			
+
 			# Remove properties.
 			@metadata[ :metaval ].
 				filter( :r_id => resources.filter( :uuid => uuid.to_s ).select( :id ) ).delete
-			
+
 			# Remove resource row.
 			resources.filter( :uuid => uuid.to_s ).delete
 			@id_cache[ :resources ].delete( uuid )
@@ -242,7 +242,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		@metadata[ :metakey ].select( :key ).distinct.map( :key ).
 			collect { |k| k.to_sym }
 	end
-	
+
 
 	### MetaStore API: Return a uniquified Array of all values in the metastore for
 	### the specified +key+.
@@ -250,23 +250,23 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		dataset = @metadata[ :metaval, :metakey ].
 			filter( :metaval__m_id => :metakey__id, :metakey__key => key ).
 			distinct
-		
+
 		return dataset.select( :metaval__val => :val ).map( :val ).compact
 	end
 
-	
+
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
 		return @metadata[ :resources, :metakey, :metaval ].
-			filter( :metakey__key  => key.to_s, 
-					:metakey__id   => :metaval__m_id, 
-					:metaval__val  => value, 
+			filter( :metakey__key  => key.to_s,
+					:metakey__id   => :metaval__m_id,
+					:metaval__val  => value,
 					:metaval__r_id => :resources__id ).map( :uuid )
 	end
 
 
-	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		value = value.to_s.gsub( '*', '%' )
@@ -281,15 +281,15 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Dump the entire contents of the store as a Hash keyed by UUID.
 	def dump_store
 		dumpstruct = Hash.new {|h,k| h[k] = {} }
-		
+
 		dataset = @metadata[:metaval].
 			join( :metakey, :id => :m_id ).
 			join( :resources, :id => :metaval__r_id )
-	
+
 		dataset.select( :uuid, :key, :val ).each do |row|
 			dumpstruct[ row[:uuid] ][ row[:key].to_sym ] = row[:val]
 		end
-		
+
 		return dumpstruct
 	end
 
@@ -298,7 +298,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def load_store( hash )
 		self.transaction do
 			self.clear
-		
+
 			hash.each do |uuid, properties|
 				r_id = get_id( :resources, uuid )
 
@@ -310,13 +310,13 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 		end
 	end
-	
-	
+
+
 	### Metastore API: Yield all the metadata in the store one resource at a time
 	def each_resource # :yields: uuid, properties_hash
 		@metadata[ :resources ].select( :uuid, :id ).each do |row|
 			self.log.debug "Building properties for %s" % [ row[:uuid] ]
-			
+
 			ds = @metadata[:metaval].
 				join( :metakey, :id => :m_id ).
 				filter( :r_id => row[:id] )
@@ -326,7 +326,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 				hash[ pair[:key].to_sym ] = pair[:val]
 				hash
 			end
-			
+
 			self.log.debug "Yielding %p for UUID %s" % [ properties, row[:uuid] ]
 			yield( row[:uuid], properties )
 		end
@@ -371,11 +371,11 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
-	
+
 	### Return the id of a given resource or metakey, or if none exist,
 	### create a new row and return the id.  +key+ must be :resources or :uuid.
 	def get_id( key, value )
-		
+
 		# Return the previously cached ID
 		return @id_cache[ key ][ value ] unless @id_cache[ key ][ value ].nil?
 
@@ -389,7 +389,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			@id_cache[ key ][ value ] = row[ :id ]
 			return row[ :id ]
 		end
-		
+
 		# Create a new row for the requested object, and return the new ID.
 		#
 		return @metadata[ key ] << { column => value.to_s }

@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -35,15 +35,15 @@ end
 describe ThingFish::MetaStore do
 
 	describe " (derivative class that doesn't implement virtual methods)" do
-		
+
 		before(:each) do
 			@metastore = ThingFish::MetaStore.create( 'test', nil, nil )
 		end
-	
+
 		it "knows how to perform startup tasks" do
-			@metastore.should respond_to( :startup )
+			@metastore.should respond_to( :on_startup )
 		end
-	
+
 		it "raises NotImplementedError for #has_uuid?" do
 			lambda {
 				@metastore.has_uuid?( TEST_UUID )
@@ -116,7 +116,7 @@ describe ThingFish::MetaStore do
 				@metastore.get_all_property_values( TEST_PROP )
 			}.should raise_error( NotImplementedError, /#get_all_property_values/ )
 		end
-		
+
 		it "raises NotImplementedError for #find_exact_uuids" do
 			lambda {
 				@metastore.find_exact_uuids( :namespace => 'foo' )
@@ -128,18 +128,18 @@ describe ThingFish::MetaStore do
 				@metastore.find_matching_uuids( :namespace => 'f*' )
 			}.should raise_error( NotImplementedError, /#find_matching_uuids/ )
 		end
-		
+
 		it "raises NotImplementedError for #dump_store" do
 			lambda {
 				@metastore.dump_store
 			}.should raise_error( NotImplementedError, /#dump_store/ )
 		end
-		
+
 		it "returns a ResourceProxy to use when interacting with a resource's metadata set" do
 		    @metastore[ TEST_UUID ].
 				should be_a_kind_of( ThingFish::MetaStore::ResourceProxy )
 		end
-	
+
 		it "returns the same ResourceProxy for a string UUID as for the same UUID object" do
 			uuid_obj = UUID.parse( TEST_UUID )
 			@metastore[ TEST_UUID ].should == @metastore[ uuid_obj ]
@@ -190,11 +190,11 @@ describe ThingFish::MetaStore::ResourceProxy do
 		proxy2 = ThingFish::MetaStore::ResourceProxy.new( TEST_UUID, @store )
 		proxy2.should == @proxy
 	end
-	
+
 	it "can merge new data from a hash" do
 		prophash = {
 			TEST_PROP => TEST_PROPVALUE,
-			:owner    => 'perqualee'			
+			:owner    => 'perqualee'
 		}
 		@store.should_receive( :update_properties ).with( TEST_UUID, prophash )
 
@@ -209,7 +209,7 @@ describe ThingFish::MetaStore do
 	it "registers subclasses as plugins" do
 		ThingFish::MetaStore.get_subclass( 'test' ).should == TestMetaStore
 	end
-	
+
 end
 
 

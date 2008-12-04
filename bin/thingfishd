@@ -84,15 +84,8 @@ end
 ### Run the daemon -- Start an instance of the daemon, run until shutdown, 
 ### and then return from the main thread.
 def run( options )
-	config   = ThingFish::Config.load( options.configfile )
-	instance = ThingFish::Daemon.new( config )
-
-	accepter = instance.run
-
-	Signal.trap( "INT" ) { instance.shutdown("Interrupted") }
-	Signal.trap( "TERM" ) { instance.shutdown("Terminated") }
-
-	accepter.join
+	config = ThingFish::Config.load( options.configfile )
+	ThingFish::Daemon.new( config ).start
 end
 
 

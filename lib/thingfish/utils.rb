@@ -35,7 +35,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'forwardable'
@@ -76,16 +77,16 @@ module ThingFish # :nodoc:
 		### values.
 		def initialize( initial_values={} )
 			@hash = {}
-			initial_values.each {|k,v| self.append(k, v) }
+			initial_values.each {|k,v| self.append(k => v) }
 		end
 
 
 		### Make sure +@hash+ is unique on Table duplications.
 		def initialize_copy( orig_table ) # :nodoc:
 			@hash = orig_table.to_hash
-		end	
-		
-		
+		end
+
+
 		######
 		public
 		######
@@ -99,21 +100,15 @@ module ThingFish # :nodoc:
 		def_delegators :@hash, *( Hash.instance_methods(false) - KEYED_METHODS )
 
 
-		### Append the given +key+/+value+ pair to the table, transforming
-		### it into an array if there was an existing value for the same
-		### key. 
-		def append( key, value )
-			nkey = normalize_key( key )
-			if @hash.key?( nkey )
-				@hash[ nkey ] = [ @hash[nkey] ] unless
-					@hash[nkey].is_a?( Array )
-				@hash[ nkey ] << value
-			else
-				@hash[ nkey ] = value
+		### Append the keys and values in the given +hash+ to the table, transforming
+		### each value into an array if there was an existing value for the same key.
+		def append( hash )
+			self.merge!( hash ) do |key,origval,newval|
+				[ origval, newval ].flatten
 			end
 		end
-		
-		
+
+
 		### Return the Table as RFC822 headers in a String
 		def to_s
 			@hash.collect do |header,value|
@@ -126,52 +121,61 @@ module ThingFish # :nodoc:
 			end.flatten.sort.join( "\r\n" ) + "\r\n"
 		end
 
-		
+
+		### Iterate over the table contents yielding each as an RFC822 header.
+		def each_header
+			@hash.each do |header, value|
+				Array( value ).each do |val|
+					yield( normalize_header(header), val.to_s )
+				end
+			end
+		end
+
+
 		### Return the Table as a hash.
 		def to_h
 			@hash.dup
 		end
 		alias_method :to_hash, :to_h
-			
+
 
 		### Merge +other_table+ into the receiver.
-		def merge!( other_table )
-			other_hash = other_table.to_hash
-			@hash.merge!( other_table ) do |key, current_val, other_val|
-				[ current_val, other_val ].flatten
-			end
+		def merge!( other_table, &merge_callback )
+			nhash = normalize_hash( other_table.to_hash )
+			@hash.merge!( nhash, &merge_callback )
 		end
 		alias_method :update!, :merge!
 
 
 		### Return a new table which is the result of merging the receiver
-		### with +other_table+ in the same fashion as Hash#merge, treating key
-		### collisions as new Array values.
-		def merge( other_table )
+		### with +other_table+ in the same fashion as Hash#merge. If the optional
+		### +merge_callback+ block is provided, it is called whenever there is a
+		### key collision between the two.
+		def merge( other_table, &merge_callback ) # :yields: key, original_value, new_value
 			other = self.dup
-			other.merge!( other_table )
+			other.merge!( other_table, &merge_callback )
 			return other
 		end
 		alias_method :update, :merge
-		
-		
-		### Return an array containing the values associated with the given 
+
+
+		### Return an array containing the values associated with the given
 		### keys.
 		def values_at( *keys )
 			@hash.values_at( *(keys.collect {|k| normalize_key(k)}) )
 		end
 
-		
+
 		#########
 		protected
 		#########
-		
+
 		### Proxy method: handle getting/setting headers via methods instead of the
 		### index operator.
 		def method_missing( sym, *args )
 			# work magic
 			return super unless sym.to_s =~ /^([a-z]\w+)(=)?$/
-			
+
 			# If it's an assignment, the (=)? will have matched
 			key, assignment = $1, $2
 
@@ -181,7 +185,7 @@ module ThingFish # :nodoc:
 			else
 				method_body = self.make_getter( key )
 			end
-			
+
 			self.class.send( :define_method, sym, &method_body )
 			return self.method( sym ).call( *args )
 		end
@@ -191,39 +195,51 @@ module ThingFish # :nodoc:
 		def make_setter( key )
 			return Proc.new {|new_value| self[ key ] = new_value }
 		end
-		
-		
+
+
 		### Create a Proc that will act as a getter for the given key
 		def make_getter( key )
 			return Proc.new { self[key] }
 		end
-		
-		
+
+
 		#######
 		private
 		#######
+
+		### Return a copy of +hash+ with all of its keys normalized by #normalize_key.
+		def normalize_hash( hash )
+			hash = hash.dup
+			hash.each do |key,val|
+				nkey = normalize_key( key )
+				hash[ nkey ] = hash.delete( key )
+			end
+			
+			return hash
+		end
+
 
 		### Normalize the given key to equivalence
 		def normalize_key( key )
 			key.to_s.downcase.gsub('-', '_').to_sym
 		end
-		
-		
+
+
 		### Return the given key as an RFC822-style header label
 		def normalize_header( key )
 			key.to_s.split( '_' ).collect {|part| part.capitalize }.join( '-' )
 		end
-		
-		
+
+
 	end # class Table
 
-	
+
 	### A alternate formatter for Logger instances.
 	class LogFormatter < Logger::Formatter
 
 		# The format to output unless debugging is turned on
 		DEFAULT_FORMAT = "[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"
-		
+
 		# The format to output if debugging is turned on
 		DEFAULT_DEBUG_FORMAT = "[%1$s.%2$06d %3$d/%4$s] %5$5s {%6$s} -- %7$s\n"
 
@@ -243,13 +259,13 @@ module ThingFish # :nodoc:
 
 		# The Logger object associated with the formatter
 		attr_accessor :logger
-		
+
 		# The logging format string
 		attr_accessor :format
-		
+
 		# The logging format string that's used when outputting in debug mode
 		attr_accessor :debug_format
-		
+
 
 		### Log using either the DEBUG_FORMAT if the associated logger is at ::DEBUG level or
 		### using FORMAT if it's anything less verbose.
@@ -271,8 +287,8 @@ module ThingFish # :nodoc:
 			end
 		end
 	end # class LogFormatter
-	
-	
+
+
 	### An alternate formatter for Logger instances that outputs <dd> HTML
 	### fragments.
 	class HtmlLogFormatter < Logger::Formatter
@@ -307,7 +323,7 @@ module ThingFish # :nodoc:
 
 		# The HTML fragment that will be used as a format() string for the log
 		attr_accessor :format
-		
+
 
 		### Return a log message composed out of the arguments formatted using the
 		### formatter's format string
@@ -324,8 +340,8 @@ module ThingFish # :nodoc:
 
 			return self.format % args
 		end
-		
-	end
+
+	end # class HtmlLogFormatter
 
 end # module ThingFish
 

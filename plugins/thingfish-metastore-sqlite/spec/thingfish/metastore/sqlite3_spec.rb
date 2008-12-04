@@ -36,7 +36,7 @@ end
 describe "A SQLite3 MetaStore" do
 	include ThingFish::SpecHelpers,
 		ThingFish::TestConstants
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 
@@ -59,7 +59,7 @@ describe "A SQLite3 MetaStore" do
 
 
 	it_should_behave_like "A MetaStore"
-	
+
 	it "can load the SQL schema it uses from its resource directory" do
 		@store.schema.should =~ /CREATE TABLE\s*'resources'/
 	end
@@ -71,13 +71,13 @@ describe "A SQLite3 MetaStore" do
 	it "knows what rev of the schema is in its resources dir" do
 		@store.schema_rev.should be_a_kind_of( Integer )
 	end
-	
+
 	it "knows when its schema is out of date" do
 		mock_db = mock( "db handle", :null_object => true )
 		@store.metadata = mock_db
-		
+
 		rev = @store.schema_rev
-		
+
 		mock_db.should_receive( :user_version ).
 			at_least(:once).
 			and_return( rev - 5 )

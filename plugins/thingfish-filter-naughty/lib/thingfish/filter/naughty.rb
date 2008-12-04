@@ -1,13 +1,13 @@
 #!/usr/bin/ruby
-# 
+#
 # A naughty filter for ThingFish
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
@@ -15,7 +15,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -58,18 +59,18 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 	def initialize( options={} )
 		raise "You probably don't want this filter installed.  Really." unless
 			options['enable'] == 'yes, I understand this is just for testing'
-			
+
 		self.log.warn '*' * 70
 		self.log.warn 'You have enabled the naughty filter! Abandon all hope ye who enter here.'
 		self.log.warn '*' * 70
-		
+
 		super
 	end
-	
+
 	######
 	public
 	######
-	
+
 	### Filter incoming requests
 	def handle_request( request, response )
 		request.each_body do |body,metadata|
@@ -90,7 +91,7 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
-	### the filter is interested in. The default returns */*, which indicates that it is 
+	### the filter is interested in. The default returns */*, which indicates that it is
 	### interested in all requests/responses.
 	def handled_types
 		return HANDLED_TYPES
@@ -107,7 +108,7 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 	###   }
 	def info
 		accepts = self.handled_types.map {|ap| ap.mediatype }
-		
+
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
@@ -116,7 +117,7 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 			'generates' => [],
 		  }
 	end
-	
+
 end # class ThingFish::NaughtyFilter
 
 # vim: set nosta noet ts=4 sw=4:

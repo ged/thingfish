@@ -1,30 +1,31 @@
 #!/usr/bin/ruby
-# 
+#
 # The base filter type for ThingFish
-# 
+#
 # == Synopsis
-# 
+#
 #   require 'thingfish/filter'
 #
 #   class MyFilter < ThingFish::Filter
-#     
+#
 #   end
 #
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'pathname'
@@ -56,7 +57,7 @@ class ThingFish::Filter
 	###	C L A S S   M E T H O D S
 	#################################################################
 
-	### PluginFactory interface: Return an Array of prefixes to use when searching 
+	### PluginFactory interface: Return an Array of prefixes to use when searching
 	### for derivatives.
 	def self::derivative_dirs
 		['thingfish/filter']
@@ -72,7 +73,7 @@ class ThingFish::Filter
 			gsub( /\W+/, '-' ).
 			downcase
 	end
-	
+
 
 
 	#################################################################
@@ -83,7 +84,7 @@ class ThingFish::Filter
 	def initialize( options={} ) # :notnew:
 		super()
 	end
-	
+
 
 	######
 	public
@@ -93,13 +94,13 @@ class ThingFish::Filter
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
-	### the filter is interested in. The default returns */*, which indicates that it is 
+	### the filter is interested in. The default returns */*, which indicates that it is
 	### interested in all requests/responses.
 	def handled_types
 		return [DEFAULT_HANDLED_TYPE]
 	end
-	
-	
+
+
 	### Returns true if this filter can handle the given +content_type+.
 	def accepts?( content_type )
 		return self.handled_types.find {|type| type =~ content_type } ? true : false

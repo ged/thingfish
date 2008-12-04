@@ -60,18 +60,18 @@ describe ThingFish::FilesystemFileStore do
 		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
-	
+
 		after(:each) do
 			@tmpdir.rmtree
 		end
-	
+
 
 		### Behaviors
 		it_should_behave_like "A FileStore"
-	
-	
+
+
 		### Specs
-	
+
 		it "returns nil for non-existant entry" do
 		    @fs.fetch( TEST_UUID ).should == nil
 		end
@@ -103,7 +103,7 @@ describe ThingFish::FilesystemFileStore do
 			rescue Errno::ECONNRESET
 				# no op
 			end
-		
+
 			spoolfile.exist?.should be_false
 		end
 
@@ -121,7 +121,7 @@ describe ThingFish::FilesystemFileStore do
 		it "silently ignores deletes of non-existant keys" do
 			@fs.delete( TEST_UUID2 ).should be_false
 		end
-	
+
 		it "returns false when checking has_file? for a file it does not have" do
 			@fs.has_file?( TEST_UUID ).should be_false
 		end
@@ -136,7 +136,7 @@ describe ThingFish::FilesystemFileStore do
 			@fs.delete( TEST_UUID )
 			@fs.has_file?( TEST_UUID ).should be_false
 		end
-	
+
 		it "returns the size of an existing resource in bytes" do
 			@fs.store( TEST_UUID, TEST_RESOURCE_CONTENT )
 			@fs.size( TEST_UUID ).should == TEST_RESOURCE_CONTENT.length
@@ -151,12 +151,12 @@ describe ThingFish::FilesystemFileStore do
 				@fs.total_size.should == uuids.nitems * TEST_RESOURCE_CONTENT.length
 			end
 		end
-	
+
 		it "returns an MD5 sum of data upon storing it" do
 			@fs.store( TEST_UUID, TEST_RESOURCE_CONTENT ).should ==
 				Digest::MD5.hexdigest( TEST_RESOURCE_CONTENT )
 		end
-	
+
 		it "returns an MD5 sum of data upon uploading it via a socket" do
 			@fs.store_io( TEST_UUID, @io ).should ==
 				Digest::MD5.hexdigest( TEST_RESOURCE_CONTENT )
@@ -192,7 +192,7 @@ describe ThingFish::FilesystemFileStore do
 
 		### Behaviors
 		it_should_behave_like "A FileStore"
-	
+
 	end
 
 
@@ -210,7 +210,7 @@ describe ThingFish::FilesystemFileStore do
 		it "uses a path with 8 subdirectories" do
 			path = %W{ 6 0 a c c 0 1 e #{TEST_UUID} }
 			expected_path = @tmpdir + File.join( *path )
-			
+
 			@fs.send( :hashed_path, TEST_UUID ).should == expected_path
 		end
 
@@ -221,7 +221,7 @@ describe ThingFish::FilesystemFileStore do
 
 		### Behaviors
 		it_should_behave_like "A FileStore"
-	
+
 	end
 
 	describe " with a hash depth that isn't a power of 2" do
@@ -246,14 +246,14 @@ describe ThingFish::FilesystemFileStore do
 		before(:each) do
 		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :maxsize => 2_048 )
 		end
-	
+
 		after(:each) do
 			@tmpdir.rmtree
 		end
 
-	
+
 		### Examples
-	
+
 		it "raises a FileStoreQuotaError when trying to store data > 3k" do
 			lambda {
 				@fs.store( TEST_UUID, '(.)(.)' * 1024 )
@@ -273,7 +273,7 @@ describe ThingFish::FilesystemFileStore do
 				@fs.store( TEST_UUID2, '!' * 1025 )
 			}.should raise_error( ThingFish::FileStoreQuotaError )
 		end
-	
+
 		it "raises a FileStoreQuotaError when trying to store two streams whose sum is > 2k" do
 			@fs.store( TEST_UUID, '!' * 1024 )
 			io = StringIO.new( '!' * 1025 )
@@ -281,7 +281,7 @@ describe ThingFish::FilesystemFileStore do
 				@fs.store_io( TEST_UUID2, io )
 			}.should raise_error( ThingFish::FileStoreQuotaError )
 		end
-	
+
 		it "is able to store a 1k chunk of data" do
 			lambda {
 				@fs.store( TEST_UUID, '!' * 1024 )
@@ -303,7 +303,7 @@ describe ThingFish::FilesystemFileStore do
 				and_yield( scache )
 			scache.should_receive( :unlink ).and_return( 1 )
 
-		    @fs.startup
+		    @fs.on_startup
 		end
 	end
 
@@ -339,7 +339,7 @@ describe ThingFish::FilesystemFileStore do
 			socketfile.should_receive( :file? ).and_return( false )
 			socketfile.should_not_receive( :basename )
 			socketfile.should_not_receive( :size )
-			
+
 			# second is something other than a resource file
 			miscfile.should_receive( :file? ).and_return( true )
 			miscfile.should_receive( :basename ).and_return( "something_thats_clearly_not_a_uuid.bz2" )
@@ -349,7 +349,7 @@ describe ThingFish::FilesystemFileStore do
 			resource1.should_receive( :file? ).and_return( true )
 			resource1.should_receive( :basename ).and_return( TEST_UUID )
 			resource1.should_receive( :size ).and_return( 100201 )
-            
+
 			resource1.stub!( :dirname ).and_return( resource1 )
 			resource1.stub!( :parent ).and_return( resource1 ) # Emulate .parent
 			sizefile1 = mock( "Resource1's size cache file" )
@@ -366,7 +366,7 @@ describe ThingFish::FilesystemFileStore do
 			resource2.should_receive( :file? ).and_return( true )
 			resource2.should_receive( :basename ).and_return( TEST_UUID2 )
 			resource2.should_receive( :size ).and_return( 166263 )
-            
+
 			resource2.stub!( :dirname ).and_return( resource2 )
 			resource2.stub!( :parent ).and_return( resource2 ) # Emulate .parent
 			sizefile2 = mock( "Resource2's size cache file" )
@@ -379,36 +379,36 @@ describe ThingFish::FilesystemFileStore do
 			sizefile2.should_receive( :open ).with( 'w' ).and_yield( sizefile2_writer )
 			sizefile2_writer.should_receive( :write ).with( 166263 )
 
-			@fs.startup
-			
+			@fs.on_startup
+
 			@fs.total_size.should == 100201 + 166263
 		end
 
-		it "uses cache files to calculate totals if available" do			
+		it "uses cache files to calculate totals if available" do
 			cachefile1 = mock( "Size cache file1" )
 			cachefile2 = mock( "Size cache file2" )
 			resource1 = mock( "Resource pathname1" )
-			
+
 			Pathname.should_receive( :glob ).with( "#{@tmpdir}/*/.size" ).
 				and_yield( cachefile1 ).
 				and_yield( cachefile2 )
-			
+
 			@tmpdir.should_not_receive( :find )
-			
+
 			cachefile1.should_receive( :read ).and_return( "102177" )
 			cachefile2.should_receive( :read ).and_return( "6634" )
 
-			@fs.startup
+			@fs.on_startup
 			@fs.total_size.should == 102177 + 6634
 		end
 
-		it "updates the cache file on resource deletion" do			
+		it "updates the cache file on resource deletion" do
 			@fs.store( TEST_UUID, TEST_RESOURCE_CONTENT )
 			cachefile = @fs.sizecache( @tmpdir + '60/ac/c0/1e' + TEST_UUID )
 			@fs.delete( TEST_UUID )
 			cachefile.read.to_i.should == 0
 		end
-			
+
 		it "updates the cache file on resource addition" do
 			@fs.store( TEST_UUID, TEST_RESOURCE_CONTENT )
 			cachefile = @fs.sizecache( @tmpdir + '60/ac/c0/1e' + TEST_UUID )
@@ -416,6 +416,6 @@ describe ThingFish::FilesystemFileStore do
 		end
 	end
 end
-	
+
 
 # vim: set nosta noet ts=4 sw=4:

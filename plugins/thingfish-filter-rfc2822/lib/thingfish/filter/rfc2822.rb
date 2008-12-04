@@ -1,20 +1,21 @@
 #!/usr/bin/ruby
-# 
+#
 # A rfc2822 filter for ThingFish
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -23,7 +24,7 @@ begin
 	require 'thingfish/constants'
 	require 'thingfish/acceptparam'
 	require 'thingfish/filter'
-	
+
 	require 'tmail'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -62,7 +63,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 		if TMail.const_defined?( :VERSION )
 			vvec = [ TMail::VERSION::MAJOR, TMail::VERSION::MINOR, TMail::VERSION::TINY ]
 			tmail_verstring = "%03d.%03d.%03d" % vvec
-			if tmail_verstring < '001.002.001' 
+			if tmail_verstring < '001.002.001'
 				self.log.warn "This plugin is only tested with TMail 1.2.1 or greater. " +
 					"You apparently have %d.%d.%d." % vvec
 			end
@@ -78,17 +79,17 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 	######
 	public
 	######
-	
+
 	### Filter incoming requests
 	def handle_request( request, response )
-		return unless request.http_method == 'PUT' ||
-			request.http_method == 'POST'
+		return unless request.http_method == :PUT ||
+			request.http_method == :POST
 
 		request.each_body( true ) do |body,metadata|
 			if self.accept?( metadata[:format] )
 				message = TMail::Mail.parse( body.read ) or
 					raise "couldn't parse message body"
-				
+
 				self.process_message_part( request, body, message, metadata )
 			else
 				self.log.debug "Skipping unhandled file type (%s)" % [metadata[:format]]
@@ -103,15 +104,15 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 		# is something we know how to convert
 		return unless request.accept?( 'text/plain' ) &&
 			self.accept?( response.content_type )
-		
+
 		self.log.debug "Converting a %s response to text/plain" %
-			[ response.content_type ]				
+			[ response.content_type ]
 		response.content_type = 'text/plain'
 	end
 
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which content types
-	### the filter is interested in. The default returns */*, which indicates that it is 
+	### the filter is interested in. The default returns */*, which indicates that it is
 	### interested in all requests/responses.
 	def handled_types
 		return HANDLED_TYPES
@@ -128,7 +129,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 	###   }
 	def info
 		accepts = self.handled_types.map {|ap| ap.mediatype }
-		
+
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
@@ -137,9 +138,9 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 			'generates' => [],
 		  }
 	end
-	
-	
-	
+
+
+
 	#########
 	protected
 	#########
@@ -149,7 +150,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 		rfc822_metadata = self.extract_rfc822_metadata( message )
 		request.append_metadata_for( body, rfc822_metadata )
 		self.log.debug "Appended rfc822 info: %p" % [ rfc822_metadata ]
-		
+
 		# Only try to append parts for multipart messages
 		if message.multipart?
 			self.log.debug "Message part is multipart itself, recursing for %d parts" %
@@ -166,10 +167,10 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 			self.log.debug "Message part is monolithic -- not recursing"
 		end
 	end
-	
+
 
 	### Extract RFC(2)822 headers from the given message +body+, prefixing them
-	### with 'rfc822_' and normalize them by downcasing and converting 
+	### with 'rfc822_' and normalize them by downcasing and converting
 	### hyphens to underscores.
 	def extract_rfc822_metadata( message )
 		extracted_metadata = {}
@@ -177,13 +178,13 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 			normalized_header, metadata_value = normalize_header( header, value )
 			extracted_metadata[ normalized_header.to_sym ] = metadata_value
 		end
-		
+
 		return extracted_metadata
 	end
 
 
-	### Extract and return a Hash of RFC(2)822 headers from the given message 
-	### +part+ (a TMail::Mail object), prefixing them with 'rfc822_' and normalize 
+	### Extract and return a Hash of RFC(2)822 headers from the given message
+	### +part+ (a TMail::Mail object), prefixing them with 'rfc822_' and normalize
 	### them by downcasing and converting hyphens to underscores.
 	def extract_part_metadata( part )
 		metadata = {}
@@ -202,7 +203,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 
 		end
 		metadata[:relation] = 'part_of'
-		
+
 		return metadata
 	end
 
@@ -211,7 +212,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 	private
 	#######
 
-	### Transform the given MIME +header+ into metadata key/value pairs by normalizing the 
+	### Transform the given MIME +header+ into metadata key/value pairs by normalizing the
 	### header name, then stringifying the value.
 	def normalize_header( header, value )
 		normalized_header = 'rfc822_' + header.downcase.gsub( /-/, '_' )
@@ -226,11 +227,11 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 			self.log.debug "Non-arrayish '%s' header (%s)" % [ header, value.class.name ]
 			metadata_value = value.to_s
 		end
-		
+
 		return normalized_header, metadata_value
 	end
-	
-	
+
+
 end # class ThingFish::Rfc2822Filter
 
 # vim: set nosta noet ts=4 sw=4:

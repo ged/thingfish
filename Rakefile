@@ -33,6 +33,7 @@ $dryrun = false
 BASEDIR         = Pathname.new( __FILE__ ).expand_path.dirname.relative_path_from( Pathname.getwd )
 BINDIR          = BASEDIR + 'bin'
 LIBDIR          = BASEDIR + 'lib'
+EXTDIR          = BASEDIR + 'ext'
 DOCSDIR         = BASEDIR + 'docs'
 VARDIR          = BASEDIR + 'var'
 MISCDIR         = BASEDIR + 'misc'
@@ -108,7 +109,7 @@ end
 
 
 ### Default task
-task :default  => [:clean, :spec, :verify, :package]
+task :default  => [:clean, :build, :spec, :verify, :package]
 
 
 ### Task: clean
@@ -138,7 +139,7 @@ end
 
 ### Cruisecontrol task
 desc "Cruisecontrol build"
-task :cruise => [:clean, :coverage, :package] do |task|
+task :cruise => [:clean, 'spec:text', :package] do |task|
 	raise "Artifacts dir not set." if ARTIFACTS_DIR.to_s.empty?
 	artifact_dir = ARTIFACTS_DIR.cleanpath
 	artifact_dir.mkpath

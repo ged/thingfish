@@ -34,7 +34,7 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::YAMLFilter do
-	
+
 	TEST_YAML_CONTENT = <<-EO_YAML
 	--- 
 	- ip_address: 127.0.0.1
@@ -50,7 +50,7 @@ describe ThingFish::YAMLFilter do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'yaml', {} )
 
@@ -68,24 +68,24 @@ describe ThingFish::YAMLFilter do
 
 
 	it_should_behave_like "A Filter"
-	
-	
+
+
 	it "converts a request body into a Ruby object if the content-type indicates " +
 	   "it's YAML" do
-   		@request.should_receive( :content_type ).
-   			at_least( :once ).
-   			and_return( 'text/x-yaml' )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'text/x-yaml' )
 		bodyio = StringIO.new( TEST_YAML_CONTENT )
-   		@request.should_receive( :body ).
-   			at_least( :once ).
-   			with( no_args() ).
-   			and_return( bodyio )
-   			
-   		@request.should_receive( :body= ).with( TEST_UNYAMLIFIED_CONTENT )
-   		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
-   			
-   		@filter.handle_request( @request, @response )
-   	end
+		@request.should_receive( :body ).
+			at_least( :once ).
+			with( no_args() ).
+			and_return( bodyio )
+
+		@request.should_receive( :body= ).with( TEST_UNYAMLIFIED_CONTENT )
+		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+
+		@filter.handle_request( @request, @response )
+	end
 
 
 	it "converts Ruby-object responses to YAML if the client accepts it" do
@@ -97,35 +97,35 @@ describe ThingFish::YAMLFilter do
 			and_return( RUBY_MIMETYPE )
 
 		@response.should_receive( :body ).and_return( TEST_RUBY_OBJECT )
-		
+
 		@response.should_receive( :body= ).with( TEST_YAML_CONTENT )
 		# Conversion filters shouldn't change the status of the response even when successful.
 		@response.should_not_receive( :status= )
 		@response.should_receive( :content_type= ).with( 'text/x-yaml' )
-   		
+
 		@filter.handle_response( @response, @request )
 	end
 
 
 	it "doesn't modify the request if there was a problem parsing YAML" do
-   		@request.should_receive( :content_type ).
-   			at_least( :once ).
-   			and_return( 'text/x-yaml' )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'text/x-yaml' )
 		bodyio = StringIO.new( TEST_YAML_CONTENT )
-   		@request.should_receive( :body ).
-   			at_least( :once ).
-   			with( no_args() ).
-   			and_return( bodyio )
+		@request.should_receive( :body ).
+			at_least( :once ).
+			with( no_args() ).
+			and_return( bodyio )
 
 		YAML.stub!( :load ).and_raise( YAML::ParseError.new("error parsing") )
-   	
-		@request.should_not_receive( :body= )
-   		@request.should_not_receive( :content_type= )
-   			
-   		@filter.handle_request( @request, @response )
-   	end
 
-	
+		@request.should_not_receive( :body= )
+		@request.should_not_receive( :content_type= )
+
+		@filter.handle_request( @request, @response )
+	end
+
+
 	it "does no conversion if the client doesn't accept YAML" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
@@ -134,11 +134,11 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the response isn't a Ruby object" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'text/x-yaml' ).
@@ -150,7 +150,7 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
@@ -171,7 +171,7 @@ describe ThingFish::YAMLFilter do
 		@response.should_receive( :body ).
 			once.
 			and_raise( YAML::ParseError.new("couldn't parse it!") )
-		
+
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
@@ -180,7 +180,7 @@ describe ThingFish::YAMLFilter do
 			@filter.handle_response( @response, @request )
 		}.should raise_error()
 	end
-	
+
 
 end
 

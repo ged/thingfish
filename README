@@ -23,26 +23,25 @@ There are two ways you can install ThingFish. The easiest is to use RubyGems:
 
 If you'd rather install from source, you'll need these:
 
-  * Mongrel (>= 1.0.1): http://mongrel.rubyforge.org/
   * PluginFactory (>= 1.0.3): http://deveiate.org/projects/PluginFactory
   * UUIDTools (>= 1.0.0): http://rubyforge.org/projects/uuidtools/
 
 Once these are installed:
 
-  $ tar -zxvf thingfish-0.1.0.tgz
-  $ cd thingfish-0.1.0
+  $ tar -zxvf thingfish-0.X.N.tgz
+  $ cd thingfish-0.X.N
   $ su -
   # rake install
 
 If you want to help out with development, run tests, or generate documentation, 
 you'll need a few more things:
 
-  * RSpec (>= 1.0.5): http://rspec.rubyforge.org/
-  * rcov (>= 0.7.0): http://eigenclass.org/hiki.rb?rcov
+  * RSpec (>= 1.1.11): http://rspec.rubyforge.org/
+  * rcov (>= 0.8.1): http://eigenclass.org/hiki.rb?rcov
   * lockfile (>= 1.4.3): http://codeforpeople.com/lib/ruby/lockfile/
   * rcodetools (>= 0.7.0): http://eigenclass.org/hiki/rcodetools
-  * CodeRay (>= 0.7.0): http://coderay.rubychan.de/
   * Redcloth (>= 3.0.4): http://whytheluckystiff.net/ruby/redcloth/
+  * ultraviolet (>= 0.10.2) http://ultraviolet.rubyforge.org/
 
 If you have RubyGems installed, you can install these automatically via the 
 +install_dependencies+ task of the Rakefile:

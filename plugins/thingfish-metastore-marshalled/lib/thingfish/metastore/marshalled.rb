@@ -76,8 +76,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		:dont_sweep     => false,
 		:debug			=> false,
 	  }
-	
-	
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
@@ -85,7 +85,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### Create a new MarshalledMetaStore
 	def initialize( datadir, spooldir, options={} )
 		super
-		
+
 		@datadir  = datadir
 		@datafile = @datadir + 'metadata'
 
@@ -125,9 +125,9 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
 
-	### MetaStore API: Set the property associated with +uuid+ specified by 
+
+	### MetaStore API: Set the property associated with +uuid+ specified by
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		@lock.lock do
@@ -144,30 +144,30 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	def set_properties( uuid, propshash )
 		props = propshash.dup
 		props.each_key {|key| props[key.to_sym] = props.delete(key) }
-		
+
 		@lock.lock do
 			@metadata.transaction do
 				@metadata[ uuid.to_s ] = props
 			end
 		end
 	end
-	
-	
-	### MetaStore API: Merge the provided +propshash+ into the properties associated with the 
+
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
 	### given +uuid+.
 	def update_properties( uuid, propshash )
 		props = propshash.dup
 		props.each_key {|key| props[key.to_sym] = props.delete(key) }
-		
+
 		@lock.lock do
 			@metadata.transaction do
 				@metadata[ uuid.to_s ].merge!( props )
 			end
 		end
 	end
-	
-	
-	### MetaStore API: Return the property associated with +uuid+ specified by 
+
+
+	### MetaStore API: Return the property associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		@metadata.transaction do
@@ -176,7 +176,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
-	
+
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
@@ -213,8 +213,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
-	
+
+
 	### MetaStore API: Removes the properties specified by +propnames+ from those associated with
 	### +uuid+.
 	def delete_properties( uuid, *propnames )
@@ -227,8 +227,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
-	
+
+
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
 		@lock.lock do
@@ -255,11 +255,11 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 				end
 			end
 		end
-		
+
 		return keys.to_a
 	end
-	
-	
+
+
 	### MetaStore API: Return a uniquified Array of all values in the metastore for
 	### the specified +key+.
 	def get_all_property_values( key )
@@ -275,8 +275,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		end
 		return values.compact.uniq
 	end
-	
-	
+
+
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
@@ -290,18 +290,18 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 				end
 			end
 		end
-			
+
 		return matching_uuids
 	end
 
 
-	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		key = key.to_sym
 		matching_uuids = []
 		re = self.glob_to_regexp( value )
-					
+
 		@lock.lock do
 			@metadata.transaction(true) do
 				@metadata.roots.each do |uuid|
@@ -312,12 +312,12 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 		return matching_uuids
 	end
-	
-	
+
+
 	### MetaStore API: Return a Hash of all data in the metastore, keyed by UUID.
 	def dump_store
 		rval = nil
-		
+
 		@lock.lock do
 			@metadata.transaction( true ) do
 				rval = @metadata.roots.inject({}) do |dumpstruct, uuid|
@@ -326,12 +326,12 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 				end
 			end
 		end
-		
+
 		return rval
 	end
 
 
-	### MetaStore API: Load the given +hash+ as the MetaStore's data, discarding 
+	### MetaStore API: Load the given +hash+ as the MetaStore's data, discarding
 	### any previous metadata.
 	def load_store( hash )
 		@lock.lock do
@@ -347,7 +347,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 					new_metadata[ uuid ] = metadata.dup
 				end
 			end
-			
+
 			self.log.info "Replacing existing metastore file %s with %s" %
 				[ @datafile, new_datafile ]
 			@datafile.unlink
@@ -356,8 +356,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			@metadata = PStore.new( @datafile.to_s )
 		end
 	end
-	
-	
+
+
 end # class ThingFish::MarshalledMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

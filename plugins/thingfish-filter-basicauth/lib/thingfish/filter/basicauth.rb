@@ -1,21 +1,22 @@
 #!/usr/bin/ruby
-# 
+#
 # A basicauth filter for ThingFish
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Mahlon E. Smith <mahlon@laika.com>
 # * Michael Granger <mgranger@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -47,14 +48,14 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 
 	# The header to set to indicate how to authenticate
 	AUTHENTICATE_HEADER = 'WWW-Authenticate'
-	
+
 	# The header to read authorization credentials from
 	AUTHORIZATION_HEADER = 'Authorization'
-	
+
 	# The default authentication realm
 	DEFAULT_AUTH_REALM = 'ThingFish'
-	
-	
+
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -72,32 +73,32 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 		end
 		@uripattern = Regexp.union( *uri_patterns )
 		self.log.debug "Protected URI pattern is: %p" % [ @uripattern ]
-		
+
 		super
 	end
-	
-	
+
+
 	######
 	public
 	######
 
 	# Base URIs authentication applies to.
 	attr_reader :uris
-	
+
 	# Accounts that can login ( user => pass )
 	attr_reader :users
 
-	
+
 	### Filter incoming requests
 	def handle_request( request, response )
 		self.log.debug "Checking authentication"
 
 		if @uripattern =~ request.path
 			authenticated = false
-			
+
 			if authstring = request.headers[ AUTHORIZATION_HEADER ]
 				authscheme, credentials = authstring.split( /\s+/, 2 )
-			
+
 				authenticated = self.authenticate( request, authscheme, credentials )
 			else
 				self.log.info "No authentication provided"
@@ -111,14 +112,14 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 			self.log.debug "URI path %p didn't match a protected URI; skipping authentication" %
 			 	[ request.path ]
 		end
-		
+
 	end
-	
-	
+
+
 	### Filter outgoing responses (No-op)
 	def handle_response( response, request )
 	end
-	
+
 
 
 	### Returns a Hash of information about the filter; this is of the form:
@@ -131,7 +132,7 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 	###   }
 	def info
 		accepts = self.handled_types.map {|ap| ap.mediatype }
-		
+
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
@@ -140,8 +141,8 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 			'generates' => [],
 		  }
 	end
-	
-	
+
+
 	#########
 	protected
 	#########
@@ -152,7 +153,7 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 			self.log.warn "Unsupported authentication scheme: %s" % [ authscheme ]
 			return false
 		end
-			
+
 		unless credentials.unpack('m').first.match( /^([^:]+):(.*)$/ )
 			self.log.error "Malformed authentication credentials"
 			return false
@@ -164,12 +165,12 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 			self.log.warn "Authentication failure for %s" % [ username ]
 			return false
 		end
-		
+
 		self.log.info "Authenticated user %p" % [ username ]
 		request.authed_user = username
 		return true
 	end
-	
+
 end # class ThingFish::BasicAuthFilter
 
 # vim: set nosta noet ts=4 sw=4:

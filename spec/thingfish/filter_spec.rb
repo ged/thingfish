@@ -40,7 +40,7 @@ describe ThingFish::Filter do
 		@filter = ThingFish::Filter.create( 'test', {} )
 	end
 
-	
+
 	it "raises a NotImplementedError for request filter operations" do
 		lambda do
 			@filter.handle_request( :request, :response )
@@ -60,7 +60,7 @@ describe ThingFish::Filter do
 		@filter.handled_types.first.should be_an_instance_of( ThingFish::AcceptParam )
 	end
 
-	
+
 	it "accepts all types by default" do
 		@filter.accepts?( 'image/png' ).should be_true()
 	end
@@ -69,7 +69,7 @@ describe ThingFish::Filter do
 	it "knows what its plugin name is" do
 		@filter.class.plugin_name.should == 'test'
 	end
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

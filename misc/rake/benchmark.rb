@@ -35,10 +35,11 @@ begin
 				config.port = 55555
 				config.logging.level = 'error'
 				config.logging.logfile = 'stderr'
-				config.plugins.filestore.maxsize = TESTIMAGE.size * 502
-				config.plugins.handlers << 
-					{"simplemetadata"=>{"resource_dir"=>"var/www", "uris"=>"/metadata"}} <<
-					{"simplesearch"=>{"resource_dir"=>"var/www", "uris"=>"/search"}}
+				config.plugins.filestore.maxsize = TESTIMAGE.size * 1000
+				config.plugins.urimap = {
+					'/metadata' => [{ 'simplemetadata' => {'resource_dir' => 'var/www'} }],
+					'/search'   => [{ 'simplesearch'   => {'resource_dir' => 'var/www'} }]
+				}
 				config.plugins.filters << ['ruby', 'yaml']
 			end
 

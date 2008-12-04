@@ -2,10 +2,10 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -56,7 +56,7 @@ describe ThingFish::Resource do
 		@io = StringIO.new( TEST_CONTENT )
 		@client = stub( "Mock client" )
 	end
-	
+
 
 	it "can be created from an object that responds to #read" do
 		resource = ThingFish::Resource.new( @io )
@@ -64,7 +64,7 @@ describe ThingFish::Resource do
 		resource.client.should be_nil()
 		resource.uuid.should be_nil()
 	end
-	
+
 
 	it "can be created from an IO object and a client object" do
 		resource = ThingFish::Resource.new( @io, @client )
@@ -81,7 +81,7 @@ describe ThingFish::Resource do
 		resource.uuid.should be_nil()
 		resource.title.should == 'Piewicket Eats a Potato'
 	end
-	
+
 
 	it "can be created from an IO object and a Hash of metadata" do
 		resource = ThingFish::Resource.new( @io, :title => 'Piewicket Eats a Potato' )
@@ -90,8 +90,8 @@ describe ThingFish::Resource do
 		resource.uuid.should be_nil()
 		resource.title.should == 'Piewicket Eats a Potato'
 	end
-	
-	
+
+
 	it "can be created from an IO object, a client object, and a Hash of metadata" do
 		resource = ThingFish::Resource.new( @io, @client, :title => 'Piewicket Eats a Potato' )
 		resource.io.should == @io
@@ -104,7 +104,7 @@ describe ThingFish::Resource do
 		@client.should_receive( :fetch_metadata ).with( TEST_UUID ).
 			and_return( TEST_METADATA.dup )
 		resource = ThingFish::Resource.new( @io, @client, TEST_UUID,
-		 	:title => 'Piewicket Eats a Potato' )
+			:title => 'Piewicket Eats a Potato' )
 		resource.io.should == @io
 		resource.client.should == @client
 		resource.uuid.should == TEST_UUID
@@ -113,10 +113,10 @@ describe ThingFish::Resource do
 
 	it "raises an error when saving without an associated ThingFish::Client" do
 		resource = ThingFish::Resource.new( @io )
-		
+
 		lambda {
 			resource.save
-		  }.should raise_error( ThingFish::ResourceError, /no client/i )
+		}.should raise_error( ThingFish::ResourceError, /no client/i )
 	end
 
 
@@ -132,14 +132,14 @@ describe ThingFish::Resource do
 		before( :each ) do
 			@resource = ThingFish::Resource.new
 		end
-		
-		
+
+
 		it "auto-generates accessors for metadata values" do
 			@resource.should_not have_extent()
-        
+
 			@resource.extent = 1024
 			@resource.extent.should == 1024
-	    
+
 			@resource.should have_extent()
 			@resource.should_not have_pudding() # Awwww... no pudding.
 		end
@@ -153,8 +153,8 @@ describe ThingFish::Resource do
 			@resource.metadata.values.
 				should include( 'suck', 'Something Naughty That Jonathan Will Make Us Change' )
 		end
-	
-	
+
+
 		it "returns nil when asked for its data" do
 			@resource.data.should be_nil()
 		end
@@ -164,12 +164,12 @@ describe ThingFish::Resource do
 				def initialize( stuff={} )
 					@innerhash = stuff
 				end
-			
+
 				def to_hash
 					return @innerhash
 				end
 			}
-		
+
 			@resource.metadata = my_metadata_class.new( TEST_METADATA )
 
 			@resource.metadata.should have(6).members
@@ -177,25 +177,25 @@ describe ThingFish::Resource do
 			@resource.metadata.values.
 				should include( 'suck', 'Something Naughty That Jonathan Will Make Us Change' )
 		end
-		
+
 		it "allows one to overwrite the resource's data" do
 			@resource.io.should be_nil()
 			@resource.data = "newdata"
 			@resource.io.rewind
 			@resource.io.read.should == "newdata"
 		end
-		
+
 	end
 
 
 	### With an IO object
 	describe "created with an IO object" do
-		
+
 		before( :each ) do
 			@io = StringIO.new
 			@resource = ThingFish::Resource.new( @io )
 		end
-		
+
 
 		it "allows one to overwrite the resource's data" do
 			@resource.data = "newdata"
@@ -208,11 +208,11 @@ describe ThingFish::Resource do
 
 	### Client interface
 	describe "created with an associated client object" do
-	
+
 		before( :each ) do
 			@resource = ThingFish::Resource.new( nil, @client, TEST_UUID )
 		end
-		
+
 
 		it "uses its associated client to save changes" do
 			@resource.io = @io
@@ -223,14 +223,14 @@ describe ThingFish::Resource do
 
 			@resource.save.should == @resource
 		end
-		
-		
+
+
 		it "fetches an IO from the client on demand" do
 			@client.should_receive( :fetch_data ).with( TEST_UUID ).
 				and_return( :an_io )
 			@resource.io.should == :an_io
 		end
-		
+
 
 		it "loads its data from the client on demand" do
 			io = mock( "mock io" )
@@ -239,7 +239,7 @@ describe ThingFish::Resource do
 			io.should_receive( :read ).and_return( :the_data )
 			@resource.data.should == :the_data
 		end
-		
+
 	end
 
 
@@ -249,16 +249,16 @@ describe ThingFish::Resource do
 		end
 
 		it "can discard local metadata changes in favor of the server-side version" do
- 			@client.should_receive( :fetch_metadata ).with( TEST_UUID ).twice.
+			@client.should_receive( :fetch_metadata ).with( TEST_UUID ).twice.
 				and_return( TEST_METADATA.dup, TEST_METADATA.dup )
 			@resource.energy = 'legs'
 			@resource.revert
 
 			@resource.metadata.should == TEST_METADATA
-			@resource.metadata.should_not include( 'energy' )
+			@resource.metadata.keys.should_not include( 'energy' )
 		end
-		
-		
+
+
 		it "can discard local changes to the data in favor of the server-side version" do
 			@resource.revert
 			@client.should_receive( :fetch_data ).with( TEST_UUID ).
@@ -266,13 +266,13 @@ describe ThingFish::Resource do
 			@resource.revert
 			@resource.io.should == :a_new_io
 		end
-	
-	
+
+
 		it "can read its data from the associated IO object" do
 			@io.should_receive( :read ).and_return( :the_data )
 			@resource.data.should == :the_data
 		end
-		
+
 	end
 
 end

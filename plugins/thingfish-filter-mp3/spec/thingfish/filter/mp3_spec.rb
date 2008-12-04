@@ -52,32 +52,32 @@ describe ThingFish::MP3Filter do
 		:mp3_year      => TEST_YEAR,
 		:mp3_genre     => TEST_GENRE,
 	}
-	
-    MP3_SPECDIR = Pathname.new( __FILE__ ).dirname.parent.parent
-    MP3_DATADIR = MP3_SPECDIR + 'data'
+
+	MP3_SPECDIR = Pathname.new( __FILE__ ).dirname.parent.parent
+	MP3_DATADIR = MP3_SPECDIR + 'data'
 
 	JPEG_MAGIC_REGEXP = /^\377\330\377\340\000\020JFIF/
 	PNG_MAGIC_REGEXP = /^\x89PNG/
 
 
 	before( :each ) do
-	    @filter = ThingFish::Filter.create( 'mp3' )
-	
+		@filter = ThingFish::Filter.create( 'mp3' )
+
 		@response = stub( "response object" )
 		@request_metadata = { :format => 'audio/mpeg' }
 		@request = mock( "request object" )
 	end
-	
-	
+
+
 	### Shared behaviors
 	it_should_behave_like "A Filter"
 
 	it "ignores non-POST requests" do
 		@request.should_receive( :http_method ).
 			at_least( :once ).
-			and_return( 'GET' )
+			and_return( :GET )
 		@request.should_not_receive( :each_body )
-		
+
 		@filter.handle_request( @request, @response )
 	end
 
@@ -90,7 +90,7 @@ describe ThingFish::MP3Filter do
 			@io = StringIO.new( TEST_CONTENT )
 			@io.stub!( :path ).and_return( :a_dummy_path )
 
-			@request.stub!( :http_method ).and_return( 'POST' )
+			@request.stub!( :http_method ).and_return( :POST )
 			@request.stub!( :each_body ).and_yield( @io, @request_metadata )
 
 			@mp3info = mock( "MP3 info object", :null_object => true )
@@ -103,7 +103,7 @@ describe ThingFish::MP3Filter do
 			@mp3info.should_receive( :samplerate ).and_return( 44000 )
 			@mp3info.should_receive( :bitrate ).and_return( 128 )
 			@mp3info.should_receive( :vbr ).and_return( true )
-			
+
 			@id3tag.should_receive( :tracknum ).and_return( TEST_TRACKNUM )
 			@id3tag.should_receive( :title ).and_return( TEST_MP3_TITLE )
 			@id3tag.should_receive( :artist ).and_return( TEST_ARTIST )
@@ -112,20 +112,20 @@ describe ThingFish::MP3Filter do
 			@id3tag.should_receive( :year ).and_return( TEST_YEAR )
 			@id3tag.should_receive( :genre ).and_return( TEST_GENRE )
 
-			@filter.should_receive( :extract_images ).and_return( {} )		
+			@filter.should_receive( :extract_images ).and_return( {} )
 			@request.should_receive( :append_metadata_for ).with( @io, EXTRACTED_METADATA )
 			@filter.handle_request( @request, @response )
 		end
 
-		
+
 		it "extracts MP3 metadata from ID3v2 (v2.2.0) tags of uploaded MP3s" do
 			extracted_metadata = {}
 			v2tag = mock( "ID3v2 tag", :null_object => true )
-			
+
 			@mp3info.should_receive( :samplerate ).and_return( 44000 )
 			@mp3info.should_receive( :bitrate ).and_return( 128 )
 			@mp3info.should_receive( :vbr ).and_return( true )
-			
+
 			@id3tag.should_receive( :title ).and_return( nil )
 			@id3tag.should_receive( :artist ).and_return( nil )
 			@id3tag.should_receive( :album ).and_return( nil )
@@ -140,7 +140,7 @@ describe ThingFish::MP3Filter do
 			@mp3info.should_receive( :tag2 ).
 				at_least( :once ).
 				and_return( v2tag )
-			
+
 			v2tag.should_receive(:TT2).and_return( TEST_MP3_TITLE )
 			v2tag.should_receive(:TP1).and_return( TEST_ARTIST )
 			v2tag.should_receive(:TAL).and_return( TEST_ALBUM )
@@ -148,7 +148,7 @@ describe ThingFish::MP3Filter do
 			v2tag.should_receive(:TRK).and_return( TEST_TRACKNUM )
 			v2tag.should_receive(:COM).and_return( TEST_COMMENTS )
 			v2tag.should_receive(:TCO).and_return( TEST_GENRE )
-			
+
 			@filter.should_receive( :extract_images ).and_return( {} )
 			@request.should_receive( :append_metadata_for ).with( @io, EXTRACTED_METADATA )
 			@filter.handle_request( @request, @response )
@@ -156,19 +156,19 @@ describe ThingFish::MP3Filter do
 
 
 		it "ignores all non-mp3 uploads" do
-			@request_metadata[ :format ] = 'dessert/tapioca'		
+			@request_metadata[ :format ] = 'dessert/tapioca'
 			Mp3Info.should_not_receive( :new )
 			@request.should_not_receive( :metadata )
-			
+
 			@filter.handle_request( @request, @response )
 		end
-		
-		
+
+
 		it "normalizes id3 values" do
 			@mp3info.should_receive( :samplerate ).and_return( 44000 )
 			@mp3info.should_receive( :bitrate ).and_return( 128 )
 			@mp3info.should_receive( :vbr ).and_return( true )
-			
+
 			@id3tag.should_receive( :tracknum ).and_return( TEST_TRACKNUM )
 			@id3tag.should_receive( :year ).and_return( TEST_YEAR )
 			@id3tag.should_receive( :genre ).and_return( TEST_GENRE )
@@ -177,16 +177,16 @@ describe ThingFish::MP3Filter do
 			@id3tag.should_receive( :artist ).and_return( "\n" + TEST_ARTIST + "   \n\n" )
 			@id3tag.should_receive( :album ).and_return( nil )
 			@id3tag.should_receive( :comments ).and_return([
-				TEST_COMMENTS[0] + "\x0",
-				"  " + TEST_COMMENTS[1] + "\n\n",
-				TEST_COMMENTS[2]
-			  ])
-			
-			# The nil should be transformed into an '(unknown)', but everything else should 
+			   TEST_COMMENTS[0] + "\x0",
+			   "  " + TEST_COMMENTS[1] + "\n\n",
+			   TEST_COMMENTS[2]
+			])
+
+			# The nil should be transformed into an '(unknown)', but everything else should
 			# be the same
 			normalized_values = EXTRACTED_METADATA.dup
 			normalized_values[:mp3_album] = "(unknown)"
-			
+
 			@filter.should_receive( :extract_images ).and_return( {} )
 			@request.should_receive( :append_metadata_for ).with( @io, normalized_values )
 			@filter.handle_request( @request, @response )
@@ -200,14 +200,14 @@ describe ThingFish::MP3Filter do
 
 		before( :each ) do
 			@request_metadata = { :format => 'audio/mpeg' }
-			@request.stub!( :http_method ).and_return( 'POST' )
+			@request.stub!( :http_method ).and_return( :POST )
 		end
 
 
 		it "extracts album art from an uploaded mp3 (single, PIC)" do
 			testdata = MP3_DATADIR + 'PIC-1-image.mp3'
 			io = testdata.open
-			art_hash = { 
+			art_hash = {
 				:format => 'image/jpeg',
 				:extent => 7369,
 				:title  => 'Album art for Tim Reilly - (unknown)',
@@ -226,13 +226,13 @@ describe ThingFish::MP3Filter do
 		it "extracts album art from an uploaded mp3 (multiple, PIC)" do
 			testdata = MP3_DATADIR + 'PIC-2-images.mp3'
 			io = testdata.open
-			jpg_art_hash = { 
+			jpg_art_hash = {
 				:format => 'image/jpeg',
 				:extent => 7369,
 				:title  => 'Album art for Tim Reilly - (unknown)',
 				:relation => 'album-art'
 			}
-			png_art_hash = { 
+			png_art_hash = {
 				:format => 'image/png',
 				:extent => 18031,
 				:title  => 'Album art for Tim Reilly - (unknown)',
@@ -250,12 +250,12 @@ describe ThingFish::MP3Filter do
 
 			@filter.handle_request( @request, @response )
 		end
-		
+
 
 		it "extracts album art from an uploaded mp3 (single, APIC)" do
 			testdata = MP3_DATADIR + 'APIC-1-image.mp3'
 			io = testdata.open
-			art_hash = { 
+			art_hash = {
 				:format => 'image/jpeg',
 				:extent => 7369,
 				:title  => 'Album art for Tim Reilly - (unknown)',
@@ -274,13 +274,13 @@ describe ThingFish::MP3Filter do
 		it "extracts album art from an uploaded mp3 (multiple, APIC)" do
 			testdata = MP3_DATADIR + 'APIC-2-images.mp3'
 			io = testdata.open
-			jpg_art_hash = { 
+			jpg_art_hash = {
 				:format => 'image/jpeg',
 				:extent => 7369,
 				:title  => 'Album art for Tim Reilly - (unknown)',
 				:relation => 'album-art'
 			}
-			png_art_hash = { 
+			png_art_hash = {
 				:format => 'image/png',
 				:extent => 18031,
 				:title  => 'Album art for Tim Reilly - (unknown)',

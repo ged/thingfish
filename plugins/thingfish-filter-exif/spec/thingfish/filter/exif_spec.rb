@@ -16,6 +16,7 @@ require 'pathname'
 require 'tmpdir'
 require 'spec/runner'
 require 'spec/lib/constants'
+require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 require 'thingfish/constants'
 require 'thingfish/acceptparam'
@@ -34,30 +35,30 @@ describe ThingFish::ExifFilter do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before( :each ) do
 	    @filter = ThingFish::Filter.create( 'exif' )
-	
+
 		@io = StringIO.new( TEST_CONTENT )
 		@io.stub!( :path ).and_return( :a_dummy_path )
 		@response = stub( "response object" )
 
 		@request = mock( "request object" , :null_object => true )
-		@request.stub!( :http_method ).and_return( 'POST' )
+		@request.stub!( :http_method ).and_return( :POST )
 
 		@exif_parser = mock( "exif parser", :null_object => true )
 		EXIFR::JPEG.stub!( :new ).and_return( @exif_parser )
 		EXIFR::TIFF.stub!( :new ).and_return( @exif_parser )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
-	
-	
+
+
 	### Shared behaviors
 	it_should_behave_like "A Filter"
-	
+
 
 	### Filter-specific tests
 
@@ -65,7 +66,7 @@ describe ThingFish::ExifFilter do
 		exif_data = {
 			:model => 'Pinhole Camera 2000'
 		}
-		
+
 		extracted_metadata = {
 			'exif_width'	=> 320,
 			'exif_height'	=> 240,
@@ -85,7 +86,7 @@ describe ThingFish::ExifFilter do
 		@exif_parser.should_receive( :bits ).and_return( 8 )
 		@exif_parser.should_receive( :comment ).and_return( 'Trundled by Grundle' )
 		@exif_parser.should_receive( :model ).and_return( 'Pinhole Camera 2000' )
-		
+
 		@request.should_receive( :append_metadata_for ).with( @io, extracted_metadata )
 
 		@filter.handle_request( @request, @response )
@@ -96,7 +97,7 @@ describe ThingFish::ExifFilter do
 		exif_data = {
 			:model => 'Pinhole Camera 2000'
 		}
-		
+
 		extracted_metadata = {
 			'exif_width'	=> 320,
 			'exif_height'	=> 240,
@@ -127,17 +128,16 @@ describe ThingFish::ExifFilter do
 
 		@filter.should_not_receive( :extract_exif )
 		@request.should_not_receive( :metadata )
-		
+
 		@filter.handle_request( @request, @response )
 	end
-	
+
 
 	it "ignores non-POST requests" do
-		@request.should_receive( :http_method ).
-			at_least( :once ).
-			and_return( 'GET' )
+		@request.should_receive( :http_method ).any_number_of_times.
+			and_return( :GET )
 		@request.should_not_receive( :each_body )
-		
+
 		@filter.handle_request( @request, @response )
 	end
 

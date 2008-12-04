@@ -1,23 +1,23 @@
 #!/usr/bin/ruby
-# 
+#
 # An EXIF metadata-extraction filter for ThingFish, using ruby's exifr module.
 # http://exifr.rubyforge.org/
-# 
+#
 # == Synopsis
-# 
+#
 #   plugins:
 #       filters:
 #          exif: ~
-# 
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
@@ -34,7 +34,7 @@ require 'thingfish/acceptparam'
 
 
 ### An EXIF metadata-extraction filter for ThingFish.
-###  
+###
 class ThingFish::ExifFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
@@ -44,7 +44,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 
 	# SVN Id
 	SVNId = %q$Id$
-	
+
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [
 		ThingFish::AcceptParam.parse('image/jpeg'),
@@ -63,7 +63,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 		super
 	end
 
-	
+
 	######
 	public
 	######
@@ -73,8 +73,8 @@ class ThingFish::ExifFilter < ThingFish::Filter
 	###
 	def handle_request( request, response )
 
-		return unless request.http_method == 'PUT' ||
-					  request.http_method == 'POST'
+		return unless request.http_method == :PUT ||
+					  request.http_method == :POST
 
 		request.each_body do |body, metadata|
 			case metadata[:format].downcase
@@ -134,7 +134,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 			'generates' => [],
 		  }
 	end
-	
+
 
 	### Return an Array of ThingFish::AcceptParam objects which describe which
 	### content types the filter is interested in. The default returns */*,

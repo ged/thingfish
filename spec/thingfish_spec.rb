@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -48,7 +48,7 @@ describe ThingFish do
 	it "returns a version string with a build number if asked" do
 		ThingFish.version_string(true).should =~ /\w+ [\d.]+ \(build \d+\)/
 	end
-	
+
 
 	describe " logging subsystem" do
 		before(:each) do
@@ -58,8 +58,8 @@ describe ThingFish do
 		after(:each) do
 			ThingFish.reset_logger
 		end
-	
-	
+
+
 		it "has the default logger instance after being reset" do
 			ThingFish.logger.should equal( ThingFish.default_logger )
 		end
@@ -67,7 +67,7 @@ describe ThingFish do
 		it "has the default log formatter instance after being reset" do
 			ThingFish.logger.formatter.should equal( ThingFish.default_log_formatter )
 		end
-	
+
 	end
 
 
@@ -86,7 +86,7 @@ describe ThingFish do
 		it "uses the new defaults when the logging subsystem is reset" do
 			logger = mock( "dummy logger", :null_object => true )
 			formatter = mock( "dummy logger" )
-			
+
 			ThingFish.default_logger = logger
 			ThingFish.default_log_formatter = formatter
 
@@ -95,20 +95,20 @@ describe ThingFish do
 			ThingFish.reset_logger
 			ThingFish.logger.should equal( logger )
 		end
-		
-		
+
+
 	end
 
 end
 
 
 describe UUID, " (local monkeypatches)" do
-	
+
 	it "is equal to a String with the same UUID in it" do
 		uuidobj = UUID.parse( TEST_UUID )
 		uuidobj.should == TEST_UUID
 	end
-	
+
 end
 
 

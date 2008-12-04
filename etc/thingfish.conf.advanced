@@ -8,27 +8,31 @@
 #	- Bind only to the localhost interface, port 80.
 #	- Become a daemon.
 #	- Store metadata and filedata persistently.
-#	- Try and load profiling.
+#	- Try and load the built in profiler.
 #   - All data is stored under /home/thingfish, except tempfiles, which are created in /var/tmp.
-#	- Install some useful intropection and file upload handlers.
+#	- Install some basic handlers.
 #	- Install some basic response filters.
 #	- Install some basic extraction filters.
+#	- Drop connections that idle for longer than 15 seconds
+#	- Allow pipelined requests, with a maximum of 50 at a time
+#	- Keep body data under 250k in memory, instead of creating a tempfile
 #
 ---
 port: 80
 ip: 127.0.0.1
+user: daemon
 datadir: /home/thingfish
 spooldir: /var/tmp
+resource_dir: var/www
 bufsize: 16384
-user: daemon
 daemon: true
 pidfile: thingfish.pid
+connection_timeout: 15
+pipeline_max: 50
+memory_bodysize_max: 256000
 
 profiling:
     enabled: true
-
-defaulthandler:
-    html_index: index.rhtml
 
 logging:
     level: info
@@ -40,6 +44,11 @@ plugins:
         maxsize: 1073741824
     metastore:
         name: marshalled
+    urimap:
+        /inspect: inspect
+        /upload: formupload
+        /metadata: simplemetadata
+        /search: simplesearch
     filters:
         - html
         - xml
@@ -47,14 +56,4 @@ plugins:
         - json
         - mp3info
         - exif
-    handlers:
-        - inspect:
-            uris: /inspect
-        - formupload:
-            uris: /upload
-        - metadata:
-            uris: /metadata
-        - status:
-            uris: /status
-            stat_uris: [/, /inspect, /upload, /metadata, /status]
 

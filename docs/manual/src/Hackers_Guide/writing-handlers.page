@@ -90,6 +90,9 @@ h3. Building on top of this
 
 h4. Limiting URI space
 
+:TODO: Handlers now get their @path_info@ sent to them rather than getting it from the 
+request.
+
 With the above implementation, you'd get the same response for every possible URI under the
 @/what-time-is-it@ path. But what if you want your handler to do more than just one simple
 thing?  Let's add some more functionality to our little handler by checking the request's
@@ -109,13 +112,13 @@ class TimeHandler < ThingFish::Handler
 		uri  = request.path_info
 
 		case uri
-		when '', '/'
+		when ''
 			response.body = time.to_s
-		when '/epoch'
+		when 'epoch'
 			response.body = time.to_i
-		when '/rfc822', '/rfc2822'
+		when 'rfc822', '/rfc2822'
 			response.body = time.rfc2822
-		when '/xmlschema'
+		when 'xmlschema'
 			response.body = time.xmlschema
 		else
 			return
@@ -176,13 +179,13 @@ class TimeHandler < ThingFish::Handler
 
 		# Calculate the time string based on the URI like before
 		case uri
-		when '', '/'
+		when ''
 			timestring = time.to_s
-		when '/epoch'
+		when 'epoch'
 			timestring = time.to_i
-		when '/rfc822', '/rfc2822'
+		when 'rfc822', '/rfc2822'
 			timestring = time.rfc2822
-		when '/xmlschema'
+		when 'xmlschema'
 			timestring = time.xmlschema
 		else
 			return
@@ -280,13 +283,13 @@ class TimeHandler < ThingFish::Handler
 
 		# Calculate the time string based on the URI like before
 		case uri
-		when '', '/'
+		when ''
 			timestring = time.to_s
-		when '/epoch'
+		when 'epoch'
 			timestring = time.to_i
-		when '/rfc822', '/rfc2822'
+		when 'rfc822', '/rfc2822'
 			timestring = time.rfc2822
-		when '/xmlschema'
+		when 'xmlschema'
 			timestring = time.xmlschema
 		else
 			return
@@ -363,16 +366,14 @@ class TimeHandler < ThingFish::Handler
 	static_resources_dir "static_content"
 
 	### Send the local time to the requester.
-	def handle_get_request( request, response )
-
-		uri  = request.path_info
+	def handle_get_request( path_info, request, response )
 
 		# Calculate the time string based on the URI like before
-		case uri
-		when '', '/'
+		case path_info
+		when ''
 			title = "TimeServer 3000"
 			timestring = Time.now.to_s
-			handler_uri = self.find_handler_uris.first
+			handler_uri = @path
 
 			template = self.get_erb_resource( 'timehandler.rhtml' )
 			response.body = template.result( binding() )
@@ -458,7 +459,7 @@ class TimeHandler < ThingFish::Handler
 
 		# Calculate the time string based on the URI like before
 		case uri
-		when '', '/'
+		when ''
 			
 			# Check for optional timezone argument
 			zone   = request.query_args['zone'].to_s
@@ -470,11 +471,11 @@ class TimeHandler < ThingFish::Handler
 				timestring = time.to_s
 			end
 			
-		when '/epoch'
+		when 'epoch'
 			timestring = time.to_i
-		when '/rfc822', '/rfc2822'
+		when 'rfc822', '/rfc2822'
 			timestring = time.rfc2822
-		when '/xmlschema'
+		when 'xmlschema'
 			timestring = time.xmlschema
 		else
 			return
@@ -524,7 +525,7 @@ end
 
 h3. Access to Other Parts of the System
 
-When the Daemon starts up, each handler gets a reference to the Daemon object via the @#listener=@ 
+When the Daemon starts up, each handler gets a reference to the Daemon object via the @#on_startup@ 
 method. The implementation of that method provided by @ThingFish::Handler@ grabs a reference to the
 loaded FileStore, MetaStore, and Config objects and sets them in instance variables.
 
@@ -556,8 +557,15 @@ end
 <?end example?>
 
 
+h3. Headers
+
+TODO: @(response.header['foo'] = 'bar' vs. response.header.append( 'foo' => 'bar' ))@
+
+
+
 fn1(footnote). We'd prefer a templating system that avoided coupling together the
 rendering of the output with the implementation details of the handler code (e.g.,
 variable names, scoping at the time of the @binding()@ call, etc.), but we chose to use
 ERb for ThingFish to avoid introducing further dependencies.
+
 

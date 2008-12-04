@@ -1,26 +1,26 @@
 #!/usr/bin/ruby
-# 
+#
 # An XML conversion filter for ThingFish.
-# 
+#
 # Requires ClXMLSerial and Tidy.
-#      http://clabs.org/clxmlserial.htm 
+#      http://clabs.org/clxmlserial.htm
 #      http://rubyforge.org/projects/tidy/
-# 
+#
 # *** This was originally created for demonstration purposes.  It isn't especially
 #     useful for any practical purpose.  If you really want to use XML instead of
 #     YAML, JSON, or another decent serialization library, you should probably
 #     subclass this and modify to taste.
 #
 # == Synopsis
-# 
+#
 #   plugins:
 #     filters:
 #       xml:
 #         usetidy: true
 #         tidypath: /path/to/tidy/library.so
-# 
+#
 # == Config Keys
-# 
+#
 # 	[+usetidy+]
 # 		Enable use of the Tidy library for pretty-indented XML output.
 #
@@ -31,24 +31,25 @@
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
 	require 'rbconfig'
 	require 'cl/xmlserial'
 	require 'ipaddr'
-	
+
 	require 'thingfish'
 	require 'thingfish/mixins'
 	require 'thingfish/constants'
@@ -89,14 +90,14 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	HANDLED_TYPES.freeze
-	
+
 	# The XML mime type.
 	XML_MIMETYPE = 'application/xml'
 	XML_MIMETYPE.freeze
-	
+
 	# The default path to libtidy to try in case the user doesn't configure one
 	DEFAULT_TIDYLIB_PATH = "%s/libtidy.%s" % Config::CONFIG.values_at( 'libdir', 'DLEXT' )
-	
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -114,7 +115,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 
 		super
 	end
-	
+
 
 	######
 	public
@@ -132,7 +133,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 		# is something we know how to convert
 		return unless request.explicitly_accepts?( XML_MIMETYPE ) &&
 			self.accept?( response.content_type )
-		
+
 		# Errors converting to XML should result in a 500.
 		self.log.debug "Converting a %s response to %s" %
 			[ response.content_type, XML_MIMETYPE ]
@@ -169,7 +170,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 		  }
 	end
 
-	
+
 
 	#########
 	protected
@@ -178,7 +179,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	### Pass the response +body+ through the XML serializer and tidy.
 	def make_xml( body )
 		xml = body.to_xml
-		
+
 		if @use_tidy
 			xml = Tidy.open do |tidy|
 				tidy.options.output_xml = true
@@ -187,7 +188,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 				tidy.clean( xml )
 			end
 		end
-		
+
 		return xml
 	end
 
@@ -200,7 +201,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	def configure_tidy( options )
 		self.log.debug "Attempting to enable Tidy"
 		require 'tidy'
-		
+
 		tidylib = options['tidypath'] || DEFAULT_TIDYLIB_PATH
 
 		if File.exist?( tidylib )
@@ -214,7 +215,7 @@ class ThingFish::XMLFilter < ThingFish::Filter
 	rescue LoadError => err
 		self.log.error "Can't use Tidy: %s" % [ err.message ]
 	end
-	
+
 end # class ThingFish::XMLFilter
 
 # vim: set nosta noet ts=4 sw=4:

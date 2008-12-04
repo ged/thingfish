@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -36,19 +36,17 @@ include ThingFish::SpecHelpers
 
 describe ThingFish::StaticContentHandler do
 	include ThingFish::SpecHelpers
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
-
 
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + '/tmp'
-		@handler = ThingFish::Handler.create( 'staticcontent', resdir )
+		@handler = ThingFish::Handler.create( 'staticcontent', '/foom', resdir )
 
-		@listener = mock( "thingfish daemon", :null_object => true )
-		@handler.listener = @listener
+		@daemon = mock( "thingfish daemon", :null_object => true )
+		@handler.on_startup( @daemon )
 
 		@request          = mock( "request", :null_object => true )
 		@request_headers  = mock( "request headers", :null_object => true )
@@ -59,53 +57,51 @@ describe ThingFish::StaticContentHandler do
 		@response.stub!( :headers ).and_return( @response_headers )
 
 		@pathname = mock( "Pathname", :null_object => true )
-	end	
-	
+	end
+
+
 	### Shared behaviors
 	it_should_behave_like "A Handler"
 
 
 	it "does nothing if the requested path doesn't exist" do
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		@handler.stub!( :get_safe_path ).with( '/blorg.txt' ).and_return( @pathname )
 		@pathname.should_receive( :exist? ).and_return( false )
 
 		@response.should_not_receive( :status= )
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/blorg.txt', @request, @response )
 	end
 
 
 	it "refuses to serve directories" do
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		@handler.stub!( :get_safe_path ).with( '/blorgdir' ).and_return( @pathname )
 		@pathname.should_receive( :exist? ).and_return( true )
 		@pathname.should_receive( :file? ).and_return( false )
 
 		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/blorgdir', @request, @response )
 	end
 
 
 	it "refuses to serve files outside of its resource directory" do
-		@request.should_receive( :path_info ).
-			and_return( '../../etc/shadow' )
-
 		@response.should_not_receive( :status= )
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/../../etc/shadow', @request, @response )
 	end
 
 
 	it "respects file access permissions" do
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		@handler.stub!( :get_safe_path ).with( '/blorg.txt' ).and_return( @pathname )
 		@pathname.should_receive( :exist? ).and_return( true )
 		@pathname.should_receive( :file? ).and_return( true )
 		@pathname.should_receive( :readable? ).and_return( false )
 
 		@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/blorg.txt', @request, @response )
 	end
 
 
 	it "sets the appropriate content type for the file" do
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		@handler.stub!( :get_safe_path ).with( '/blorg.html' ).and_return( @pathname )
 
 		@pathname.should_receive( :extname ).and_return( '.html' )
 		@response.should_receive( :content_type= ).with( MIMETYPE_MAP['.html'] )
@@ -123,12 +119,12 @@ describe ThingFish::StaticContentHandler do
 		@pathname.should_receive( :open ).with('r').and_return( :an_IO )
 		@response.should_receive( :body= ).with( :an_IO )
 
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/blorg.html', @request, @response )
 	end
 
 
 	it "defaults to a generic content type as fallback" do
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
+		@handler.stub!( :get_safe_path ).with( '/blorg.floop' ).and_return( @pathname )
 
 		@pathname.should_receive( :extname ).and_return( '.floop' )
 		@response.should_receive( :content_type= ).
@@ -147,17 +143,17 @@ describe ThingFish::StaticContentHandler do
 		@pathname.should_receive( :open ).with('r').and_return( :an_IO )
 		@response.should_receive( :body= ).with( :an_IO )
 
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/blorg.floop', @request, @response )
 	end
 
 
 	INDEX_FILE = ThingFish::StaticContentHandler::DEFAULT_INDEX_FILE
 
 	it "serves index files" do
-		@request.should_receive( :path_info ).
-			and_return( 'this_is_a_directory_with_an_index_file' )
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
-		
+		@handler.stub!( :get_safe_path ).
+			with( '/this_is_a_directory_with_an_index_file' ).
+			and_return( @pathname )
+
 		@pathname.should_receive( :directory? ).and_return( true )
 		@indexpath = mock( "index file Pathname object" )
 		@pathname.should_receive( :+ ).with( INDEX_FILE ).and_return( @indexpath )
@@ -183,17 +179,17 @@ describe ThingFish::StaticContentHandler do
 		@indexpath.should_receive( :open ).with('r').and_return( :an_IO )
 		@response.should_receive( :body= ).with( :an_IO )
 
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/this_is_a_directory_with_an_index_file', @request, @response )
 	end
-	
-	
+
+
 	it "sends a 304 NOT MODIFIED response if the request's etag header matches" do
-		@request.should_receive( :path_info ).
-			and_return( 'barrel/o/pork.html' )
-		@handler.stub!( :get_safe_path ).and_return( @pathname )
-		
+		@handler.stub!( :get_safe_path ).
+			with( '/barrel/o/pork.html' ).
+			and_return( @pathname )
+
 		mtime = 3.days.ago
-		
+
 		@pathname.should_receive( :directory? ).and_return( false )
 		@pathname.should_receive( :exist? ).and_return( true )
 		@pathname.should_receive( :file? ).and_return( true )
@@ -201,7 +197,7 @@ describe ThingFish::StaticContentHandler do
 
 		stat = stub( "file stat", :mtime => mtime, :size => 10, :ino => 23452 )
 		@pathname.should_receive( :stat ).at_least( :once ).and_return( stat )
-			
+
 		@request.should_receive( :is_cached_by_client? ).
 			with( "%d-%d-%d" % [ mtime.to_i, 10, 23452 ], mtime ).
 			and_return( true )
@@ -211,10 +207,10 @@ describe ThingFish::StaticContentHandler do
 		@pathname.should_not_receive( :open ).with('r').and_return( :an_IO )
 		@response.should_not_receive( :body= ).with( :an_IO )
 
-		@handler.handle_get_request( @request, @response )
+		@handler.find_static_file( '/barrel/o/pork.html', @request, @response )
 	end
-	
-	
+
+
 end
 
 

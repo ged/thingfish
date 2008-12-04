@@ -12,14 +12,9 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-The back end of a ThingFish instance...
+Topics to cover
 
-h3. What's a FileStore do?
-
-h3. The mandatory interface
-
-h3. Optional interface
-
-
-
-
+* What's a FileStore do?
+* The mandatory interface
+* Optional interface
+* Hook #on_startup to do stuff when the daemon starts

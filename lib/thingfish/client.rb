@@ -1,15 +1,15 @@
 #!/usr/bin/ruby
-# 
+#
 # ThingFish::Client -- The Ruby ThingFish client library
-# 
+#
 # == Synopsis
-# 
+#
 #   require 'thingfish/client'
 #
 #   # Connect to the ThingFish server
 #   client = ThingFish::Client.new( server, username, password )
 #
-#   
+#
 #   ### Storing
 #
 #   # Create the entry then save it
@@ -22,7 +22,7 @@
 #   client.store( File.open("woowoooo.wav"), :author => 'Bubb Rubb' )
 #   resource = client.store( File.open("mahlonblob.dxf"), :format => 'image/x-dxf' )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
-#   
+#
 #   # Set some more metadata (method style):
 #   resource.owner = 'mahlon'
 #   resource.description = "3D model used to test the new All Open Source pipeline"
@@ -38,12 +38,12 @@
 #
 #
 #   ### Fetching
-#   
+#
 #   # Fetch a resource by UUID
 #   uuid = '7602813e-dc77-11db-837f-0017f2004c5e'
 #   resource = client.fetch( uuid )
 #   # =>  #<ThingFish::Resource:0xa5a5be UUID:7602813e-dc77-11db-837f-0017f2004c5e>
-#   
+#
 #   # Use the data
 #   resource.data # => (DXF data)
 #
@@ -56,16 +56,16 @@
 #   # Check to see if a UUID is a valid resource
 #   client.has?( uuid ) # => true
 #
-#   
+#
 #   ### Deleting
-#   
+#
 #   client.delete( uuid )
 #   # -or-
 #   client.delete( resource )
-#   
+#
 #
 #   ### Searching
-# 
+#
 #   # ...or search for resources whose metadata match search criteria. Find
 #   # all DXF objects owned by Mahlon:   #TODO#
 #   uuids = client.find( :format => 'image/x-dxf', :owner => 'mahlon'  )
@@ -75,17 +75,18 @@
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'net/http'
@@ -105,15 +106,15 @@ require 'thingfish/resource'
 ### The thingfish client library
 class ThingFish::Client
 	include ThingFish::Constants::Patterns,
-		ThingFish::Constants,
-		ThingFish::Loggable
+			ThingFish::Constants,
+			ThingFish::Loggable
 
 	extend Forwardable
 
 	# Assure that 1.2 features present in net/http
 	Net::HTTP.version_1_2
-	
-	
+
+
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -132,7 +133,7 @@ class ThingFish::Client
 
 	# Maximum size of a resource response that's kept in-memory. Anything larger
 	# gets buffered to a tempfile.
-	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes 
+	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes
 
 
 	#################################################################
@@ -146,7 +147,7 @@ class ThingFish::Client
 	def initialize( endpoint=DEFAULT_HOST, options={} )
 		@server_info = nil
 		@profile     = nil
-		
+
 		# If it contains a '/', assume it's a URI
 		if endpoint =~ %r{/}
 			@uri = URI.parse( endpoint )
@@ -174,7 +175,7 @@ class ThingFish::Client
 
 	# The URI of the API endpoint
 	attr_reader :uri
-	
+
 	# Profiling boolean
 	attr_accessor :profile
 
@@ -184,15 +185,15 @@ class ThingFish::Client
 		:scheme=, :userinfo=, :user=, :password=, :host=, :port=
 
 
-	### Return a stringified version of the client's URI with the password elided.
-	def politeuri
-		newuri = self.uri.dup
-		newuri.password = newuri.password.gsub(/./, 'x') if newuri.password
-		return newuri
-	end
-	
+		### Return a stringified version of the client's URI with the password elided.
+		def politeuri
+			newuri = self.uri.dup
+			newuri.password = newuri.password.gsub(/./, 'x') if newuri.password
+			return newuri
+		end
 
-	### Return a human-readable 
+
+	### Return a human-readable
 	def inspect
 		"<%s:0x%08x %s>" % [ self.class.name, self.object_id * 2, self.politeuri ]
 	end
@@ -212,27 +213,27 @@ class ThingFish::Client
 			send_request( request ) do |response|
 				@server_info = self.extract_response_body( response )
 			end
-			
+
 			self.log.debug "Server info is: %p" % [ @server_info ]
 		end
-		
+
 		return @server_info
 	end
-	
 
-	### Return the server URI for the given +handler+ (as mapped in the #server_info :handlers 
+
+	### Return the server URI for the given +handler+ (as mapped in the #server_info :handlers
 	### hash)
 	def server_uri( handler )
 		info = self.server_info
 		path = info['handlers'][ handler.to_s ] or
-			raise ThingFish::ClientError, "server does not support the '#{handler}' service"
-		
+		raise ThingFish::ClientError, "server does not support the '#{handler}' service"
+
 		self.log.debug "Server URI for the '%s' service is: %s" %
 			[ handler, self.uri + path.first ]
-		
+
 		return self.uri + path.first.chomp('/')
 	end
-	
+
 
 	#################################################################
 	###	F E T C H   F U N C T I O N S
@@ -256,7 +257,7 @@ class ThingFish::Client
 		self.log.info "Fetching metadata for a resource object from: %s" % [ fetchuri ]
 		request = Net::HTTP::Get.new( fetchuri.path )
 		request['Accept'] = ACCEPT_HEADER
-			
+
 		self.send_request( request ) do |response|
 			self.log.debug "Creating a ThingFish::Resource from %p" % [response]
 			metadata = self.extract_response_body( response )
@@ -277,14 +278,14 @@ class ThingFish::Client
 		self.log.info "Fetching resource data from: %s" % [ fetchuri ]
 		request = Net::HTTP::Get.new( path )
 		request['Accept'] = '*/*'
-		
+
 		io = self.send_request( request ) do |response|
 			self.create_io_from_response( uuid, response )
 		end
 
 		return io
 	end
-	
+
 
 	### Check the validity of a uuid by doing a HEAD, and return
 	### a boolean.
@@ -294,13 +295,13 @@ class ThingFish::Client
 		resource = nil
 
 		request = Net::HTTP::Head.new( fetchuri.path )
-			
+
 		res = self.send_request( request )
 		return res.is_a?( Net::HTTPSuccess )
 	end
-	
-	
-	### Store the given +resource+ (which can be a ThingFish::Resource, a String 
+
+
+	### Store the given +resource+ (which can be a ThingFish::Resource, a String
 	### containing resource data, or an IO from which resource data can be read) on
 	### the server. The optional +metadata+ hash can be used to set metadata values
 	### for the resource.
@@ -310,9 +311,9 @@ class ThingFish::Client
 
 		return resource
 	end
-	
-	
-	### Store just the data part of the given +resource+ on the server, creating a new 
+
+
+	### Store just the data part of the given +resource+ on the server, creating a new
 	### ThingFish::Resource if +resource+ doesn't already have a UUID.
 	def store_data( resource )
 		resource = ThingFish::Resource.new( resource, self ) unless
@@ -326,22 +327,22 @@ class ThingFish::Client
 			self.log.debug "Creating an update PUT request for resource %p" % [ uuid ]
 			request = Net::HTTP::Put.new( uri.path + uuid )
 		else
-			self.log.debug "Creating a creation POST request for a new resource" 
+			self.log.debug "Creating a creation POST request for a new resource"
 			request = Net::HTTP::Post.new( uri.path )
 		end
 
-        self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
+		self.log.debug "Setting request %p body stream to %p" % [ request, resource.io ]
 
 		request.body_stream = resource.io
 		request['Content-Length'] = resource.extent
 		request['Content-Type'] = resource.format
 		request['Content-Disposition'] = 'attachment;filename="%s"' %
-		 	[ resource.title ] if resource.title
+			[ resource.title ] if resource.title
 		request['Accept'] = ACCEPT_HEADER
 
 		self.send_request( request ) do |response|
 
-			# Set the UUID if it wasn't already and merge metadata returned in the response 
+			# Set the UUID if it wasn't already and merge metadata returned in the response
 			# without clobbering any existing values
 			resource.uuid = response['Location'][UUID_REGEXP] unless uuid
 			metadata = self.extract_response_body( response )
@@ -355,8 +356,8 @@ class ThingFish::Client
 	### Store the metadata for the given +resource+ on the server. The +resource+ must already
 	### have a UUID or an exception will be raised.
 	def store_metadata( resource )
-		uuid = resource.uuid or 
-			raise ThingFish::ClientError,
+		uuid = resource.uuid or
+		raise ThingFish::ClientError,
 			"cannot store metadata for an unsaved resource."
 
 		uri = self.server_uri( 'simplemetadata' )
@@ -377,7 +378,7 @@ class ThingFish::Client
 
 		return resource
 	end
-	
+
 
 
 	### Delete the resource that corresponds to a given uuid on the server. The
@@ -389,11 +390,11 @@ class ThingFish::Client
 
 		uri = self.server_uri( :default )
 		request = Net::HTTP::Delete.new( uri.path + "#{uuid}" )
-		
+
 		send_request( request ) do |response|
 			response.error! unless response.is_a?( Net::HTTPSuccess )
 		end
-		
+
 		return true
 	end
 
@@ -405,8 +406,8 @@ class ThingFish::Client
 		query_args = make_query_args( criteria )
 		request = Net::HTTP::Get.new( uri.path + query_args )
 		resources = []
-	
-		request['Accept'] = ACCEPT_HEADER	
+
+		request['Accept'] = ACCEPT_HEADER
 		send_request( request ) do |response|
 			response.error! unless response.is_a?( Net::HTTPSuccess )
 			uuids = self.extract_response_body( response )
@@ -414,22 +415,22 @@ class ThingFish::Client
 				resources << ThingFish::Resource.new( nil, self, uuid )
 			end
 		end
-		
+
 		return resources
 	end
-	
-	
+
+
 	#########
 	protected
 	#########
 
 	### Extract the serialized object in the given +response+'s entity body and return it.
 	def extract_response_body( response )
-		
-		case response['Content-Type']			
+
+		case response['Content-Type']
 		when /#{RUBY_MARSHALLED_MIMETYPE}/i
 			self.log.debug "Unmarshalling a marshalled-ruby-object response body."
-            return Marshal.load( response.body )
+			return Marshal.load( response.body )
 
 		when %r{text/x-yaml}i
 			self.log.debug "Deserializing a YAML-encoded response body."
@@ -442,8 +443,8 @@ class ThingFish::Client
 		end
 
 	end
-	
-	
+
+
 	### Read the data from the given +response+ and either return an IO (if it's
 	### larger than MAX_INMEMORY_RESPONSE_SIZE), or an in-memory StringIO.
 	def create_io_from_response( uuid, response )
@@ -454,7 +455,7 @@ class ThingFish::Client
 			self.log.debug "...buffering to disk"
 			file = Pathname.new( Dir.tmpdir ) + "tf-#{uuid}.data.0"
 			fh = nil
-			
+
 			begin
 				fh = file.open( File::CREAT|File::RDWR|File::EXCL, 0600 )
 			rescue Errno::EEXIST
@@ -467,17 +468,17 @@ class ThingFish::Client
 				fh.write( chunk )
 			end
 			fh.rewind
-			
+
 			return fh
 		else
 			self.log.debug "...'buffering' to memory"
 			return StringIO.new( response.body )
 		end
 	end
-	
-	
-	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI 
-	### object). The +limit+ specifies how many redirects will be followed before giving 
+
+
+	### Send the given HTTP::Request to the host and port specified by +uri+ (a URI
+	### object). The +limit+ specifies how many redirects will be followed before giving
 	### up.
 	def send_request( req, limit=10 )
 		req['User-Agent'] = USER_AGENT_HEADER
@@ -487,11 +488,11 @@ class ThingFish::Client
 		if @profile
 			req.path << ( req.path =~ /\?/ ? "&#{PROFILING_ARG}=true" : "?#{PROFILING_ARG}=true" )
 		end
-		
+
 		Net::HTTP.start( uri.host, uri.port ) do |conn|
 			conn.request( req ) do |response|
 				return response unless block_given?
-				
+
 				self.log.debug "Response: " + dump_response_object( response )
 
 				case response
@@ -515,10 +516,10 @@ class ThingFish::Client
 		query_args = hash.collect do |k,v|
 			"%s=%s" % [ URI.escape(k.to_s), URI.escape(v.to_s) ]
 		end
-		
+
 		return '?' + query_args.sort.join(';')
 	end
-	
+
 
 	### Return the request object as a string suitable for debugging
 	def dump_request_object( request )
@@ -539,9 +540,9 @@ class ThingFish::Client
 			buf << "#{k}: #{v}\r\n"
 		end
 		buf << "\r\n"
-		
+
 		return buf
-	end	
+	end
 end # class ThingFish::Client
 
 # vim: set nosta noet ts=4 sw=4:

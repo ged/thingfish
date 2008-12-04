@@ -65,11 +65,4 @@ HAVE A PLEASANT DAY.
 	exit 64
 end
 
-instance = ThingFish::Daemon.new( config )
-accepter = instance.run
-
-Signal.trap( "INT" ) { instance.shutdown("Interrupted") }
-Signal.trap( "TERM" ) { instance.shutdown("Terminated") }
-
-accepter.join
-
+ThingFish::Daemon.new( config ).start

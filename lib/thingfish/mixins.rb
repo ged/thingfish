@@ -2,82 +2,6 @@
 #
 # A collection of mixins shared between ThingFish classes
 #
-# == Synopsis
-#
-#   require 'thingfish/mixins'
-#
-#   # Loggable
-#   class MyClass
-#       include ThingFish::Loggable
-#
-#       def foo
-#           self.log.debug "something"
-#       end
-#   end
-#
-#   # StaticResourcesHandler
-#   class MyHandler < ThingFish::Handler
-#       include ThingFish::StaticResourcesHandler
-#   
-#       static_resource_dir "static"
-#
-#       # ...
-#   end
-#
-#   # ResourceLoader
-#   class MyMetastore < ThingFish::MetaStore
-#       include ThingFish::ResourceLoader
-#   
-#       def initialize( options )
-#           unless schema_installed?
-#               sql = self.get_resource( 'base_schema.sql' )
-#               self.install_schema( sql )
-#           end
-#           ...
-#       end
-#
-#   end
-#
-#   # AbstractClass
-#   class MyBaseClass
-#       include ThingFish::AbstractClass
-#   
-#       # Define a method that will raise a NotImplementedError if called
-#       virtual :api_method
-#   end
-#
-#   # NumericConstantMethods
-#   class Numeric
-#       include ThingFish::NumericConstantMethods
-#   end
-#
-# == Description
-#
-# This module includes a collection of mixins used in ThingFish classes. It currently
-# contains:
-#
-# === ThingFish::Loggable
-#
-# Adds a #log method to the including class which can be used to access the global
-# logging facility.
-#
-# === ThingFish::StaticResourcesHandler
-#
-# Adds the ability to a ThingFish::Handler to serve static content from its resources
-# directory.
-#
-# === ThingFish::ResourceLoader
-#
-# Adds some methods that can be used to load content from files in a 
-# resources directory.
-#
-# === ThingFish::AbstractClass
-# 
-# Hides your class's ::new method and adds a method generator called 'virtual' for
-# defining API methods. If subclasses of your class don't provide implementations of
-# "virtual" methods, NotImplementedErrors will be raised if they are called.
-#
-#
 # == Version
 #
 #  $Id$
@@ -91,7 +15,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'rbconfig'
@@ -103,7 +28,20 @@ require 'thingfish'
 
 module ThingFish # :nodoc:
 
-	### Add logging to a ThingFish class
+
+	### Adds a #log method to the including class which can be used to access the global
+	### logging facility.
+	###
+	###   require 'thingfish/mixins'
+	###
+	###   class MyClass
+	###       include ThingFish::Loggable
+	###
+	###       def foo
+	###           self.log.debug "something"
+	###       end
+	###   end
+	###
 	module Loggable
 
 		LEVEL = {
@@ -112,7 +50,7 @@ module ThingFish # :nodoc:
 			:warn  => Logger::WARN,
 			:error => Logger::ERROR,
 			:fatal => Logger::FATAL,
-		  }
+		}
 
 		### A logging proxy class that wraps calls to the logger into calls that include
 		### the name of the calling class.
@@ -123,8 +61,8 @@ module ThingFish # :nodoc:
 				@classname   = klass.name
 				@force_debug = force_debug
 			end
-			
-			### Delegate calls the global logger with the class name as the 'progname' 
+
+			### Delegate calls the global logger with the class name as the 'progname'
 			### argument.
 			def method_missing( sym, msg=nil, &block )
 				return super unless LEVEL.key?( sym )
@@ -149,20 +87,128 @@ module ThingFish # :nodoc:
 	end # module Loggable
 
 
-	### Add the ability to serve static content from a ThingFish::Handler's resource
-	### directory
+	### Adds some methods that can be used to load content from files in a
+	### resources directory.
+	###
+	###   class MyMetastore < ThingFish::MetaStore
+	###       include ThingFish::ResourceLoader
+	###
+	###       def initialize( options )
+	###           @resource_dir = options['resource_dir']
+	###           unless schema_installed?
+	###               sql = self.get_resource( 'base_schema.sql' )
+	###               self.install_schema( sql )
+	###           end
+	###           ...
+	###       end
+	###   end
+	###
+	module ResourceLoader
+		include ThingFish::Loggable,
+		        ERB::Util
+
+		### Return a Pathname object that points at the resource directory
+		### for this handler
+		def resource_dir
+
+			# If a resource dir hasn't been specified, figure out a reasonable default
+			# using Ruby's datadir
+			unless @resource_dir
+				datadir = Pathname.new( ::Config::CONFIG['datadir'] )
+				@resource_dir = datadir + 'thingfish' + self.plugin_name
+			end
+
+			return Pathname.new( @resource_dir )
+		end
+
+
+		### Return the normalized name of the including class, which
+		### determines what the resources directory is named.
+		def plugin_name
+			return self.class.name.
+				sub( /ThingFish::/, '' ).
+				sub( /handler$/i, '' ).
+				gsub( /\W+/, '-' ).
+				downcase
+		end
+
+
+		#########
+		protected
+		#########
+
+		### Return true if the specified resource exists
+		def resource_exists?( path )
+			resdir = self.resource_dir or
+				raise "No resource directory available"
+			resource = resdir + path
+			return resource.exist?
+		end
+
+
+		### Return true if the specified directory exists under the resource
+		### directory.
+		def resource_directory?( path )
+			resdir = self.resource_dir or
+				raise "No resource directory available"
+			resource = resdir + path
+			return resource.directory?
+		end
+
+
+		### Read the content from the file
+		def get_resource( path )
+			return self.get_resource_io( path ).read
+		end
+
+
+		### Load the specified +resource+ as an ERB template and return it.
+		def get_erb_resource( resource )
+			source = self.get_resource( resource )
+			self.log.debug "Making new ERB template from %p (%d bytes)" %
+				[resource, source.length]
+			return ERB.new( source )
+		end
+
+
+		### Return an IO object opened to the file specified by +path+
+		### relative to the plugin's resource directory.
+		def get_resource_io( path )
+			resdir = self.resource_dir or
+				raise "No resource directory available"
+			self.log.debug "Trying to open resource %p from %s" % [ path, resdir ]
+			( resdir + path ).open( File::RDONLY )
+		end
+
+	end # module ResourceLoader
+
+
+	### Adds the ability to a ThingFish::Handler to serve static content from its resources
+	### directory.
+	###
+	###   class MyHandler < ThingFish::Handler
+	###       include ThingFish::StaticResourcesHandler
+	###
+	###       static_resource_dir "static"
+	###
+	###       # ...
+	###   end
+	###
 	module StaticResourcesHandler
-		
+
 		### Inclusion callback -- add class methods to the including module.
 		def self::included( mod )
+
+			# Add our class method and the resource loader mixin to including classes
 			mod.extend( ClassMethods )
+			mod.send( :include, ResourceLoader )
 			super
 		end
-		
+
 		### Methods installed in including classes
 		module ClassMethods
-			
-			### Set the directory which will be considered the root for all static 
+
+			### Set the directory which will be considered the root for all static
 			### content requests.
 			def static_resources_dir( dir=nil )
 				if dir
@@ -173,31 +219,38 @@ module ThingFish # :nodoc:
 		end
 
 
-		### Hook the listener callback
-		def listener=( listener )
+		### Register the static handler as a fallback for the including handler when it
+		### is registered with the +daemon+.
+		def on_startup( daemon )
 			require 'thingfish/handler'
 			super
-			
-			basedir = self.resource_dir + self.class.static_resources_dir
-			self.log.debug "Serving static resources for %s from %s" % 
-				[self.class.name, basedir.to_s]
-			my_uris = self.find_handler_uris
 
-			handler = ThingFish::Handler.create( 'staticcontent', basedir )
-			my_uris.each do |uri|
-				self.log.debug "...registering fallback %s for a %s at %p" %
-				 	[ handler.class.name, self.class.name, uri ]
-				listener.register( uri, handler )
-			end
+			basedir = self.resource_dir + self.class.static_resources_dir
+			self.log.debug "Serving static resources for %s from %s" %
+				[self.class.name, basedir.to_s]
+
+			handler = ThingFish::Handler.create( 'staticcontent', @path, basedir )
+			self.log.debug "...registering fallback %s for a %s at %p" %
+			 	[ handler.class.name, self.class.name, @path ]
+			daemon.register( @path, handler, true )
 		end
 	end # module StaticResourcesHandler
-	
-	
+
+
 	### Add convenience methods for becoming a daemon and dropping privileges.
+	###
+	###   class MyNewServer
+	###       include Daemonizable
+	###
+	###       def run
+	###           self.become_user( 'daemon' )
+	###           self.daemonize( '/var/run/mynewserver.pid' )
+	###       end
+	###   end
 	module Daemonizable
-		
+
 		private
-		
+
 		### Become a daemon, doing all the things a good daemon does.
 		### TODO:  Not sure how to adequately test anything involving fork()...
 		def daemonize( pidfile=nil )
@@ -222,127 +275,39 @@ module ThingFish # :nodoc:
 			at_exit do
 				File.delete( pidfile ) if File.exist?( pidfile )
 			end
-				
+
 			Dir.chdir('/')
 			File.umask(0)
 			[ $stdin, $stdout, $stderr ].each { |io| io.send( :reopen, '/dev/null' ) }
 		end
-		
-		
+
+
 		### Attempt to set the effective +uid+ to +username+.
 		def become_user( username )
 			self.log.debug "Dropping privileges (user: %s)" % [ username ]
 			Process.euid = Etc.getpwnam( username ).uid
 		end
 	end
-	
-	
-	### Adds some methods that can be used to load content from files in a 
-	### resources directory.
-	module ResourceLoader
-		include ThingFish::Loggable,
-		        ERB::Util
-
-		### Set up the resource directory of the object
-		def initialize( *args )
-			@resource_dir = nil
-
-			# Try to find the resource directory argument in the first Hash
-			if options = args.find {|obj| obj.is_a?(Hash) }
-				@resource_dir = options['resource_dir'] || options[:resource_dir]
-			end
-
-			if self.class.superclass.instance_method(:initialize).arity.zero?
-				super()
-			else
-				super
-			end
-		end
 
 
-		### Return a Pathname object that points at the resource directory 
-		### for this handler
-		def resource_dir
-
-			# If a resource dir hasn't been specified, figure out a reasonable default
-			# using Ruby's datadir
-			unless @resource_dir
-				datadir = Pathname.new( ::Config::CONFIG['datadir'] )
-				@resource_dir = datadir + 'thingfish' + self.plugin_name
-			end
-
-			return Pathname.new( @resource_dir )
-		end
-
-
-		### Return the normalized name of the including class, which 
-		### determines what the resources directory is named.
-		def plugin_name
-			return self.class.name.
-				sub( /ThingFish::/, '' ).
-				sub( /handler$/i, '' ).
-				gsub( /\W+/, '-' ).
-				downcase
-		end
-		
-
-		#########
-		protected
-		#########
-
-		### Return true if the specified resource exists
-		def resource_exists?( path )
-			resdir = self.resource_dir or
-				raise "No resource directory available"
-			resource = resdir + path
-			return resource.exist?
-		end
-
-
-		### Return true if the specified directory exists under the resource 
-		### directory.
-		def resource_directory?( path )
-			resdir = self.resource_dir or
-				raise "No resource directory available"
-			resource = resdir + path
-			return resource.directory?
-		end
-
-
-		### Read the content from the file 
-		def get_resource( path )
-			return self.get_resource_io( path ).read
-		end
-
-
-		### Load the specified +resource+ as an ERB template and return it.
-		def get_erb_resource( resource )
-			source = self.get_resource( resource )
-			self.log.debug "Making new ERB template from %p (%d bytes)" % 
-				[resource, source.length]
-			return ERB.new( source )
-		end
-
-
-		### Return an IO object opened to the file specified by +path+ 
-		### relative to the plugin's resource directory.
-		def get_resource_io( path )
-			resdir = self.resource_dir or 
-				raise "No resource directory available"
-			self.log.debug "Trying to open resource %p from %s" % [ path, resdir ]
-			( resdir + path ).open( File::RDONLY )
-		end
-
-	end # module ResourceLoader
-	
-	
-	### Adds abstract class helpers to a class.
+	### Hides your class's ::new method and adds a method generator called 'virtual' for
+	### defining API methods. If subclasses of your class don't provide implementations of
+	### "virtual" methods, NotImplementedErrors will be raised if they are called.
+	###
+	###   # AbstractClass
+	###   class MyBaseClass
+	###       include ThingFish::AbstractClass
+	###
+	###       # Define a method that will raise a NotImplementedError if called
+	###       virtual :api_method
+	###   end
+	###
 	module AbstractClass
-		
+
 		### Methods to be added to including classes
 		module ClassMethods
-			
-			### Define one or more "virtual" methods which will raise 
+
+			### Define one or more "virtual" methods which will raise
 			### NotImplementedErrors when called via a concrete subclass.
 			def virtual( *syms )
 				syms.each do |sym|
@@ -353,19 +318,19 @@ module ThingFish # :nodoc:
 					}
 				end
 			end
-			
-		
+
+
 			### Turn subclasses' new methods back to public.
 			def inherited( subclass )
 				subclass.module_eval { public_class_method :new }
 				super
 			end
-		
+
 		end # module ClassMethods
 
-		
+
 		extend ClassMethods
-		
+
 		### Inclusion callback
 		def self::included( mod )
 			super
@@ -375,17 +340,34 @@ module ThingFish # :nodoc:
 			end
 		end
 
-		
+
 	end # module AbstractClass
 
 
-	### A collection of methods to add to Numeric for convenience (stolen from 
-	### ActiveSupport)
+	### A collection of methods to add to Numeric for convenience (stolen from
+	### ActiveSupport), split into ThingFish::NumericConstantMethods::Time and
+	### ThingFish::NumericConstantMethods::Bytes.
+	###
+	### This module is added to Numeric in lib/thingfish/monkeypatches.rb
 	module NumericConstantMethods
 
-		### Time constants
+		### A collection of convenience methods for calculating times using
+		### Numeric objects:
+		###
+		###   # Add convenience methods to Numeric objects
+		###   class Numeric
+		###       include ThingFish::NumericConstantMethods::Time
+		###   end
+		###
+		###   irb> 138.seconds.ago
+		###       ==> Fri Aug 08 08:41:40 -0700 2008
+		###   irb> 18.years.ago
+		###       ==> Wed Aug 08 20:45:08 -0700 1990
+		###   irb> 2.hours.before( 6.minutes.ago )
+		###       ==> Fri Aug 08 06:40:38 -0700 2008
+		###
 		module Time
-			
+
 			### Number of seconds (returns receiver unmodified)
 			def seconds
 				return self
@@ -396,7 +378,7 @@ module ThingFish # :nodoc:
 			def minutes
 				return self * 60
 			end
-			alias_method :minute, :minutes  
+			alias_method :minute, :minutes
 
 			### Returns the number of seconds in <receiver> hours
 			def hours
@@ -435,14 +417,14 @@ module ThingFish # :nodoc:
 			alias_method :year, :years
 
 
-			### Returns the Time <receiver> number of seconds before the 
+			### Returns the Time <receiver> number of seconds before the
 			### specified +time+. E.g., 2.hours.before( header.expiration )
 			def before( time )
 				return time - self
 			end
-			
 
-			### Returns the Time <receiver> number of seconds ago. (e.g., 
+
+			### Returns the Time <receiver> number of seconds ago. (e.g.,
 			### expiration > 2.hours.ago )
 			def ago
 				return self.before( ::Time.now )
@@ -460,16 +442,35 @@ module ThingFish # :nodoc:
 				return self.after( ::Time.now )
 			end
 		end # module Time
-		
 
-		### Byte constants
+
+		### A collection of convenience methods for calculating bytes using
+		### Numeric objects:
+		###
+		###   # Add convenience methods to Numeric objects
+		###   class Numeric
+		###       include ThingFish::NumericConstantMethods::Bytes
+		###   end
+		###
+		###   irb> 14.megabytes
+		###       ==> 14680064
+		###   irb> 188.gigabytes
+		###       ==> 201863462912
+		###   irb> 177263661663.size_suffix
+		###       ==> "165.1G"
+		###
 		module Bytes
 
-			# Constants for file sizes
+			# Bytes in a Kilobyte
 			KILOBYTE = 1024
+
+			# Bytes in a Megabyte
 			MEGABYTE = 1024 ** 2
+
+			# Bytes in a Gigabyte
 			GIGABYTE = 1024 ** 3
-			
+
+
 			### Number of bytes (returns receiver unmodified)
 			def bytes
 				return self
@@ -490,7 +491,7 @@ module ThingFish # :nodoc:
 
 			### Return the number of bytes in <receiver> gigabytes
 			def gigabytes
-				return self * 1024.megabytes 
+				return self * 1024.megabytes
 			end
 			alias_method :gigabyte, :gigabytes
 
@@ -528,8 +529,15 @@ module ThingFish # :nodoc:
 	end # module NumericConstantMethods
 
 
-	### Add a #to_html method to the including object that is capable of dumping its 
+	### Add a #to_html method to the including object that is capable of dumping its
 	### state as an HTML fragment.
+	###
+	###   class MyObject
+	###       include HtmlInspectableObject
+	###   end
+	###
+	###   irb> MyObject.new.html_inspect
+	###      ==> "<span class=\"immediate-object\">#&lt;MyObject:0x56e780&gt;</span>"
 	module HtmlInspectableObject
 
 		### Return the receiver as an HTML fragment.
@@ -551,7 +559,7 @@ module ThingFish # :nodoc:
 		IMMEDIATE_OBJECT_HTML_CONTAINER = %{<span class="immediate-object">%s</span>}
 
 
-		### Return an HTML fragment describing the specified +object+. 
+		### Return an HTML fragment describing the specified +object+.
 		def make_html_for_object( object )
 			object_html = []
 
@@ -562,7 +570,7 @@ module ThingFish # :nodoc:
 					object_html << '{}'
 				else
 					object_html << HASH_HTML_CONTAINER % [
-						object.collect {|k,v| 
+						object.collect {|k,v|
 							HASH_PAIR_HTML % [make_html_for_object(k), make_html_for_object(v)]
 						}
 					]

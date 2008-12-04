@@ -33,14 +33,14 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::RubyFilter do
-	
+
 	TEST_MARSHALLED_CONTENT = Marshal.dump( TEST_RUBY_OBJECT )
 
 	before( :all ) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'ruby', {} )
 
@@ -58,10 +58,10 @@ describe ThingFish::RubyFilter do
 
 
 	it_should_behave_like "A Filter"
-	
-	
+
+
 	it "unmarshals Ruby-object requests if the content-type indicates it's a marshalled " +
-	   "ruby object" do
+		"ruby object" do
 
 		@request.should_receive( :content_type ).
 			at_least( :once ).
@@ -74,7 +74,7 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 
 		@filter.handle_request( @request, @response )
-	end
+		end
 
 	it "marshals Ruby-object responses if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
@@ -85,31 +85,31 @@ describe ThingFish::RubyFilter do
 			and_return( RUBY_MIMETYPE )
 
 		@response.should_receive( :body ).and_return( TEST_RUBY_OBJECT )
-		
+
 		@response.should_receive( :body= ).with( TEST_MARSHALLED_CONTENT )
 		@response.should_receive( :content_type= ).with( RUBY_MARSHALLED_MIMETYPE )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
 
 	it "doesn't modify the request if there was a problem unmarshalling" do
-   		@request.should_receive( :content_type ).
-   			at_least( :once ).
-   			and_return( RUBY_MARSHALLED_MIMETYPE )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( RUBY_MARSHALLED_MIMETYPE )
 		bodyio = StringIO.new( TEST_MARSHALLED_CONTENT )
-   		@request.should_receive( :body ).
-   			at_least( :once ).
-   			with( no_args() ).
-   			and_return( bodyio )
+		@request.should_receive( :body ).
+			at_least( :once ).
+			with( no_args() ).
+			and_return( bodyio )
 
 		Marshal.stub!( :load ).and_raise( ArgumentError.new("error parsing") )
-   	
+
 		@request.should_not_receive( :body= )
-   		@request.should_not_receive( :content_type= )
-   			
-   		@filter.handle_request( @request, @response )
-   	end
+		@request.should_not_receive( :content_type= )
+
+		@filter.handle_request( @request, @response )
+	end
 
 
 	it "does no conversion if the client doesn't accept marshalled Ruby object" do
@@ -119,11 +119,11 @@ describe ThingFish::RubyFilter do
 
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the response isn't a Ruby object" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
@@ -132,7 +132,7 @@ describe ThingFish::RubyFilter do
 
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
@@ -149,10 +149,10 @@ describe ThingFish::RubyFilter do
 		@response.should_receive( :body ).
 			at_least( :once ).
 			and_return( erroring_object )
-		
+
 		erroring_object.should_receive( :_dump ).
 			and_raise( ArgumentError.new("Can't dump mock object") )
-		
+
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
 
@@ -160,7 +160,7 @@ describe ThingFish::RubyFilter do
 			@filter.handle_response( @response, @request )
 		}.should raise_error()
 	end
-	
+
 
 end
 

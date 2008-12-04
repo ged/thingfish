@@ -242,7 +242,7 @@ class ThingFish::CommandLineClient
 
 		@client.store( resource )
 		
-		$stderr.puts "Uploaded to: #{resource.uuid}"
+		$stderr.puts "Uploaded as '%s' to: %s" % [ resource.format, resource.uuid ]
 	end
 	
 	

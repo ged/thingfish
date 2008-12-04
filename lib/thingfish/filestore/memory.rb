@@ -25,7 +25,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 require 'digest/md5'
@@ -90,14 +91,14 @@ class ThingFish::MemoryFileStore < ThingFish::FileStore
 	end
 
 
-	### Return the size of the resource corresponding to the given +uuid+ in bytes. 
+	### Return the size of the resource corresponding to the given +uuid+ in bytes.
 	### Returns +nil+ if the given +uuid+ is not in the store.
 	def size( uuid )
 		return nil unless @data.key?( uuid.to_s )
 		return @data[ uuid.to_s ].length
 	end
-	
-	
+
+
 	### Mandatory Admin interface
 
 	### Return the number of bytes stored in the filestore
@@ -106,7 +107,7 @@ class ThingFish::MemoryFileStore < ThingFish::FileStore
 	end
 
 
-	
+
 end # class ThingFish::MemoryFileStore
 
 # vim: set nosta noet ts=4 sw=4:

@@ -56,12 +56,12 @@ end
 TEST_XML_CONTENT = TEST_RUBY_OBJECT.to_xml
 
 describe ThingFish::XMLFilter, " with Tidy disabled" do
-	
+
 	before( :all ) do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'xml' )
 
@@ -77,8 +77,8 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 
 
 	it_should_behave_like "A Filter"
-	
-	
+
+
 	it "converts Ruby-object responses to XML if the client accepts it" do
 		@ruby_obj = mock( "a ruby data structure" )
 
@@ -94,15 +94,15 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 			and_return( @ruby_obj )
 		@ruby_obj.should_receive( :to_xml ).
 			and_return( TEST_XML_CONTENT )
-		
+
 		@response.should_receive( :body= ).with( TEST_XML_CONTENT )
 		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( 'application/xml' )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the client doesn't accept XML" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
@@ -111,11 +111,11 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response.should_not_receive( :content_type= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the response isn't a Ruby object" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/xml' ).
@@ -127,7 +127,7 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response.should_not_receive( :content_type= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
@@ -144,10 +144,10 @@ describe ThingFish::XMLFilter, " with Tidy disabled" do
 		@response.should_receive( :body ).
 			at_least( :once ).
 			and_return( erroring_object )
-		
+
 		erroring_object.should_receive( :to_xml ).
 			and_raise( "Oops, couldn't convert to XML for some reason!" )
-		
+
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response.should_not_receive( :content_type= )
@@ -169,26 +169,26 @@ describe ThingFish::XMLFilter, " with Tidy enabled" do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	after( :all ) do
 		ThingFish.reset_logger
 	end
 
 
 	# Examples
-	
+
 	it "doesn't die if Tidy can't be loaded" do
 		Kernel.stub!( :require ).and_raise( LoadError.new("no such file to load -- tidy") )
-		
+
 		lambda {
 			ThingFish::Filter.create( 'xml', 'use_tidy' => true )
 		}.should_not raise_error()
 	end
-	
-	
+
+
 	it "doesn't die if the tidy shared library can't be found" do
 		Kernel.stub!( :require ).and_return( true )
-		
+
 		lambda {
 			ThingFish::Filter.create( 'xml',
 				'usetidy' => true,
@@ -218,7 +218,7 @@ describe ThingFish::XMLFilter, " with Tidy enabled" do
 		filter = ThingFish::Filter.create( 'xml',
 			'usetidy' => true,
 			'tidypath' => '/fakepath' )
-        
+
 		Tidy.should_receive( :open ).and_yield( tidy )
 
 		body = mock( "Body content", :null_object => true )

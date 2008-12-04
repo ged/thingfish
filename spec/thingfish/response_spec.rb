@@ -2,10 +2,10 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -34,13 +34,17 @@ include ThingFish::Constants
 #####################################################################
 
 describe ThingFish::Response do
-	include ThingFish::Constants
+	include ThingFish::SpecHelpers
 
-	before( :each ) do
-		@mongrel_response = stub( "mongrel response" )
-		@response = ThingFish::Response.new( @mongrel_response )
+	before( :all ) do
+		setup_logging( :fatal )
 	end
 	
+	before( :each ) do
+		@config = stub( "ThingFish config object" )
+		@response = ThingFish::Response.new( 1.1, @config )
+	end
+
 
 	it "has some default headers" do
 		@response.headers['Server'] == SERVER_SOFTWARE_DETAILS
@@ -49,9 +53,11 @@ describe ThingFish::Response do
 	it "can be reset to a pristine state" do
 		@response.body << "Some stuff we want to get rid of later"
 		@response.headers['x-lunch-packed-by'] = 'Your Mom'
-		
+		@response.status = HTTP::OK
+
 		@response.reset
-		
+
+		@response.should_not be_handled()
 		@response.body.should == ''
 		@response.headers.should have(1).keys
 	end
@@ -60,10 +66,14 @@ describe ThingFish::Response do
 	it "can find the length of its body if it's a String" do
 		test_body = 'A string full of stuff'
 		@response.body = test_body
-		
+
 		@response.get_content_length.should == test_body.length
 	end
 
+	it "knows that it has been handled even if the status is set to NOT_FOUND" do
+		@response.status = HTTP::NOT_FOUND
+		@response.should be_handled()
+	end
 
 	it "knows if it has not yet been handled" do
 		@response.should_not be_handled()
@@ -123,34 +133,34 @@ describe ThingFish::Response do
 		headers.should_receive( :[] ).
 			with( :content_type ).
 			and_return( 'text/erotica' )
-			
+
 		@response.content_type.should == 'text/erotica'
 	end
 
-	
+
 	it "can modify the response content type" do
 		headers = mock( 'headers' )
 		@response.stub!( :headers ).and_return( headers )
 
 		headers.should_receive( :[]= ).
 			with( :content_type, 'image/nude' )
-			
+
 		@response.content_type = 'image/nude'
 	end
 
-	
+
 	it "can find the length of its body if it's an IO" do
 		test_body_content = 'A string with some stuff in it'
 		test_body = StringIO.new( test_body_content )
 		@response.body = test_body
-		
+
 		@response.get_content_length.should == test_body_content.length
 	end
-	
+
 
 	it "raises a descriptive error message if it can't get the body's length" do
 		@response.body = Object.new
-		
+
 		lambda {
 			@response.get_content_length
 		}.should raise_error( ThingFish::ResponseError, /content length/i )
@@ -159,6 +169,43 @@ describe ThingFish::Response do
 
 	it "has a scratchspace for passing data between handlers and filters" do
 		@response.data.should be_an_instance_of( ThingFish::Table )
+	end
+
+
+	it "can build a valid HTTP status line for its status" do
+		@response.status = HTTP::SEE_OTHER
+		@response.status_line.should == "HTTP/1.1 303 See Other"
+	end
+
+
+	it "can build a valid HTTP header string from the response headers" do
+		headers = mock( 'headers' )
+		@response.stub!( :headers ).and_return( headers )
+
+		headers.should_receive( :[] ).with( :content_length ).and_return( nil )
+		headers.should_receive( :[]= ).with( :content_length, an_instance_of(Fixnum) )
+		headers.should_receive( :[] ).with( :date ).and_return( nil )
+		headers.should_receive( :[]= ).with( :date, VALID_HTTPDATE )
+		headers.should_receive( :to_s ).and_return( :the_headers )
+
+		@response.header_data.should == :the_headers
+	end
+
+
+	it "has pipelining disabled by default" do
+		@response.should_not be_keepalive()
+	end
+	
+	
+	it "has pipelining disabled if it's explicitly disabled" do
+		@response.keepalive = false
+		@response.should_not be_keepalive()
+	end
+	
+	
+	it "can be set to allow pipelining" do
+		@response.keepalive = true
+		@response.should be_keepalive()
 	end
 	
 end

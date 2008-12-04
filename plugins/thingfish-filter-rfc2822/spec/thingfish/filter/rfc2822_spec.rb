@@ -46,7 +46,7 @@ describe ThingFish::Rfc2822Filter do
 		setup_logging( :fatal )
 		@datadir = Pathname.new( __FILE__ ).dirname.parent.parent + 'data'
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'rfc2822' )
 	end
@@ -55,7 +55,7 @@ describe ThingFish::Rfc2822Filter do
 		reset_logging()
 	end
 
-	
+
 	### Shared behaviors
 	it_should_behave_like "A Filter"
 
@@ -68,7 +68,7 @@ describe ThingFish::Rfc2822Filter do
 
 			@request_metadata = { :format => 'message/rfc822' }
 			@request = mock( "request object" )
-			@request.stub!( :http_method ).and_return( 'POST' )
+			@request.stub!( :http_method ).and_return( :POST )
 			@request.stub!( :each_body ).and_yield( @testmessage, @request_metadata )
 		end
 
@@ -102,7 +102,7 @@ describe ThingFish::Rfc2822Filter do
 			metadata[ :rfc822_received ].should =~ %r{lists.squidge.com with SMTP}
 			metadata[ :rfc822_received ].should =~ %r{zimbra01.squidge.com with ESMTP id 2B947C92A62}
 		end
-	
+
 	end
 
 
@@ -115,7 +115,7 @@ describe ThingFish::Rfc2822Filter do
 
 			@request_metadata = { :format => 'message/rfc822' }
 			@request = mock( "request object" )
-			@request.stub!( :http_method ).and_return( 'POST' )
+			@request.stub!( :http_method ).and_return( :POST )
 			@request.stub!( :each_body ).and_yield( @testmessage, @request_metadata )
 		end
 
@@ -155,7 +155,7 @@ describe ThingFish::Rfc2822Filter do
 				with( @testmessage, an_instance_of(Hash) )
 			@filter.handle_request( @request, @response )
 		end
-	
+
 	end
 
 end

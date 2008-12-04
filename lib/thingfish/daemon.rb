@@ -9,12 +9,12 @@
 #
 #   config = ThingFish::Config.load( "thingfish.conf" )
 #   server = ThingFish::Daemon.new( config )
-#   
+#
 #   accepter = server.run  # => #<Thread:0x142317c sleep>
-#   
+#
 #   Signal.trap( "INT" ) { server.shutdown("Interrupted") }
 #   Signal.trap( "TERM" ) { server.shutdown("Terminated") }
-# 
+#
 #   accepter.join
 #
 # == Version
@@ -30,14 +30,15 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
 #
 
 begin
-	require 'thingfish'
-	require 'mongrel'
+	require 'socket'
 	require 'uuidtools'
 	require 'logger'
+
+	require 'thingfish'
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
@@ -49,6 +50,7 @@ end
 
 require 'thingfish/constants'
 require 'thingfish/config'
+require 'thingfish/connectionmanager'
 require 'thingfish/exceptions'
 require 'thingfish/mixins'
 require 'thingfish/filestore'
@@ -56,69 +58,84 @@ require 'thingfish/metastore'
 require 'thingfish/handler'
 require 'thingfish/request'
 require 'thingfish/response'
+require 'thingfish/urimap'
 
 ### ThingFish daemon class
-class ThingFish::Daemon < Mongrel::HttpServer
+class ThingFish::Daemon
 	include ThingFish::Constants,
 		ThingFish::Loggable,
-		ThingFish::ResourceLoader,
 		ThingFish::Daemonizable,
+		ThingFish::ResourceLoader,
 		ThingFish::HtmlInspectableObject
 
 	# The subversion ID
 	SVNId = %q$Id$
-	
+
 	# The SVN revision number
 	SVNRev = %q$Rev$
 
-	# Options for the default handler
-	DEFAULT_HANDLER_OPTIONS = {}
-	
-	# The subdirectory to search for error templates
-	ERROR_TEMPLATE_DIR = Pathname.new( 'errors' )
 
+	### An exception class for signalling daemon threads that they need to shut down
+	class Shutdown < Exception; end
+
+
+	#################################################################
+	###	I N S T A N C E   M E T H O D S
+	#################################################################
 
 	### Create a new ThingFish daemon object that will listen on the specified +ip+
 	### and +port+.
 	def initialize( config=nil )
 		@config = config || ThingFish::Config.new
 		@config.install
+		@running = false
 
 		# Load the profiler library if profiling is enabled
-		@have_profiling = false
+		@have_profiling      = false
+		@profile_connections = false
 		if @config.profiling.enabled?
 			@have_profiling = self.load_profiler
+			if @config.profiling.connection_enabled?
+				@profile_connections = true
+				self.log.info "Enabled connection profiling for connections from localhost"
+			end
 		end
-		
+
 		# Load plugins for filestore, filters, and handlers
 		@config.setup_data_directories
 		@filestore = @config.create_configured_filestore
 		@metastore = @config.create_configured_metastore
 		@filters = @config.create_configured_filters
 
-		super( @config.ip, @config.port )
-		self.log.info "Starting at: http://%s:%d/" % [ @config.ip, @config.port ]
+		@connection_threads = ThreadGroup.new
+		@supervisor = nil
 
-		# Register all the handlers
+		# Set up the map of the urispace
+		@urimap = ThingFish::UriMap.new
+
 		self.register( "/", self.create_default_handler(@config) )
 		@config.each_handler_uri do |handler, uri|
-			self.log.info "  registering %s at %p" % [handler.class.name, uri]
-			self.register( uri, handler, handler.options['in_front'] )
+			self.log.info "  registering %s at %p" % [ handler.class.name, uri ]
+			self.register( uri, handler )
 		end
-		
-		@resource_dir = @config.defaulthandler.resource_dir
-		
-		self.log.debug {
-			"Handler map is:\n    " + 
-			self.classifier.handler_map.collect {|uri, handlers|
-				"%s: [%s]" % [ uri, handlers.collect{|h| h.class.name}.join(", ") ]
-			}.join( "\n    ")
-		}
+
+		@listener = TCPServer.new( @config.ip, @config.port )
+		@listener.setsockopt( Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1 )
+		@listener_thread = nil
+
+		self.log.debug "Handler map is: %p" % [ @urimap ]
 	end
+
 
 	######
 	public
 	######
+
+	# URI to handler mapping object
+	attr_reader :urimap
+
+	# Flag that indicates whether the server is running
+	attr_reader :running
 
 	# The ThingFish::FileStore instance that acts as the interface to the file storage
 	# mechanism used by the daemon.
@@ -131,33 +148,161 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	# The ThingFish::Config instance that contains all current configuration
 	# information used by the daemon.
 	attr_reader :config
-	
+
 	# The Array of installed ThingFish::Filters
 	attr_reader :filters
 
+	# The listener socket
+	attr_reader :listener
+
 	# Boolean for testing if profiling is available
 	attr_reader :have_profiling
-	
-	
-	### Perform any additional daemon actions before actually starting
-	### the Mongrel side of things.
-	def run
+
+	# A hash of active ConnectionManagers, keyed by the client socket they are managing
+	attr_reader :connections
+
+	# The thread which is responsible for cleanup of connection threads
+	attr_reader :supervisor
+
+
+	### Start the server.
+	def start
+		self.log.info "Starting at: http://%s:%d/" % [ @config.ip, @config.port ]
+
 		daemonize( @config.pidfile ) if @config.daemon
 		become_user( @config.user )  if Process.euid.zero? and ! @config.user.nil?
-		
+
 		# Do any storage preparation tasks that may be required after dropping privileges.
-		@filestore.startup
-		@metastore.startup
-		
-		super
+		@filestore.on_startup
+		@metastore.on_startup
+
+		Signal.trap( "INT" )  { self.shutdown("Interrupted") }
+		Signal.trap( "TERM" ) { self.shutdown("Terminated")  }
+
+		@running = true
+		self.start_supervisor_thread
+		self.start_listener.join
+	end
+
+
+	### Start the thread responsible for handling incoming connections. Returns the new Thread
+	### object.
+	def start_listener
+		@listener_thread = Thread.new do
+			Thread.current.abort_on_exception = true
+			self.log.debug "Entering listen loop"
+
+			begin
+				while @running
+					begin
+						# use nonblocking accept so closing the socket causes the block to finish 
+						socket = @listener.accept_nonblock
+						self.handle_connection( socket )
+					rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+						self.log.debug "No connections pending; waiting for listener to become readable."
+						IO.select([ @listener ])
+						next
+					rescue IOError => err
+						@running = false
+						self.log.info "Listener got a %s: exiting accept loop" % [ err.class.name ]
+					end
+				end
+			rescue Shutdown
+				self.log.info "Got the shutdown signal."
+			ensure
+				@running = false
+				@listener.close
+			end
+
+			self.log.debug "Exited listen loop"
+		end
+
+		self.log.debug "Listener thread is: %p" % [ @listener_thread ]
+		return @listener_thread
+	rescue Spec::Mocks::MockExpectationError
+		# Re-raise expectation failures while testing
+		raise
+	rescue Exception => err
+		self.log.error "Unhandled %s: %s" % [ err.class.name, err.message ]
+		self.log.debug "  %s" % [ err.backtrace.join("\n  ") ]
+	end
+
+
+	### Start a thread that monitors connection threads and cleans them up when they're done.
+	def start_supervisor_thread
+		self.log.info "Starting supervisor thread"
+
+		# TODO: work crew thread collection
+		@supervisor = Thread.new do
+			Thread.current.abort_on_exception = true
+
+			while @running || ! @connection_threads.list.empty?
+				@connection_threads.list.find_all {|t| ! t.alive? }.each do |t|
+					self.log.debug "Finishing up connection thread %p" % [ t ]
+					t.join
+				end
+				sleep 0.5
+			end
+
+			self.log.info "Supervisor thread exiting"
+		end
+
+		self.log.debug "Supervisor thread is running (%p)" % [ @supervisor ]
+	end
+
+
+	### Handle an incoming connection on the given +socket+.
+	def handle_connection( socket )
+		connection = ThingFish::ConnectionManager.new( socket, @config, &self.method(:dispatch) )
+		self.log.info "Connect: %s (%p)" % 
+			[ connection.session_info, Thread.current ]
+
+		t = Thread.new do
+			Thread.current.abort_on_exception = true
+			begin
+				if @profile_connections && socket.peeraddr[3] == '127.0.0.1'
+					self.profile( "connection" ) do
+						connection.process
+					end
+				else
+					connection.process
+				end
+			rescue Shutdown
+				self.log.info "Forceful shutdown of connection thread %p." % [ Thread.current ]
+			end
+			self.log.debug "Connection thread %p done." % [ Thread.current ]
+		end
+		@connection_threads.add( t )
 	end
 
 
 	### Shut the server down gracefully, outputting the specified +reason+ for the
 	### shutdown to the logs.
-	def shutdown( reason="no reason" )
-		self.log.warn "Shutting down: #{reason}"
-		self.stop
+	def shutdown( reason="no reason", force=false )
+		if @running
+			@running = false
+		else
+			force = true
+		end
+
+		self.log.info "Shutting down %p from %p" % [ @listener_thread, Thread.current ]
+		@listener_thread.raise( Shutdown ) if ! @listener_thread.nil? && @listener_thread.alive?
+
+		if force
+			self.log.warn "Forceful shutdown. Terminating %d active connection threads." %
+				[ @connection_threads.list.length ]
+			self.log.debudebug "  Active threads: %p" % [ @connection_threads.list ]
+
+			@connection_threads.list.each do |t|
+				t.raise( Shutdown )
+			end
+		else
+			self.log.warn "Graceful shutdown. Waiting on %d active connection threads." %
+				[ @connection_threads.list.length ]
+			self.log.debug "  Active threads: %p" % [ @connection_threads.list ]
+		end
+
+		@supervisor.join
 	end
 
 
@@ -168,16 +313,16 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	def handler_info
 		info = {}
 
-		self.classifier.handler_map.each do |uri,handlers|
+		self.urimap.map.each do |uri,handlers|
 			handlers.each do |h|
 				info[ h.plugin_name ] ||= []
 				info[ h.plugin_name ] << uri
 			end
 		end
-		
+
 		return info
 	end
-	
+
 
 	### Returns a Hash of filter information of the form:
 	### {
@@ -185,16 +330,16 @@ class ThingFish::Daemon < Mongrel::HttpServer
 	### }
 	def filter_info
 		info = {}
-	
+
 		self.filters.each do |filter|
 			info[ filter.class.plugin_name ] = filter.info
 		end
-		
+
 		return info
 	end
-	
 
-	### Store the data from the uploaded entity +body+ in the filestore; 
+
+	### Store the data from the uploaded entity +body+ in the filestore;
 	### create/update any associated metadata.
 	def store_resource( body, body_metadata, uuid=nil )
 		new_resource = uuid.nil?
@@ -236,11 +381,11 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			@filestore.delete( uuid ) if new_resource
 			raise
 		end
-		
+
 		return uuid
 	end
-	
-	
+
+
 	### Recursively store all resources in the specified +request+ that are related to +body+.
 	### Use the specified +uuid+ for the 'related_to' metadata value.
 	def store_related_resources( body, uuid, request )
@@ -255,8 +400,8 @@ class ThingFish::Daemon < Mongrel::HttpServer
 		self.log.error "%s while storing related resource: %s" % [ err.class.name, err.message ]
 		self.log.debug "Backtrace: %s" % [ err.backtrace.join("\n  ") ]
 	end
-	
-	
+
+
 	### Remove any resources that have a +related_to+ of the given UUID, and
 	### the given +relation+ (or any relation if none is specified)
 	def purge_related_resources( uuid, relation=nil )
@@ -268,127 +413,110 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			@filestore.delete( subuuid )
 		end
 	end
-	
-	
 
-	#########
-	protected
-	#########
 
-	### Override Mongrel's handler-processing to wrap our own request and 
-	### response object around Mongrel's.
-	def dispatch( client, handlers, mongrel_request, mongrel_response )
-		request  = ThingFish::Request.new( mongrel_request, @config )
-		response = ThingFish::Response.new( mongrel_response )
-		
-		if self.have_profiling and request.run_profile?
-			self.log.debug "Profiling the current request"
-			self.profile( request, response ) do
-				self.dispatch_to_handlers( client, handlers, request, response )
-			end
+	### Register a +handler+ with the specified +uri+ in the server's urimap.
+	def register( uri, handler, first=false )
+
+		if first
+			@urimap.register_first( uri, handler )
 		else
-			self.dispatch_to_handlers( client, handlers, request, response )
+			@urimap.register( uri, handler )
+		end
+
+		# Give the handler a chance to do some startup tasks after the filestore and metastore
+		# have been loaded and started
+		handler.on_startup( self )
+	end
+
+
+	# SMITH YOU!
+
+
+	### Dispatch the +request+ to filters and handlers and return a ThingFish::Response.
+	def dispatch( request )
+		response = ThingFish::Response.new( request.http_version, @config )
+
+		self.profile_request( request, response ) do
+
+			# Let the filters manhandle the request
+			self.filter_request( request, response )
+
+			# Now execute the given handlers on the request and response
+			self.run_handlers( request, response ) unless response.is_handled?
+
+			# Let the filters manhandle the response
+			self.filter_response( response, request )
+		end
+
+		return response
+	end
+
+
+	### Start a profile for the provided +block+ if profiling is enabled for the 
+	### specified +request+.
+	def profile_request( request, response, &block )
+		if self.have_profiling and request.run_profile?
+			description = request.uri.path.gsub( %r{/}, '_' ).sub( /^_/, '' ).chomp('_')
+			self.profile( description, &block )
+		else
+			yield
 		end
 	end
 
-	
+
 	### Start a profile for the provided +block+ if profiling is enabled, dumping the result
 	### out to a profile directory afterwards.
-	def profile( request, response, &block )
-		result = RubyProf.profile( &block )
-		
-		self.log.debug {
-			output = ""
-			printer = RubyProf::FlatPrinter.new( result )
-			printer.print( output, 0 )
-			output
-		}
-		
-		filename = @config.profiledir_path + "%f#%d#%s" % [
-			Time.now,
-			Thread.current.object_id * 2,
-			request.uri.path.gsub( %r{/}, '_' ).sub( /^_/, '' ).chomp('_')
-		]
-		File.open( "#{filename}.html", 'w' ) do | profile |
-			printer = RubyProf::GraphHtmlPrinter.new( result )
-			printer.print( profile )
-			# profile.print( Marshal.dump([ request, result ]) )  # TODO!!
+	def profile( description, &block )
+		if self.have_profiling
+			result = RubyProf.profile( &block )
+
+			self.log.debug {
+				output = ""
+				printer = RubyProf::FlatPrinter.new( result )
+				printer.print( output, 0 )
+				output
+			}
+
+			filename = @config.profiledir_path + "%f#%d#%s" % [
+				Time.now,
+				Thread.current.object_id * 2,
+				description
+			]
+			File.open( "#{filename}.html", 'w' ) do | profile |
+				printer = RubyProf::GraphHtmlPrinter.new( result )
+				printer.print( profile )
+				# profile.print( Marshal.dump([ request, result ]) )  # TODO!!
+			end
+		else
+			yield
 		end
 	end
 
-	
-	### Attempt to load and configure the profiling library. 
+
+	### Attempt to load and configure the profiling library.
 	def load_profiler
 		require 'ruby-prof'
 
 		# enable additonal optional profile measurements
 		mask  = RubyProf::PROCESS_TIME
-		mask |= RubyProf::CPU_TIME if 
-			@config.profiling.metrics.include?( 'cpu' ) and ! RubyProf::CPU_TIME.nil?		
-		mask |= RubyProf::ALLOCATIONS if 
+		mask |= RubyProf::CPU_TIME if
+			@config.profiling.metrics.include?( 'cpu' ) and ! RubyProf::CPU_TIME.nil?
+		mask |= RubyProf::ALLOCATIONS if
 			@config.profiling.metrics.include?( 'allocations' ) and ! RubyProf::ALLOCATIONS.nil?
-		mask |= RubyProf::MEMORY if 
+		mask |= RubyProf::MEMORY if
 			@config.profiling.metrics.include?( 'memory' ) and ! RubyProf::MEMORY.nil?
-	 	RubyProf.measure_mode = mask
-	
-		self.log.debug "Enabled profiling"
+		RubyProf.measure_mode = mask
+
+		self.log.info "Enabled profiling"
 		return true
-		
+
 	rescue Exception => err
 		self.log.error "Couldn't load profiler: %s" % [ err.message ]
 		self.log.debug( err.backtrace.join("\n") )
 		return false
 	end
-	
 
-	### Send the request and response through the filters in request mode,
-	### run the appropriate handlers, and then send them back through the filters
-	### in response mode. Handle any ThingFish::RequestErrors and other exceptions
-	### with appropriate HTTP responses.
-	def dispatch_to_handlers( client, handlers, request, response )
-		
-		# Let the filters manhandle the request
-		self.filter_request( request, response )
-
-		# Now execute the given handlers on the request and response
-		self.run_handlers( client, handlers, request, response ) unless
-			response.is_handled?
-
-		# Let the filters manhandle the response
-		self.filter_response( response, request )
-
-		# Handle NOT_FOUND 
-		return self.send_error_response( response, request, HTTP::NOT_FOUND, client ) \
-			unless response.is_handled?
-
-		# Check to be sure we're providing a response which is acceptable to the client
-		unless response.body.nil? || ! response.status_is_successful?
-			unless response.content_type
-				self.log.warn "Response body set without a content type, using %p." %
-					[ DEFAULT_CONTENT_TYPE ]
-				response.content_type = DEFAULT_CONTENT_TYPE
-			end
-			self.log.debug "Checking for acceptable mimetype in response"
-
-			unless request.accepts?( response.content_type )
-				self.log.info "Can't create an acceptable response: " +
-					"Client accepts:\n  %p\nbut response is:\n  %p" %
-					[ request.accepted_types, response.content_type ]
-				return self.send_error_response( response, request, 
-					HTTP::NOT_ACCEPTABLE, client )
-			end
-		end
-		
-		# Normal response
-		self.send_response( response, request ) unless client.closed?
-
-	rescue ThingFish::RequestError => err
-		self.send_error_response( response, request, err.status, client, err )
-
-	rescue Exception => err
-		self.send_error_response( response, request, HTTP::SERVER_ERROR, client, err )
-	end
-	
 
 	### Filter and potentially modify the incoming request.
 	def filter_request( request, response )
@@ -397,7 +525,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			begin
 				filter.handle_request( request, response )
 			rescue Exception => err
-				self.log.error "Request filter raised a %s: %s" % 
+				self.log.error "Request filter raised a %s: %s" %
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
 			else
@@ -405,7 +533,13 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			ensure
 				request.check_body_ios
 			end
-			
+
+			# Allow filters to interrupt the dispatch; auth filter
+			# uses this to deny the request before incurring the cost of
+			# all the filters that may come behind it. Auth adds identity
+			# information to the request (and so acts like other filters),
+			# whereas authorization acts on a request based on the
+			# added identity information (and so is a handler).
 			break if response.handled?
 		end
 	end
@@ -419,7 +553,7 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			begin
 				filter.handle_response( response, request )
 			rescue Exception => err
-				self.log.error "Response filter raised a %s: %s" % 
+				self.log.error "Response filter raised a %s: %s" %
 					[ err.class.name, err.message ]
 				self.log.debug "  " + err.backtrace.join("\n  ")
 			ensure
@@ -430,149 +564,55 @@ class ThingFish::Daemon < Mongrel::HttpServer
 			end
 		end
 	end
-	
-
-	### Handle errors in a consistent fashion.  Log and output to the client.
-	def send_error_response( response, request, statuscode, client, err=nil )
-		errtrace = debugtrace = ''
-
-		if err
-			errtrace = "%s while running %s: %s" % [
-				err.class.name,
-				response.handlers.last,
-				err.message,
-			]
-			self.log.error( errtrace )
-
-			debugtrace = "Handlers were:\n  %s\nBacktrace:  %s" % [
-				response.handlers.collect {|h| h.class.name }.join("\n  "),
-				err.backtrace.join("\n  ")
-			]
-			self.log.debug( debugtrace )
-		end
-
-		# If the client is already closed, let's not bother creating the
-		# response, since there is no client to receive it.
-		if client.closed?
-			self.log.warn 'Aborting without response: client socket closed'
-			return
-		end
-		
-		self.log.debug "Preparing error response (%p)" % [ statuscode ]
-		response.reset
-		response.status = statuscode
-
-		# Build a pretty response if the client groks HTML
-		if request.accepts?( CONFIGURED_HTML_MIMETYPE )
-			template = self.get_error_response_template( statuscode ) or
-				raise "Can't find an error template"
-			content = [ template.result( binding() ) ]
-			
-			response.data[:tagline] = 'Oh, crap!'
-			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
-			response.content_type = CONFIGURED_HTML_MIMETYPE
-
-			wrapper = self.get_erb_resource( 'template.rhtml' )
-			
-			response.body = wrapper.result( binding() )
-		else
-			response.content_type = 'text/plain'
-			response.body = "%d (%s)" % [ statuscode, HTTP::STATUS_NAME[statuscode] ]
-			response.body << "\n\n" << 
-				errtrace << "\n\n" <<
-				debugtrace << "\n\n"
-		end
-
-		self.send_response( response, request ) unless client.closed?
-	end
 
 
-	### Look for an error response template for the given status code in a directory 
-	### called 'errors', trying the most-specific code first, then one for the 
-	### 100-level code, then falling back to a template called 'generic.rhtml'.
-	def get_error_response_template( statuscode )
-		templates = [
-			ERROR_TEMPLATE_DIR + "%d.rhtml" % [statuscode],
-			ERROR_TEMPLATE_DIR + "%d.rhtml" % [(statuscode / 100).ceil * 100],
-			ERROR_TEMPLATE_DIR + 'generic.rhtml',
-		]
-		
-		templates.each do |tmpl|
-			self.log.debug "Trying to find error template %p" % [tmpl]
-			next unless self.resource_exists?( tmpl.to_s )
-			return self.get_erb_resource( tmpl.to_s )
-		end
-
-		return nil
-	end
-
-	
-	### Iterate through the handlers for this URI and execute each one. Stop 
+	### Iterate through the handlers for this URI and execute each one. Stop
 	### executing handlers as soon as the response's status changes.
-	def run_handlers( client, handlers, request, response )
-		self.log.debug "Dispatching to %d handlers" % [handlers.length]
+	def run_handlers( request, response )
+		delegators, processor = @urimap.resolve( request.uri )
+		self.log.debug "Dispatching to %s via %d delegators" %
+			[ processor.class.name, delegators.length ]
 
-		handlers.each do |handler|
-			response.handlers << handler
-			request.check_body_ios
-			handler.process( request, response )
-			break if response.is_handled? || client.closed?
-		end
+		return self.run_handler_chain( request, response, delegators, processor )
 	end
-	
 
-	### Send the response on the socket, doing a buffered send if the response's 
-	### body responds to :read, or just writing it to the socket if not.
-	def send_response( response, request )
-		body = response.body
 
-		# Send the status line
-		status_line = STATUS_LINE_FORMAT %
-			[ response.status, HTTP::STATUS_NAME[ response.status ] ]
-		self.log.info "Response: %p" % [ status_line ]
-		response.write( status_line )
+	### Recursively delegate the given +request+ and +response+ to the
+	### specified +delegators+.  Once +delegators+ is empty, run the
+	### +processor+ for the current request.
+	def run_handler_chain( request, response, delegators, processor )
 
-		# Send the headers
-		response.headers[:connection] = 'close'
-		response.headers[:content_length] ||= response.get_content_length
-		response.headers[:date] = Time.now.httpdate
-		response.write( response.headers.to_s + "\r\n" )
+		request.check_body_ios
 
-		# Send the buffered entity body unless the request method is a HEAD
-		unless request.http_method == 'HEAD'
-			if body.respond_to?( :read )
-				self.log.debug "Writing response using buffered IO"
-				buf     = ''
-				bufsize = @config.bufsize
+		# If there aren't any delegators left to run through, run the processor
+		if delegators.empty?
+			response.handlers << processor
+			return processor.process( request, response )
+		else
+			delegator = delegators.first
+			response.handlers << delegator
+			next_delegators = delegators[ 1..-1 ]
 
-				while body.read( bufsize, buf )
-					until buf.empty?
-						bytes = response.write( buf )
-						buf.slice!( 0, bytes )
-					end
-				end
-
-			# Send unbuffered -- body already in memory.
-			else
-				self.log.debug "Writing response using unbuffered IO"
-				response.write( body.to_s )
+			self.log.debug "Delegating to %s" % [ delegator.class.name ]
+			return delegator.delegate( request, response ) do |dreq, dres|
+				self.run_handler_chain( dreq, dres, next_delegators, processor )
 			end
 		end
-		
-		response.done = true
 	end
 
 
 	### Create an instance of the default handler, with options dictated by the
 	### specified +config+ object.
 	def create_default_handler( config )
-		options = DEFAULT_HANDLER_OPTIONS.dup
+		options = { :resource_dir => config.resource_dir }
 		if config.defaulthandler
 			options.merge!( config.defaulthandler )
 		end
-		
-		return ThingFish::Handler.create( 'default', options )
+
+		return ThingFish::Handler.create( 'default', '/', options )
 	end
+
+
 
 end # class ThingFish::Daemon
 

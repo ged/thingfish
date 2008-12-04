@@ -36,7 +36,7 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::JSONFilter do
-	
+
 	TEST_JSON_CONTENT = <<-EO_JSON
 		[{"ip_address":"127.0.0.1"},
 		{"pine_cone":"sandwiches"},
@@ -50,7 +50,7 @@ describe ThingFish::JSONFilter do
 		ThingFish.reset_logger
 		ThingFish.logger.level = Logger::FATAL
 	end
-		
+
 	before( :each ) do
 		@filter = ThingFish::Filter.create( 'json', {} )
 
@@ -70,42 +70,42 @@ describe ThingFish::JSONFilter do
 
 
 	it "converts a request body into a Ruby object if the content-type indicates " +
-	   "it's JSON" do
-   		@request.should_receive( :content_type ).
-   			at_least( :once ).
-   			and_return( 'application/json' )
+		"it's JSON" do
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'application/json' )
 		bodyio = StringIO.new( TEST_JSON_CONTENT )
-   		@request.should_receive( :body ).
-   			at_least( :once ).
-   			with( no_args() ).
-   			and_return( bodyio )
-   			
-   		@request.should_receive( :body= ).with( TEST_UNJSONIFIED_CONTENT )
-   		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
-   			
-   		@filter.handle_request( @request, @response )
-   	end
-	
+		@request.should_receive( :body ).
+			at_least( :once ).
+			with( no_args() ).
+			and_return( bodyio )
+
+		@request.should_receive( :body= ).with( TEST_UNJSONIFIED_CONTENT )
+		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+
+		@filter.handle_request( @request, @response )
+		end
+
 
 	it "doesn't modify the request if there was a problem parsing JSON" do
-   		@request.should_receive( :content_type ).
-   			at_least( :once ).
-   			and_return( 'application/json' )
+		@request.should_receive( :content_type ).
+			at_least( :once ).
+			and_return( 'application/json' )
 		bodyio = StringIO.new( TEST_JSON_CONTENT )
-   		@request.should_receive( :body ).
-   			at_least( :once ).
-   			with( no_args() ).
-   			and_return( bodyio )
+		@request.should_receive( :body ).
+			at_least( :once ).
+			with( no_args() ).
+			and_return( bodyio )
 
 		JSON.stub!( :parse ).and_raise( JSON::ParserError.new("error parsing") )
-   	
+
 		@request.should_not_receive( :body= )
-   		@request.should_not_receive( :content_type= )
-   			
-   		@filter.handle_request( @request, @response )
-   	end
-	
-	
+		@request.should_not_receive( :content_type= )
+
+		@filter.handle_request( @request, @response )
+	end
+
+
 	it "converts Ruby-object responses to JSON if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
@@ -115,15 +115,15 @@ describe ThingFish::JSONFilter do
 			and_return( RUBY_MIMETYPE )
 
 		@response.should_receive( :body ).and_return( TEST_UNJSONIFIED_CONTENT )
-		
+
 		@response.should_receive( :body= ).with( TEST_JSON_CONTENT )
 		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( 'application/json' )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the client doesn't accept JSON" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
@@ -132,11 +132,11 @@ describe ThingFish::JSONFilter do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "does no conversion if the response isn't a Ruby object" do
 		@request.should_receive( :explicitly_accepts? ).
 			with( 'application/json' ).
@@ -148,7 +148,7 @@ describe ThingFish::JSONFilter do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
@@ -165,10 +165,10 @@ describe ThingFish::JSONFilter do
 		@response.should_receive( :body ).
 			at_least( :once ).
 			and_return( erroring_object )
-		
+
 		erroring_object.should_receive( :to_json ).
 			and_raise( "Oops, couldn't convert to JSON for some reason!" )
-		
+
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
@@ -177,7 +177,7 @@ describe ThingFish::JSONFilter do
 			@filter.handle_response( @response, @request )
 		}.should raise_error()
 	end
-	
+
 
 end
 

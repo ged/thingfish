@@ -7,9 +7,9 @@
 #
 #   require 'thingfish/metastore'
 #
-#   ms = ThingFish::MetaStore.create( "rdf", 
-#           :store => 'hashes', 
-#           :hash_type => 'bdb', 
+#   ms = ThingFish::MetaStore.create( "rdf",
+#           :store => 'hashes',
+#           :hash_type => 'bdb',
 #           :dir => '/tmp/thingfish/metastore' )
 #
 #   ms.set_property( uuid, 'hands', 'buttery' )
@@ -29,7 +29,7 @@
 #
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
@@ -89,11 +89,11 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		}
 	END
 
-	
+
 	### A few (hopefully) gentle additions for Redland::Uri
 	module Redland::UriUtils
 		include ThingFish::Constants::Patterns
-		
+
 		### Return the Redland::Uri object as a URI object.
 		def to_ruby_uri
 			uristring = self.to_s.sub( /^\[([^\]]+)\]$/ ) { $1 }
@@ -101,17 +101,17 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		rescue URI::InvalidURIError => err
 			raise err, "#{self.to_s}: could not be parsed as a URI", err.backtrace
 		end
-		
-		
+
+
 		### If the receiver is a UUID URN, return it after stripping the schema part
 		### of the URI. Otherwise, returns nil.
 		def to_uuid
 			self.to_s[ UUID_URN, 1 ]
 		end
-		
+
 		append_features Redland::Uri
 	end
-	
+
 
 	# TODO: Change to parse vocabularies, thereby allowing user to add their
 	# own via the config. Order of lookup would be:
@@ -124,8 +124,8 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	def self::map_to_node( key )
 		return Schemas::THINGFISH_NS[ key.to_s ]
 	end
-	
-	
+
+
 	### Unmap the given Redland::uri into a simple Symbol keyword.
 	def self::unmap_from_node( rdfuri )
 		uri = case rdfuri
@@ -136,14 +136,14 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		      else
 		      	raise "Ack."
 		      end
-			
+
 		property = uri.fragment || uri.path[ %r{/(\w+)$}, 1 ] or
 			raise "Couldn't map %p into a property" % [ uristring ]
 		return property.to_sym
 	end
-	
 
-	# Predicate map that translates simple-string keys to their Dublin Core, 
+
+	# Predicate map that translates simple-string keys to their Dublin Core,
 	# DCMI Type Vocabulary, or RDF Schema equivalents.
 	PredicateMap = {
 		# Dublin Core
@@ -162,7 +162,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		:subject               => 'http://purl.org/dc/elements/1.1/subject',
 		:title                 => 'http://purl.org/dc/elements/1.1/title',
 		:type                  => 'http://purl.org/dc/elements/1.1/type',
-		
+
 		# DCMI Elements
 		:abstract              => 'http://purl.org/dc/terms/abstract',
 		:accessRights          => 'http://purl.org/dc/terms/accessRights',
@@ -219,7 +219,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		:StillImage            => 'http://purl.org/dc/dcmitype/StillImage',
 		:Text                  => 'http://purl.org/dc/dcmitype/Text',
 	}
-	
+
 	DEFAULT_VOCABULARIES = %w[
 		http://purl.org/dc/elements/1.1/
 		http://purl.org/dc/terms/
@@ -232,12 +232,12 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	# Schemas for the ThingFish RDF metastore
 	module Schemas
 		UUID = Redland::Namespace.new( 'urn:uuid:' )
-		
+
 		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2007/02/thingfish-schema#'
 		THINGFISH_NS = Redland::Namespace.new( THINGFISH_URL )
 	end
-	
-	
+
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -245,21 +245,21 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 
 	### Create a new RDF Metastore that will use the given +datadir+ and +spooldir+ for
 	### its store and for any temporary files, respectively.
-	### 
+	###
 	### The +config+ options supported depend on what features you've
-	### compiled into your Redland library, and which store you choose. 
-	### 
+	### compiled into your Redland library, and which store you choose.
+	###
 	### Common options:
-	### 
+	###
 	### [:store]
 	###   The type of store to use. See http://librdf.org/docs/storage.html if you're not
 	###   sure which one you should use. Defaults to the in-memory 'hashes' store.
 	###
-	### The type of store you've chosen will dictate which further options are 
+	### The type of store you've chosen will dictate which further options are
 	### accessible/required:
-	### 
+	###
 	### For the 'hashes' store:
-	### 
+	###
 	### [:hash_type]
 	###   The type of hash store to use (+memory+ or +bdb+).
 	def initialize( datadir, spooldir, config={} )
@@ -294,7 +294,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		self.log.debug do
 			dumplines = []
 			@model.triples {|s,p,o| dumplines << "#{s}:#{p}:#{o}" }
-			
+
 			"Model is: \n  %s" % [ dumplines.join("\n  ") ]
 		end
 	end
@@ -306,12 +306,12 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			@model.delete_statement( stmt )
 		end
 	end
-	
+
 
 
 	###
 	### Simple Metastore API
-	### 
+	###
 
 	SORTED_TRIPLES_QUERY = %q{
 		SELECT ?uuid, ?pred, ?obj
@@ -325,10 +325,10 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### Metastore API: Yield all the metadata in the store one resource at a time
 	def each_resource # :yields: uuid, properties_hash
 		query = Redland::Query.new( SORTED_TRIPLES_QUERY, 'sparql' )
-		
+
 		current_uuid = NULL_NODE
 		propset = nil
-		
+
 		res = @model.query_execute( query ) or return
 
 		until res.finished?
@@ -344,13 +344,13 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 				yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
 				propset = {}
 			end
-			
+
 			current_uuid = uuid
 			propset[ key ] = value
 
 			res.next
 		end
-		
+
 		# Yield the final set
 		yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
 	end
@@ -361,10 +361,10 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
 
 		statements = @model.find( uuid_urn, nil, nil )
-		
+
 		return statements.empty? ? false : true
 	end
-	
+
 
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
@@ -372,24 +372,24 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		prop_url = map_property( propname )
 
 		statements = @model.find( uuid_urn, prop_url, nil )
-		
+
 		self.log.debug "Statements array is %sempty." % [ statements.empty? ? "" : "not "]
 		return statements.empty? ? false : true
 	end
 
 
-	### MetaStore API: Set the property associated with +uuid+ specified by 
+	### MetaStore API: Set the property associated with +uuid+ specified by
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
 		prop_url = map_property( propname )
 
 		res = @model.create_resource( uuid_urn )
-		
+
 		res.update_property( prop_url, value.to_s )
 	end
 
-	
+
 	### MetaStore API: Set the properties associated with the given +uuid+ to
 	### those in the provided +hash+, eliminating any others already set.
 	def set_properties( uuid, hash )
@@ -403,7 +403,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			resource.update_property( prop_url, value )
 		end
 	end
-	
+
 
 	### Merge the properties in the provided +hash+ with those associated with
 	### the given +uuid+.
@@ -416,9 +416,9 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			resource.update_property( prop_url, value.to_s )
 		end
 	end
-	
 
-	### MetaStore API: Return the property associated with +uuid+ specified by 
+
+	### MetaStore API: Return the property associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
@@ -430,19 +430,19 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		return property.to_s
 	end
 
-	
+
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		
+
 		res = @model.create_resource( uuid_urn )
-		
+
 		proplist = {}
 		res.get_properties do |prop, value|
 			key = unmap_uri( prop.uri )
 #			self.log.debug "Property is: %p" % [ key ]
-			
+
 			if proplist[key]
 				if proplist[key].is_a?( Array )
 					proplist[key] << value.to_s
@@ -453,11 +453,11 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 				proplist[key] = value.to_s
 			end
 		end
-		
+
 		return proplist
 	end
-	
-	
+
+
 	### MetaStore API: Removes +propname+ from given +uuid+
 	def delete_property( uuid, propname )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
@@ -466,8 +466,8 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		res = @model.create_resource( uuid_urn )
 		res.delete_property( prop_url )
 	end
-	
-	
+
+
 	### MetaStore API: Removes the specified +properties+ associated with the given +uuid+.
 	def delete_properties( uuid, *properties )
 		uuid_urn = Schemas::UUID[ uuid.to_s ]
@@ -476,7 +476,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		properties.collect {|prop| map_property(prop) }.each do |prop_url|
 			res.delete_property( prop_url )
 		end
-	end	
+	end
 
 
 	### MetaStore API: Removes all predicates for a given +uuid+.
@@ -502,27 +502,27 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	###
 	def get_all_property_keys
 		predicates = Set.new
-		
+
 		# I don't know how to do this any other way than a full scan. Surely there
 		# must be one?
 		@model.triples do |subj, pred, obj|
 			predicates.add( pred )
 		end
-		
+
 		return predicates.to_a.collect {|uri| unmap_uri(uri) }.uniq
 	end
-	
+
 
 	### MetaStore API: Return a uniquified Array of all values in the metastore for the
 	### specified +prop+.
 	def get_all_property_values( prop )
 		prop_url = map_property( prop )
 		values = Set.new
-		
+
 		@model.find( nil, prop_url, nil ) do |_, _, object|
 			values.add( object.value )
 		end
-		
+
 		return values.to_a
 	end
 
@@ -532,7 +532,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	### exact metadata pairs. This is an exact match search.
 	def find_by_exact_properties( hash )
 		self.log.debug "Searching for %p" % [ hash ]
-		
+
 		uris = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
 			key, value = *pair
 			property = map_property( key.to_s )
@@ -551,22 +551,22 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 				self.log.debug "  initializing resource array with %p" % [ nodes ]
 				ary = nodes
 			end
-			
+
 			ary
 		end
-		
+
 		self.log.debug "Search yielded %d resulting resource URIs" % [ uris.length ]
 
 		return [] unless uris
 		return uris.collect {|uri| uri[ UUID_URN, 1 ] }
 	end
-	
+
 
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +hash+. The criteria should be key-value pairs which describe
 	### partial metadata pairs.  This is a wildcard search.
 	def find_by_matching_properties( hash )
-		
+
 		# Flatten the hash of query args into an array of tuples
 		pairs = []
 		hash.reject {|_,val| val.nil? }.each do |key, vals|
@@ -574,7 +574,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 				pairs << [ key, val ]
 			end
 		end
-		
+
 		self.log.debug "Building a query using pairs: %p" % [ pairs ]
 		predicates = Set.new
 		filters = Set.new
@@ -583,7 +583,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		pairs.each do |key, pattern|
 			property = map_property( key )
 			predicates.add( "<#{property.uri}> ?#{key}" )
-			
+
 			re = self.glob_to_regexp( pattern )
 			string_re = re.inspect[ %r{/(.*)/i}, 1 ]
 			filters.add( %Q:FILTER regex(?#{key}, "#{string_re}", "i"): )
@@ -606,28 +606,28 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			uuids << urn.uri.to_uuid
 			res.next
 		end
-		
+
 		return uuids
 	end
-	
-	
+
+
 	### Metastore API: Dump all values in the store as a Hash keyed by UUID.
 	def dump_store
 		dumpstruct = {}
-		
+
 		# I don't know how to do this any other way than a full scan. Surely there
 		# must be one?
 		@model.triples do |subj, pred, obj|
 			keyword = self.class.unmap_from_node( pred )
 			uuid = subj.uri.to_uuid
-			
+
 			dumpstruct[ uuid ] ||= {}
 			dumpstruct[ uuid ][ keyword.to_sym ] = obj.literal.to_s
 		end
 
 		return dumpstruct
 	end
-	
+
 
 	### Metastore API: Replace all values in the store with those in the given hash.
 	def load_store( hash )
@@ -644,25 +644,25 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		end
 
 	end
-	
+
 
 
 	#######
 	private
 	#######
 
-	### Map the given +propname+ into a registered namespace, falling back to 
+	### Map the given +propname+ into a registered namespace, falling back to
 	### the ThingFish namespace if it doesn't exist in any registered schema.
 	def map_property( propname )
 		return ThingFish::RdfMetaStore.map_to_node( propname )
 	end
-	
+
 
 	### Map the URI back into a simple keyword Symbol.
 	def unmap_uri( uri )
 		return ThingFish::RdfMetaStore.unmap_from_node( uri )
 	end
-	
+
 
 	### Make a Redland-style option string from an option hash.
 	def make_optstring( options )
@@ -670,11 +670,11 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		# Eliminate pairs we need to control ourselves
 		options[:new]        = 'yes'
 		options[:write]      = 'yes'
-		
+
 		# Connections to the postgres backend *require* the password key, even if it's just an
 		# empty string and/or the connection request is trusted in pg_hba.conf.
 		options[:password] ||= nil
-		
+
 		# Transform keys: :hash_type => 'hash-type'
 		# Escape single quotes since the Redland stringification doesn't take this into account.
 		pairs = options.collect {|k,v| [k.to_s.gsub(/_/, '-'), v.to_s.gsub(/'/, "\\\\'")] }
@@ -684,7 +684,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 			sort_by {|key,_| key }.
 			collect {|pair| "%s='%s'" % pair }.join( ',' )
 	end
-	
+
 end # class ThingFish::RdfMetaStore
 
 # vim: set nosta noet ts=4 sw=4:

@@ -1,33 +1,35 @@
 #!/usr/bin/env ruby
-# 
-# ThingFish::MultipartMimeParser -- a parser for extracting uploaded files and 
+#
+# ThingFish::MultipartMimeParser -- a parser for extracting uploaded files and
 # parameters from the body of a multipart/form-data request.
-# 
+#
 # == Synopsis
-# 
+#
 #   require 'thingfish/multipartmimeparser'
 #
 #   parser = ThingFish::MultipartMimeParser.new
 #   files, params = parser.parse( io, '---boundary' )
-#       
+#
 # == Version
 #
 #  $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
-# 
+#
 # :include: LICENSE
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 
 require 'tmpdir'
+require 'tempfile'
 
 require 'thingfish'
 require 'thingfish/constants'
@@ -45,10 +47,10 @@ class ThingFish::MultipartMimeParser
 	# Parser state struct
 	ParseState = Struct.new( "MPMParseState", :socket, :scanner, :boundary_pat,
 		:boundary_size, :files, :metadata )
-	
 
-	### Create a new MultipartMimeParser that will parse uploads and metadata 
-	### from the given +socket+ as a stream, and spool files to a temporary 
+
+	### Create a new MultipartMimeParser that will parse uploads and metadata
+	### from the given +socket+ as a stream, and spool files to a temporary
 	### directory.
 	def initialize( spooldir, bufsize=DEFAULT_BUFSIZE )
 		@spooldir = Pathname.new( spooldir || DEFAULT_SPOOLDIR )
@@ -62,7 +64,7 @@ class ThingFish::MultipartMimeParser
 
 	# The size of the buffer to use when spooling uploads, in bytes
 	attr_accessor :bufsize
-	
+
 	# The directory to use for spooling uploads to temp files
 	attr_accessor :spooldir
 
@@ -95,12 +97,12 @@ class ThingFish::MultipartMimeParser
 	### Scan a part from the parse state.
 	def scan_part( state )
 		scanner = state.scanner
-		
-		scanner.skip( CRLF )
+
+		scanner.skip( CRLF_REGEXP )
 		scanner.string.slice!( 0, scanner.pos )
 		scanner.reset
 		self.log.debug "Scan pointer is at: %p" % [scanner.rest[0,100]]
-		
+
 		headers = self.scan_headers( state )
 
 		# Figure out if it's a file
@@ -108,25 +110,25 @@ class ThingFish::MultipartMimeParser
 			file = $1
 			self.log.debug "Parsing an uploaded file (%p)" % [ file ]
 			self.scan_file_body( file, headers['content-type'], state )
-	
+
 		# read metadata (name="thingfish-metadata-...")
 		elsif headers['content-disposition'] =~ /\bname="thingfish-metadata-(\S+)"/i
 			key = $1.gsub( /\W+/, '_' ).to_sym
 			self.log.debug "Parsing a metadata parameter (%p)" % [key]
 			self.scan_metadata_parameter( key, state )
-	
+
 		# form data that we don't care about
 		else
 			self.log.debug 'Skipping extraneous form data'
 			until state.scanner.scan_until( state.boundary_pat )
 				self.read_at_least( @bufsize, state.socket, state.scanner ) or
-					raise ThingFish::RequestError, 
+					raise ThingFish::RequestError,
 						"truncated mime document: EOF while scanning for next boundary"
 			end
 		end
 	end
-	
-	
+
+
 	### Scan the buffer for MIME headers and return them as a Hash.
 	def scan_headers( state )
 		scanner     = state.scanner
@@ -134,7 +136,7 @@ class ThingFish::MultipartMimeParser
 
 		# Find the headers
 		while headerlines.empty?
-			if scanner.scan_until( BLANK_LINE )
+			if scanner.scan_until( BLANK_LINE_REGEXP )
 				headerlines = scanner.pre_match
 			else
 				self.log.debug "Couldn't find a blank line in the first %d bytes (%p)" %
@@ -143,9 +145,9 @@ class ThingFish::MultipartMimeParser
 					raise ThingFish::RequestError, "EOF while searching for headers"
 			end
 		end
-		
+
 		# put headers into a hash
-		headers = headerlines.strip.split( CRLF ).inject({}) {|hash, line|
+		headers = headerlines.strip.split( CRLF_REGEXP ).inject({}) {|hash, line|
 			key,val = line.split( /:\s*/, 2 )
 			hash[ key.downcase ] = val
 			hash
@@ -158,9 +160,9 @@ class ThingFish::MultipartMimeParser
 
 		return headers
 	end
-	
 
-	### Scan the value after the scan pointer for the specified metadata 
+
+	### Scan the value after the scan pointer for the specified metadata
 	### +parameter+.
 	def scan_metadata_parameter( key, state )
 		param = ''
@@ -178,19 +180,19 @@ class ThingFish::MultipartMimeParser
 			end
 		end
 
-		# Handle multiple-value fields by converting to an array and 
+		# Handle multiple-value fields by converting to an array and
 		# appending
 		#
 		# TODO: re-visit when/if thingfish metastores support multi value
 		# keys
 		if state.metadata.key?( key )
-			state.metadata[ key ] = [ state.metadata[key] ] unless 
+			state.metadata[ key ] = [ state.metadata[key] ] unless
 				state.metadata[ key ].is_a?( Array )
 			state.metadata[ key ] << param.chomp
 		else
 			state.metadata[ key ] = param.chomp
 		end
-	
+
 		self.log.debug "After the param, scan pointer is at: %p" % [state.scanner.rest[0,40]]
 	end
 
@@ -199,7 +201,7 @@ class ThingFish::MultipartMimeParser
 	### on disk and putting the resulting filehandle into the given +state+.
 	def scan_file_body( filename, format, state )
 		self.log.info "Parsing file '%s'" % [ filename ]
-	
+
 		tmpfile, size = self.spool_file_upload( state )
 		self.log.debug "Scanned file to: %s (%d bytes)" % [tmpfile.path, size]
 		state.files[ tmpfile ] = {
@@ -208,21 +210,21 @@ class ThingFish::MultipartMimeParser
 			:extent => size
 		}
 	end
-	
-	
-	### Scan the file data and metadata in the given +scannner+, spooling the file 
-	### data into a temporary file. Returns the tempfile object and a hash of 
+
+
+	### Scan the file data and metadata in the given +scannner+, spooling the file
+	### data into a temporary file. Returns the tempfile object and a hash of
 	### metadata.
 	def spool_file_upload( state )
 		scanner = state.scanner
 		io      = state.socket
-		
+
 		self.log.debug "Spooling file from upload"
 		tmpfile = Tempfile.open( 'filedata', @spooldir.to_s )
 		size = 0
-	
+
 		until tmpfile.closed?
-	
+
 			# look for end, store everything until boundary
 			if scanner.scan_until( state.boundary_pat )
 				self.log.debug "Found the end of the file"
@@ -231,16 +233,16 @@ class ThingFish::MultipartMimeParser
 				tmpfile.write( leavings )
 				size += leavings.length
 				tmpfile.close
-	
+
 			# not at the end yet, buffer this chunker to disk
 			elsif scanner.rest_size >= state.boundary_size + @bufsize
 				# make sure we're never writing a portion of the boundary
 				# out while we're buffering
-				buf = scanner.string.slice!( 0, 
+				buf = scanner.string.slice!( 0,
 					scanner.rest_size - state.boundary_size )
 				tmpfile.print( buf )
 				scanner.reset
-				
+
 				size += buf.length
 			end
 
@@ -250,7 +252,7 @@ class ThingFish::MultipartMimeParser
 					raise ThingFish::RequestError, "EOF while spooling file upload"
 			end
 		end
-	
+
 		return tmpfile, size
 	end
 
@@ -259,17 +261,17 @@ class ThingFish::MultipartMimeParser
 	### specified +buffer+
 	def read_at_least( bytecount, io, scanner )
 		return false if io.eof?
-		
+
 		until scanner.restsize >= bytecount || io.eof?
 			scanner << io.read( @bufsize )
 			Thread.pass
 		end
-		
+
 		return true
 	end
-	
-	
-	### Try to read another chunk of data into the buffer of the given +scanner+, 
+
+
+	### Try to read another chunk of data into the buffer of the given +scanner+,
 	### returning true unless the +io+ is at eof.
 	def read_some_more( io, scanner )
 		return false if io.eof?
@@ -279,11 +281,11 @@ class ThingFish::MultipartMimeParser
 			scanner << io.read( @bufsize )
 			Thread.pass
 		end
-			
+
 		return true
 	end
-	
-	
+
+
 	### Create a new ParseState struct for an upcoming parse, using the specified
 	### +boundary+ string for the boundary pattern.
 	def make_parse_state( socket, boundary )
@@ -295,7 +297,7 @@ class ThingFish::MultipartMimeParser
 
 		return ParseState.new( socket, scanner, boundary_pat, boundary_size, {}, {} )
 	end
-	
-	
+
+
 end # class ThingFish::MultipartMimeParser
 

@@ -36,7 +36,7 @@ include ThingFish::TestConstants
 #####################################################################
 
 describe ThingFish::SequelMetaStore do
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 		@store = ThingFish::MetaStore.create( 'sequel', nil, nil )

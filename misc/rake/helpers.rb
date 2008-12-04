@@ -287,6 +287,7 @@ end
 def find_pattern_in_pipe( regexp, *cmd )
 	output = []
 	
+	log( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
 	Open3.popen3( *cmd ) do |stdin, stdout, stderr|
 		stdin.close
 

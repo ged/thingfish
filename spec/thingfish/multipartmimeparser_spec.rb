@@ -49,7 +49,7 @@ describe ThingFish::MultipartMimeParser do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before( :each ) do
 		@tmpdir = make_tempdir()
 		@parser = ThingFish::MultipartMimeParser.new( @tmpdir )
@@ -60,46 +60,46 @@ describe ThingFish::MultipartMimeParser do
 		ThingFish.reset_logger
 	end
 
-	
+
 
 	it "should error if the initial boundary can't be found" do
 		socket = load_form( "testform_bad.form" )
-		
-		lambda { 
-			@parser.parse( socket, BOUNDARY ) 
+
+		lambda {
+			@parser.parse( socket, BOUNDARY )
 		}.should raise_error( ThingFish::RequestError, /^No initial boundary/ )
 	end
-	
+
 
 	it "should error if headers can't be found" do
 		socket = load_form( "testform_badheaders.form" )
-		
-		lambda { 
-			@parser.parse( socket, BOUNDARY ) 
+
+		lambda {
+			@parser.parse( socket, BOUNDARY )
 		}.should raise_error( ThingFish::RequestError, /^EOF while searching for headers/ )
 	end
 
 
 	it "raises an error when the document is truncated inside an extraneous form field" do
 		socket = load_form( "testform_truncated_metadata.form" )
-		
-		lambda { 
-			@parser.parse( socket, BOUNDARY ) 
+
+		lambda {
+			@parser.parse( socket, BOUNDARY )
 		}.should raise_error( ThingFish::RequestError, /^truncated MIME document/i )
 	end
 
-	
+
 	it "parses form fields that start with 'thingfish-metadata-' into the metadata hash" do
 		socket = load_form( "testform_metadataonly.form" )
-		
+
 		files, metadata = @parser.parse( socket, BOUNDARY )
 
 		files.should be_empty
-		
+
 		metadata.should have(4).keys
 		metadata.keys.should_not include( :'x-livejournal-entry' )
 	end
-	
+
 
 	it "parses the file from a simple upload" do
 		socket = load_form( "singleupload.form" )
@@ -108,20 +108,20 @@ describe ThingFish::MultipartMimeParser do
 		files.should be_an_instance_of( Hash )
 		metadata.should be_an_instance_of( Hash )
 		metadata.should be_empty
-		
+
 		files.should have(1).keys
 		file = files.keys.first
 		meta = files.values.first
-		
+
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
 		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
-		
+
 		file.open
 		file.read.should =~ /screaming.+anguish.+sirens/
 	end
-	
+
 	it "strips full paths from upload filenames (e.g., from MSIE)" do
 		socket = load_form( "testform_msie.form" )
 		files, metadata = @parser.parse( socket, BOUNDARY )
@@ -129,20 +129,20 @@ describe ThingFish::MultipartMimeParser do
 		files.should be_an_instance_of( Hash )
 		metadata.should be_an_instance_of( Hash )
 		metadata.should be_empty
-		
+
 		files.should have(1).keys
 		file = files.keys.first
 		meta = files.values.first
-		
+
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
 		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
-		
+
 		file.open
 		file.read.should =~ /screaming.+anguish.+sirens/
 	end
-	
+
 	it "extracts metadata information from fields whose name begins with 'thingfish-metadata-'" do
 		socket = load_form( "testform_multivalue.form" )
 		files, metadata = @parser.parse( socket, BOUNDARY )
@@ -163,12 +163,12 @@ describe ThingFish::MultipartMimeParser do
 		files.should have(1).keys
 		file = files.keys.first
 		meta = files.values.first
-		
+
 		meta.should be_an_instance_of( Hash )
 		meta[:title].should == 'testfile.rtf'
 		meta[:extent].should == 480
 		meta[:format].should == 'application/rtf'
-		
+
 		file.open
 		file.read.should =~ /screaming.+anguish.+sirens/
 	end
@@ -181,13 +181,13 @@ describe ThingFish::MultipartMimeParser do
 
 		files.should be_an_instance_of( Hash )
 		metadata.should be_an_instance_of( Hash )
-		
+
 		files.should have(2).keys
 		files.keys.each do |tmpfile|
 			tmpfile.open
 			tmpfile.read.should =~ JPEG_MAGIC
 		end
-		
+
 		titles = files.values.collect {|v| v[:title]}
 		titles.should include('Photo 3.jpg', 'grass2.jpg')
 
@@ -197,7 +197,7 @@ describe ThingFish::MultipartMimeParser do
 		sizes = files.values.collect {|v| v[:extent]}
 		sizes.should include(439257, 82143)
 	end
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

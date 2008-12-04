@@ -37,9 +37,9 @@ describe "An instance of a derivative filestore class" do
 	end
 
 	it "knows how to perform startup tasks" do
-		@filestore.should respond_to( :startup )
+		@filestore.should respond_to( :on_startup )
 	end
-	
+
 	### Required derivative daemon interface specs
 
 	it "raises a NotImplementedError for write operations" do

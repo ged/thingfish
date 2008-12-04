@@ -93,10 +93,16 @@ Returns a list of URIs for files which match the given search criteria.
 <dl class="apidocs kvlist">
 	<dt>GET /search?«querystring»</dt>
 	<dd>Find files matching the criteria in the request's query string. The query string uses a 
-		(somewhat) simple convention to build the logic of the search:</dd>
+		simple convention to build the logic of the search:</dd>
 
 	<dd class="example">
-		<p>(to be documented after the metastore changes are done)</p>
+	<pre><code>
+	/search?format=image/jpeg&title=*metric*&created=*Nov%205*
+	</code></pre>
+	</dd>
+	<dd>
+		In this example, we search for all jpeg images with the phrase 'metric' in their title,
+		that were uploaded on November 5th.
 	</dd>
 	
 	<dt>POST /search</dt>

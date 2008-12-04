@@ -9,7 +9,7 @@
 #     handlers:
 #		- inspect:
 #           uris: ['/admin/inspect', '/whatever/inspect']
-# 
+#
 # == Version
 #
 #  $Id$
@@ -23,7 +23,8 @@
 #
 #---
 #
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 #
 
 begin
@@ -57,13 +58,12 @@ class ThingFish::InspectHandler < ThingFish::Handler
 
 
 	### Handler API: handle a GET request with an inspection page.
-	def handle_get_request( request, response )
-		requested_object = request.path_info
+	def handle_get_request( requested_object, request, response )
 		inspected_object = nil
-	
+
 		# Set the body of the response according to the path of the URI
 		case requested_object
-		when '', '/'
+		when ''
 			response.data[:title] = "ThingFish Introspection"
 			inspected_object = {
 				'daemon'   => 'ThingFish::Daemon',
@@ -71,19 +71,19 @@ class ThingFish::InspectHandler < ThingFish::Handler
 				'response' => 'ThingFish::Response',
 				'config'   => 'ThingFish::Config',
 			}
-			
+
 		when /config/i
 			response.data[:title] = "The Server's Config (ThingFish::Config)"
-			inspected_object = self.listener.config
-			
+			inspected_object = self.daemon.config
+
 		when /daemon/i
 			response.data[:title] = "The Server Object (ThingFish::Daemon)"
-			inspected_object = self.listener
+			inspected_object = self.daemon
 
 		when /request/i
 			response.data[:title] = "The Current Request Object (ThingFish::Request)"
 			inspected_object = request
-		
+
 		when /response/i
 			response.data[:title] = "The Current Response Object (ThingFish::Response)"
 			inspected_object = response
@@ -106,14 +106,14 @@ class ThingFish::InspectHandler < ThingFish::Handler
 		response.content_type = CONFIGURED_HTML_MIMETYPE
 		return content.result( binding() )
 	end
-	
-	
+
+
 	### Return the HTML fragment that should be used to link to this handler.
 	def make_index_content( uri )
 		tmpl = self.get_erb_resource( "index_content.rhtml" )
 		return tmpl.result( binding() )
 	end
-	
+
 end # class ThingFish::InspectHandler
 
 # vim: set nosta noet ts=4 sw=4:

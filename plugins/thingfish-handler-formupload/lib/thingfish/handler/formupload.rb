@@ -1,10 +1,10 @@
 #!/usr/bin/ruby
-# 
+#
 # Accept and unwrap multipart form uploads, as documented at
 # http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
-# 
+#
 # == Synopsis
-# 
+#
 # 	# thingfish.conf
 # 	#
 # 	plugins:
@@ -12,32 +12,33 @@
 # 			- formupload:
 # 				uris: /upload
 # 				resource_dir: plugins/thingfish-formuploadhandler/resources
-# 
+#
 # == Config Keys
-# 
+#
 # 	[+bufsize+]
-# 		The size of the buffer to use when reading incoming data (in bytes).	
+# 		The size of the buffer to use when reading incoming data (in bytes).
 # 		Defaults to ThingFish::FormUploadHandler::DEFAULT_BUFSIZE
-# 
+#
 # 	[+spooldir+]
 # 		The directory in which to store uploaded resources before they are injected
 # 		into the filestore.
 # 		Defaults to ThingFish::FormUploadHandler::DEFAULT_SPOOLDIR
-# 
+#
 # == Version
-# 
+#
 # $Id$
-# 
+#
 # == Authors
-# 
+#
 # * Mahlon E. Smith <mahlon@laika.com>
 # * Michael Granger <mgranger@laika.com>
-# 
+#
 # :include: LICENSE
-# 
+#
 # --
-# 
-# Please see the file LICENSE in the 'docs' directory for licensing details.
+#
+# Please see the file LICENSE in the top-level directory for licensing details.
+
 
 
 require 'thingfish'
@@ -56,7 +57,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	        ThingFish::ResourceLoader
 
 	extend Forwardable
-	
+
 	# SVN Revision
 	SVNRev = %q$Rev$
 
@@ -89,7 +90,7 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 		response.data[:head]  = %Q{
 	<script src="#{uri}/js/jquery.MultiFile.js" type="text/javascript" charset="utf-8"></script>
 		}
-		
+
 		formtemplate = self.get_erb_resource( 'uploadform.rhtml' )
 		uploadform = formtemplate.result( binding() )
 
@@ -105,8 +106,8 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	#########
 
 	### Handle a GET request
-	def handle_get_request( request, response )
-		return unless request.path_info == ''
+	def handle_get_request( path_info, request, response )
+		return unless path_info == ''
 		response.data[:tagline] = 'Feed me.'
 		response.content_type = RUBY_MIMETYPE
 		response.status = HTTP::OK
@@ -114,8 +115,8 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 
 
 	### Handle a POST request
-	def handle_post_request( request, response )
-		return unless request.path_info == ''
+	def handle_post_request( path_info, request, response )
+		return unless path_info == ''
 
 		self.log.debug "Handling POSTed upload/s"
 		response.data[:tagline] = 'Yum!'

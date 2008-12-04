@@ -42,13 +42,13 @@ describe ThingFish::MarshalledMetaStore do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	before(:each) do
 		@tmpdir = make_tempdir()
 		@spooldir = @tmpdir + 'spool'
 	    @store = ThingFish::MetaStore.create( 'marshalled', @tmpdir, @spooldir )
 	end
-	
+
 	after(:each) do
 		@tmpdir.rmtree
 	end

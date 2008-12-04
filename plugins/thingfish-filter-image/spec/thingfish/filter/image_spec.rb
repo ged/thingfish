@@ -36,15 +36,15 @@ include ThingFish::Constants
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::ImageFilter do
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-		
+
 	before( :each ) do
 		# Stub out some formats
 		Magick.stub!( :formats ).and_return({ 'PNG' => '*rw-', 'GIF' => '*rw+', 'JPG' => '*rw-' })
-		
+
 		@filter = ThingFish::Filter.create( 'image', {} )
 
 		@io = stub( "image upload IO object", :read => :imagedata )
@@ -53,10 +53,10 @@ describe ThingFish::ImageFilter do
 		@response = mock( "response object" )
 		@response_headers = mock( "response headers" )
 		@response.stub!( :headers ).and_return( @response_headers )
-		
+
 		@request_metadata = { :format => 'image/png' }
 		@request.stub!( :each_body ).and_yield( @io, @request_metadata )
-		
+
 		@extracted_metadata = {
 			'image_height'       => :rows,
 			'image_width'        => :columns,
@@ -79,33 +79,33 @@ describe ThingFish::ImageFilter do
 	# Request (extraction) filtering
 
 	it "doesn't attempt extraction on a GET" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@request.should_not_receive( :each_body )
 
 		@filter.handle_request( @request, @response )
 	end
-	
+
 	it "doesn't attempt extraction on a DELETE" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'DELETE' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :DELETE )
 		@request.should_not_receive( :each_body )
 
 		@filter.handle_request( @request, @response )
 	end
-	
-	
+
+
 	it "ignores entity bodies of media types it doesn't know how to open" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'PUT' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :PUT )
 		@request_metadata[ :format ] = 'dessert/tiramisu'
 		Magick::Image.should_not_receive( :from_blob )
 		@request.should_not_receive( :metadata )
-		
+
 		@filter.handle_request( @request, @response )
 	end
-	
-	
+
+
 	it "extracts image metadata and thumbnail from uploaded image data using RMagick" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
-		
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :POST )
+
 		# Image metadata
 		image = mock( "image object" )
 		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
@@ -117,19 +117,19 @@ describe ThingFish::ImageFilter do
 			image.stub!( metadata_key ).and_return( metadata_key.to_s )
 			expected_metadata[ magick_method ] = metadata_key.to_s
 		end
-		
+
 		@request.should_receive( :append_metadata_for ).with( @io, expected_metadata )
 
 		# Thumbnail
 		thumbnail = mock( "thumbnail image object" )
 		image.should_receive( :resize_to_fit ).with( *ThingFish::ImageFilter::DEFAULT_THUMBNAIL_DIMENSIONS ).
 			and_return( thumbnail )
-		
+
 		thumb_metadata = {}
 		@extracted_metadata.each do |magick_method, metadata_key|
 			thumb_metadata[ metadata_key ] = metadata_key.to_s
 		end
-		
+
 		image.stub!( :inspect ).and_return( '<inspected image>' )
 		thumbnail.stub!( :mime_type ).and_return( :mimetype )
 		thumb_metadata = {
@@ -145,7 +145,7 @@ describe ThingFish::ImageFilter do
 			thumbnail.stub!( magick_method ).and_return( magick_method.to_s )
 			thumb_metadata[ metadata_key ] = magick_method.to_s
 		end
-		
+
 		thumbnail.should_receive( :to_blob ).and_return( "thumbnail_data" )
 		StringIO.should_receive( :new ).with( "thumbnail_data" ).and_return( :thumbio )
 		@request.should_receive( :append_related_resource ).with( @io, :thumbio, thumb_metadata )
@@ -153,46 +153,46 @@ describe ThingFish::ImageFilter do
 		# Run the request filter
 		@filter.handle_request( @request, @response )
 	end
-	
-	
+
+
 	# Response (conversion) filtering
 
 	it "doesn't try to convert non-GET responses" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'POST' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :POST )
 		@response.should_not_receive( :body )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "doesn't try to convert responses that are already handled" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@request.should_receive( :accepts? ).and_return( true )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'text/xml' )
 
 		@response.should_not_receive( :body )
-		
+
 		@filter.handle_response( @response, @request )
 	end
 
 
 	it "doesn't try to convert formats it doesn't know about" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@request.should_receive( :accepts? ).and_return( false )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'text/xml' )
 
 		@response.should_not_receive( :body )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
-	
+
+
 	it "doesn't try to convert if the request doesn't have any explicitly accepted image types" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
@@ -208,7 +208,7 @@ describe ThingFish::ImageFilter do
 	end
 
 	it "doesn't try to convert if the request doesn't explicitly accept any formats it knows about" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
@@ -227,7 +227,7 @@ describe ThingFish::ImageFilter do
 
 
 	it "converts image entity bodies from the source format to a format the client prefers" do
-		@request.should_receive( :http_method ).at_least( :once ).and_return( 'GET' )
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'image/jpeg' )
@@ -242,7 +242,7 @@ describe ThingFish::ImageFilter do
 		image = mock( "image object", :null_object => true )
 		image_filehandle = stub( "image filehandle", :read => :image_data )
 		image_config = mock( "image config" )
-		
+
 		@response.should_receive( :body ).and_return( image_filehandle )
 		Magick::Image.should_receive( :from_blob ).with( :image_data ).and_return( image )
 
@@ -253,14 +253,14 @@ describe ThingFish::ImageFilter do
 			and_return( new_image_data )
 		new_image_data.should_receive( :length ).and_return( 4096 )
 		image_config.should_receive( :format= ).with( 'PNG' )
-		
+
 		@response.should_receive( :body= ).with( new_image_data )
 		@response_headers.should_receive( :[]= ).with( :content_length, 4096 )
 		@response.should_receive( :content_type= ).with( 'image/png' )
-		
+
 		@filter.handle_response( @response, @request )
 	end
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

@@ -23,7 +23,7 @@ begin
 	require 'thingfish'
 	require 'thingfish/metastore'
 	require 'thingfish/metastore/rdf'
-	
+
 	$have_rdf = true
 rescue LoadError
 	unless Object.const_defined?( :Gem )
@@ -71,7 +71,7 @@ describe ThingFish::RdfMetaStore do
 			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
 			and_return( @triplestore )
 		Redland::Model.stub!( :new ).and_return( :model )
-		
+
 		config = { :options => {:new => 'no'} }
 		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
@@ -84,7 +84,7 @@ describe ThingFish::RdfMetaStore do
 			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
 			and_return( @triplestore )
 		Redland::Model.stub!( :new ).and_return( :model )
-		
+
 		config = { :options => {:write => 'no'} }
 		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
@@ -97,7 +97,7 @@ describe ThingFish::RdfMetaStore do
 			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
 			and_return( @triplestore )
 		Redland::Model.stub!( :new ).and_return( :model )
-		
+
 		config = { :options => {:password => "n'robot"} }
 		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
 	end
@@ -125,7 +125,7 @@ describe ThingFish::RdfMetaStore do
 
 
 		### Schema stuff
-	
+
 		it "loads RDF vocabularies specified in the config"
 		it "maps incoming pairs onto user-specified vocabularies first"
 		it "maps incoming pairs onto standard vocabularies if there is no matching predicate in " +

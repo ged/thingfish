@@ -42,11 +42,11 @@ require 'thingfish/exceptions'
 require 'thingfish/metastore/simple'
 
 
-### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been 
+### Add pragmas to SQLite3 (because schema_cookie and user_cookie have been
 ### renamed)
 module SQLite3::Pragmas
 
-	### Get the schema version from the database (the value of the 'schema_version' 
+	### Get the schema version from the database (the value of the 'schema_version'
 	### pragma value)
 	def schema_version
 		get_int_pragma "schema_version"
@@ -58,7 +58,7 @@ module SQLite3::Pragmas
 		set_int_pragma "schema_version", version
 	end
 
-	### Get the user version from the database (the value of the 'user_version' 
+	### Get the user version from the database (the value of the 'user_version'
 	### pragma value)
 	def user_version
 		get_int_pragma "user_version"
@@ -104,6 +104,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		self.datadir.mkpath
 		@dbname = self.datadir + 'metastore.db'
 		@schema = nil
+		@resource_dir = options['resource_dir'] || options[:resource_dir]
 
 		@metadata = SQLite3::Database.new( @dbname.to_s )
 		self.init_db
@@ -127,12 +128,12 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	def_delegators :@metadata, :rollback, :commit, :transaction_active?
 
 
-	### These transaction fallthrough methods are discouraged for regular use, 
+	### These transaction fallthrough methods are discouraged for regular use,
 	### in favor of the #transaction metastore API.
 	def begin_transaction #:nodoc:
 		@metadata.transaction
 	end
-	
+
 
 	### Returns +true+ if the metadata database needs to be created.
 	def db_needs_init?
@@ -145,7 +146,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	def db_needs_update?
 		rev = self.schema_rev or return false
 		installed_rev = self.installed_schema_rev
-		
+
 		return rev > installed_rev ? true : false
 	end
 
@@ -163,11 +164,11 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			end
 			self.log.debug "After transformation of  the rev: %p" % [@schema]
 		end
-		
+
 		return @schema
 	end
-	
-	
+
+
 	### Extract the revision number from the schema resource and return it.
 	def schema_rev
 		if self.schema.match( /user_version\s*=\s*(\d+)/i )
@@ -176,37 +177,37 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			return nil
 		end
 	end
-	
-	
-	### Returns the revision number of the schema that was installed for the 
+
+
+	### Returns the revision number of the schema that was installed for the
 	### current db.
 	def installed_schema_rev
 		return @metadata.user_version
 	end
-	
-	
+
+
 	### Delete all resources from the database, but preserve the keys
 	def clear
 		@metadata.execute( 'DELETE FROM resources' )
 	end
-	
-	
+
+
 	### Execute a block in the scope of a transaction, committing it when the block returns.
 	### If an exception is raised in the block, the transaction is aborted.
 	def transaction( &block )
 		if @metadata.transaction_active?
 			block.call
 		else
-			@metadata.transaction( &block ) 
+			@metadata.transaction( &block )
 		end
 	end
 
 
-	### 
+	###
 	### Simple MetaStore API
-	### 
+	###
 
-	### MetaStore API: Set the property associated with +uuid+ specified by 
+	### MetaStore API: Set the property associated with +uuid+ specified by
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
 		r_id = get_id( :resource, uuid )
@@ -218,7 +219,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		)
 	end
 
-	
+
 	### MetaStore API: Set the properties associated with the given +uuid+ to those
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
@@ -227,21 +228,21 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
-		end		
+		end
 	end
-	
 
-	### MetaStore API: Merge the provided +propshash+ into the properties associated with the 
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
 	### given +uuid+.
 	def update_properties( uuid, propshash )
 		self.transaction do
 			propshash.each do |prop, val|
 				self.set_property( uuid, prop, val )
 			end
-		end		
+		end
 	end
-	
-	
+
+
 	SQL_GET_PROPERTY = %q{
 		SELECT v.val
 		FROM metaval AS v, metakey as m, resources AS r
@@ -252,14 +253,14 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			m.key = :propname
 	}
 
-	### MetaStore API: Return the property associated with +uuid+ specified by 
+	### MetaStore API: Return the property associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		r_id = get_id( :resource, uuid )
 		return @metadata.get_first_value( SQL_GET_PROPERTY, r_id, propname )
 	end
 
-	
+
 	SQL_GET_PROPERTIES = %q{
 		SELECT m.key, v.val
 		FROM metaval AS v, metakey as m, resources AS r
@@ -282,12 +283,12 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 
 	### MetaStore API: Returns +true+ if the given +uuid+ exists in the metastore.
 	def has_uuid?( uuid )
-		return @metadata.get_first_value( 'SELECT id FROM resources WHERE uuid = :uuid', uuid ) ? 
+		return @metadata.get_first_value( 'SELECT id FROM resources WHERE uuid = :uuid', uuid ) ?
 			true :
 			false
 	end
-	
-	
+
+
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
 		return get_property( uuid, propname ) != nil
@@ -309,8 +310,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		# no-op - not being able to find the uuid or propname in SQL
 		# in this case is not a problem.
 	end
-	
-	
+
+
 	SQL_DELETE_PROPERTIES = %Q{
 		DELETE FROM metaval
 		WHERE
@@ -329,8 +330,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		# no-op - not being able to find the uuid or propname in SQL
 		# in this case is not a problem.
 	end
-	
-	
+
+
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
 		# trigger cleans up the other tables
@@ -344,21 +345,21 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			flatten.collect { |k| k.to_sym }
 	end
 
-	
+
 	SQL_GET_ALL_PROPERTY_VALUES = %q{
 		SELECT DISTINCT v.val FROM metaval AS v, metakey AS k
-		WHERE 
-			v.m_id = k.id AND 
+		WHERE
+			v.m_id = k.id AND
 			k.key  = :key
-	}	
+	}
 
 	### MetaStore API: Return a uniquified Array of all values in the metastore for
 	### the specified +key+.
 	def get_all_property_values( key )
 		return @metadata.execute( SQL_GET_ALL_PROPERTY_VALUES, key ).flatten.compact
 	end
-		
-	
+
+
 	SQL_SELECT_EXACT = %q{
 		SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
 		WHERE
@@ -384,7 +385,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			v.r_id = r.id
 	}
 
-	### MetaStore API:  Return an array of uuids whose metadata matched the criteria 
+	### MetaStore API:  Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		value = value.to_s.gsub( '*', '%' )
@@ -402,11 +403,11 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Return a hash of all the values in the store, keyed by UUID.
 	def dump_store
 		dumpstruct = Hash.new {|h,k| h[k] = {} }
-		
+
 		@metadata.execute( SQL_DUMP_STORE ).each do |uuid, key, val|
 			dumpstruct[ uuid ][ key.to_sym ] = val
 		end
-		
+
 		return dumpstruct
 	end
 
@@ -414,10 +415,10 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	### Metastore API: Replace all values in the store with those in the given hash.
 	def load_store( hash )
 		self.clear
-		
+
 		hash.each do |uuid, properties|
 			r_id = get_id( :resource, uuid )
-			
+
 			properties.each do |propname, value|
 				m_id = get_id( :metakey, propname )
 				@metadata.execute(%q{
@@ -429,8 +430,8 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
-	
+
+
 	SQL_EACH_RESOURCE = %q{
 		SELECT key, val
 		FROM metaval
@@ -453,7 +454,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 			yield( uuid, properties )
 		end
 	end
-	
+
 
 	#########
 	protected
@@ -471,7 +472,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		# Upload the schema
 		@metadata.execute_batch( sql )
 	end
-	
+
 
 	### Return the id of a given resource or metakey, or if none exist,
 	### create a new row and return the id.

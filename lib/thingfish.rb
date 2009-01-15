@@ -63,9 +63,9 @@ module ThingFish
 
 	@logger = @default_logger
 
-	PluginFactory::logger_callback = lambda do |lvl, msg|
-		@logger.debug "[%s] %s" % [ lvl.to_s, msg ]
-	end
+	# PluginFactory::logger_callback = lambda do |lvl, msg|
+	#     @logger.debug "[%s] %s" % [ lvl.to_s, msg ]
+	# end
 
 	class << self
 		# The log formatter that will be used when the logging subsystem is reset

@@ -1,4 +1,11 @@
 #!/usr/bin/ruby
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/request'
+require 'thingfish/response'
+
+
 #
 # ThingFish::ConnectionManager --
 #
@@ -20,17 +27,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'timeout'
-
-require 'thingfish'
-require 'thingfish/mixins'
-require 'thingfish/request'
-require 'thingfish/response'
-
-### Request wrapper class
 class ThingFish::ConnectionManager
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
@@ -123,12 +120,13 @@ class ThingFish::ConnectionManager
 			self.socket.peeraddr[3],
 			self.socket.peeraddr[1],
 		]
+	rescue Errno::EINVAL
+		return '(closed socket)'
 	end
 
 
 	### Read data from the socket when it becomes readable.
 	### :TODO: Chunked transfer-encoding
-	### :TODO: Try nonblocking sysread/write instead of using the Timeout library
 	def process
 		done = false
 		@read_buffer = ''
@@ -149,22 +147,28 @@ class ThingFish::ConnectionManager
 
 		self.log.debug "%s: close" % [ self.session_info ]
 
-	rescue Errno, IOError => err
+	rescue SystemCallError, IOError => err
 		self.log.error "%s: Error in connection" % [ self.session_info ]
-		# TODO: handle ECONNRESET, EINTR, EPIPE
-	rescue Timeout::Error => err
+		# TODO: handle ECONNRESET, EINTR, EPIPE, EINVAL
+	rescue ThingFish::Timeout => err
 		self.log.error "%s: timeout %s" % [ self.session_info, err.message ]
 	ensure
-		@socket.close
+		@socket.close unless @socket.closed?
 	end
 
 
 	### Read a ThingFish::Request from the socket and return it.
 	def read_request
 		until pos = @read_buffer.index( BLANK_LINE )
-			Timeout.timeout( @timeout ) do
-				@read_buffer << @socket.sysread( @bufsize )
+			begin
+				@read_buffer << @socket.read_nonblock( @bufsize )
 				self.log.debug "Read buffer now has %d bytes." % [ @read_buffer.length ]
+			rescue Errno::EINTR, Errno::EAGAIN
+				unless IO.select([ @socket ], nil, nil, @timeout )
+					# If the socket didn't become readable, the read timed out
+					raise ThingFish::Timeout, "while reading"
+				end
+				retry
 			end
 		end
 
@@ -176,8 +180,6 @@ class ThingFish::ConnectionManager
 		request.body = self.read_request_body( request )
 
 		return request
-	rescue Timeout::Error => err
-		raise err.exception( "while reading" )
 	end
 
 
@@ -207,8 +209,13 @@ class ThingFish::ConnectionManager
 			cur_pos = body.tell
 			needed  = body_length - cur_pos
 
-			Timeout.timeout( @timeout ) do
-				@read_buffer << @socket.sysread( @bufsize ) unless @read_buffer.length >= needed
+			begin
+				@read_buffer << @socket.read_nonblock( @bufsize ) unless @read_buffer.length >= needed
+			rescue Errno::EINTR, Errno::EAGAIN
+				unless IO.select([ @socket ], nil, nil, @timeout )
+					raise ThingFish::Timeout, "while reading"
+				end
+				retry
 			end
 
 			until @read_buffer.empty? || needed <= 0
@@ -226,19 +233,20 @@ class ThingFish::ConnectionManager
 	### Write the +response+ (a ThingFish::Response) for the given +request+ (a ThingFish::Request)
 	### to the socket.
 	def write_response( response, request )
+		bytes = nil
 		buffer = response.status_line + EOL +
 		         response.header_data + EOL
 		self.log.debug "Response buffer is: %p" % [ buffer ]
 
 		# Make the response body an IOish object if it isn't already
 		# and the request actually wants to see a body.
-		body = if request.http_method == :HEAD
-		 	   nil
-		       elsif response.body.respond_to?( :eof? )
-		       	   response.body
-		       else
-		       	   StringIO.new( response.body.to_s )
-		       end
+		body = if request.http_method == :HEAD then
+			       nil
+			   elsif response.body.respond_to?( :eof? ) then
+			       response.body
+			   else
+			       StringIO.new( response.body.to_s )
+			   end
 
 		# Write stuff in the buffer to the socket
 		until buffer.empty? && (body.nil? || body.eof?)
@@ -246,9 +254,15 @@ class ThingFish::ConnectionManager
 				buffer.length < @bufsize && !( body.nil? || body.eof? )
 
 			until buffer.empty?
-				bytes = Timeout.timeout( @config.connection_timeout ) do
-					@socket.syswrite( buffer )
+				begin
+					bytes = @socket.write_nonblock( buffer )
+				rescue Errno::EINTR, Errno::EAGAIN
+					unless IO.select(nil, [ @socket ], nil, @timeout )
+						raise ThingFish::Timeout, "while writing"
+					end
+					retry
 				end
+
 				buffer.slice!( 0, bytes )
 			end
 		end

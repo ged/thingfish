@@ -37,6 +37,7 @@ begin
 	require 'socket'
 	require 'uuidtools'
 	require 'logger'
+	require 'sync'
 
 	require 'thingfish'
 rescue LoadError
@@ -91,6 +92,7 @@ class ThingFish::Daemon
 		@running = false
 
 		# Load the profiler library if profiling is enabled
+		@mutex = Sync.new
 		@have_profiling      = false
 		@profile_connections = false
 		if @config.profiling.enabled?
@@ -469,7 +471,11 @@ class ThingFish::Daemon
 	### out to a profile directory afterwards.
 	def profile( description, &block )
 		if self.have_profiling
-			result = RubyProf.profile( &block )
+			result = nil
+
+			@mutex.synchronize( Sync::EX ) do
+				result = RubyProf.profile( &block )
+			end
 
 			self.log.debug {
 				output = ""
@@ -478,7 +484,7 @@ class ThingFish::Daemon
 				output
 			}
 
-			filename = @config.profiledir_path + "%f#%d#%s" % [
+			filename = @config.profiledir_path + "%f#%x#%s" % [
 				Time.now,
 				Thread.current.object_id * 2,
 				description

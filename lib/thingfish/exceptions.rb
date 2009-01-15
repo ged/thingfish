@@ -115,5 +115,7 @@ module ThingFish
 		end
 	end
 
+	# Generic timeout exception
+	class Timeout < Exception; end
 end
 

@@ -13,9 +13,8 @@ begin
 	require 'spec/runner'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
-
 	require 'timeout'
-
+	
 	require 'thingfish'
 	require 'thingfish/config'
 	require 'thingfish/constants'
@@ -76,13 +75,92 @@ describe ThingFish::ConnectionManager do
 		@conn.session_info.should == "host:1717 (8/100 requests)"
 	end
 
+
+	it "returns informative message for the peer_info even when the socket is closed" do
+		# Snorty ran out of gas?!?!
+		# Stare-y ran out of jokes!!
+		@socket.should_receive( :peeraddr ).and_raise( Errno::EINVAL.new )
+		@conn.peer_info.should == "(closed socket)"
+	end
+
+
 	### Read request
 
-	describe "with a pending request" do
-
-		before( :each ) do
-			setup_logging( :fatal )
+	it "resumes reading the request header data when the socket becomes readable again after it has blocked" do
+		has_blocked = false
+		@socket.should_receive( :read_nonblock ).twice.and_return do
+			if has_blocked
+				TESTING_GET_REQUEST
+			else
+				has_blocked = true
+				raise Errno::EAGAIN
+			end
 		end
+
+		IO.should_receive( :select ).with( [@socket], nil, nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
+			and_return( [@socket, nil, nil] )
+			
+		ThingFish::Request.should_receive( :parse ).with( TESTING_GET_REQUEST, @config, @socket ).
+			and_return( @request )
+		@request.should_receive( :header ).at_least(:once).
+			and_return({:content_length => nil})
+		@request.should_receive( :body= ).with( nil )
+
+		@conn.read_request.should == @request
+	end
+	
+	it "resumes reading the request body data when the socket becomes readable again after it has blocked" do
+		tempfile = mock( "Tempfile" )
+		len = TEST_CONTENT.length
+
+		@request.should_receive( :header ).at_least(:once).
+			and_return({:content_length => len})
+		@request.should_receive( :http_method ).and_return( :POST )
+
+		StringIO.should_receive( :new ).and_return( tempfile )
+
+		has_blocked = false
+		@socket.should_receive( :read_nonblock ).twice.and_return do
+			if has_blocked
+				TEST_CONTENT
+			else
+				has_blocked = true
+				raise Errno::EAGAIN
+			end
+		end
+
+		IO.should_receive( :select ).with( [@socket], nil, nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
+			and_return( [@socket, nil, nil] )
+
+		tempfile.should_receive( :tell ).and_return( 0, 0, len )
+		tempfile.should_receive( :write ).with( TEST_CONTENT ).and_return( len )
+		tempfile.should_receive( :rewind )
+
+		@conn.read_request_body( @request )
+	end
+	
+	it "raises a timeout after reading the request body has been blocked for more than <timeout> seconds"  do
+		tempfile = mock( "Tempfile" )
+		len = TEST_CONTENT.length
+
+		@request.should_receive( :header ).at_least(:once).
+			and_return({:content_length => len})
+		@request.should_receive( :http_method ).and_return( :POST )
+
+		StringIO.should_receive( :new ).and_return( tempfile )
+
+		tempfile.should_receive( :tell ).and_return( 0, 0 )
+		@socket.should_receive( :read_nonblock ).and_raise( Errno::EAGAIN )
+
+		IO.should_receive( :select ).with( [@socket], nil, nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
+			and_return( nil )
+
+		lambda {
+			@conn.read_request_body( @request )
+		}.should raise_error( ThingFish::Timeout, /while reading/i )
+	end
+
+	describe "with a pending request" do
 
 		it "can read a GET request from its socket" do
 
@@ -91,9 +169,7 @@ describe ThingFish::ConnectionManager do
 			halfway = TESTING_GET_REQUEST.length / 2
 			chunker1, chunker2 = TESTING_GET_REQUEST[0..halfway], TESTING_GET_REQUEST[halfway + 1..-1]
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).twice.
-				and_yield
-			@socket.should_receive( :sysread ).with( @config.bufsize ).
+			@socket.should_receive( :read_nonblock ).with( @config.bufsize ).
 				and_return( chunker1, chunker2 )
 			ThingFish::Request.should_receive( :parse ).with( TESTING_GET_REQUEST, @config, @socket ).
 				and_return( @request )
@@ -106,9 +182,7 @@ describe ThingFish::ConnectionManager do
 
 
 		it "returns a BAD_REQUEST response if a GET request has a body" do
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).
-				and_yield
-			@socket.should_receive( :sysread ).with( @config.bufsize ).
+			@socket.should_receive( :read_nonblock ).with( @config.bufsize ).
 				and_return( TESTING_GET_REQUEST )
 			ThingFish::Request.should_receive( :parse ).with( TESTING_GET_REQUEST, @config, @socket ).
 				and_return( @request )
@@ -130,16 +204,13 @@ describe ThingFish::ConnectionManager do
 			first_half = TEST_CONTENT[ 0..len/2 ]
 			second_half = TEST_CONTENT[ (len/2 + 1)..-1 ]
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).twice.
-				and_yield
-
 			@request.should_receive( :header ).at_least(:once).
 				and_return({:content_length => len})
 			@request.should_receive( :http_method ).and_return( :POST )
 
 			Tempfile.should_not_receive( :new )
 			StringIO.should_receive( :new ).and_return( tempfile )
-			@socket.should_receive( :sysread ).with( an_instance_of(Fixnum) ).
+			@socket.should_receive( :read_nonblock ).with( an_instance_of(Fixnum) ).
 				and_return( first_half, second_half + TESTING_GET_REQUEST[0..256] )
 
 			tempfile.should_receive( :tell ).and_return( 0, 0, first_half.length, first_half.length, len )
@@ -160,9 +231,6 @@ describe ThingFish::ConnectionManager do
 			first_half = TEST_CONTENT[ 0..len/2 ]
 			second_half = TEST_CONTENT[ (len/2 + 1)..-1 ]
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).twice.
-				and_yield
-
 			@request.should_receive( :header ).at_least(:once).
 				and_return({:content_length => len})
 			@request.should_receive( :http_method ).and_return( :POST )
@@ -170,7 +238,7 @@ describe ThingFish::ConnectionManager do
 			StringIO.should_not_receive( :new )
 			Tempfile.should_receive( :new ).and_return( tempfile )
 			tempfile.stub!( :path ).and_return( "/a/path/somewhere" )
-			@socket.should_receive( :sysread ).with( an_instance_of(Fixnum) ).
+			@socket.should_receive( :read_nonblock ).with( an_instance_of(Fixnum) ).
 				and_return( first_half, second_half + TESTING_GET_REQUEST[0..256] )
 
 			tempfile.should_receive( :tell ).and_return( 0, 0, first_half.length, first_half.length, len )
@@ -189,8 +257,6 @@ describe ThingFish::ConnectionManager do
 	describe "with a parsed request ready for dispatching" do
 
 		before( :each ) do
-			setup_logging( :fatal )
-
 			@response = mock( "response object" )
 			@response.stub!( :status_line ).and_return( "(debugging status line)" )
 			@callback = stub( "daemon callback", :call => @response )
@@ -308,8 +374,6 @@ describe ThingFish::ConnectionManager do
 	describe "handling an error case" do
 
 		before( :each ) do
-			setup_logging( :fatal )
-
 			@response = mock( "response object" )
 			@response.stub!( :status_line ).and_return( "(debugging status line)" )
 		end
@@ -422,8 +486,6 @@ describe ThingFish::ConnectionManager do
 	describe "with a response" do
 
 		before( :each ) do
-			setup_logging( :fatal )
-
 			@response = mock( "response object" )
 		end
 
@@ -446,15 +508,12 @@ describe ThingFish::ConnectionManager do
 			io.should_receive( :read ).with( an_instance_of(Fixnum) ).
 				and_return( first_half, second_half )
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).twice.
-				and_yield
-
 			first_chunker = status_line + EOL + 
 				header_data + EOL +
 				first_half
-			@socket.should_receive( :syswrite ).with( first_chunker ).
+			@socket.should_receive( :write_nonblock ).with( first_chunker ).
 				and_return( first_chunker.length )
-			@socket.should_receive( :syswrite ).with( second_half ).
+			@socket.should_receive( :write_nonblock ).with( second_half ).
 				and_return( second_half.length )
 
 			io.should_receive( :eof? ).and_return( false, false, false, true )
@@ -462,6 +521,56 @@ describe ThingFish::ConnectionManager do
 			@conn.write_response( @response, @request )
 		end
 
+		it "resumes writing the request data when the socket becomes writable again after it has blocked" do
+			status_line = "HTTP/1.1 200 OK"
+			header_data = "Header: data"
+			@response.should_receive( :status_line ).and_return( status_line )
+			@response.should_receive( :header_data ).and_return( header_data )
+
+			@request.should_receive( :http_method ).and_return( :HEAD )
+			
+			buffer = status_line + EOL + header_data + EOL
+
+			# Mmmmm... so klugy.
+			# This style is a workaround for rspec's should_receive not liking a combination
+			# of and_return + and_raise.
+			has_blocked = false
+			@socket.should_receive( :write_nonblock ).twice.and_return do
+				if has_blocked
+					buffer.length
+				else
+					has_blocked = true
+					raise Errno::EAGAIN
+				end
+			end
+
+			IO.should_receive( :select ).with( nil, [@socket], nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
+				and_return( [nil, @socket, nil] )
+
+			Timeout.timeout( 1 ) do
+				@conn.write_response( @response, @request )
+			end
+		end
+		
+		it "raises a timeout after writing has been blocked for more than <timeout> seconds" do
+			status_line = "HTTP/1.1 200 OK"
+			header_data = "Header: data"
+			@response.should_receive( :status_line ).and_return( status_line )
+			@response.should_receive( :header_data ).and_return( header_data )
+
+			@request.should_receive( :http_method ).and_return( :HEAD )
+			
+			buffer = status_line + EOL + header_data + EOL
+			@socket.should_receive( :write_nonblock ).and_raise( Errno::EAGAIN.new )
+
+			IO.should_receive( :select ).with( nil, [@socket], nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
+				and_return( nil )
+
+			lambda {
+				@conn.write_response( @response, @request )
+			}.should raise_error( ThingFish::Timeout, /while writing/i )
+		end
+		
 		it "does not write the body for a response to a HEAD" do
 			status_line = "HTTP/1.1 200 OK"
 			header_data = "Header: data"
@@ -472,12 +581,9 @@ describe ThingFish::ConnectionManager do
 
 			@response.should_not_receive( :body )
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).once.
-				and_yield
-
 			first_chunker = status_line + EOL +
 			 	header_data + EOL
-			@socket.should_receive( :syswrite ).with( first_chunker ).
+			@socket.should_receive( :write_nonblock ).with( first_chunker ).
 				and_return( first_chunker.length )
 
 			@conn.write_response( @response, @request )
@@ -506,15 +612,12 @@ describe ThingFish::ConnectionManager do
 			io.should_receive( :read ).with( an_instance_of(Fixnum) ).
 				and_return( first_half, second_half )
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).twice.
-				and_yield
-
 			first_chunker = status_line + EOL + 
 				header_data + EOL +
 				first_half
-			@socket.should_receive( :syswrite ).with( first_chunker ).
+			@socket.should_receive( :write_nonblock ).with( first_chunker ).
 				and_return( first_chunker.length )
-			@socket.should_receive( :syswrite ).with( second_half ).
+			@socket.should_receive( :write_nonblock ).with( second_half ).
 				and_return( second_half.length )
 
 			io.should_receive( :eof? ).and_return( false, false, false, true )
@@ -530,6 +633,7 @@ describe ThingFish::ConnectionManager do
 			@request.should_receive( :keepalive? ).and_return( true )
 			@response.should_receive( :keepalive? ).and_return( false )
 
+			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
 			
@@ -546,6 +650,7 @@ describe ThingFish::ConnectionManager do
 			@conn.should_receive( :dispatch_request ).with( @request ).once.and_return( @response )
 			@conn.should_receive( :write_response ).with( @response, @request ).once
 			
+			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
 			
@@ -555,15 +660,49 @@ describe ThingFish::ConnectionManager do
 		end
 		
 		it "closes the connection on connection timeouts" do
+			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
 
-			Timeout.should_receive( :timeout ).with( @config.connection_timeout ).
-				and_raise( TimeoutError.new("timeout") )
+			@socket.should_receive( :read_nonblock ).and_raise( Errno::EAGAIN.new )
+			IO.should_receive( :select ).and_return( nil )
 
 			@conn.process
 		end
 				
+		it "handles IOErrors that propagate up to process()" do
+			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
+			@socket.should_receive( :closed? ).and_return( false )
+			@socket.should_receive( :close )
+
+			lambda {
+				@conn.process
+			}.should_not raise_error()
+		end
+
+		it "handles system errors that propagate up to process()" do
+			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.should_receive( :read_nonblock ).and_raise( Errno::ECONNRESET.new )
+			@socket.should_receive( :closed? ).and_return( false )
+			@socket.should_receive( :close )
+
+			lambda {
+				@conn.process
+			}.should_not raise_error()
+		end
+
+		it "should not try to re-close the socket while in #process's error handler" do
+			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
+			@socket.should_receive( :closed? ).and_return( true )
+			@socket.should_not_receive( :close )
+
+			lambda {
+				@conn.process
+			}.should_not raise_error()
+		end
+
 		it "processes another request if both the request and response have pipelining enabled" do
 			@conn.should_receive( :read_request ).twice.and_return( @request )
 			@conn.should_receive( :dispatch_request ).with( @request ).twice.and_return( @response )
@@ -572,7 +711,8 @@ describe ThingFish::ConnectionManager do
 			@request.should_receive( :keepalive? ).and_return( true, true )
 			@response.should_receive( :keepalive? ).and_return( true, false )
 
-			@socket.should_receive( :close ).once
+			@socket.should_receive( :closed? ).and_return( false )
+			@socket.should_receive( :close )
 			@socket.stub!( :peeraddr ).and_return( [] )
 			
 			Timeout.timeout( 1 ) do

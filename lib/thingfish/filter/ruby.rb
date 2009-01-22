@@ -86,7 +86,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	end
 
 
-	### Convert outgoing ruby object responses into YAML.
+	### Marshal outgoing Ruby objects.
 	def handle_response( response, request )
 
 		# Only filter if the client wants what we can convert to, and the response body
@@ -135,9 +135,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		  }
 	end
 
-
-
-end # class ThingFish::YAMLFilter
+end # class ThingFish::RubyFilter
 
 # vim: set nosta noet ts=4 sw=4:
 

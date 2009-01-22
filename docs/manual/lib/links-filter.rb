@@ -101,7 +101,7 @@ class LinksFilter < Manual::Page::Filter
 		# Lookup by page title
 		else
 			return catalog.title_index[ reference ]
-		end
+		end		
 	end
 end
 

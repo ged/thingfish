@@ -263,14 +263,14 @@ class ThingFish::Config
 
 	### Set up the data and spool directories and return them
 	def setup_data_directories
-		self.log.info "Ensuring the configured data directory (%s) exists" % [ self.datadir_path ]
+		self.log.debug "Ensuring the configured data directory (%s) exists" % [ self.datadir_path ]
 		self.datadir_path.mkpath
 
-		self.log.info "Ensuring the configured spool directory (%s) exists" % [ self.spooldir_path ]
+		self.log.debug "Ensuring the configured spool directory (%s) exists" % [ self.spooldir_path ]
 		self.spooldir_path.mkpath
 
 		if self.profiling.enabled?
-			self.log.info "Ensuring the configured profile data directory (%s) exists" %
+			self.log.debug "Ensuring the configured profile data directory (%s) exists" %
 				[ self.profiledir_path ]
 			self.profiledir_path.mkpath
 		end

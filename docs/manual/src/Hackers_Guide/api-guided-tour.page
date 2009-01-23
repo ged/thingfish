@@ -1,0 +1,43 @@
+---
+title: "A Guided Tour of the Internals"
+tagline: I feel so exposed!
+layout: default
+index: 2
+filters:
+  - erb
+  - api
+  - links
+  - examples
+  - textile
+---
+
+h2. Configuration (<?api ThingFish::Config ?>)
+
+h2. Request Object (<?api ThingFish::Request ?>)
+
+ * Query Parameters
+ * Caching
+ * Headers (<?api ThingFish::Table ?>)
+
+
+h2. Response Object (<?api ThingFish::Response ?>)
+
+
+h2. Response Conversion Caching
+
+	yes
+
+
+h2. HTTP Content Negotiation (<?api ThingFish::AcceptParam ?>)
+
+	ThingFish::AcceptParam
+	handled_types
+	Request.accepts?
+	Request.explicitly_accepts?
+
+<?api ThingFish::Request ?> offers two methods for http content-type
+negotiation: @#accepts?@, and @#explicitly_accepts?@.  The former takes
+wildcarding into account, such as @image/*@, where the latter requires
+an exact match.
+
+

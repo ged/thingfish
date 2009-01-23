@@ -8,8 +8,8 @@
 #
 #   # thingfish.conf
 #   plugins:
-#     handlers:
-#		- simplesearch: /search
+#     urimap:
+#       /search: simplesearch
 #
 # == Version
 #

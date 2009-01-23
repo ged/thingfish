@@ -8,8 +8,8 @@
 #
 #   # thingfish.conf
 #   plugins:
-#     handlers:
-#		- simplemetadata: /metadata
+#     urimap:
+#       /metadata: simplemetadata
 #
 # == Version
 #

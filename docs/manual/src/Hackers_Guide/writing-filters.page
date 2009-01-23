@@ -89,10 +89,10 @@ end
 The filter name needs to match the filename it is stored in -
 in this case, the file would be called _yaml.rb_, and be stored in a _lib/filter_ directory. |
 | 7 | Import some useful constants, such as mimetype defaults like @RUBY_MIMETYPE@. |
-| 15 | All filters must specify what mimetypes they are interested in.  They do this via the
+| 18 | All filters must specify what mimetypes they are interested in.  They do this via the
 @handled_types@ method, which returns an array of <?api ThingFish::AcceptParam ?> objects.
 The default is */*, which attaches this filter to all requests and responses. |
-| 26 | All filters must define an @info@ method that provides introspection to the rest of ThingFish.
+| 29 | All filters must define an @info@ method that provides introspection to the rest of ThingFish.
 Clients can check what filters are installed on a ThingFish server via a GET request to @/@. |
 
 h3. Installing the filter
@@ -324,14 +324,18 @@ you don't pick one, it defaults to the value 'appended'.
 
 h3. Conversion filters
 
-Another thing that filters can do is convert outgoing content to (better) match the requested format type using the rules of HTTP content-negotiation. Conversion is handled by the @#handle_response@ method, which like @#handle_request@, is passed both the <?api ThingFish::Response ?> and the
-<?api ThingFish::Request ?> for the current connection.
+Another thing that filters can do is convert outgoing content to (better) match the requested format
+type using the rules of HTTP content-negotiation. Conversion is handled by the @#handle_response@
+method, which like @#handle_request@, is passed both the <?api ThingFish::Response ?> and the <?api
+ThingFish::Request ?> for the current connection.
 
 The filter should:
 
-# Check to see if it can transform the response in a way that the client wants (i.e., the response is in a format that the client doesn't accept, or the filter can transform it to some format that the client prefers over the original)
-# Transform the original body and replace it with the new one
-# Make any necessary adjustments to the response headers
+* Check to see if it can transform the response in a way that the client wants (i.e., the response
+  is in a format that the client doesn't accept, or the filter can transform it to some format that
+  the client prefers over the original)
+* Transform the original body and replace it with the new one
+* Make any necessary adjustments to the response headers
 
 <?example { language: ruby, caption: A conversion filter for marshalled Ruby objects. } ?>
 require 'thingfish/constants'
@@ -381,12 +385,22 @@ class ThingFish::RubyFilter < ThingFish::Filter
 			'generates' => mimetypes,
 		  }
 	end
+end
 <?end example?>
 
 |_. line number |_. what's it doing? |
-| 29 | Attach the @io@ with its specific @metadata@ to the parent @body@. |
+| 18 | This filter will only modify the response if the client
+explicitly states it accepts serialized ruby objects, and the response
+body is not currently a regular content-type like @text/html@. |
+| 21 | Replace the body with a marshalled form of itself and set the
+content-type appropriately. |
 
 
-h3. Gotchas(?)
+h3. Gotchas
 
-(Filters should be re-entrant -- requests should have dedicated workers instead of stuff in the initializer)
+* Exceptions raised by filters are trapped by ThingFish and logged. ThingFish ignores a failing
+  filter for the duration of the request.
+* The @#handle_request@ and @#handle_response@ methods should be re-entrant -- it is up to the
+  filter author to provide synchronization for resources that are shared between threads.
+
+

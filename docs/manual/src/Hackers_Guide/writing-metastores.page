@@ -1,9 +1,10 @@
 ---
 title: "Writing a ThingFish MetaStore"
 layout: default
-index: 5
+index: 6
 filters:
   - erb
+  - api
   - examples
   - textile
 ---

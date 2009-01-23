@@ -1,9 +1,10 @@
 ---
 title: "Writing a ThingFish FileStore"
 layout: default
-index: 4
+index: 5
 filters:
   - erb
+  - api
   - examples
   - textile
 ---

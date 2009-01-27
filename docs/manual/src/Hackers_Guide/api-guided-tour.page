@@ -11,17 +11,30 @@ filters:
   - textile
 ---
 
+h2. Logging
+
 h2. Configuration (<?api ThingFish::Config ?>)
 
 h2. Request Object (<?api ThingFish::Request ?>)
 
+ * Metadata
+ * Entity Body (Bodies)
  * Query Parameters
  * Caching
  * Headers (<?api ThingFish::Table ?>)
+   - content_type
+   - keepalive?
+   - is_ajax_request?
+   - remote_addr
 
 
 h2. Response Object (<?api ThingFish::Response ?>)
 
+ * Status predicates
+ * Resetting
+ * Keepalive
+ * Scratch Space (#data)
+ * #handlers and #filters Arrays
 
 h2. Response Conversion Caching
 

@@ -5,6 +5,7 @@ index: 5
 filters:
   - erb
   - api
+  - links
   - examples
   - textile
 ---
@@ -13,9 +14,181 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-Topics to cover
+h3. What's a FileStore?
 
-* What's a FileStore do?
-* The mandatory interface
-* Optional interface
-* Hook #on_startup to do stuff when the daemon starts
+FileStores are the components of ThingFish responsible for backend
+storage of resources.  There can only be one <?api ThingFish::FileStore ?>
+installed for a running ThingFish server.
+
+By default, ThingFish stores all resource data into memory.  This is
+nice for testing and experimentation, but has some obvious drawbacks
+if you care for the longevity of your data.  ThingFish is distributed
+with a filesystem filestore plugin, which you can enable in the
+@thingfish.conf@ file.
+
+<?example { language: yaml, caption: "Installing the filesystem FileStore" } ?>
+plugins:
+    filestore:
+        name: filesystem
+        cachesizes: true
+        maxsize: 1073741824  # 10GB global quota
+<?end example?>
+
+This filesystem plugin should handle most of your persistant storage
+needs, but if you've got some fancier storage desires, you'll need
+to know how to roll your own.  Want to dump files directly into
+database BLOBs, or store them into a network cloud such as "Amazon's
+S3":http://aws.amazon.com/s3?  If your plug in implements the mandatory
+API, you can store resources wherever your environment demands.
+
+h3. FileStore Framework
+
+<?example { language: ruby, caption: 'A fictional FileStore plugin' } ?>
+require 'thingfish'
+require 'thingfish/filestore'
+
+class ThingFish::FloppydiskFileStore < ThingFish::FileStore
+
+	### Create a new FloppydiskFileStore
+	def initialize( datadir=nil, spooldir=nil, options={} )
+		super
+	end
+
+	### Mandatory APIs
+	### ...
+
+	### Optional APIs
+	### ...
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 4 | A FileStore inherits from the <?api ThingFish::FileStore ?> parent class.
+The FileStore name needs to match the filename it is stored in -
+in this case, the file would be called _floppydisk.rb_, and be stored in a _lib/filestore_ directory. |
+| 7 | FileStores are instantiated with the globally configured data and
+spool directories.  It's up to the FileStore author to use them -- there
+is no requirement to do so. |
+
+h3. The Mandatory Interface
+
+All <?api ThingFish::FileStore ?> plugins must implement six methods
+for basic functionality within the ThingFish system.
+
+Let's start with the @#store@ method.
+
+<?example { language: ruby, caption: 'The #store method' } ?>
+### FileStore API: write the specified +data+ to the store at the given +uuid+.
+def store( uuid, data )
+	open( uuid.to_s, 'w' ) do |fh|
+		fh.write( data )
+	end
+	return Digest::MD5.hexdigest( data )
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 2 | @#store@ is given a @uuid@ object, and the @data@ for the resource in its entirety. |
+| 6 | After a successful write, @#store@ should return a checksum for the resource.  By convention, we are using MD5.  This makes it easy later to detect duplicate uploads, and a client to compare a local copy to a remote. |
+
+@#store@ is aliased to the @:[]=@ method, so you can use @@filestore[ uuid ] = data@
+instead of @@filestore.store( uuid, data )@, if it suits you.
+
+Next up is the #@fetch@ method.
+
+<?example { language: ruby, caption: 'The #fetch method' } ?>
+### FileStore API: read the data in the store at the given +uuid+.
+def fetch( uuid )
+	fh = open( uuid.to_s ) rescue nil
+	return fh.nil? ? nil : fh.read
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 2 | @#fetch@ is given a @uuid@ object from the request. |
+| 4 | On successful retrieval of the resource, @#fetch@ should return
+the data in its entirety.  If the resource doesn't exist, @#fetch@
+should return @nil@. |
+
+@#fetch@ is aliased to the @:[]@ method, so you can use @@filestore[ uuid ]@
+instead of @@filestore.fetch( uuid )@, if that's how you roll.
+
+The other required methods are fairly self explanatory.  Please
+reference the existing memory or filesystem plugins for specific
+implementation examples!
+
+* @#delete@: Receives a @uuid@ object, and should return a _boolean_ to
+indicate success or failure of resource removal.
+* @#size@: Receives a @uuid@ object, and should return the size of the
+corresponding resource in bytes.  If the @uuid@ doesn't exist, returns
+@nil@.
+* @#has_file?@: Receives a @uuid@ object, and returns a _boolean_ that
+indicates the presence of a corresponding resource.
+* @#total_size@: Returns the total bytes in use for the FileStore across
+all resources.
+
+h3. Optional Interfaces
+
+h4. High Efficiency Store/Fetch
+
+Both @#store@ and @#fetch@ are designed to be simplistic, rather than
+efficient.  For high traffic servers or large resources, moving around
+giant blobs of data in a single variable will not scale well.
+
+For this reason, ThingFish internally uses @#store_io@ and @#fetch_io@
+counterparts.  By default, they simply fall through to the regular
+@#store@ and @#fetch@ methods.
+
+<?example { language: ruby, caption: 'A #store_io method' } ?>
+### FileStore API: Store the data read from the given +io+ in the store at the given +uuid+.
+def store_io( uuid, io )
+	digest = Digest::MD5.new
+	open( uuid.to_s, 'w' ) do |fh|
+
+		# Buffered read
+		buf = ''
+		while io.read( @bufsize, buf )
+			digest << buf
+			until buf.empty?
+				bytes = fh.write( buf )
+				buf.slice!( 0, bytes )
+			end
+		end
+	end
+	return digest.hexdigest
+end
+<?end example?>
+
+By defining these methods in your FileStore, you can gain access to
+the raw @IO@ object for the resource, and take advantage of whatever
+efficiencies you'd like (such as buffering.)  They work in the same
+fashion too, except they are passed (and return) @IO@ objects instead of
+raw data.
+
+<?example { language: ruby, caption: 'A #fetch_io method' } ?>
+### FileStore API: Retrieve an IO for the data corresponding to the given +uuid+.
+def fetch_io( uuid )
+	return open( uuid.to_s ) rescue nil
+end
+<?end example?>
+
+ThingFish will automatically prefer the high-efficiency versions if
+available.
+
+h4. Startup Tasks
+
+If your FileStore needs to perform maintenance tasks when ThingFish
+starts up such as quota checks, permissions verification, or other
+similar administrative functions, you can define an @#on_startup@
+method.
+
+This method is called during daemon initialization, after any effective
+user switches have occurred.
+
+h3. Locking Considerations
+
+When creating a new FileStore, be concious of concurrency when modifying
+resources.  Unexpected things can happen if a resource is modified while
+another person is trying to read (or also modify) it.  Think about your
+FileStore's backend, and if you might require locking.  Aim for atomicity!
+

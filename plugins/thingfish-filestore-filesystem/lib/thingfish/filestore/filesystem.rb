@@ -244,8 +244,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		end
 
 
-		### FileStore API: delete the data in the store at the given +uuid+ and return its
-		### data (if it existed).
+		### FileStore API: delete the data in the store at the given +uuid+.
 		def delete( uuid )
 			path = self.hashed_path( uuid )
 			bytes = path.size

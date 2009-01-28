@@ -86,6 +86,12 @@ Searching for a GET handler method: TimeHandler#handle_get_request
 Response: HTTP/1.1 200 OK
 </pre>
 
+h4. Handler Chaining
+
+If you install one handler at @/foo@ and another one at @/foo/bar@, both of them participate in requests to @/foo/bar@, one as the request's _handler_, and one as a _delegator_.
+
+_:TODO: 'splain more_
+
 h3. Building on top of this
 
 h4. Limiting URI space

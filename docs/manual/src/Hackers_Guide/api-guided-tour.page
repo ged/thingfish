@@ -13,7 +13,49 @@ filters:
 
 h2. Logging
 
+ThingFish uses the @Logger@ module for logging; any class that wishes to log to ThingFish's log can include the <?api ThingFish::Loggable ?> module, which adds a @log@ method to the including class:
+
+<?example?>
+require 'thingfish/mixins'
+
+class MyClass
+	include ThingFish::Loggable
+	
+	def initialize
+		self.log.debug "this will show up in the log if it's showing debugging messages"
+		self.log.info "...and this one for info, etc."
+	end
+end
+<?end?>
+
+You can also call @ThingFish.logger@ directly, but the @Loggable@ way makes your class show up as the @progname@ of the log message.
+
 h2. Configuration (<?api ThingFish::Config ?>)
+
+ThingFish uses YAML for its configuration, but the config is wrapped with a <?api ThingFish::Config ?> object after it's loaded, which lets you access it like a struct, call predicate methods, etc:
+
+<?example?>
+@config = ThingFish::Config.load( 'etc/thingfish.conf' )
+# [...]
+if @config.profiling.enabled?
+	if @config.profiling.connection_enabled?
+		@profile_connections = true
+		self.log.info "Enabled connection profiling for connections from localhost"
+	end
+end
+<?end?>
+
+It also includes much of the functionality for creating and assembling all of the components of a running <?api ThingFish::Daemon ?>.
+
+h2. <?api ThingFish::UriMap ?>
+
+This is the object responsible for figuring out the chain of handlers ThingFish will invoke for a given URI. 
+
+_:TODO: More._
+
+<?example?>
+
+<?end?>
 
 h2. Request Object (<?api ThingFish::Request ?>)
 

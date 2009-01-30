@@ -14,7 +14,7 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-h3. How's a filter different than a handler?
+h3. How's a Filter Different Than a Handler?
 
 For a given URI, a handler is what performs the actual response to the
 client.  Filters are chainable code that has the opportunity to look at
@@ -31,7 +31,7 @@ filters, such as a filter designed to dynamically convert a TIFF file to
 a JPEG via the client's @Accept@ header.
 
 
-h3. What does a filter look like?
+h3. What Does a Filter Look Like?
 
 Great question!  Here's one that we'll use to point out some filtery
 concepts.  This is the YAML filter that comes with ThingFish,
@@ -95,7 +95,7 @@ The default is */*, which attaches this filter to all requests and responses. |
 | 29 | All filters must define an @info@ method that provides introspection to the rest of ThingFish.
 Clients can check what filters are installed on a ThingFish server via a GET request to @/@. |
 
-h3. Installing the filter
+h3. Installing the Filter
 
 At this point, we've got a no-op filter that needs an introduction
 to ThingFish. This is done in the @thingfish.conf@ file, under the
@@ -322,7 +322,7 @@ example, it could be 'thumbnail' or 'album-art' -- that's up to you.  If
 you don't pick one, it defaults to the value 'appended'.
 * related_to: This is set to the UUID of the parent resource.
 
-h3. Conversion filters
+h3. Conversion Filters
 
 Another thing that filters can do is convert outgoing content to (better) match the requested format
 type using the rules of HTTP content-negotiation. Conversion is handled by the @#handle_response@

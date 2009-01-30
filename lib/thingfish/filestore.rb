@@ -15,11 +15,11 @@
 #      end
 #
 #      def fetch( uuid )
-#          # fetch an IO for the data for +uuid+ and return it
+#          # fetch the data for +uuid+ and return it
 #      end
 #
-#      def store( uuid, io )
-#          # store the +data+ from the given +io+ to the resource specified
+#      def store( uuid, data )
+#          # store the +data+ to the resource specified
 #          # by the given +uuid+ and return a hex digest for the file
 #      end
 #

@@ -78,7 +78,8 @@ for basic functionality within the ThingFish system.
 Let's start with the @#store@ method.
 
 <?example { language: ruby, caption: 'The #store method' } ?>
-### FileStore API: write the specified +data+ to the store at the given +uuid+.
+### FileStore API: write the specified +data+ to
+### the store at the given +uuid+.
 def store( uuid, data )
 	open( uuid.to_s, 'w' ) do |fh|
 		fh.write( data )
@@ -89,7 +90,10 @@ end
 
 |_. line number |_. what's it doing? |
 | 2 | @#store@ is given a @uuid@ object, and the @data@ for the resource in its entirety. |
-| 6 | After a successful write, @#store@ should return a checksum for the resource.  By convention, we are using MD5.  This makes it easy later to detect duplicate uploads, and a client to compare a local copy to a remote. |
+| 6 | After a successful write, @#store@ should return a checksum for
+the resource.  By convention, we are using MD5.  This makes it easy
+later to detect duplicate uploads, and a client to compare a local copy
+to a remote. |
 
 @#store@ is aliased to the @:[]=@ method, so you can use @@filestore[ uuid ] = data@
 instead of @@filestore.store( uuid, data )@, if it suits you.
@@ -117,15 +121,31 @@ The other required methods are fairly self explanatory.  Please
 reference the existing memory or filesystem plugins for specific
 implementation examples!
 
-* @#delete@: Receives a @uuid@ object, and should return a _boolean_ to
-indicate success or failure of resource removal.
-* @#size@: Receives a @uuid@ object, and should return the size of the
-corresponding resource in bytes.  If the @uuid@ doesn't exist, returns
-@nil@.
-* @#has_file?@: Receives a @uuid@ object, and returns a _boolean_ that
-indicates the presence of a corresponding resource.
-* @#total_size@: Returns the total bytes in use for the FileStore across
-all resources.
+<dl class="kvlist">
+	<dt>@#delete@</dt>
+	<dd class="description">
+		Receives a @uuid@ object, and should return a _boolean_ to indicate success
+		or failure of resource removal.
+	</dd>
+
+	<dt>@#size@</dt>
+	<dd class="description">
+		Receives a @uuid@ object, and should return the size of the corresponding
+		resource in bytes.  If the @uuid@ doesn't exist, returns @nil@.
+	</dd>
+
+	<dt>@#has_file?@</dt>
+	<dd class="description">
+		Receives a @uuid@ object, and returns a _boolean_ that indicates the presence
+		of a corresponding resource.
+	</dd>
+
+	<dt>@#total_size@</dt>
+	<dd class="description">
+		Returns the total bytes in use for the FileStore across all resources.
+	</dd>
+</dl>
+
 
 h3. Optional Interfaces
 
@@ -140,7 +160,8 @@ counterparts.  By default, they simply fall through to the regular
 @#store@ and @#fetch@ methods.
 
 <?example { language: ruby, caption: 'A #store_io method' } ?>
-### FileStore API: Store the data read from the given +io+ in the store at the given +uuid+.
+### FileStore API: Store the data read from
+### the given +io+ in the store at the given +uuid+.
 def store_io( uuid, io )
 	digest = Digest::MD5.new
 	open( uuid.to_s, 'w' ) do |fh|

@@ -171,6 +171,7 @@ class ExamplesFilter < Manual::Page::Filter
 	### be a plain String, in which case it is assumed to be the name of the language the example 
 	### is in, or a Hash of configuration options.
 	def parse_options( args )
+		return DEFAULTS unless args
 		args = "{ #{args} }" unless args.strip[0] == ?{
 		args = YAML.load( args )
 

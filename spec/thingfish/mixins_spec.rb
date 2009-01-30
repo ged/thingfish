@@ -112,8 +112,10 @@ describe ThingFish::StaticResourcesHandler,
 
 
 	it "registers another handler at its own location when registered" do
-		daemon = mock( "daemon", :null_object => true )
-		daemon.should_receive( :register ).with( '/glah', duck_type(:on_startup, :process), true )
+		daemon = mock( "daemon" ).as_null_object
+		urimap = mock( "urimap" )
+		daemon.stub!( :urimap ).and_return( urimap )
+		urimap.should_receive( :register_first ).with( '/glah', duck_type(:on_startup, :process) )
 
 		@test_handler.on_startup( daemon )
 	end

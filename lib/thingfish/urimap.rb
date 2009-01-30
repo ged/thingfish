@@ -96,6 +96,12 @@ class ThingFish::UriMap
 	end
 
 
+	### Return a flattened array of all registered handlers
+	def handlers
+		return @map.values.flatten
+	end
+	
+
 	### Return the Array of handlers that are registered for the specified +path+.
 	def handlers_for( path )
 		path = '' if path == '/'

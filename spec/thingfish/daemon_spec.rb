@@ -64,45 +64,19 @@ describe ThingFish::Daemon do
 
 	### Handler registration
 	
-	it "adds a handler to its urimap and starts them upon registration" do
+	it "asks its config for a URImap and starts each handler from it" do
 		uri = '/cellphone/not/walkietalkie'
+		config = mock( "config" ).as_null_object
 		urimap = mock( "URI map" )
 		handler = mock( "handler" )
 
-		daemon = ThingFish::Daemon.new
-		daemon.instance_variable_set( :@urimap, urimap )
+		config.profiling.stub!( :enabled? ).and_return( false )
 
-		urimap.should_receive( :register ).with( uri, handler )
-		handler.should_receive( :on_startup ).with( daemon )
+		config.should_receive( :create_configured_urimap ).and_return( urimap )
+		urimap.should_receive( :handlers ).and_return( [handler] )
+		handler.should_receive( :on_startup ).with( duck_type( :filestore ) )
 		
-		daemon.register( uri, handler )
-	end
-	
-	it "adds a handler to the front of its urimap if the `first` flag is set" do
-		uri = '/small/hills/are/the/most/fun/to/climb'
-		urimap = mock( "URI map" )
-		handler = mock( "handler" )
-
-		daemon = ThingFish::Daemon.new
-		daemon.instance_variable_set( :@urimap, urimap )
-
-		urimap.should_receive( :register_first ).with( uri, handler )
-		handler.should_receive( :on_startup ).with( daemon )
-		
-		daemon.register( uri, handler, true )
-	end
-
-
-	### Logging
-
-	it "outputs a new instance's handler config to the debug log" do
-		log = StringIO.new('')
-		ThingFish.logger = Logger.new( log )
-
-		daemon = ThingFish::Daemon.new
-
-		log.rewind
-		log.read.should =~ %r{Handler map is: \S+}
+		ThingFish::Daemon.new( config )
 	end
 
 

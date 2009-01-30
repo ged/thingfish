@@ -59,7 +59,6 @@ require 'thingfish/metastore'
 require 'thingfish/handler'
 require 'thingfish/request'
 require 'thingfish/response'
-require 'thingfish/urimap'
 
 ### ThingFish daemon class
 class ThingFish::Daemon
@@ -103,30 +102,25 @@ class ThingFish::Daemon
 			end
 		end
 
-		# Load plugins for filestore, filters, and handlers
+		# Load plugins for filestore, metastore, filters, and handlers
 		@config.setup_data_directories
 		@filestore = @config.create_configured_filestore
 		@metastore = @config.create_configured_metastore
-		@filters = @config.create_configured_filters
+		@filters   = @config.create_configured_filters
+		@urimap    = @config.create_configured_urimap
 
+		# Run handler startup actions
+		@urimap.handlers.each do |handler|
+			self.log.debug "  starting %p" % [ handler ]
+			handler.on_startup( self )
+		end
+		
 		@connection_threads = ThreadGroup.new
 		@supervisor = nil
-
-		# Set up the map of the urispace
-		@urimap = ThingFish::UriMap.new
-
-		# TODO: Move the handler registrations into ThingFish::Config#create_configured_urimap
-		self.register( "/", self.create_default_handler(@config) )
-		@config.each_handler_uri do |handler, uri|
-			self.log.info "  registering %s at %p" % [ handler.class.name, uri ]
-			self.register( uri, handler )
-		end
 
 		@listener = TCPServer.new( @config.ip, @config.port )
 		@listener.setsockopt( Socket::SOL_SOCKET, Socket::SO_REUSEADDR, 1 )
 		@listener_thread = nil
-
-		self.log.debug "Handler map is: %p" % [ @urimap ]
 	end
 
 
@@ -418,21 +412,6 @@ class ThingFish::Daemon
 	end
 
 
-	### Register a +handler+ with the specified +uri+ in the server's urimap.
-	def register( uri, handler, first=false )
-
-		if first
-			@urimap.register_first( uri, handler )
-		else
-			@urimap.register( uri, handler )
-		end
-
-		# Give the handler a chance to do some startup tasks after the filestore and metastore
-		# have been loaded and started
-		handler.on_startup( self )
-	end
-
-
 	# SMITH YOU!
 
 
@@ -606,20 +585,6 @@ class ThingFish::Daemon
 			end
 		end
 	end
-
-
-	### Create an instance of the default handler, with options dictated by the
-	### specified +config+ object.
-	def create_default_handler( config )
-		options = { :resource_dir => config.resource_dir }
-		if config.defaulthandler
-			options.merge!( config.defaulthandler )
-		end
-
-		return ThingFish::Handler.create( 'default', '/', options )
-	end
-
-
 
 end # class ThingFish::Daemon
 

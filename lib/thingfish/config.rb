@@ -39,6 +39,7 @@ require 'thingfish/utils'
 require 'thingfish/filter'
 require 'thingfish/filestore'
 require 'thingfish/metastore'
+require 'thingfish/urimap'
 
 
 ### The configuration reader/writer class for ThingFish::Daemon.
@@ -310,6 +311,31 @@ class ThingFish::Config
 	end
 
 
+	### Instantiate, configure, and return the handler URI mapping as specified
+    ### by the configuration.
+	def create_configured_urimap
+		urimap = ThingFish::UriMap.new
+
+		# Create an instance of the default handler, with options dictated by the
+		# specified +config+ object.
+		default_options = { :resource_dir => self.resource_dir }
+		if self.defaulthandler
+			default_options.merge!( self.defaulthandler )
+		end
+		default_handler = ThingFish::Handler.create( 'default', '/', default_options )
+		urimap.register( '/', default_handler )
+
+		# Register each specified handler under the associated uri.
+		self.each_handler_uri do |handler, uri|
+			self.log.info "  registering %s at %p" % [ handler.class.name, uri ]
+			urimap.register( uri, handler )
+		end
+
+		self.log.debug "URI map is: %p" % [ urimap ]
+		return urimap
+	end
+
+
 	### Iterate over each configured handler, yielding the handler and uri to the
 	### supplied block.
 	def each_handler_uri
@@ -317,9 +343,9 @@ class ThingFish::Config
 
 		if self.plugins && self.plugins.urimap
 			urimap = self.plugins.urimap.to_hash
-			self.log.debug {"Creating %d configured handlers" % [self.plugins.urimap.length]}
+			self.log.debug {"Creating %d configured handlers" % [urimap.length]}
 
-			self.plugins.urimap.each do |path, handlers|
+			urimap.each do |path, handlers|
 				path = path.to_s
 				raise ThingFish::ConfigError, "key %p is not a path" % [ path ] unless
 					path[0] == ?/
@@ -344,7 +370,7 @@ class ThingFish::Config
 			self.log.debug "No handlers configured"
 		end
 
-		return self.plugins.urimap
+		return urimap
 	end
 
 

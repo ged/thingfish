@@ -151,6 +151,14 @@ describe ThingFish::UriMap do
 			delegators.should have( 2 ).members
 			delegators.should == [ @handler2, @handler ]
 		end
+		
+		it "returns a flat list of mapped handlers" do
+			result = @urimap.handlers
+			
+			result.should have(3).members
+			result.should include( @handler, @handler2, @handler3 )
+		end
+		
 	end
 
 end

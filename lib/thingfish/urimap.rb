@@ -6,16 +6,16 @@
 # == Synopsis
 #
 #   require 'thingfish/urimap'
-#   
-#   
+#
+#
 #   map = ThingFish::UriMap.new( fallback_handler )
-#   
+#
 #   handlers.each do |handler, uris|
 #     uris.each do |uri|
 #       map.register( handler, uri )
 #     end
 #   end
-#   
+#
 #   map[ request.uri ].each do |path, handler|
 #     handler.dispatch( path, request )
 #   end
@@ -69,7 +69,7 @@ class ThingFish::UriMap
 	attr_reader :map
 
 
-	### Return a human-readable representation of the object suitable 
+	### Return a human-readable representation of the object suitable
 	### for debugging.
 	def inspect
 		return "#<%s:0x%x %s>" % [
@@ -80,8 +80,8 @@ class ThingFish::UriMap
 			end.join('; ')
 		]
 	end
-	
-	
+
+
 	### Associate the given +handler+ with a uri +path+.
 	def register( path, handler )
 		path = '' if path == '/'
@@ -108,16 +108,16 @@ class ThingFish::UriMap
 	def delegators_for( uri )
 		return self.resolve( uri ).first
 	end
-	
+
 
 	### Return the handler which is ultimately responsible for handling requests
 	### for the given +uri+.
 	def processor_for( uri )
 		return self.resolve( uri ).last
 	end
-	
 
-	### Resolve the specified +uri+ into an Array of delegator handlers and a processor handler that 
+
+	### Resolve the specified +uri+ into an Array of delegator handlers and a processor handler that
 	### should handle the +uri+.
 	def resolve( uri )
 		if uri.is_a?( URI )

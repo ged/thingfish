@@ -115,6 +115,7 @@ class ThingFish::Daemon
 		# Set up the map of the urispace
 		@urimap = ThingFish::UriMap.new
 
+		# TODO: Move the handler registrations into ThingFish::Config#create_configured_urimap
 		self.register( "/", self.create_default_handler(@config) )
 		@config.each_handler_uri do |handler, uri|
 			self.log.info "  registering %s at %p" % [ handler.class.name, uri ]

@@ -14,7 +14,11 @@ h2. <%= page.config['title'] %>
 
 <div id="auto-toc"></div>
 
-h3. What does a handler look like?
+h3. What's a Handler?
+
+Handlers are the main unit of functionality in ThingFish. Handlers are what interact with the MetaStore and the FileStore, performing some action that has been requested and building an appropriate response. A handler is associated with a URL in the ThingFish server, and when that URL is accessed, the handler is executed. The core functionality of ThingFish is itself just a handler (called the <?api ThingFish::DefaultHandler ?>) associated with the @/@ URL, which handles the storage and retrieval of resources and their metadata.
+
+h3. What does a Handler look like?
 
 Glad you asked.  Here's a teeny one that we'll build on.
 
@@ -85,12 +89,6 @@ TimeHandler: 127.0.0.1 GET /what-time-is-it
 Searching for a GET handler method: TimeHandler#handle_get_request
 Response: HTTP/1.1 200 OK
 </pre>
-
-h4. Handler Chaining
-
-If you install one handler at @/foo@ and another one at @/foo/bar@, both of them participate in requests to @/foo/bar@, one as the request's _handler_, and one as a _delegator_.
-
-_:TODO: 'splain more_
 
 h3. Building on top of this
 
@@ -539,6 +537,66 @@ def handle_get_request( req, res )
 	fh = @filestore.fetch_io( uuid )
 end
 <?end example?>
+
+
+h3. Handler Chaining
+
+Handlers can be invoked in two different ways: directly, as in the examples above, or via
+*delegation*. When the daemon goes to figure out which handlers should be involved in serving a
+request, it constructs a chain of the handlers which are registered for each part of the URI path.
+The _processor_ for a given request is the Handler that is the last one in the chain. The handlers
+that come before it are called _delegators_. 
+
+For example, if you install one handler at @/admin@ and another one at @/admin/status@, both of them
+participate in requests to @/admin/status@:
+
+<?example {language: yaml} ?>
+plugins:
+	urimap:
+		/admin: admin
+		/admin/status: status
+<?end?>
+
+When a request for @/admin/status@ is received, the 'admin' handler's
+@#delegate@ method is called with the <?api "request":ThingFish::Request ?>
+and <?api "response":ThingFish::Response ?>. If the handler thinks
+the request should continue, it calls @yield@ with the request and
+response, which are then passed to the next handler in line:
+
+<?example { language: ruby, caption: "A delegation handler that restricts requests to localhost." } ?>
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
+class AdminHandler < ThingFish::Handler
+	include ThingFish::Constants,
+		ThingFish::ResourceLoader
+
+	### Only allow the remaining handlers to run if the request comes from 'localhost'
+	def delegate( request, response )
+		ip = request.socket.peeraddr[3]
+		if ip == '127.0.0.1' || ip == '::1'
+			yield( request, response )
+		else
+			response.body = "Admin functions not accessible from this host."
+			response.headers[:content_type] = 'text/plain'
+			response.status = HTTP::FORBIDDEN
+		end
+	end
+	
+end
+<?end?>
+
+|_. line number |_. what's it doing? |
+| 10 | Override the @#delegate@ method. |
+| 12 | If the request socket is connected to 'localhost' (specified in
+either IPv4 or IPv6 forms), allow the request to continue... |
+| 15 | ...otherwise respond with a HTTP 'Forbidden' response. |
+
+Handlers, by default, don't do anything when invoked as a delegator; the
+request and response are just yielded without any changes. If you don't
+want your handler to participate in delegation, you don't have to do
+anything special: just don't override @#delegate@ and you're good.
 
 
 fn1(footnote). We'd prefer a templating system that avoided coupling together the

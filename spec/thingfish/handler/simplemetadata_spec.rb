@@ -67,7 +67,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@daemon           = mock( "daemon" )
 			@metastore        = mock( "metastore" )
 			@filestore        = mock( "filestore" )
-
+			
 			@request.stub!( :uri ).and_return( URI.parse('http://localhost:3474/metadata') )
 			@response.stub!( :headers ).and_return( @response_headers )
 			@request.stub!( :headers ).and_return( @request_headers )
@@ -79,6 +79,9 @@ describe ThingFish::SimpleMetadataHandler do
 			@daemon.stub!( :filestore ).and_return( @filestore )
 			@daemon.stub!( :config ).and_return( @config )
 			@daemon.stub!( :register )
+
+			urimap = stub( "urimap", :register_first => nil )
+			@daemon.stub!( :urimap ).and_return( urimap )
 
 			@handler.on_startup( @daemon )
 		end

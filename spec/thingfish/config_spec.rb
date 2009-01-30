@@ -222,11 +222,20 @@ describe ThingFish::Config do
 		@config.create_configured_metastore.should == :a_metastore
 	end
 
+	it "outputs a new instance's handler config to the debug log" do
+		log = StringIO.new('')
+		ThingFish.logger = Logger.new( log )
+
+		@config.create_configured_urimap
+		
+		log.rewind
+		log.read.should =~ %r{URI map is: \S+}
+	end
+	
 	it "autogenerates accessors for non-existant struct members" do
 		@config.plugins.filestore.maxsize = 1024
 		@config.plugins.filestore.maxsize.should == 1024
 	end
-
 
 
 	# With no source
@@ -268,18 +277,6 @@ describe ThingFish::Config do
 		        extractors:
 		            - exif
 		            - preview
-		    handlers:
-		        - ldap-authz:
-		            uris: /
-		            server: ldap.laika.com
-		            binddn: cn=auth,dc=wvs
-		            aclbase: ou=thingfish,ou=appperms,dc=wvs
-		            in_front: true
-		        - stats:
-		            uris: [/, /admin, /metadata]
-		        - dav: /mount
-		        - admin: [/admin, /superuser]
-		        - inspect: /admin/inspect
 		    filters:
 		        - json
 		        - xml
@@ -300,10 +297,10 @@ describe ThingFish::Config do
 			@config.port.should == 3474
 			@config.spooldir.should == '/vagrant/swahili'
 			@config.bufsize.should == 2
-			@config.plugins.keys.should include( :filestore)
-			@config.plugins.keys.should include( :metadata)
-			@config.plugins.keys.should include( :handlers)
-			@config.plugins.keys.should include( :filters)
+			@config.plugins.keys.should include( :filestore )
+			@config.plugins.keys.should include( :metadata )
+			@config.plugins.keys.should include( :urimap )
+			@config.plugins.keys.should include( :filters )
 			@config.plugins.filestore.hashdepth.should == 4
 			@config.plugins.metadata.extractors.should be_an_instance_of( Array )
 		end
@@ -435,7 +432,7 @@ describe ThingFish::Config do
 	end
 
 
-	# illegal handlers section
+	# illegal urimap section
 	describe " created with an illegal urimap section" do
 		BAD_TEST_CONFIG = %{
 		---
@@ -488,18 +485,6 @@ describe ThingFish::Config do
 		        extractors:
 		            - exif
 		            - preview
-		    handlers:
-		        - ldap-authz:
-		            uris: /
-		            server: ldap.laika.com
-		            binddn: cn=auth,dc=wvs
-		            aclbase: ou=thingfish,ou=appperms,dc=wvs
-		            in_front: true
-		        - stats:
-		            uris: [/, /admin, /metadata]
-		        - dav: /mount
-		        - admin: [/admin, /superuser]
-		        - inspect: /admin/inspect
 		    filters:
 		        - json
 		        - xml
@@ -591,6 +576,15 @@ describe ThingFish::Config do
 			)
 		end
 		
+		it "is able to build a configured URImap object" do
+			urimap = mock( "the urimap" )
+			ThingFish::UriMap.stub!( :new ).and_return( urimap )
+
+			ThingFish::Handler.stub!( :create ).and_return( :a_handler )
+			urimap.should_receive( :register ).at_least( 6 ).times
+
+			@config.create_configured_urimap.should == urimap
+		end
 
 		it "can find the uri of installed handler plugins" do
 			ThingFish::Handler.stub!( :create ).and_return( :the_handler )

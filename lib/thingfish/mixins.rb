@@ -232,7 +232,7 @@ module ThingFish # :nodoc:
 			handler = ThingFish::Handler.create( 'staticcontent', @path, basedir )
 			self.log.debug "...registering fallback %s for a %s at %p" %
 			 	[ handler.class.name, self.class.name, @path ]
-			daemon.register( @path, handler, true )
+			daemon.urimap.register_first( @path, handler )
 		end
 	end # module StaticResourcesHandler
 

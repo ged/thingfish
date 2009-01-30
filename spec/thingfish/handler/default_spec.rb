@@ -62,7 +62,10 @@ describe ThingFish::DefaultHandler do
 		@daemon.stub!( :filestore ).and_return( @filestore )
 		@daemon.stub!( :metastore ).and_return( @metastore )
 		@daemon.stub!( :config ).and_return( @config )
-		@daemon.stub!( :register )
+
+		urimap = stub( "urimap", :register_first => nil )
+		@daemon.stub!( :urimap ).and_return( urimap )
+		
 		@handler.on_startup( @daemon )
 
 		@request          = mock( "request" )

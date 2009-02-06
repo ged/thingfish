@@ -797,7 +797,7 @@ describe ThingFish::Daemon do
 			RubyProf.should_receive( :profile ).and_return( result )
 
 			fh = mock( "filehandle" )
-			File.should_receive( :open ).with( /\d+\.\d+#-?\d+#search\.html$/, 'w' ).and_yield( fh )
+			File.should_receive( :open ).with( /\d+\.\d+#-?[[:xdigit:]]+#search\.html$/, 'w' ).and_yield( fh )
 			
 			### We're currently working on the marshalling aspect of ruby-prof.
 			###

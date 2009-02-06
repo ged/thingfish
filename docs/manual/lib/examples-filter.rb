@@ -47,7 +47,7 @@ class ExamplesFilter < Manual::Page::Filter
 		:line_numbers => :inline,
 		:tab_width    => 4,
 		:hint         => :debug,
-		:testable     => false
+		:testable     => false,
 	}
 
 	# PI	   ::= '<?' PITarget (S (Char* - (Char* '?>' Char*)))? '?>'
@@ -56,11 +56,11 @@ class ExamplesFilter < Manual::Page::Filter
 			example				# Instruction Target
 			(?:					# Optional instruction body
 			\s+
-			(					# [$1]
-				[^?]*			# Anything but a question mark
+			((?:				# [$1]
+				[^?]*			# Run of anything but a question mark
 				|				# -or-
 				\?(?!>)			# question mark not followed by a closing angle bracket
-			)
+			)*)
 			)?
 		\?>
 	  }x
@@ -129,7 +129,7 @@ class ExamplesFilter < Manual::Page::Filter
 					contents = scanner.string[ contentpos..offset ]
 				end
 
-				#$stderr.puts "Processing with params: %p, contents: %p" % [ params, contents ]
+				trace "Processing with params: %p, contents: %p" % [ params, contents ]
 				buffer << self.process_example( params, contents )
 			else
 				break

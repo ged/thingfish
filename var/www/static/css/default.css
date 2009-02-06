@@ -383,7 +383,7 @@ ol li + li {
 }
 
 .inspected-object .object .object-header {
-	background: #323435 url(/images/gradient.png) repeat-x center top;
+	background: #323435 url(/images/shadows/small.png) repeat-x center top;
 	font-weight: bold;
 	font-size: 110%;
 	color: white;

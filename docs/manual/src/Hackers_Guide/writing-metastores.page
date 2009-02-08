@@ -5,20 +5,287 @@ index: 6
 filters:
   - erb
   - api
+  - links
   - examples
   - textile
 ---
 
 h2. <%= page.config['title'] %>
 
-Topics to cover:
+<div id="auto-toc"></div>
 
-* Differences between simple metastores and advanced
-* strong data typing (date range searches)
-* multiple values for a metakey (tags)
-* native syntax support for POSTed search (SparQL, SQL, etc.)
-* Hook #on_startup to do stuff when the Daemon starts up
+h3. What's a MetaStore?
 
-« Coming Soon! »
+A MetaStore is the component of ThingFish responsible for the tracking
+and manipulation of resource metadata.  There can only be one
+<?api ThingFish::MetaStore ?> installed for a running ThingFish server.
 
+By default, ThingFish stores all metadata into memory.  This is nice
+for testing and experimentation, but has some obvious drawbacks if you
+care for the longevity of your data.  ThingFish is distributed with
+a few alternative persistent metastores, which you can enable in the
+@thingfish.conf@ file.
+
+<?example { language: yaml, caption: "Installing the sequel MetaStore" } ?>
+plugins:
+    metastore:
+        name: sequel
+        sequel_connect: sqlite://///home/thingfish/metastore.db
+<?end example?>
+
+The Sequel plugin stores all ThingFish metadata using the
+"Sequel":http://sequel.rubyforge.org/ ruby module, which is capable
+of using a vast assortment of database backends.  The above example
+specifies a "SQLite":http://www.sqlite.org/ file.  ThingFish already has
+a number of MetaStore plugins, and it's likely that there is one that
+fits the needs of your environment.  If that's not the case, or if you
+just want to do something fancier, then you can write your own.  Here's
+how.
+
+
+h3. MetaStore Framework
+
+<?example { language: ruby, caption: 'A fictional simple MetaStore plugin' } ?>
+require 'thingfish'
+require 'thingfish/metastore/simple'
+
+class ThingFish::CarrierPigeonMetaStore < ThingFish::SimpleMetaStore
+
+	### Create a new CarrierPigeonMetaStore
+	def initialize( datadir=nil, spooldir=nil, options={} )
+		super
+	end
+
+	### Mandatory APIs
+	### ...
+
+	### Optional APIs
+	### ...
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 2 | There are two types of ThingFish MetaStore: _simple_ and _advanced_.  Simple MetaStores are basic tuple spaces.  We'll talk more about advanced MetaStores later. |
+| 4 | A simple MetaStore inherits from the <?api ThingFish::SimpleMetaStore ?> parent class.  The MetaStore name needs to match the filename it is stored in - in this case, the file would be called _carrierpigeon.rb_ and be stored in a _lib/metastore_ directory.  |
+| 7 | MetaStores are instantiated with the globally configured data and spool directories.  It's up to the MetaStore author to use them -- there is no requirement to do so. |
+
+h3. The Mandatory Interface
+
+All <?api ThingFish::MetaStore ?> plugins must implement eighteen
+methods for basic functionality within the ThingFish system.
+
+Let's start with an example @#has_uuid?@ predicate.
+
+<?example { language: ruby, caption: 'The #has_uuid method' } ?>
+### MetaStore API: Returns +true+ if the given
+### +uuid+ exists in the store.
+def has_uuid?( uuid )
+	return @metadata.key?( uuid.to_s )
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 3 | @#has_uuid?@ is given a @uuid@ object. |
+| 4 | Assuming your metadata is stored in a hash-like object, check if it's a valid key. |
+
+@@metadata@ in this case is the magical instantiated backend for the
+CarrierPigeonMetaStore, that happens to behave like a hash.  Your
+MetaStore will most likely act differently, but let's show one more
+simple case for illustrative purposes.
+
+<?example { language: ruby, caption: 'The #has_property method' } ?>
+### MetaStore API: Returns +true+ if the given +uuid+
+### has a property +propname+.
+def has_property?( uuid, propname )
+	return @metadata[ uuid.to_s ].key?( propname.to_sym )
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 3 | @#has_uuid?@ is given a @uuid@ object, and a @property@ string to lookup. |
+| 4 | Continuing the hash-like object assumption, check for the existence of the @property@ for the given @uuid@ resource. |
+
+All <?api ThingFish::MetaStore ?> objects implement the @:[]@ and @:[]=@
+methods, internally using @get_property@ and @set_property@.  You can use
+@@metastore[ uuid ][ 'rating' ]@ or @@metastore.get_property( uuid, 'rating' )@,
+according to your personal tastes.  Metadata property keys
+also have matching predicate methods, so you can ask questions like
+@@metastore[ uuid ].has_rating?@.
+
+The other required methods depend heavily on your storage backend.
+Please reference the existing MetaStore plugins for specific
+implementation examples!
+
+<dl class="kvlist">
+	<dt>@#set_property@</dt>
+	<dd class="description">
+		Receives a @uuid@ object, a @property@, and its @value@.
+		It should return a _boolean_ to indicate success or failure of property storage.
+	</dd>
+
+	<dt>@#set_properties@</dt>
+	<dd class="description">
+		Resets metadata for a resource to the provided information.
+		Receives a @uuid@ object and a @hash@ of property/value keypairs to set.
+	</dd>
+
+	<dt>@#update_properties@</dt>
+	<dd class="description">
+		Merges metadata for a resource.  This differs from @#set_properties@ in that
+		existing properties are modified, but non-affected properties are left untouched.
+		Receives a @uuid@ object and a @hash@ of property/value keypairs to merge in.
+	</dd>
+
+	<dt>@#get_property@</dt>
+	<dd class="description">
+		Receives a @uuid@ object and a @property@ string to retrieve.
+		Should return the value of the property, or @nil@ if it doesn't exist.
+	</dd>
+
+	<dt>@#get_properties@</dt>
+	<dd class="description">
+		Receives a @uuid@ object.  It should return a hash of all properties associated
+		with the resource with property names as symbols, or @nil@ if it doesn't exist.
+	</dd>
+
+	<dt>@#delete_property@</dt>
+	<dd class="description">
+		Receives a @uuid@ object and a @property@ string to delete.
+		It should return a _boolean_ to indicate success or failure of property removal.
+	</dd>
+
+	<dt>@#delete_properties@</dt>
+	<dd class="description">
+		Receives a @uuid@ object and an array of @properties@ to delete.
+	</dd>
+
+	<dt>@#delete_resource@</dt>
+	<dd class="description">
+		Receives a @uuid@ object and a @property@ string to delete.
+		It should return a _boolean_ to indicate success or failure of property removal.
+	</dd>
+
+	<dt>@#get_all_property_keys@</dt>
+	<dd class="description">
+		Should return a unique array of all property _keys_ found in the MetaStore.
+	</dd>
+
+	<dt>@#get_all_property_values@</dt>
+	<dd class="description">
+		Should return a unique array of all property _values_ found in the MetaStore.
+	</dd>
+
+	<dt>@#find_exact_uuids@</dt>
+	<dd class="description">
+		Receives a @key@ and a @value@ to search against.
+		Should return a unique array of resource uuids found that match the search criteria _exactly_.
+	</dd>
+
+	<dt>@#find_matching_uuids@</dt>
+	<dd class="description">
+		Receives a @key@ and a wildcard @value@ to search against.
+		Should return a unique array of resource uuids found that match the search criteria _partially_.
+	</dd>
+
+	<dt>@#dump_store@</dt>
+	<dd class="description">
+		Returns the entire content of the MetaStore as a hash, keyed by uuid.
+	</dd>
+
+	<dt>@#load_store@</dt>
+	<dd class="description">
+		Given a @hash@ (normally generated from @#dump_store@), replace all content in the MetaStore.
+		These methods are implemented to provide a path for MetaStore migrations.
+	</dd>
+
+	<dt>@#each_resource@</dt>
+	<dd class="description">
+		Receiving a @&block@, this method should yield a @{ uuid => property_hash }@ one resource at a time.
+	</dd>
+
+	<dt>@#clear@</dt>
+	<dd class="description">
+		Permanently purge all data contained in the MetaStore.
+	</dd>
+</dl>
+
+
+h3. Optional Interfaces
+
+h4. Startup Tasks
+
+If your MetaStore needs to perform maintenance tasks when ThingFish
+starts up, you can define an @#on_startup@ method.  Just like the
+equivalent method in <?api ThingFish::FileStore ?>, this is called
+during daemon initialization, after any effective user switches have
+occurred.
+
+h4. Performing Actions Atomically
+
+Some MetaStore methods that perform multiple actions concurrently
+should fail if there is an error in the middle of an update.  This
+is a good idea for read-only actions as well, since clients could
+be modifying metadata while another client is trying to read in a
+consistent state.  If your backend has a concept of transactional
+storage, you can implement a @#transaction@ method to wrap actions
+safely within.
+
+By default, it does nothing but yield the block passed to it.  Here's an
+example from the Sequel MetaStore.
+
+<?example { language: ruby, caption: 'Transactions in the Sequel MetaStore.' } ?>
+### A metastore backend that stores metadata tuples in a database,
+### accessed via the Sequel library.
+class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
+	extend Forwardable
+
+	### Create a new SequelMetaStore
+	def initialize( datadir, spooldir, options={} )
+		super
+		@metadata = Sequel.sqlite
+	end
+
+	# Delegate transactions to the underlying Sequel object.
+	def_delegators :@metadata, :transaction
+
+	# ...
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		self.transaction do
+			propshash.each do | prop, val |
+				self.set_property( uuid, prop, val )
+			end
+		end
+	end
+
+	# ...
+end
+<?end example?>
+
+|_. line number |_. what's it doing? |
+| 4 | Extend with the @Forwardable@ module, to obtain method delegations. |
+| 9 | Create a Sequel-initialized, SQLite backend. |
+| 13 | Sequel implements it's own @#transaction@ method internally: this MetaStore's @#transaction@ simply falls through to it. |
+| 20 | MetaStore operations that should be atomic are wrapped within a transaction block.  If there is an error at any point, all of the previous modifications are reverted automatically. |
+
+h3. Advanced MetaStores
+
+All of the above is implemented using the <?api ThingFish::SimpleMetaStore ?>
+class.  Work on an advanced MetaStore is in progress, starting with an
+"RDF":http://www.w3.org/RDF/ backed store.
+
+We're still in discussion about what kind of features an advanced
+MetaStore will immediately provide, but we do know that they will be a
+_triple_ space (instead of the _tuple_ space of the simple variety) and
+will offer a superset of the Simple store's API.
+
+They will also allow for:
+
+* Strong data typing, which will grant the ability to perform optimized searches (such as date-range)
+* Multiple values for a key (such as categorization or tagging per property)
+* Native syntax support for searching (for the RDF store, we're thinking of allowing POST to /search in "sparql":http://www.w3.org/TR/rdf-sparql-query/ format)
+
+As our advanced MetaStore nears completion and the API settles, we'll elaborate further on this section.
 

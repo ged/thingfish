@@ -517,9 +517,9 @@ module ThingFish # :nodoc:
 			def size_suffix
 				bytes = self.to_f
 				return case
-					when bytes >= GIGABYTE : sprintf( "%0.1fG", bytes / GIGABYTE )
-					when bytes >= MEGABYTE : sprintf( "%0.1fM", bytes / MEGABYTE )
-					when bytes >= KILOBYTE : sprintf( "%0.1fK", bytes / KILOBYTE )
+					when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
+					when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
+					when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
 					else "%db" % [ self ]
 					end
 			end

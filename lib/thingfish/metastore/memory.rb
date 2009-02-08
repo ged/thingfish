@@ -65,7 +65,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
+	### MetaStore API: Returns +true+ if the given +uuid+ exists in the store.
 	def has_uuid?( uuid )
 		return @metadata.key?( uuid.to_s )
 	end

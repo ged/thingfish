@@ -13,7 +13,9 @@ filters:
 
 h2. Logging
 
-ThingFish uses the @Logger@ module for logging; any class that wishes to log to ThingFish's log can include the <?api ThingFish::Loggable ?> module, which adds a @log@ method to the including class:
+ThingFish uses the @Logger@ module for logging; any class that wishes
+to log to ThingFish's log can include the <?api ThingFish::Loggable ?>
+module, which adds a @log@ method to the including class:
 
 <?example { language: ruby } ?>
 require 'thingfish/mixins'
@@ -80,7 +82,7 @@ h2. Response Object (<?api ThingFish::Response ?>)
 
 h2. Response Conversion Caching
 
-	yes it does this
+	yes it does this neat
 
 
 h2. HTTP Content Negotiation (<?api ThingFish::AcceptParam ?>)

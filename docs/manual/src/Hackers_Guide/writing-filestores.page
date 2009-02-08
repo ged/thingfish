@@ -34,7 +34,7 @@ plugins:
         maxsize: 1073741824  # 10GB global quota
 <?end example?>
 
-This filesystem plugin should handle most of your persistant storage
+This filesystem plugin should handle most of your persistent storage
 needs, but if you've got some fancier storage desires, you'll need
 to know how to roll your own.  Want to dump files directly into
 database BLOBs, or store them into a network cloud such as "Amazon's
@@ -89,8 +89,8 @@ end
 <?end example?>
 
 |_. line number |_. what's it doing? |
-| 2 | @#store@ is given a @uuid@ object, and the @data@ for the resource in its entirety. |
-| 6 | After a successful write, @#store@ should return a checksum for
+| 3 | @#store@ is given a @uuid@ object, and the @data@ for the resource in its entirety. |
+| 7 | After a successful write, @#store@ should return a checksum for
 the resource.  By convention, we are using MD5.  This makes it easy
 later to detect duplicate uploads, and a client to compare a local copy
 to a remote. |

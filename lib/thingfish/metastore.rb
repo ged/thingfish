@@ -67,6 +67,10 @@ require 'thingfish/exceptions'
 #   Return a Hash of all metadata in the store, keyed by UUID.
 # [<tt>load_store( hash )</tt>]
 #   Replace the contents of the store with the given hash of metadata, keyed by UUID.
+# [<tt>each_resource()</tt>]
+#   Iterates over the store, yielding each UUID and a hash of associated properties.
+# [<tt>clear()</tt>]
+#   Delete all data from the store.
 #
 # Simple metastore plugins should either implement the below methods, or override
 # the #find_by_exact_properties() and #find_by_matching_properties() methods.

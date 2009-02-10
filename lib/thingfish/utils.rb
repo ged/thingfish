@@ -214,7 +214,7 @@ module ThingFish # :nodoc:
 				nkey = normalize_key( key )
 				hash[ nkey ] = hash.delete( key )
 			end
-			
+
 			return hash
 		end
 
@@ -245,10 +245,10 @@ module ThingFish # :nodoc:
 
 
 		### Initialize the formatter with a reference to the logger so it can check for log level.
-		def initialize( logger, format=DEFAULT_FORMAT, debug=DEFAULT_DEBUG_FORMAT ) # :notnew:
+		def initialize( logger, format=nil, debug=nil ) # :notnew:
 			@logger       = logger
-			@format       = format
-			@debug_format = debug
+			@format       = format || DEFAULT_FORMAT
+			@debug_format = debug  || DEFAULT_DEBUG_FORMAT
 
 			super()
 		end

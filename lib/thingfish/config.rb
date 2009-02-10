@@ -179,7 +179,12 @@ class ThingFish::Config
 			level = self.parsed_logging_level
 
 			ThingFish.logger = Logger.new( logoutput )
-			ThingFish.logger.formatter = ThingFish::LogFormatter.new( ThingFish.logger )
+			ThingFish.logger.formatter =
+				ThingFish::LogFormatter.new(
+					ThingFish.logger,
+					self.logging.format,
+					self.logging.debug_format
+				)
 			ThingFish.logger.level = level
 		end
 

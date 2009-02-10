@@ -35,6 +35,8 @@ profiling:
     enabled: true
 
 logging:
+    format: "[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n"
+    debug_format: "[%1$s.%2$06d %3$d/%4$s] %5$5s {%6$s} -- %7$s\n"
     level: info
     logfile: thingfish.log
 

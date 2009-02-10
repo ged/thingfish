@@ -243,6 +243,31 @@ The meaning of the config values are as follows:
 		subsystem.</dd>
 	<dd class="subsection">
 		<dl>
+			<dt>format</dt>
+			<dd class="description">A @sprintf@ string to customize the normal logging format.</dd>
+			<dd class="valid-values">
+				A log message is provided the following arguments (in order):
+				<ul>
+					<li>The human readable date and time</li>
+					<li>Microseconds</li>
+					<li>PID of the daemon</li>
+					<li>Current thread ID</li>
+					<li>Log level</li>
+					<li>The ThingFish object that emitted the message</li>
+					<li>The message itself</li>
+				</ul>
+			</dd>
+			<dd class="default">
+				Defaults to: <code>[%1$s.%2$06d %3$d/%4$s] %5$5s -- %7$s\n</code>
+			</dd>
+
+			<dt>debug_format</dt>
+			<dd class="description">A @sprintf@ string to customize the debug level logging format.</dd>
+			<dd class="valid-values">See @format@ above for the parameter list.</dd>
+			<dd class="default">
+				Defaults to: <code>[%1$s.%2$06d %3$d/%4$s] %5$5s {%6$s} -- %7$s\n</code>
+			</dd>
+			
 			<dt>level</dt>
 			<dd class="description">The level of message that should be logged.</dd>
 			<dd class="valid-values">Valid values (in increasing order of severity) 
@@ -405,7 +430,9 @@ Change the following ThingFish configuration options for best results with super
 			<dt>logfile</dt>
 			<dd class="description">Daemontools comes with an included logging
 				and rotation tool called "multilog.":http://cr.yp.to/daemontools/multilog.html
-				Multilog wants to see log data on stdin.
+				Multilog wants to see log data on stdin.  Multilog can also emit timestamps
+				in tai64 format, you may optionally want to change the log format (see above)
+				to omit the built in timestamps.
 			</dd>
 			<dd class="default">Set this to <code>stdout</code></dd>
 		</dl>

@@ -67,6 +67,44 @@ describe ThingFish::Loggable, " (class)" do
 end
 
 
+describe ThingFish::Loggable, " (class w custom formats)" do
+	before(:each) do
+		@logfile = StringIO.new('')
+		@logger = ThingFish.logger = Logger.new( @logfile )
+
+		formatter = ThingFish::LogFormatter.new( @logger, '%7$s', 'D: %7$s' )
+		@logger.formatter = formatter
+
+		@test_class = Class.new do
+			include ThingFish::Loggable
+
+			def log_test_message( level, msg )
+				self.log.send( level, msg )
+			end
+
+			def logdebug_test_message( msg )
+				self.log_debug.debug( msg )
+			end
+		end
+		@obj = @test_class.new
+	end
+
+
+	it "is able to output to the log via its #log method" do
+		@logger.should_receive( :level ).and_return( Logger::INFO )
+		@obj.log_test_message( :info, 'scoby pancakes' )
+		@logfile.rewind
+		@logfile.read.should == 'scoby pancakes'
+	end
+
+	it "is able to output to the log via its #log_debug method" do
+		@obj.logdebug_test_message( 'poop tubes' )
+		@logfile.rewind
+		@logfile.read.should == 'D: poop tubes'
+	end
+end
+
+
 describe ThingFish::StaticResourcesHandler, " which has been mixed into a class" do
 	before(:each) do
 		@test_class = Class.new( ThingFish::Handler ) do

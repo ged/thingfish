@@ -367,7 +367,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 			integer :m_id, :index => true
 			text    :val,  :index => true
 
-			primary_key :r_id, :m_id
+			primary_key [ :r_id, :m_id ]
 		end
 	end
 

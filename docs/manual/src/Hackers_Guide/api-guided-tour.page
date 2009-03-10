@@ -11,6 +11,8 @@ filters:
   - textile
 ---
 
+[ This page is a work in progress ]
+
 h2. Logging
 
 ThingFish uses the @Logger@ module for logging; any class that wishes

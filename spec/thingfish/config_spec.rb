@@ -199,13 +199,6 @@ describe ThingFish::Config do
 		end
 	end
 
-	it "is able to iterate over each configured handler" do
-		lambda { @config.each_handler_uri }.should raise_error( LocalJumpError)
-		@config.each_handler_uri do |*args|
-			nonexistent_method( "Config with no source shouldn't invoke the handlers block" )
-		end
-	end
-
 	it "is able to build a configured FileStore object" do
 		default_filestore = ThingFish::Config::DEFAULTS[:plugins][:filestore][:name]
 		ThingFish::FileStore.should_receive( :create ).
@@ -465,6 +458,42 @@ describe ThingFish::Config do
 	end
 
 
+	# with an empty urimap section
+	describe " created with an empty urimap section" do
+
+		before( :all ) do
+			setup_logging( :fatal )
+		end
+
+		after( :all ) do
+			reset_logging()
+		end
+
+		NO_HANDLERS_CONFIG = %{
+		---
+		port: 3474
+		ip: 127.0.0.1
+		spooldir: /tmp
+		bufsize: 65535
+
+		logging:
+		    level: warn
+		    logfile: stderr
+
+		plugins: 
+		    urimap: {}
+		}.gsub( /^\t\t/, '' )
+
+		before(:each) do
+		    @config = ThingFish::Config.new( NO_HANDLERS_CONFIG )
+		end
+
+
+		it "should contain the /metadata handler" do
+			@config.plugins.urimap.keys.should include('/metadata')
+		end
+	end
+
 	# without filestore plugin section
 	describe " created without a filestore plugin section" do
 		NO_FILESTORE_PLUGIN_CONFIG = %{
@@ -543,9 +572,11 @@ describe ThingFish::Config do
 				@config.find_handler_uri( 'dav' )
 			}.should raise_error( RuntimeError, /isn't populated yet/i )
 		end
-		
+
 		
 		it "yields tuples for handlers that should be mapped into the urispace" do
+			ThingFish::Handler.should_receive( :create ).with( 'simplemetadata', '/metadata', {} ).
+				and_return( :metadata )
 			ThingFish::Handler.should_receive( :create ).with( 'erblughuhuhuh', '', {} ).
 				and_return( :slashhandler )
 			ThingFish::Handler.should_receive( :create ).with( 'dav', '/mount', {} ).
@@ -557,7 +588,7 @@ describe ThingFish::Config do
 			ThingFish::Handler.should_receive( :create ).
 				with( 'throatspasm', '/chunky/macHocksalot', an_instance_of(Hash) ).
 				and_return( :hungryhandler )
-			
+
 			results = []
 			@config.each_handler_uri do |handler, path|
 				results << [ handler, path ]
@@ -566,8 +597,9 @@ describe ThingFish::Config do
 			# Gulpy McGrunterson
 			# Cleary Mustacheerton McThroaterson
 			# Swallowy McMucus
-			results.should have(5).members
+			results.should have(6).members
 			results.should include(
+				[ :metadata, '/metadata' ],
 				[ :slashhandler, '' ],
 				[ :davhandler, '/mount' ],
 				[ :adminhandler, '/admin' ],
@@ -575,7 +607,7 @@ describe ThingFish::Config do
 				[ :hungryhandler, '/chunky/macHocksalot' ]
 			)
 		end
-		
+
 		it "is able to build a configured URImap object" do
 			urimap = mock( "the urimap" )
 			ThingFish::UriMap.stub!( :new ).and_return( urimap )

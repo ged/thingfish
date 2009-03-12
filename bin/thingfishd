@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
-# 
+#
 # thingfishd - a network accessable, searchable datastore
-# 
+#
 # == Synopsis
-# 
-#   $ thingfishd 
-# 
+#
+#   $ thingfishd
+#
 # == Version
 #
 #  $Id$
-# 
-# 
+#
+#
 
 require 'rbconfig'
 require 'pathname'
@@ -20,15 +20,20 @@ require 'thingfish/daemon'
 
 include Config
 
-### Defaults
-DEFAULT_CONFIGFILE = Pathname.new(CONFIG['sysconfdir']) + 'thingfish.conf'
-
-
-### Main logic
+### Run the daemon -- Start an instance of the daemon, run until shutdown,
+### and then return from the main thread.
 def main( args )
 	opts = parse_args( args )
 	$0 = 'thingfishd'
-	run( opts )
+
+	# FIXME  (default config if no options.configfile passed)
+	config = if opts.configfile
+		ThingFish::Config.load( opts.configfile )
+	else
+		ThingFish::Config.new
+	end
+
+	ThingFish::Daemon.new( config ).start
 end
 
 
@@ -39,20 +44,19 @@ def parse_args( args )
 
 	oparser = OptionParser.new do |oparser|
 		oparser.accept( Pathname ) {|path| Pathname.new(path) }
-		
+
 		oparser.banner = "Usage: #{progname.basename} OPTIONS"
 
 		oparser.separator ''
 		oparser.separator 'Daemon Options:'
-		
-		oparser.on( '--config-file=STRING', '-f STRING', Pathname, 
-			"Specify a config file to use. Default to:",
-			"  #{DEFAULT_CONFIGFILE}" ) do |cfg|
+
+		oparser.on( '--config-file=STRING', '-f STRING', Pathname,
+			"Specify a config file to use." ) do |cfg|
 			opts.configfile = cfg
 		end
-		
+
 		oparser.separator 'Other Options:'
-		
+
 		oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
 			$stderr.puts oparser
 			exit!
@@ -64,7 +68,7 @@ def parse_args( args )
 			exit!
 		end
 	end
-	
+
 	oparser.parse!
 
 	return opts
@@ -74,23 +78,10 @@ end
 ### Get the options struct filled with defaults
 def get_default_options
 	options = OpenStruct.new
-
-	options.configfile = DEFAULT_CONFIGFILE
-	
 	return options
 end
 
 
-### Run the daemon -- Start an instance of the daemon, run until shutdown, 
-### and then return from the main thread.
-def run( options )
-	config = ThingFish::Config.load( options.configfile )
-	ThingFish::Daemon.new( config ).start
-end
-
-
-if __FILE__ == $0
-	main( ARGV )
-end
+main( ARGV )
 
 # vim: set nosta noet ts=4 sw=4:

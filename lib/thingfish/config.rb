@@ -93,8 +93,10 @@ class ThingFish::Config
 			:metastore => {
 				:name => 'memory'
 			},
-			:urimap => {},
-			:filters => [],
+			:urimap => {
+				'/metadata' => 'simplemetadata'
+			},
+			:filters => [ 'ruby' ],
 		},
 
 		:logging => {
@@ -372,7 +374,7 @@ class ThingFish::Config
 				end
 			end
 		else
-			self.log.debug "No handlers configured"
+			self.log.warn "No handlers configured"
 		end
 
 		return urimap

@@ -259,8 +259,8 @@ describe ThingFish::Daemon do
 				info = @daemon.filter_info
 
 				info.should be_an_instance_of( Hash )
-				info.should have(2).members
-				info.keys.should include( 'eins', 'zwei' )
+				info.should have(3).members
+				info.keys.should include( 'ruby', 'eins', 'zwei' )
 				info.values.should include( :eins_info, :zwei_info )
 			end
 

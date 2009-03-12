@@ -4,10 +4,8 @@ BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).expand_path.dirname.parent
 	libdir = basedir + 'lib'
-	
+
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
-	require basedir + 'utils.rb'
-	include UtilityFunctions
 }
 
 
@@ -20,16 +18,16 @@ require 'ostruct'
 
 
 # thingfish - a command-line interface to ThingFish servers
-# 
+#
 # == Usage
-# 
+#
 #   $ thingfish OPTIONS COMMAND ARGS
-# 
+#
 # == Version
 #
 #  $Id$
-# 
-# 
+#
+#
 class ThingFish::CommandLineClient
 	include ThingFish::Constants,
 		ThingFish::Loggable
@@ -69,7 +67,7 @@ class ThingFish::CommandLineClient
 
 			oparser.separator ''
 			oparser.separator 'Options:'
-			oparser.on( '--host HOSTNAME', '-H', String, 
+			oparser.on( '--host HOSTNAME', '-H', String,
 				"Specify the host to connect to" ) do |hostname|
 				opts.host = hostname
 			end
@@ -92,7 +90,7 @@ class ThingFish::CommandLineClient
 				opts.verbosemode = true
 			end
 
-			oparser.on( '--profile', FalseClass, 
+			oparser.on( '--profile', FalseClass,
 						"Turn on server profiling (must also be enabled server side)" ) do
 				opts.profilemode = true
 			end
@@ -116,19 +114,19 @@ class ThingFish::CommandLineClient
 
 		return opts, *remaining_args
 	end
-	
-	
+
+
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
-	
+
 	### Create a new ThingFish::CommandLineClient
 	def initialize( options )
 		@options = options
-		
+
 		uri = URI.parse( "http://%s:%d/" % [@options.host, @options.port] )
 		@client = ThingFish::Client.new( uri, :profile => @options.profilemode )
-		
+
 		if @options.debugmode
 			ThingFish.reset_logger
 			ThingFish.logger.level = Logger::DEBUG
@@ -137,8 +135,8 @@ class ThingFish::CommandLineClient
 			ThingFish.logger.level = Logger::INFO
 		end
 	end
-	
-	
+
+
 	######
 	public
 	######
@@ -146,14 +144,14 @@ class ThingFish::CommandLineClient
 	### Main logic
 	def main( verb, *args )
 		self.log.debug "Client requested '%s' with arguments: %p" % [ verb, args ]
-	
+
 		prefix = @options.helpmode ? 'help' : 'do'
 
 		case verb.downcase
 		when 'upload', 'post'
 			return help_upload() if args.empty?
 			send( "#{prefix}_upload", args.shift ) until args.empty?
-	
+
 		when 'update', 'put'
 			return help_update() if (args.length % 2).nonzero? or args.empty?
 			until args.empty?
@@ -161,26 +159,26 @@ class ThingFish::CommandLineClient
 				file = args.shift
 				send( "#{prefix}_update", uuid, file )
 			end
-	
+
 		when 'download', 'get', 'fetch'
-			return help_download() if args.empty?			
+			return help_download() if args.empty?
 			until args.empty?
 				uuid = args.shift or raise "no UUID specified for fetch"
 				file = args.shift
 				send( "#{prefix}_download", uuid, file )
 			end
-	
+
 		when 'check', 'head'
 			return help_check() if args.empty?
 			send( "#{prefix}_check", args.shift ) until args.empty?
-			
+
 		when 'search', 'find'
 			return help_search() if (args.length % 2).nonzero? or args.empty?
 			send( "#{prefix}_search", args )
 
 		when 'info'
 			display_server_info()
-	
+
 		else
 			raise "Don't know how to '#{verb}' yet."
 		end
@@ -195,10 +193,10 @@ class ThingFish::CommandLineClient
 	### Fetch the server info hash from the server and display it.
 	def display_server_info
 		info = @client.server_info or raise "couldn't fetch server info"
-		
+
 		handler_info = []
 		filter_info  = []
-		
+
 		if @options.verbosemode
 			max_length = info['handlers'].keys.max {|a,b| a.length <=> b.length }.length
 			self.log.debug "Max length is: %d" % [max_length]
@@ -213,7 +211,7 @@ class ThingFish::CommandLineClient
 					finfo['rev']
 				  ]
 			end
-			
+
 		else
 			handler_info << "  %p" % [ info['handlers'].keys.sort ]
 			filter_info << "  %p" % [ info['filters'].keys.sort ]
@@ -224,11 +222,11 @@ class ThingFish::CommandLineClient
 			handler_info,
 			"Filters: ",
 			filter_info
-		
-	end
-	
 
-	### Upload the contents of the specified +file+ to the ThingFish at the given +uri+. 
+	end
+
+
+	### Upload the contents of the specified +file+ to the ThingFish at the given +uri+.
 	### If +file+ is nil, the content will be read from STDIN instead.
 	def do_upload( file=nil )
 		fh = get_reader_io( file )
@@ -241,11 +239,11 @@ class ThingFish::CommandLineClient
 		end
 
 		@client.store( resource )
-		
+
 		$stderr.puts "Uploaded as '%s' to: %s" % [ resource.format, resource.uuid ]
 	end
-	
-	
+
+
 	### Output upload help to stderr.
 	def help_upload( *args )
 		self.print_help( 'upload <filename> [filename2] [filename3] ... ' )
@@ -273,14 +271,14 @@ class ThingFish::CommandLineClient
 		$stderr.puts "Updated #{uuid}"
 	end
 
-	
+
 	### Output update help to stderr.
 	def help_update( *args )
 		self.print_help( 'update <uuid> <filename> [<uuid2> <filename2>] ... ' )
 	end
 
 
-	### Verify that a resource with the specified +uuid+ exists on the ThingFish at 
+	### Verify that a resource with the specified +uuid+ exists on the ThingFish at
 	### the given +uri+.
 	def do_check( uuid )
 		if @client.has?( uuid )
@@ -289,8 +287,8 @@ class ThingFish::CommandLineClient
 			$stderr.puts "%s does NOT have resource %s" % [ @client.uri, uuid ]
 		end
 	end
-	
-	
+
+
 	### Output check help to stderr.
 	def help_check( *args )
 		self.print_help( 'check <uuid> [uuid2] ... ' )
@@ -303,7 +301,7 @@ class ThingFish::CommandLineClient
 	def do_download( uuid, file )
 		resource = @client.fetch( uuid ) or
 			raise "No such resource #{uuid}"
-			
+
 		fh = get_writer_io( file )
 		resource.export( fh )
 		fh.close
@@ -311,7 +309,7 @@ class ThingFish::CommandLineClient
 		$stderr.puts "Fetched resource at %s." % [ uuid ]
 	end
 
-	
+
 	### Output download help to stderr.
 	def help_download( *args )
 		self.print_help( <<-EOH )
@@ -319,7 +317,7 @@ class ThingFish::CommandLineClient
 			(Save resources to files on disk)
 				
 		EOH
-	
+
 		self.print_help( <<-EOH )
 			download <uuid>
 			(Stream a resource to stdout)			
@@ -332,25 +330,25 @@ class ThingFish::CommandLineClient
 	def do_search( terms )
 		terms = Hash[ *terms ]
 		results = @client.find( terms )
-		
+
 		if results.empty?
 			$stdout.puts "No resources were found that match your search terms."
 			return
 		end
-		
+
 		results.each do |resource|
 			$stdout.puts "%s (%s)" % [ resource.uuid, resource.metadata[:title] ]
 		end
 	end
-	
-	
+
+
 	### Output search help to stderr.
 	def help_search( *args )
 		self.print_help( 'search <property> <value> [<property2> <value2>] ...' )
 	end
 
-	
-	### Get an IO object for reading from the specified +filename+. If +filename+ is 
+
+	### Get an IO object for reading from the specified +filename+. If +filename+ is
 	### +nil+, returns the IO for STDIN instead.
 	def get_reader_io( filename=nil )
 		return $stdin unless filename
@@ -359,7 +357,7 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Get an IO object for writing to the specified +filename+. If +filename+ is 
+	### Get an IO object for writing to the specified +filename+. If +filename+ is
 	### +nil+, returns the IO for STDOUT instead.
 	def get_writer_io( filename=nil )
 		return $stdout unless filename
@@ -377,7 +375,7 @@ class ThingFish::CommandLineClient
 				@mime_analyzer = Mahoro.new( flags )
 			rescue LoadError
 			end
-	
+
 			unless @mime_analyzer
 				begin
 					require 'filemagic'
@@ -387,7 +385,7 @@ class ThingFish::CommandLineClient
 				rescue LoadError
 				end
 			end
-	
+
 			unless @mime_analyzer
 				self.log.info "Using mime map for mimetype analysis"
 				@mime_analyzer = Class.new do
@@ -402,7 +400,7 @@ class ThingFish::CommandLineClient
 			end
 
 		end
-		
+
 		return @mime_analyzer
 	end
 
@@ -426,7 +424,7 @@ class ThingFish::CommandLineClient
 		end
 	end
 
-	
+
 	### Print the given helptext with the program name after stripping leading
 	### tabs.
 	def print_help( helptext )
@@ -436,17 +434,15 @@ class ThingFish::CommandLineClient
 end
 
 
-if __FILE__ == $0
-	begin
-		opts, verb, *args = ThingFish::CommandLineClient.parse_options( ARGV )
-		client = ThingFish::CommandLineClient.new( opts )
+begin
+	opts, verb, *args = ThingFish::CommandLineClient.parse_options( ARGV )
+	client = ThingFish::CommandLineClient.new( opts )
 
-		client.main( verb, *args )
+	client.main( verb, *args )
 
-	rescue => err
-		$stderr.puts "ERROR: #{err.message}"
-		$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
-	end
+rescue => err
+	$stderr.puts "ERROR: #{err.message}"
+	$stderr.puts "  " + err.backtrace.join( "\n  " ) if $DEBUG
 end
 
 # vim: set nosta noet ts=4 sw=4:

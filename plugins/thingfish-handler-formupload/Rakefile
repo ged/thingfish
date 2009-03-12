@@ -82,7 +82,6 @@ gemspec = Gem::Specification.new do |gem|
   	gem.files += Dir.glob( "resources/**/*" )
 
   	gem.add_dependency( 'thingfish', '>= 0.2.0' )
-  	gem.add_dependency( 'thingfish-filter-html' )
 end
 
 Rake::GemPackageTask.new(gemspec) do |task|

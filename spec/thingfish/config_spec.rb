@@ -490,7 +490,7 @@ describe ThingFish::Config do
 
 
 		it "should contain the /metadata handler" do
-			@config.plugins.urimap.keys.should include('/metadata')
+			@config.plugins.urimap.keys.should include( :'/metadata' )
 		end
 	end
 

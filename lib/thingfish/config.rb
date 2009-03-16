@@ -94,7 +94,7 @@ class ThingFish::Config
 				:name => 'memory'
 			},
 			:urimap => {
-				'/metadata' => 'simplemetadata'
+				:'/metadata' => 'simplemetadata'
 			},
 			:filters => [ 'ruby' ],
 		},

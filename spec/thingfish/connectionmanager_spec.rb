@@ -669,8 +669,24 @@ describe ThingFish::ConnectionManager do
 
 			@conn.process
 		end
-				
-		it "handles IOErrors that propagate up to process()" do
+		
+		it "closes the connection on request errors that happen in #process (#57)" do
+			exception = ThingFish::RequestError.new("malformed request: expected request-line")
+			@conn.should_receive( :read_request ).once.and_raise( exception )
+			
+			@socket.should_receive( :closed? ).and_return( false )
+			@socket.should_receive( :close ).once
+			@socket.stub!( :peeraddr ).and_return( [] )
+			
+			Timeout.timeout( 1 ) do
+				lambda {
+					@conn.process
+				}.should_not raise_error()
+			end
+		end
+		
+		
+		it "handles IOErrors that propagate up to #process" do
 			@socket.stub!( :peeraddr ).and_return( [] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
 			@socket.should_receive( :closed? ).and_return( false )
@@ -681,7 +697,7 @@ describe ThingFish::ConnectionManager do
 			}.should_not raise_error()
 		end
 
-		it "handles system errors that propagate up to process()" do
+		it "handles system errors that propagate up to #process" do
 			@socket.stub!( :peeraddr ).and_return( [] )
 			@socket.should_receive( :read_nonblock ).and_raise( Errno::ECONNRESET.new )
 			@socket.should_receive( :closed? ).and_return( false )
@@ -692,6 +708,10 @@ describe ThingFish::ConnectionManager do
 			}.should_not raise_error()
 		end
 
+		it "returns a BAD_REQUEST response for a malformed request lines" do
+			
+		end
+		
 		it "should not try to re-close the socket while in #process's error handler" do
 			@socket.stub!( :peeraddr ).and_return( [] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )

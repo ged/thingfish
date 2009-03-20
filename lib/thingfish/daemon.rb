@@ -269,7 +269,15 @@ class ThingFish::Daemon
 			end
 			self.log.debug "Connection thread %p done." % [ Thread.current ]
 		end
+
 		@connection_threads.add( t )
+	rescue ::RuntimeError => err
+		self.log.error "Fatal %s in connection thread for %p: %s\n  " % [
+			err.class.name,
+			connection,
+			err.message,
+			err.backtrace.join( "\n  " )
+		]
 	end
 
 

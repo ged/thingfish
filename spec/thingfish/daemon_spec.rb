@@ -182,6 +182,30 @@ describe ThingFish::Daemon do
 			end
 
 
+			it "handles uncaught exceptions raised from inside the connection thread" do
+				conn_threadgroup = mock( "connection threadgroup" )
+				@daemon.instance_variable_set( :@connection_threads, conn_threadgroup )
+
+				Thread.should_receive( :new ).and_yield.and_return( @connection_thread )
+				Thread.stub!( :current ).and_return( @connection_thread )
+				@connection_thread.should_receive( :abort_on_exception= ).with( true )
+
+				socket = mock( "client socket" )
+				connection = mock( "connection manager" )
+				ThingFish::ConnectionManager.should_receive( :new ).
+					with( socket, @config ).
+					and_return( connection )
+
+				connection.stub!( :session_info )
+				connection.should_receive( :process ).
+					and_raise( ThingFish::RequestError.new("something went wrong") )
+
+				lambda {
+					@daemon.handle_connection( socket )
+				}.should_not raise_error()
+			end
+
+
 			it "doesn't block if the listener socket doesn't have an incoming connection" do
 				conn_threadgroup = mock( "connection threadgroup" )
 				@daemon.instance_variable_set( :@connection_threads, conn_threadgroup )

@@ -708,9 +708,6 @@ describe ThingFish::ConnectionManager do
 			}.should_not raise_error()
 		end
 
-		it "returns a BAD_REQUEST response for a malformed request lines" do
-			
-		end
 		
 		it "should not try to re-close the socket while in #process's error handler" do
 			@socket.stub!( :peeraddr ).and_return( [] )

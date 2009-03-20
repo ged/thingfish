@@ -120,7 +120,7 @@ class ThingFish::ConnectionManager
 			self.socket.peeraddr[3],
 			self.socket.peeraddr[1],
 		]
-	rescue Errno::EINVAL
+	rescue Errno::EINVAL, IOError
 		return '(closed socket)'
 	end
 
@@ -147,6 +147,8 @@ class ThingFish::ConnectionManager
 
 		self.log.debug "%s: close" % [ self.session_info ]
 
+	rescue ThingFish::RequestError => err
+		self.log.error "%s: Request error: %s" % [ self.session_info, err.message ]
 	rescue SystemCallError, IOError => err
 		self.log.error "%s: Error in connection" % [ self.session_info ]
 		# TODO: handle ECONNRESET, EINTR, EPIPE, EINVAL

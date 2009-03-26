@@ -230,6 +230,13 @@ describe ThingFish::Config do
 		@config.plugins.filestore.maxsize.should == 1024
 	end
 
+	it "should construct each filter with an empty options hash if it's configured without options" do
+		@config.plugins.filters = ['json']
+		ThingFish::Filter.should_receive( :create ).with( 'json', {} ).once
+
+		@config.create_configured_filters
+	end
+	
 
 	# With no source
 	describe " created with no source" do
@@ -317,6 +324,7 @@ describe ThingFish::Config do
 
 			filters.should == [:json, :xml, :something]
 		end
+		
 	end
 
 

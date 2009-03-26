@@ -313,7 +313,7 @@ class ThingFish::Config
 		return self.plugins.filters.collect do |tuple|
 			name, options = *(tuple.to_a.first)
 			self.log.info "Loading '%s' filter with options: %p" % [ name, options ]
-			ThingFish::Filter.create( name.to_s, options )
+			ThingFish::Filter.create( name.to_s, options || {} )
 		end
 	end
 

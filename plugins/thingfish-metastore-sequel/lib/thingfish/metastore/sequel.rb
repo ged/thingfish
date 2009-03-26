@@ -126,7 +126,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Set the property associated with +uuid+ specified by
 	### +propname+ to the given +value+.
 	def set_property( uuid, propname, value )
-		r_id = get_id( :resources, uuid )
+		r_id = get_id( :resources, uuid.to_s )
 		m_id = get_id( :metakey, propname )
 
 		if @metadata[ :metaval ].
@@ -175,7 +175,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	def get_properties( uuid )
-		r_id = get_id( :resources, uuid )
+		r_id = get_id( :resources, uuid.to_s )
 		return @metadata[ :resources, :metakey, :metaval ].
 			filter( :metakey__id   => :metaval__m_id,
 					:resources__id => :metaval__r_id,
@@ -232,7 +232,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 			# Remove resource row.
 			resources.filter( :uuid => uuid.to_s ).delete
-			@id_cache[ :resources ].delete( uuid )
+			@id_cache[ :resources ].delete( uuid.to_s )
 		end
 	end
 

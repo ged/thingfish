@@ -261,6 +261,16 @@ module ThingFish::Constants
 		# Pattern that matches requests to /«a uuid»; captures the UUID string
 		UUID_URL = %r{^(#{UUID_REGEXP})$}
 
+		# Pattern that matches a valid property name
+		PROPERTY_NAME_REGEXP = %r{\w[\w\-]+}
+
+		# Pattern that matches requests to /«a property name»; captures the property name string
+		PROPERTY_NAME_URL = %r{^(#{PROPERTY_NAME_REGEXP})$}
+
+		# Pattern that matches requests to /«a uuid»/«a property name»; captures the uuid
+		# and the property name string
+		UUID_PROPERTY_URL = %r{^(#{UUID_REGEXP})/(#{PROPERTY_NAME_REGEXP})$}
+
 		# Network IO constants
 		CRLF        = "\r\n"
 		EOL         = CRLF

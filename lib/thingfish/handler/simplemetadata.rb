@@ -45,7 +45,6 @@ end
 ### The default metadata handler for the thingfish daemon when configured with
 ### a ThingFish::SimpleMetaStore.
 class ThingFish::SimpleMetadataHandler < ThingFish::Handler
-
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
 		ThingFish::Loggable,
@@ -80,6 +79,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Handle a GET request
 	def handle_get_request( path_info, request, response )
+		self.log.debug "Handling a GET from %p" % [ path_info ]
 
 		case path_info
 
@@ -90,7 +90,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuid = $1
 			self.handle_get_uuid_request( request, response, uuid )
 
-		when %r{^(\w+)$}
+		when PROPERTY_NAME_URL
 			key = $1
 			self.handle_get_key_request( request, response, key )
 
@@ -103,6 +103,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Handle a PUT request
 	def handle_put_request( path_info, request, response )
+		self.log.debug "Handling a PUT to %p" % [ path_info ]
 
 		case path_info
 
@@ -113,7 +114,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuid = $1
 			self.handle_update_uuid_request( request, response, uuid )
 
-		when %r{^(#{UUID_REGEXP})/(\w+)$}
+		when UUID_PROPERTY_URL
 			uuid, key = $1, $2
 			self.handle_update_key_request( request, response, uuid, key )
 
@@ -126,6 +127,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Handle a POST request
 	def handle_post_request( path_info, request, response )
+		self.log.debug "Handling a POST to %p" % [ path_info ]
 
 		case path_info
 
@@ -136,7 +138,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuid = $1
 			self.handle_update_uuid_request( request, response, uuid )
 
-		when %r{^(#{UUID_REGEXP})/(\w+)$}
+		when UUID_PROPERTY_URL
 			uuid, key = $1, $2
 			self.handle_update_key_request( request, response, uuid, key )
 
@@ -149,6 +151,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 
 	### Handle a DELETE request
 	def handle_delete_request( path_info, request, response )
+		self.log.debug "Handling a DELETE on %p" % [ path_info ]
 
 		case path_info
 
@@ -159,7 +162,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuid = $1
 			self.handle_update_uuid_request( request, response, uuid )
 
-		when %r{^(#{UUID_REGEXP})/(\w+)$}
+		when UUID_PROPERTY_URL
 			uuid, key = $1, $2
 			self.handle_delete_key_request( request, response, uuid, key )
 
@@ -193,7 +196,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuid = $1
 			template_name = 'uuid'
 
-		when %r{^(\w+)$}
+		when PROPERTY_NAME_URL
 			key = $1
 			template_name = 'values'
 

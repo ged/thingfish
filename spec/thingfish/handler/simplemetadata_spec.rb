@@ -121,6 +121,19 @@ describe ThingFish::SimpleMetadataHandler do
 		end
 
 
+		it "understands metadata keys containing hypens" do
+			@metastore.should_receive( :get_all_property_values ).
+				with( 'acky-acky-acky-ptang' ).
+				and_return( TESTING_VALUES )
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :body= ).with( TESTING_VALUES )
+			@response.should_receive( :status= ).with( HTTP::OK )
+
+			@handler.handle_get_request( 'acky-acky-acky-ptang', @request, @response )
+		end
+
+
 		it "returns a data-structure describing all metadata for a given uuid for GET /{handler}/{uuid}" do
 			@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( true )
 			@metastore.should_receive( :get_properties ).
@@ -147,7 +160,7 @@ describe ThingFish::SimpleMetadataHandler do
 
 		it "responds with a NOT_FOUND (404) response for a GET to an unknown URI" do
 			@response.should_not_receive( :status= ).with( HTTP::OK )			
-			@handler.handle_get_request( 'wicka-wicka-pow-pow', @request, @response )
+			@handler.handle_get_request( 'cheshire cat!', @request, @response )
 		end
 
 

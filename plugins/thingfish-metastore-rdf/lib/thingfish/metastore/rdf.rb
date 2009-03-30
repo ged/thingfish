@@ -1,25 +1,25 @@
 #!/usr/bin/ruby
-#
-# ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in an
-# RDF knowledgebase.
-#
-# == Synopsis
-#
-#   require 'thingfish/metastore'
-#
-#   ms = ThingFish::MetaStore.create( "rdf",
-#           :store => 'hashes',
-#           :hash_type => 'bdb',
-#           :dir => '/tmp/thingfish/metastore' )
-#
-#   ms.set_property( uuid, 'hands', 'buttery' )
-#   ms.get_property( uuid, 'pliz_count' )			# => 2
-#   ms.get_properties( uuid )						# => {...}
-#
-#   metadata = ms[ uuid ]
-#   metadata.format = 'application/x-yaml'
-#   metadata.format		# => 'application/x-yaml'
-#   metadata.format?		# => true
+
+begin
+	require 'pathname'
+	require 'redleaf'
+	require 'uuidtools'
+
+	require 'thingfish'
+	require 'thingfish/exceptions'
+	require 'thingfish/metastore'
+	require 'thingfish/metastore/simple'
+	require 'thingfish/constants'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
+
+# ThingFish::RdfMetaStore -- a simple metastore plugin for ThingFish that
+# stores metadata in an RDF knowledgebase using Redleaf.
 #
 # == Version
 #
@@ -36,35 +36,18 @@
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-
-begin
-	require 'pathname'
-	require 'rdf/redland'
-	require 'rdf/redland/constants'
-	require 'rdf/redland/schemas/rdfs'
-	require 'rdf/redland/dc'
-	require 'uuidtools'
-	require 'set'
-	require 'uri'
-
-	require 'thingfish'
-	require 'thingfish/exceptions'
-	require 'thingfish/metastore'
-	require 'thingfish/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in
-### a RDF knowledgebase.
-class ThingFish::RdfMetaStore < ThingFish::MetaStore
+class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Constants,
-		ThingFish::Constants::Patterns
+		ThingFish::Constants::Patterns,
+		Redleaf::Constants::CommonNamespaces
+
+	# Schemas for the ThingFish RDF metastore
+	#
+	module Schemas
+		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2009/04/thingfish-schema#'
+		THINGFISH_NS = Redleaf::Namespace.new( THINGFISH_URL )
+	end
+	include Schemas
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -72,12 +55,143 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	# SVN Id
 	SVNId = %q$Id$
 
-	# The default root directory
+	# Default options for the store, regardless of backend.
+	#
 	DEFAULT_OPTIONS = {
-		:store => 'hashes',
+		:store     => 'hashes',
 		:hash_type => 'memory',
-		:name => 'thingfish',
+		:label     => 'rdf-metastore'
 	}
+
+	### Create a new RDF Metastore that will use the given +datadir+ and +spooldir+ for
+	### its store and for any temporary files, respectively.
+	###
+	### The +config+ options supported depend on what features you've
+	### compiled into your Redland library, and which store you choose.
+	###
+	### Common options:
+	###
+	### [:store]
+	###   The type of store to use. See http://librdf.org/docs/storage.html if you're not
+	###   sure which one you should use. Defaults to the 'hashes' store.
+	###
+	### The type of store you've chosen will dictate which further options are
+	### accessible/required.
+	###
+	def initialize( datadir, spooldir, options={} )
+		opts = DEFAULT_OPTIONS.merge( options )
+
+		storetype  = opts.delete( :store )
+		storelabel = opts.delete( :label )
+		opts[ :dir ] ||= datadir.to_s
+		opts[ :new ] ||= false
+
+		Redleaf.logger = ThingFish.logger
+
+		unless Redleaf::Store.backends.include?( storetype )
+			raise ThingFish::MetaStoreError,
+				"Your Redland installation does not support the %s store." % [ storetype ]
+		end
+
+		self.log.debug "Creating Redleaf store: %s" % [ storetype ]
+		@store = Redleaf::Store.create( storetype, storelabel, opts )
+		@graph = @store.graph
+
+		super
+	end
+
+	######
+	public
+	######
+
+
+	### MetaStore API: Set the property associated with +uuid+ specified by
+	### +propname+ to the given +value+.
+	def set_property( uuid, propname, value )
+		# properties are stored uniquely.
+		@graph << [ make_uuid_urn(uuid), THINGFISH_NS[propname], value ]
+	end
+
+	### MetaStore API: Set the properties associated with the given +uuid+ to those
+	### in the provided +propshash+.
+	def set_properties( uuid, propshash )
+		self.transaction do
+			subject = make_uuid_urn( uuid )
+			@graph.remove( [subject, nil, nil] )
+
+			statements = propshash.inject([]) do |stmts, pair|
+				pred, obj = *pair
+				stmts << [ subject, THINGFISH_NS[pred], obj ]
+				stmts
+			end
+
+			@graph.append( *statements )
+		end
+	end
+
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		self.transaction do
+			subject = make_uuid_urn( uuid )
+
+			statements = propshash.inject([]) do |stmts, pair|
+				pred, obj = *pair
+				stmts << [ subject, THINGFISH_NS[pred], obj ]
+				stmts
+			end
+
+			@graph.append( *statements )
+		end
+	end
+
+
+	### MetaStore API: Return the property associated with +uuid+ specified by
+	### +propname+. Returns +nil+ if no such property exists.
+	def get_property( uuid, propname )
+		return @graph.objects( make_uuid_urn(uuid), THINGFISH_NS[propname] ).first
+	end
+
+
+	### MetaStore API: Get the set of properties associated with the given +uuid+ as
+	### a hashed keyed by property names as symbols.
+	###
+	### For the RDF simple store, all predicates are mapped to the THINGFISH namespace.
+	def get_properties( uuid )
+		results = {}
+		@graph[ make_uuid_urn(uuid), nil, nil ].each do |statement|
+			name = statement.predicate.to_s.sub( /^#{THINGFISH_NS.uri}/, '' ).to_sym
+			results[ name ] = statement.object
+		end
+		self.log.debug "hi: %p" % results
+		return results
+	end
+
+
+	### MetaStore API: Removes +propname+ from given +uuid+
+	###
+	### TODO: map property names.  Yes.
+	###
+	def delete_property( uuid, propname )
+		@graph.remove( [make_uuid_urn(uuid), propname, nil] ).first
+	end
+
+
+	#######
+	private
+	#######
+
+	### Make a UUID URN out of the given +uuid+.
+	def make_uuid_urn( uuid )
+		return URI("urn:uuid:#{uuid}")
+	end
+
+
+end
+
+
+__END__
 
 	# The SPARQL query template to use for searching
 	QUERY_TEMPLATE = <<-END

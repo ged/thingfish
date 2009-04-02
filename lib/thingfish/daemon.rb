@@ -365,7 +365,7 @@ class ThingFish::Daemon
 		# Store some default metadata about the resource
 		begin
 			@metastore.transaction do
-				now = Time.now
+				now = Time.now.gmtime
 				metadata = @metastore[ uuid ]
 				metadata.update( body_metadata )
 

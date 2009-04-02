@@ -5,10 +5,10 @@
 # == Synopsis
 #
 #   # thingfish.conf
-#   plugins:
-#     handlers:
-#		- <%= @name %>:
-#           uris: '/<%= @name %>'
+#   urimap:
+#     /<%= @name %>:
+#       - <%= @name %>:
+#           resource_dir: var/www
 # 
 # == Version
 #

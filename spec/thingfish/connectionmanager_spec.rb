@@ -83,6 +83,13 @@ describe ThingFish::ConnectionManager do
 		@conn.peer_info.should == "(closed socket)"
 	end
 
+	it "returns informative message for the peer_info even when the transport endpoint is not connected" do
+		# Snorty ran out of gas?!?!
+		# Stare-y ran out of jokes!!
+		@socket.should_receive( :peeraddr ).and_raise( Errno::ENOTCONN.new )
+		@conn.peer_info.should == "(closed socket)"
+	end
+
 
 	### Read request
 

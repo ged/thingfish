@@ -120,7 +120,7 @@ class ThingFish::ConnectionManager
 			self.socket.peeraddr[3],
 			self.socket.peeraddr[1],
 		]
-	rescue Errno::EINVAL, IOError
+	rescue Errno::EINVAL, Errno::ENOTCONN, IOError
 		return '(closed socket)'
 	end
 

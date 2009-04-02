@@ -26,8 +26,6 @@
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
 
-#
-
 begin
 	require 'thingfish'
 	require 'thingfish/metastore/simple'

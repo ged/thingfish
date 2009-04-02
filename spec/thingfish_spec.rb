@@ -111,5 +111,4 @@ describe UUID, " (local monkeypatches)" do
 
 end
 
-
-# vim: set nosta noet ts=4 sw=4:
+# vim: set nosta noet ts=4 sw=4 ft=rspec:

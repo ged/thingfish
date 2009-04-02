@@ -63,7 +63,7 @@ class ThingFish::CommandLineClient
 			oparser.banner = "Usage: #{progname.basename} OPTIONS ACTION [ARGS]"
 
 			oparser.separator 'Actions:'
-			oparser.separator '  upload, update, download, check, info, search'
+			oparser.separator '  upload, update, download, dump, check, info, search'
 
 			oparser.separator ''
 			oparser.separator 'Options:'
@@ -175,6 +175,14 @@ class ThingFish::CommandLineClient
 		when 'search', 'find'
 			return help_search() if (args.length % 2).nonzero? or args.empty?
 			send( "#{prefix}_search", args )
+
+		when 'dump'
+			return help_dump() if args.empty?
+			until args.empty?
+				uuid = args.shift or raise "no UUID specified for dump"
+				send( "#{prefix}_dump", uuid )
+				$stdout.puts
+			end
 
 		when 'info'
 			display_server_info()
@@ -345,6 +353,27 @@ class ThingFish::CommandLineClient
 	### Output search help to stderr.
 	def help_search( *args )
 		self.print_help( 'search <property> <value> [<property2> <value2>] ...' )
+	end
+
+
+	### Fetch and display all metadata for a given +uuid+.
+	def do_dump( uuid )
+		metadata = @client.fetch_metadata( uuid )
+
+		unless metadata
+			$stdout.puts "No resources were found matching uuid #{uuid}."
+			return
+		end
+
+		metadata.sort_by {|k,v| k.to_s}.each do |key, value|
+			$stdout.puts "%20s --> %s" % [ key, value ]
+		end
+	end
+
+
+	### Output upload help to stderr.
+	def help_dump( *args )
+		self.print_help( 'dump <uuid> [uuid2] [uuid3] ... ' )
 	end
 
 

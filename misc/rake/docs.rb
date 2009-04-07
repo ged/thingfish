@@ -3,6 +3,9 @@
 # $Id$
 # 
 
+require 'rubygems'
+require 'rdoc'
+
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
@@ -12,7 +15,7 @@ BEGIN {
 	$LOAD_PATH.unshift( docslibdir.to_s ) unless $LOAD_PATH.include?( docslibdir.to_s )
 }
 
-require 'rake/rdoctask'
+require 'rdoc/task'
 
 RDOC_OPTIONS = [
 	'-w', '4',

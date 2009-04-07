@@ -258,7 +258,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		image_attributes['image_depth']        = image.depth
 		image_attributes['image_density']      = image.density
 		image_attributes['image_gamma']        = image.gamma
-		image_attributes['image_bounding_box'] = image.bounding_box
+		image_attributes['image_bounding_box'] = image.bounding_box.to_s
 
 		return image_attributes
 	end

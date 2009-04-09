@@ -40,17 +40,16 @@ describe ThingFish::MP3Filter do
 	TEST_TRACKNUM  = 4
 
 	EXTRACTED_METADATA = {
-		:mp3_frequency => 44000,
-		:mp3_bitrate   => 128,
-		:mp3_vbr       => true,
-
-		:mp3_tracknum  => TEST_TRACKNUM,
-		:mp3_title     => TEST_MP3_TITLE,
-		:mp3_artist    => TEST_ARTIST,
-		:mp3_album     => TEST_ALBUM,
-		:mp3_comments  => TEST_COMMENTS,
-		:mp3_year      => TEST_YEAR,
-		:mp3_genre     => TEST_GENRE,
+		:'mp3:frequency' => 44000,
+		:'mp3:bitrate'   => 128,
+		:'mp3:vbr'       => true,
+		:'mp3:tracknum'  => TEST_TRACKNUM,
+		:'mp3:title'     => TEST_MP3_TITLE,
+		:'mp3:artist'    => TEST_ARTIST,
+		:'mp3:album'     => TEST_ALBUM,
+		:'mp3:comments'  => TEST_COMMENTS,
+		:'mp3:year'      => TEST_YEAR,
+		:'mp3:genre'     => TEST_GENRE,
 	}
 
 	MP3_SPECDIR = Pathname.new( __FILE__ ).dirname.parent.parent
@@ -185,7 +184,7 @@ describe ThingFish::MP3Filter do
 			# The nil should be transformed into an '(unknown)', but everything else should
 			# be the same
 			normalized_values = EXTRACTED_METADATA.dup
-			normalized_values[:mp3_album] = "(unknown)"
+			normalized_values[:'mp3:album'] = "(unknown)"
 
 			@filter.should_receive( :extract_images ).and_return( {} )
 			@request.should_receive( :append_metadata_for ).with( @io, normalized_values )

@@ -58,12 +58,12 @@ describe ThingFish::ImageFilter do
 		@request.stub!( :each_body ).and_yield( @io, @request_metadata )
 
 		@extracted_metadata = {
-			'image_height'       => :rows,
-			'image_width'        => :columns,
-			'image_depth'        => :depth,
-			'image_density'      => :density,
-			'image_gamma'        => :gamma,
-			'image_bounding_box' => :bounding_box,
+			:'image:height'       => :rows,
+			:'image:width'        => :columns,
+			:'image:depth'        => :depth,
+			:'image:density'      => :density,
+			:'image:gamma'        => :gamma,
+			:'image:bounding_box' => :bounding_box,
 		}
 	end
 

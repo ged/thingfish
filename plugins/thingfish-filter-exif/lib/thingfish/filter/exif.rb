@@ -158,7 +158,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 		attributes.each do |exif_key|
 			exif_val = parser.send( exif_key )
 			exif_val = exif_val.to_i if exif_val.is_a?( EXIFR::TIFF::Orientation )
-			exif[ 'exif_' + exif_key ] = exif_val
+			exif[ ('exif:' + exif_key).to_sym ] = exif_val
 		end
 
 		return exif

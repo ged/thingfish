@@ -108,7 +108,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 
 				# Append any album images as related resources
 				self.extract_images( id3 ).each do |io, metadata|
-					metadata[:title] = "Album art for %s - %s" % mp3_metadata.values_at( :mp3_artist, :mp3_title )
+					metadata[:title] = "Album art for %s - %s" % mp3_metadata.values_at( :'mp3:artist', :'mp3:title' )
 					request.append_related_resource( body, io, metadata )
 				end
 
@@ -165,31 +165,31 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		self.log.debug "Extracting MP3 metadata"
 
 		mp3_metadata = {
-			:mp3_frequency => id3.samplerate,
-			:mp3_bitrate   => id3.bitrate,
-			:mp3_vbr       => id3.vbr,
-			:mp3_title     => id3.tag.title,
-			:mp3_artist    => id3.tag.artist,
-			:mp3_album     => id3.tag.album,
-			:mp3_year      => id3.tag.year,
-			:mp3_genre     => id3.tag.genre,
-			:mp3_tracknum  => id3.tag.tracknum,
-			:mp3_comments  => id3.tag.comments,
+			:'mp3:frequency' => id3.samplerate,
+			:'mp3:bitrate'   => id3.bitrate,
+			:'mp3:vbr'       => id3.vbr,
+			:'mp3:title'     => id3.tag.title,
+			:'mp3:artist'    => id3.tag.artist,
+			:'mp3:album'     => id3.tag.album,
+			:'mp3:year'      => id3.tag.year,
+			:'mp3:genre'     => id3.tag.genre,
+			:'mp3:tracknum'  => id3.tag.tracknum,
+			:'mp3:comments'  => id3.tag.comments,
 		}
 
 		# ID3V2 2.2.0 has three-letter tags, so map those if the artist info isn't set
 		if id3.hastag2?
-			if mp3_metadata[:mp3_artist].nil?
+			if mp3_metadata[:'mp3:artist'].nil?
 				self.log.debug "   extracting old-style ID3v2 info" % [id3.tag2.version]
 
 				mp3_metadata.merge!({
-					:mp3_title     => id3.tag2.TT2,
-					:mp3_artist    => id3.tag2.TP1,
-					:mp3_album     => id3.tag2.TAL,
-					:mp3_year      => id3.tag2.TYE,
-					:mp3_tracknum  => id3.tag2.TRK,
-					:mp3_comments  => id3.tag2.COM,
-					:mp3_genre     => id3.tag2.TCO,
+					:'mp3:title'     => id3.tag2.TT2,
+					:'mp3:artist'    => id3.tag2.TP1,
+					:'mp3:album'     => id3.tag2.TAL,
+					:'mp3:year'      => id3.tag2.TYE,
+					:'mp3:tracknum'  => id3.tag2.TRK,
+					:'mp3:comments'  => id3.tag2.COM,
+					:'mp3:genre'     => id3.tag2.TCO,
 				})
 			end
 		end

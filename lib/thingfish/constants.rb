@@ -262,7 +262,7 @@ module ThingFish::Constants
 		UUID_URL = %r{^(#{UUID_REGEXP})$}
 
 		# Pattern that matches a valid property name
-		PROPERTY_NAME_REGEXP = %r{\w[\w\-]+}
+		PROPERTY_NAME_REGEXP = %r{\w[\w:\-]+}
 
 		# Pattern that matches requests to /«a property name»; captures the property name string
 		PROPERTY_NAME_URL = %r{^(#{PROPERTY_NAME_REGEXP})$}

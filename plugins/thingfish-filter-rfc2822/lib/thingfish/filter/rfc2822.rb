@@ -215,7 +215,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 	### Transform the given MIME +header+ into metadata key/value pairs by normalizing the
 	### header name, then stringifying the value.
 	def normalize_header( header, value )
-		normalized_header = 'rfc822_' + header.downcase.gsub( /-/, '_' )
+		normalized_header = 'rfc822:' + header.downcase.gsub( /-/, '_' )
 		metadata_value = nil
 
 		self.log.debug "Normalizing: %p => %p" % [ header, value ]
@@ -228,7 +228,7 @@ class ThingFish::Rfc2822Filter < ThingFish::Filter
 			metadata_value = value.to_s
 		end
 
-		return normalized_header, metadata_value
+		return normalized_header.to_sym, metadata_value
 	end
 
 

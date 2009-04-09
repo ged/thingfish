@@ -68,11 +68,11 @@ describe ThingFish::ExifFilter do
 		}
 
 		extracted_metadata = {
-			'exif_width'	=> 320,
-			'exif_height'	=> 240,
-			'exif_bits'		=> 8,
-			'exif_comment'	=> 'Trundled by Grundle',
-			'exif_model' 	=> 'Pinhole Camera 2000',
+			:'exif:width'	=> 320,
+			:'exif:height'	=> 240,
+			:'exif:bits'	=> 8,
+			:'exif:comment'	=> 'Trundled by Grundle',
+			:'exif:model' 	=> 'Pinhole Camera 2000',
 		}
 
 		request_metadata = { :format => 'image/jpeg' }
@@ -99,10 +99,10 @@ describe ThingFish::ExifFilter do
 		}
 
 		extracted_metadata = {
-			'exif_width'	=> 320,
-			'exif_height'	=> 240,
-			'exif_size'		=> '320x240',
-			'exif_model' 	=> 'Pinhole Camera 2000',
+			:'exif:width'	=> 320,
+			:'exif:height'	=> 240,
+			:'exif:size'	=> '320x240',
+			:'exif:model'	=> 'Pinhole Camera 2000',
 		}
 
 		request_metadata = { :format => 'image/tiff' }

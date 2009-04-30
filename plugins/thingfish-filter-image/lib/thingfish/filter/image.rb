@@ -174,7 +174,12 @@ class ThingFish::ImageFilter < ThingFish::Filter
 			if self.accept?( metadata[:format] )
 
 				self.log.debug "Reading an ImageMagick image list from %p" % [ body ]
-				images = Magick::Image.from_blob( body.read )
+				images = case body
+						 when StringIO
+							 Magick::Image.from_blob( body.read )
+						 else
+							Magick::ImageList.new( body.path )
+						 end
 				self.log.debug "ImageMagick read %d images from %p" % [ images.length, body ]
 
 				image = images.first

@@ -47,7 +47,7 @@ describe ThingFish::ImageFilter do
 
 		@filter = ThingFish::Filter.create( 'image', {} )
 
-		@io = stub( "image upload IO object", :read => :imagedata )
+		@io = stub( "image upload IO object", :read => :imagedata, :path => '/tmp/spooled_image' )
 
 		@request = mock( "request object" )
 		@response = mock( "response object" )
@@ -108,7 +108,7 @@ describe ThingFish::ImageFilter do
 
 		# Image metadata
 		image = mock( "image object" )
-		Magick::Image.should_receive( :from_blob ).with( :imagedata ).and_return([ image ])
+		Magick::ImageList.should_receive( :new ).with( '/tmp/spooled_image' ).and_return([ image ])
 
 		# Set up the mock to emulate an ImageMagick object and build the expected metadata that'll
 		# be extracted by that interface
@@ -149,6 +149,61 @@ describe ThingFish::ImageFilter do
 		thumbnail.should_receive( :to_blob ).and_return( "thumbnail_data" )
 		StringIO.should_receive( :new ).with( "thumbnail_data" ).and_return( :thumbio )
 		@request.should_receive( :append_related_resource ).with( @io, :thumbio, thumb_metadata )
+
+		# Run the request filter
+		@filter.handle_request( @request, @response )
+	end
+
+
+	it "extracts image metadata and thumbnail from uploaded image data using RMagick (StringIO)" do
+		@request.should_receive( :http_method ).at_least( :once ).and_return( :POST )
+
+		io = StringIO.new('I am totally image data!!')
+		@request.stub!( :each_body ).and_yield( io, @request_metadata )
+
+		# Image metadata
+		image = mock( "image object" )
+		Magick::Image.should_receive( :from_blob ).with( 'I am totally image data!!' ).and_return([ image ])
+
+		# Set up the mock to emulate an ImageMagick object and build the expected metadata that'll
+		# be extracted by that interface
+		expected_metadata = {}
+		@extracted_metadata.each do |magick_method, metadata_key|
+			image.stub!( metadata_key ).and_return( metadata_key.to_s )
+			expected_metadata[ magick_method ] = metadata_key.to_s
+		end
+
+		@request.should_receive( :append_metadata_for ).with( io, expected_metadata )
+
+		# Thumbnail
+		thumbnail = mock( "thumbnail image object" )
+		image.should_receive( :resize_to_fit ).with( *ThingFish::ImageFilter::DEFAULT_THUMBNAIL_DIMENSIONS ).
+			and_return( thumbnail )
+
+		thumb_metadata = {}
+		@extracted_metadata.each do |magick_method, metadata_key|
+			thumb_metadata[ metadata_key ] = metadata_key.to_s
+		end
+
+		image.stub!( :inspect ).and_return( '<inspected image>' )
+		thumbnail.stub!( :mime_type ).and_return( :mimetype )
+		thumb_metadata = {
+			:format   => :mimetype,
+			:relation => 'thumbnail',
+			:title    => "Thumbnail of <inspected image>",
+			:extent   => "thumbnail_data".length,
+		}
+
+		# Set up the mock to emulate an ImageMagick object and build the expected metadata that'll
+		# be extracted by that interface
+		@extracted_metadata.each do |metadata_key, magick_method|
+			thumbnail.stub!( magick_method ).and_return( magick_method.to_s )
+			thumb_metadata[ metadata_key ] = magick_method.to_s
+		end
+
+		thumbnail.should_receive( :to_blob ).and_return( "thumbnail_data" )
+		StringIO.should_receive( :new ).with( "thumbnail_data" ).and_return( :thumbio )
+		@request.should_receive( :append_related_resource ).with( io, :thumbio, thumb_metadata )
 
 		# Run the request filter
 		@filter.handle_request( @request, @response )

@@ -95,7 +95,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 		@metadata  = PStore.new( @datafile.to_s )
 		@lock_opts = @options[:lock] || DEFAULT_LOCK_OPTIONS
-		@lock      = Lockfile.new( @datadir + 'metadata.lock' )
+		@lock      = Lockfile.new( @datadir + 'metadata.lock', @lock_opts )
 	end
 
 

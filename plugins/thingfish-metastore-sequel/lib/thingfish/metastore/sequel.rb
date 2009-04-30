@@ -85,7 +85,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		#
 		@metadata = options[:sequel_connect].nil? ?
 					Sequel.sqlite :
-					Sequel.open( options[:sequel_connect], :max_connections => 1 )
+					Sequel.connect( options[:sequel_connect], :max_connections => 1 )
 
 		# Enable query logging in debug mode
 		self.log.debug {

@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'ipaddr'
@@ -224,6 +224,7 @@ describe ThingFish::Request do
 
 		it "knows what the request content type is" do
 			@request.headers[ 'Content-Type' ] = 'text/erotica'
+			@request.headers[ :content_type ].should == 'text/erotica'
 			@request.content_type.should == 'text/erotica'
 		end
 
@@ -438,17 +439,17 @@ describe ThingFish::Request do
 			@request.body = body
 
 			generated_resource = StringIO.new( "generated content" )
-			metadata = { 'relation' => 'thumbnail' }
+			appended_metadata = { 'relation' => 'thumbnail' }
 
 			@request.each_body do |eached_body, metadata|
-				@request.append_related_resource( eached_body, generated_resource, metadata )
+				@request.append_related_resource( eached_body, generated_resource, appended_metadata )
 			end
 
 			@request.related_resources.should have_key( body )
 			@request.related_resources[ body ].should be_an_instance_of( Hash )
 			@request.related_resources[ body ].should have(1).member
 			@request.related_resources[ body ].keys.should == [ generated_resource ]
-			@request.related_resources[ body ].values.should == [ metadata ]
+			@request.related_resources[ body ].values.should == [ appended_metadata ]
 		end
 
 
@@ -463,12 +464,12 @@ describe ThingFish::Request do
 			@request.body = body
 
 			generated_resource = StringIO.new( "generated content" )
-			metadata = { 'relation' => 'part_of' }
+			appended_metadata = { 'relation' => 'part_of' }
 			sub_generated_resource = StringIO.new( "content generated from the generated content" )
 			sub_metadata = { 'relation' => 'thumbnail' }
 
 			@request.each_body do |eached_body, metadata|
-				@request.append_related_resource( eached_body, generated_resource, metadata )
+				@request.append_related_resource( eached_body, generated_resource, appended_metadata )
 				ThingFish.logger.debug "Request related resources is now: %p" % [ @request.related_resources ]
 				@request.append_related_resource( generated_resource, sub_generated_resource, sub_metadata )
 			end
@@ -477,7 +478,7 @@ describe ThingFish::Request do
 			@request.related_resources[ body ].should be_an_instance_of( Hash )
 			@request.related_resources[ body ].should have(1).member
 			@request.related_resources[ body ].keys.should == [ generated_resource ]
-			@request.related_resources[ body ].values.should == [ metadata ]
+			@request.related_resources[ body ].values.should == [ appended_metadata ]
 			@request.related_resources.should have_key( generated_resource )
 			@request.related_resources[ generated_resource ].should be_an_instance_of( Hash )
 			@request.related_resources[ generated_resource ].should have(1).member

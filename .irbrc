@@ -2,13 +2,13 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.expand_path
+	basedir = Pathname.new( __FILE__ ).dirname
 	libdir = basedir + "lib"
 
 	puts ">>> Adding #{libdir} to load path..."
 	$LOAD_PATH.unshift( libdir.to_s )
 
-	Pathname.glob( "plugins/*/lib" ).each do |pluginlib|
+	Dir.glob( "plugins/*/lib" ).each do |pluginlib|
 		puts ">>> Adding #{pluginlib} to load path..."
 		$LOAD_PATH.unshift( pluginlib.to_s )
 	end

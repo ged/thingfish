@@ -22,10 +22,6 @@ require 'rdf/redland/constants'
 require 'uuidtools'
 require 'thingfish'
 
-logger = lambda {|*args| p args }
-
-Redland.log_function( logger )
-
 module ThingFish
 	module Schemas
 		URL = 'http://opensource.laika.com/rdf/2007/02/thingfish-schema#'
@@ -64,8 +60,6 @@ module ThingFish
 	class Metastore
 		def initialize
 			# @store = Redland::HashStore.new( 'memory', 'thingfish' )
-			$stderr.puts "Okay, attach trace (pid #{Process.pid})"
-			$stdin.gets
 			@store = Redland::TripleStore.new( 'postgresql', 'test',
 			 	"host='localhost',database='test',user='ged'" )
 			@model = Redland::Model.new( @store )

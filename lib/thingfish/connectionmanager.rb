@@ -114,10 +114,7 @@ class ThingFish::ConnectionManager
 
 	### Return human-readable information about the connection's socket
 	def peer_info
-		return "%s:%d" % [
-			self.socket.peeraddr[3],
-			self.socket.peeraddr[1],
-		]
+		return "%s:%d" % self.socket.peeraddr.values_at( 3, 1 )
 	rescue Errno::EINVAL, Errno::ENOTCONN, IOError
 		return '(closed socket)'
 	end
@@ -316,6 +313,8 @@ class ThingFish::ConnectionManager
 			raise err
 		end
 
+		self.log.error "Uncaught %s while dispatching: %s" % [ err.class.name, err.message ]
+		self.log.debug "  " + err.backtrace.join("\n  ")
 		response ||= ThingFish::Response.new( request.http_version, @config )
 		return self.prepare_error_response( response, request, HTTP::SERVER_ERROR, err )
 	end

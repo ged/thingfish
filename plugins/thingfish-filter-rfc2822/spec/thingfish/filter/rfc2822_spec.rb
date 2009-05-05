@@ -15,7 +15,7 @@ BEGIN {
 begin
 	require 'rbconfig'
 
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'spec/lib/filter_behavior'

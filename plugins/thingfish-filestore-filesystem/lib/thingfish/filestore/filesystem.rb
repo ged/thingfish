@@ -1,4 +1,23 @@
 #!/usr/bin/ruby
+
+require 'tmpdir'
+require 'pathname'
+require 'lockfile'
+
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/filestore'
+require 'thingfish/mixins'
+
+
+class Lockfile
+	include ThingFish::Loggable
+	
+	def trace( s = nil )
+		self.log.debug( s ? s : yield )
+	end
+end
+
 #
 # A disk filesystem-based ThingFish FileStore plugin.
 #
@@ -75,17 +94,6 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-
-require 'tmpdir'
-require 'pathname'
-require 'lockfile'
-
-require 'thingfish'
-require 'thingfish/exceptions'
-require 'thingfish/filestore'
-
-
-### A filesystem based filestore plugin for ThingFish
 class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns

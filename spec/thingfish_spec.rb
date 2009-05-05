@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'logger'
 	require 'thingfish'
 	require 'spec/lib/constants'

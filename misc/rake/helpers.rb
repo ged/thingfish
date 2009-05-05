@@ -4,6 +4,7 @@
 
 require 'pathname'
 require 'readline'
+require 'uri'
 require 'open3'
 
 # Set some ANSI escape code constants (Shamelessly stolen from Perl's
@@ -37,7 +38,7 @@ CLEAR_CURRENT_LINE = "\e[2K"
 ### Output a logging message
 def log( *msg )
 	output = colorize( msg.flatten.join(' '), 'cyan' )
-	$deferr.puts( output )
+	$stderr.puts( output )
 end
 
 
@@ -45,7 +46,7 @@ end
 def trace( *msg )
 	return unless $trace
 	output = colorize( msg.flatten.join(' '), 'yellow' )
-	$deferr.puts( output )
+	$stderr.puts( output )
 end
 
 
@@ -54,9 +55,14 @@ end
 def run( *cmd )
 	cmd.flatten!
 
-	log( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+	if cmd.length > 1
+		trace( cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
+	else
+		trace( cmd )
+	end
+	
 	if $dryrun
-		$deferr.puts "(dry run mode)"
+		$stderr.puts "(dry run mode)"
 	else
 		system( *cmd )
 		unless $?.success?
@@ -73,7 +79,7 @@ def pipeto( *cmd )
 	cmd.flatten!
 	log( "Opening a pipe to: ", cmd.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
 	if $dryrun
-		$deferr.puts "(dry run mode)"
+		$stderr.puts "(dry run mode)"
 	else
 		open( '|-', 'w+' ) do |io|
 		
@@ -93,8 +99,8 @@ end
 
 ### Download the file at +sourceuri+ via HTTP and write it to +targetfile+.
 def download( sourceuri, targetfile )
-	oldsync = $defout.sync
-	$defout.sync = true
+	oldsync = $stdout.sync
+	$stdout.sync = true
 	require 'net/http'
 	require 'uri'
 
@@ -137,7 +143,7 @@ def download( sourceuri, targetfile )
 	
 	return targetpath
 ensure
-	$defout.sync = oldsync
+	$stdout.sync = oldsync
 end
 
 
@@ -153,12 +159,12 @@ end
 def ansi_code( *attributes )
 	attributes.flatten!
 	attributes.collect! {|at| at.to_s }
-	# $deferr.puts "Returning ansicode for TERM = %p: %p" %
+	# $stderr.puts "Returning ansicode for TERM = %p: %p" %
 	# 	[ ENV['TERM'], attributes ]
 	return '' unless /(?:vt10[03]|xterm(?:-color)?|linux|screen)/i =~ ENV['TERM']
 	attributes = ANSI_ATTRIBUTES.values_at( *attributes ).compact.join(';')
 
-	# $deferr.puts "  attr is: %p" % [attributes]
+	# $stderr.puts "  attr is: %p" % [attributes]
 	if attributes.empty? 
 		return ''
 	else
@@ -188,7 +194,7 @@ end
 ### Output the specified <tt>msg</tt> as an ANSI-colored error message
 ### (white on red).
 def error_message( msg, details='' )
-	$deferr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + details
+	$stderr.puts colorize( 'bold', 'white', 'on_red' ) { msg } + details
 end
 alias :error :error_message
 

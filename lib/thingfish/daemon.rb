@@ -60,6 +60,7 @@ require 'thingfish/handler'
 require 'thingfish/request'
 require 'thingfish/response'
 
+
 ### ThingFish daemon class
 class ThingFish::Daemon
 	include ThingFish::Constants,
@@ -77,6 +78,72 @@ class ThingFish::Daemon
 
 	### An exception class for signalling daemon threads that they need to shut down
 	class Shutdown < Exception; end
+
+	#################################################################
+	###	C L A S S   M E T H O D S
+	#################################################################
+
+	### Parse the command line arguments and return an options struct
+	def self::parse_args( args )
+		require 'optparse'
+
+		progname = Pathname.new( $0 )
+		opts = self.get_default_options
+
+		oparser = OptionParser.new do |oparser|
+			oparser.accept( Pathname ) {|path| Pathname(path) }
+
+			oparser.banner = "Usage: #{progname.basename} OPTIONS"
+
+			oparser.separator ''
+			oparser.separator 'Daemon Options:'
+
+			oparser.on( '--config-file=STRING', '-f STRING', Pathname,
+				"Specify a config file to use." ) do |cfg|
+				opts.configfile = cfg
+			end
+
+			oparser.separator ''
+			oparser.separator 'Other Options:'
+
+			oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
+				$stderr.puts oparser
+				exit!
+	        end
+
+			# Another typical switch to print the version.
+			oparser.on_tail( "--version", "Show ThingFish version" ) do
+				$stderr.puts ThingFish.version_string( true )
+				exit!
+			end
+		end
+
+		oparser.parse!
+
+		return opts
+	end
+
+
+	### Get the options struct filled with defaults
+	def self::get_default_options
+		require 'ostruct'
+		options = OpenStruct.new
+		return options
+	end
+
+
+	### Create an instance, configure it with command line +args+, and start it.
+	def self::run( args )
+		options = self.parse_args( args )
+		config = if options.configfile
+		         	ThingFish::Config.load( options.configfile )
+		         else
+		         	ThingFish::Config.new
+		         end
+
+		ThingFish::Daemon.new( config ).start
+	end
+
 
 
 	#################################################################
@@ -114,7 +181,7 @@ class ThingFish::Daemon
 			self.log.debug "  starting %p" % [ handler ]
 			handler.on_startup( self )
 		end
-		
+
 		@connection_threads = ThreadGroup.new
 		@supervisor = nil
 
@@ -232,7 +299,6 @@ class ThingFish::Daemon
 		# TODO: work crew thread collection
 		@supervisor = Thread.new do
 			Thread.current.abort_on_exception = true
-
 			while @running || ! @connection_threads.list.empty?
 				@connection_threads.list.find_all {|t| ! t.alive? }.each do |t|
 					self.log.debug "Finishing up connection thread %p" % [ t ]

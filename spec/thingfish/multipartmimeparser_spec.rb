@@ -13,7 +13,7 @@ BEGIN {
 begin
 	require 'pathname'
 	require 'logger'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/helpers'
 	require 'stringio'
 	require 'thingfish'
@@ -42,7 +42,7 @@ describe ThingFish::MultipartMimeParser do
 	### Create a stub request prepopulated with HTTP headers and form data
 	def load_form( filename )
 		datafile = MIMEPARSER_DATADIR + filename
-		return datafile.open
+		return datafile.open( 'rb' )
 	end
 
 
@@ -185,6 +185,7 @@ describe ThingFish::MultipartMimeParser do
 		files.should have(2).keys
 		files.keys.each do |tmpfile|
 			tmpfile.open
+			tmpfile.set_encoding( 'ascii-8bit' ) if tmpfile.respond_to?( :set_encoding )
 			tmpfile.read.should =~ JPEG_MAGIC
 		end
 

@@ -170,7 +170,8 @@ class ExamplesFilter < Manual::Page::Filter
 	### Parse an options hash for filtering from the given +args+, which can either 
 	### be a plain String, in which case it is assumed to be the name of the language the example 
 	### is in, or a Hash of configuration options.
-	def parse_options( args )
+	def parse_options( args=nil )
+		return DEFAULTS unless args
 		return DEFAULTS unless args
 		args = "{ #{args} }" unless args.strip[0] == ?{
 		args = YAML.load( args )

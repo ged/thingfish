@@ -11,7 +11,7 @@ BEGIN {
 
 begin
 	require 'stringio'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/helpers'
 	require 'spec/lib/constants'
 

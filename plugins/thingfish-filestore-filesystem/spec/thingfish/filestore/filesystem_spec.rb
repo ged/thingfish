@@ -16,7 +16,7 @@ begin
 	require 'pathname'
 	require 'tmpdir'
 	require 'thingfish/filestore/filesystem'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'spec/lib/filestore_behavior'
@@ -57,7 +57,10 @@ describe ThingFish::FilesystemFileStore do
 
 	describe " with default settings" do
 		before(:each) do
-		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir )
+			lockopts = ThingFish::FilesystemFileStore::DEFAULT_LOCKING_OPTIONS
+			lockopts[ :debug ] = true
+			
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :locking => lockopts )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
 
@@ -148,7 +151,7 @@ describe ThingFish::FilesystemFileStore do
 				uuid = UUID.timestamp_create
 				uuids << uuid
 				@fs.store( uuid, TEST_RESOURCE_CONTENT )
-				@fs.total_size.should == uuids.nitems * TEST_RESOURCE_CONTENT.length
+				@fs.total_size.should == uuids.length * TEST_RESOURCE_CONTENT.length
 			end
 		end
 

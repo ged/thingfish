@@ -10,8 +10,9 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
+	require 'spec/lib/helpers'
 	require 'thingfish'
 	require 'thingfish/metastore'
 rescue LoadError
@@ -22,7 +23,7 @@ rescue LoadError
 	raise
 end
 
-include ThingFish::TestConstants;
+include ThingFish::TestConstants
 
 class TestMetaStore < ThingFish::MetaStore
 end
@@ -33,6 +34,17 @@ end
 #####################################################################
 
 describe ThingFish::MetaStore do
+	include ThingFish::SpecHelpers
+
+	before( :all ) do
+		setup_logging( :debug )
+	end
+	
+	after( :all ) do
+		reset_logging()
+	end
+
+	
 
 	describe " (derivative class that doesn't implement virtual methods)" do
 

@@ -1,101 +1,260 @@
-#!rake -*- ruby -*-
+#!rake
 #
 # ThingFish rakefile
 #
-# Based on Ben Bleything's Rakefile for Linen (URL?)
+# Based on various other Rakefiles, especially one by Ben Bleything
 #
-# Copyright (c) 2007 LAIKA, Inc.
+# Copyright (c) 2007-2009 The FaerieMUD Consortium
 #
-# Mistakes:
-#  * Michael Granger <mgranger@laika.com>
+# Authors:
+#  * Michael Granger and Mahlon Smith <mgranger@laika.com, mahlon@laika.com>
 #
 
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname
-	libdir = basedir + 'lib'
-	docsdir = basedir + 'docs'
+
+	libdir = basedir + "lib"
+	extdir = basedir + "ext"
 
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
-	$LOAD_PATH.unshift( docsdir.to_s ) unless $LOAD_PATH.include?( docsdir.to_s )
+	$LOAD_PATH.unshift( extdir.to_s ) unless $LOAD_PATH.include?( extdir.to_s )
 }
 
-
-require 'rubygems'
-
+require 'rbconfig'
 require 'rake'
-require 'tmpdir'
-require 'pathname'
+require 'rake/rdoctask'
+require 'rake/testtask'
+require 'rake/packagetask'
+require 'rake/clean'
+require 'rake/191_compat.rb'
 
 $dryrun = false
 
-# Pathname constants
-BASEDIR         = Pathname.new( __FILE__ ).expand_path.dirname.relative_path_from( Pathname.getwd )
-BINDIR          = BASEDIR + 'bin'
-LIBDIR          = BASEDIR + 'lib'
-EXTDIR          = BASEDIR + 'ext'
-DOCSDIR         = BASEDIR + 'docs'
-VARDIR          = BASEDIR + 'var'
-MISCDIR         = BASEDIR + 'misc'
-WWWDIR          = VARDIR  + 'www'
-STATICWWWDIR    = WWWDIR  + 'static'
-MANUALDIR       = DOCSDIR + 'manual'
-MANUALOUTPUTDIR = STATICWWWDIR    + 'manual'
-RDOCDIR         = MANUALOUTPUTDIR + 'api'
-PKGDIR          = BASEDIR + 'pkg'
-ARTIFACTS_DIR   = Pathname.new( ENV['CC_BUILD_ARTIFACTS'] || '' )
-RAKE_TASKDIR    = MISCDIR + 'rake'
+### Config constants
+BASEDIR       = Pathname.new( __FILE__ ).dirname.relative_path_from( Pathname.getwd )
+BINDIR        = BASEDIR + 'bin'
+LIBDIR        = BASEDIR + 'lib'
+EXTDIR        = BASEDIR + 'ext'
+DOCSDIR       = BASEDIR + 'docs'
+PKGDIR        = BASEDIR + 'pkg'
+DATADIR       = BASEDIR + 'data'
 
-TEXT_FILES    = %w( Rakefile README LICENSE QUICKSTART ).
-	collect {|filename| BASEDIR + filename }
+PROJECT_NAME  = 'ThingFish'
+PKG_NAME      = PROJECT_NAME.downcase
+PKG_SUMMARY   = 'a network-accessable, searchable, extensible datastore.'
+
+# Cruisecontrol stuff
+CC_BUILD_LABEL     = ENV['CC_BUILD_LABEL']
+CC_BUILD_ARTIFACTS = ENV['CC_BUILD_ARTIFACTS'] || 'artifacts'
+
+VERSION_FILE  = LIBDIR + 'thingfish.rb'
+if VERSION_FILE.exist? && buildrev = ENV['CC_BUILD_LABEL']
+	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ] + '.' + buildrev
+elsif VERSION_FILE.exist?
+	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ]
+else
+	PKG_VERSION = '0.0.0'
+end
+
+PKG_FILE_NAME = "#{PKG_NAME.downcase}-#{PKG_VERSION}"
+GEM_FILE_NAME = "#{PKG_FILE_NAME}.gem"
+
+EXTCONF       = EXTDIR + 'extconf.rb'
+
+ARTIFACTS_DIR = Pathname.new( CC_BUILD_ARTIFACTS )
+
+TEXT_FILES    = %w( Rakefile ChangeLog README LICENSE ).collect {|filename| BASEDIR + filename }
+BIN_FILES     = Pathname.glob( "#{BINDIR}/*" ).delete_if {|item| item.to_s =~ /\.svn/ }
+LIB_FILES     = Pathname.glob( "#{LIBDIR}/**/*.rb" ).delete_if {|item| item.to_s =~ /\.svn/ }
+EXT_FILES     = Pathname.glob( "#{EXTDIR}/**/*.{c,h,rb}" ).delete_if {|item| item.to_s =~ /\.svn/ }
+DATA_FILES    = Pathname.glob( "#{DATADIR}/**/*" ).delete_if {|item| item.to_s =~ /\.svn/ }
 
 SPECDIR       = BASEDIR + 'spec'
-SPEC_FILES    = Pathname.glob( SPECDIR + '**/*_spec.rb' ).
-	delete_if {|item| item =~ /\.svn/ }
-# Ideally, this should be automatically generated.
-SPEC_EXCLUDES = 'spec,monkeypatches,/Library/Ruby,/var/lib,/usr/local/lib'
+SPECLIBDIR    = SPECDIR + 'lib'
+SPEC_FILES    = Rake::FileList.new( "#{SPECDIR}/**/*_spec.rb", "#{SPECLIBDIR}/**/*.rb" )
 
-BIN_FILES     = Pathname.glob( BINDIR + '*').
-	delete_if {|item| item =~ /\.svn/ }
-LIB_FILES     = Pathname.glob( LIBDIR + '**/*.rb').
-	delete_if {|item| item =~ /\.svn/ }
+TESTDIR       = BASEDIR + 'tests'
+TEST_FILES    = Pathname.glob( "#{TESTDIR}/**/*.tests.rb" ).delete_if {|item| item.to_s =~ /\.svn/ }
 
-RELEASE_FILES = BIN_FILES + TEXT_FILES + LIB_FILES + SPEC_FILES
+RAKE_TASKDIR  = BASEDIR + 'rake'
+RAKE_TASKLIBS = Pathname.glob( "#{RAKE_TASKDIR}/*.rb" )
 
-# Plugin constants
-PLUGINDIR        = BASEDIR + 'plugins'
-PLUGINS          = Pathname.glob( PLUGINDIR + '*' ).select {|path| path.directory? }
-PLUGIN_LIBS      = PLUGINS.collect {|dir| Pathname.glob(dir + 'lib/**/*.rb') }.flatten
-PLUGIN_RAKEFILES = PLUGINS.collect {|dir| dir + 'Rakefile' }
-PLUGIN_SPECFILES = PLUGINS.collect {|dir| Pathname.glob(dir + 'spec/**/*_spec.rb') }.flatten
+LOCAL_RAKEFILE = BASEDIR + 'Rakefile.local'
 
+EXTRA_PKGFILES = []
+EXTRA_PKGFILES.concat Pathname.glob( "#{BASEDIR}/etc/thingfish.conf.*" ).delete_if {|item| item.to_s =~ /\.svn/ } 
+EXTRA_PKGFILES.concat Pathname.glob( "#{BASEDIR}/QUICKSTART" ).delete_if {|item| item.to_s =~ /\.svn/ } 
+EXTRA_PKGFILES.concat Pathname.glob( "#{BASEDIR}/run" ).delete_if {|item| item.to_s =~ /\.svn/ } 
+EXTRA_PKGFILES.concat Pathname.glob( "#{BASEDIR}/var/www/**/*.rhtml" ).delete_if {|item| item.to_s =~ /\.svn/ } 
+EXTRA_PKGFILES.concat Pathname.glob( "#{BASEDIR}/var/www/static/*.{png,jpg,gif,css,js}" ).delete_if {|item| item.to_s =~ /\.svn/ } 
+
+RELEASE_FILES = TEXT_FILES + 
+	SPEC_FILES + 
+	TEST_FILES + 
+	BIN_FILES +
+	LIB_FILES + 
+	EXT_FILES + 
+	DATA_FILES + 
+	RAKE_TASKLIBS +
+	EXTRA_PKGFILES
+
+RELEASE_FILES << LOCAL_RAKEFILE if LOCAL_RAKEFILE.exist?
+
+COVERAGE_MINIMUM = ENV['COVERAGE_MINIMUM'] ? Float( ENV['COVERAGE_MINIMUM'] ) : 85.0
+RCOV_EXCLUDES = 'spec,tests,/Library/Ruby,/var/lib,/usr/local/lib'
+RCOV_OPTS = [
+	'--exclude', RCOV_EXCLUDES,
+	'--xrefs',
+	'--save',
+	'--callsites',
+	#'--aggregate', 'coverage.data' # <- doesn't work as of 0.8.1.2.0
+  ]
+
+
+# Subversion constants -- directory names for releases and tags
+SVN_TRUNK_DIR    = 'trunk'
+SVN_RELEASES_DIR = 'releases'
+SVN_BRANCHES_DIR = 'branches'
+SVN_TAGS_DIR     = 'tags'
+
+SVN_DOTDIR       = BASEDIR + '.svn'
+SVN_ENTRIES      = SVN_DOTDIR + 'entries'
+
+
+### Load some task libraries that need to be loaded early
 require RAKE_TASKDIR + 'helpers.rb'
-
-### Package constants
-PKG_NAME      = 'thingfish'
-PKG_VERSION   = find_pattern_in_file( /VERSION = '(\d+\.\d+\.\d+)'/, LIBDIR + 'thingfish.rb' ).first
-PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
-
-RELEASE_NAME  = "REL #{PKG_VERSION}"
-
-if Rake.application.options.trace
-	$trace = true
-	log "$trace is enabled"
-end
-
-if Rake.application.options.dryrun
-	$dryrun = true
-	log "$dryrun is enabled"
-	Rake.application.options.dryrun = false
-end
-
-### Load task libraries
 require RAKE_TASKDIR + 'svn.rb'
 require RAKE_TASKDIR + 'verifytask.rb'
-Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
-	next if tasklib =~ %r{/(helpers|svn|verifytask)\.rb$}
+
+# Define some constants that depend on the 'svn' tasklib
+PKG_BUILD = get_svn_rev( BASEDIR ) || 0
+SNAPSHOT_PKG_NAME = "#{PKG_FILE_NAME}.#{PKG_BUILD}"
+SNAPSHOT_GEM_NAME = "#{SNAPSHOT_PKG_NAME}.gem"
+
+# Documentation constants
+RDOCDIR = DOCSDIR + 'api'
+RDOC_OPTIONS = [
+	'-w', '4',
+	'-SHN',
+	'-i', '.',
+	'-m', 'README',
+	'-t', PKG_NAME,
+	'-W', 'http://opensource.laika.com/wiki/ThingFish/browser/trunk/'
+  ]
+
+# Release constants
+SMTP_HOST = 'mail.faeriemud.org'
+SMTP_PORT = 465 # SMTP + SSL
+
+# Project constants
+PROJECT_HOST = 'opensource.laika.com'
+PROJECT_PUBDIR = '/usr/local/laika/www/public/thingfish/'
+PROJECT_DOCDIR = "#{PROJECT_PUBDIR}/#{PKG_NAME}"
+PROJECT_SCPPUBURL = "#{PROJECT_HOST}:#{PROJECT_PUBDIR}"
+PROJECT_SCPDOCURL = "#{PROJECT_HOST}:#{PROJECT_DOCDIR}"
+
+# Rubyforge stuff
+RUBYFORGE_GROUP = 'laika'
+RUBYFORGE_PROJECT = 'thingfish'
+
+# Gem dependencies: gemname => version
+DEPENDENCIES = {
+	'pluginfactory' => '>=1.0.4',
+	'uuidtools' => '>= 1.0.7',
+}
+
+# Developer Gem dependencies: gemname => version
+DEVELOPMENT_DEPENDENCIES = {
+	'amatch'      => '>= 0.2.3',
+	'rake'        => '>= 0.8.1',
+	'rcodetools'  => '>= 0.7.0.0',
+	'rcov'        => '>= 0',
+	'RedCloth'    => '>= 4.0.3',
+	'rspec'       => '>= 0',
+	'rubyforge'   => '>= 0',
+	'termios'     => '>= 0',
+	'text-format' => '>= 1.0.0',
+	'tmail'       => '>= 1.2.3.1',
+	'ultraviolet' => '>= 0.10.2',
+	'libxml-ruby' => '>= 0.8.3',
+	'sequel' => '>= 2.7.1',
+	'sqlite3-ruby' => '>= 1.2.4',
+	'ruby-mp3info' => '>=0',
+	'rmagick' => '>=0',
+	'exifr' => '>=0',
+	'lockfile' => '>= 1.4.3',
+	'json' => '>=0',
+	'tidy' => '>=0',
+}
+
+# Non-gem requirements: packagename => version
+REQUIREMENTS = {
+	'cl_xmlserial' => '>= 1.1.0',
+	'redland-bindings' => '>= 1.0.8.1',
+}
+
+# RubyGem specification
+GEMSPEC   = Gem::Specification.new do |gem|
+	gem.name              = PKG_NAME.downcase
+	gem.version           = PKG_VERSION
+
+	gem.summary           = PKG_SUMMARY
+	gem.description       = [
+		"ThingFish is a network-accessable, searchable, extensible datastore. It can be used to store chunks of data on the network in an application-independent way, associate the chunks with other chunks through metadata, and then search for the chunk you need later and fetch it again, all through a REST API over HTTP. ",
+  	  ].join( "\n" )
+
+	gem.authors           = "Michael Granger and Mahlon Smith"
+	gem.email             = "mgranger@laika.com, mahlon@laika.com"
+	gem.homepage          = 'http://opensource.laika.com/wiki/ThingFish'
+	gem.rubyforge_project = RUBYFORGE_PROJECT
+
+	gem.has_rdoc          = true
+	gem.rdoc_options      = RDOC_OPTIONS
+	gem.extra_rdoc_files  = %w[ChangeLog README LICENSE]
+
+	gem.bindir            = BINDIR.relative_path_from(BASEDIR).to_s
+	gem.executables       = BIN_FILES.select {|pn| pn.executable? }.
+		collect {|pn| pn.relative_path_from(BINDIR).to_s }
+
+	if EXTCONF.exist?
+		gem.extensions << EXTCONF.relative_path_from( BASEDIR ).to_s
+	end
+
+	gem.files             = RELEASE_FILES
+	gem.test_files        = SPEC_FILES
+
+	DEPENDENCIES.each do |name, version|
+		version = '>= 0' if version.length.zero?
+		gem.add_runtime_dependency( name, version )
+	end
+
+	# Developmental dependencies don't work as of RubyGems 1.2.0
+	unless Gem::Version.new( Gem::RubyGemsVersion ) <= Gem::Version.new( "1.2.0" )
+		DEVELOPMENT_DEPENDENCIES.each do |name, version|
+			version = '>= 0' if version.length.zero?
+			gem.add_development_dependency( name, version )
+		end
+	end
+
+	REQUIREMENTS.each do |name, version|
+		gem.requirements << [ name, version ].compact.join(' ')
+	end
+end
+
+# Manual-generation config
+MANUALDIR = DOCSDIR + 'manual'
+
+$trace = Rake.application.options.trace ? true : false
+$dryrun = Rake.application.options.dryrun ? true : false
+
+
+# Load any remaining task libraries
+RAKE_TASKLIBS.each do |tasklib|
+	next if tasklib.to_s =~ %r{/(helpers|svn|verifytask)\.rb$}
 	begin
-		require tasklib
+		trace "  loading tasklib %s" % [ tasklib ]
+		require tasklib.expand_path
 	rescue ScriptError => err
 		fail "Task library '%s' failed to load: %s: %s" %
 			[ tasklib, err.class.name, err.message ]
@@ -107,47 +266,62 @@ Pathname.glob( RAKE_TASKDIR + '*.rb' ).each do |tasklib|
 	end
 end
 
+# Load any project-specific rules defined in 'Rakefile.local' if it exists
+import LOCAL_RAKEFILE if LOCAL_RAKEFILE.exist?
+
+
+#####################################################################
+###	T A S K S 	
+#####################################################################
 
 ### Default task
-task :default  => [:clean, :build, :spec, :verify, :package]
+task :default  => [:clean, :local, :spec, :rdoc, :package]
+
+### Task the local Rakefile can append to -- no-op by default
+task :local
 
 
 ### Task: clean
-desc "Clean pkg, coverage, and rdoc; remove .bak files"
-task :clean => [ :clobber_rdoc, :clobber_package, :clobber_coverage, :clobber_manual ] do
-	files = FileList['**/*.bak']
-	files.clear_exclude
-	File.rm( files ) unless files.empty?
-	FileUtils.rm_rf( 'artifacts' )
+CLEAN.include 'coverage'
+CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
+
+# Target to hinge on ChangeLog updates
+file SVN_ENTRIES
+
+### Task: changelog
+file 'ChangeLog' => SVN_ENTRIES.to_s do |task|
+	log "Updating #{task.name}"
+
+	changelog = make_svn_changelog()
+	File.open( task.name, 'w' ) do |fh|
+		fh.print( changelog )
+	end
 end
 
 
-### Task: docs -- Convenience task for rebuilding dynamic docs, including coverage, api 
-### docs, and manual
-multitask :docs => [ :manual, :coverage, :rdoc ] do
-	log "All documentation built."
-end
-
-
-### Task: generate ctags
-### This assumes exuberant ctags, since ctags 'native' doesn't support ruby anyway.
-desc "Generate a ctags 'tags' file from ThingFish source"
-task :ctags do
-	run %w{ ctags -R lib plugins misc }
-end
-
-
-### Cruisecontrol task
+### Task: cruise (Cruisecontrol task)
 desc "Cruisecontrol build"
-task :cruise => [:clean, 'spec:text', :package] do |task|
+task :cruise => [:clean, 'spec:quiet', :package] do |task|
 	raise "Artifacts dir not set." if ARTIFACTS_DIR.to_s.empty?
-	artifact_dir = ARTIFACTS_DIR.cleanpath
+	artifact_dir = ARTIFACTS_DIR.cleanpath + (CC_BUILD_LABEL || Time.now.strftime('%Y%m%d-%T'))
 	artifact_dir.mkpath
-	
-	$stderr.puts "Copying coverage stats..."
-	FileUtils.cp_r( 'coverage', artifact_dir ) if File.directory?( 'coverage' )
-	
+
+	coverage = BASEDIR + 'coverage'
+	if coverage.exist? && coverage.directory?
+		$stderr.puts "Copying coverage stats..."
+		FileUtils.cp_r( 'coverage', artifact_dir )
+	end
+
 	$stderr.puts "Copying packages..."
 	FileUtils.cp_r( FileList['pkg/*'].to_a, artifact_dir )
+end
+
+
+desc "Update the build system to the latest version"
+task :update_build do
+	log "Updating the build system"
+	sh 'svn', 'up', RAKE_TASKDIR
+	log "Updating the Rakefile"
+	sh 'rake', '-f', RAKE_TASKDIR + 'Metarakefile'
 end
 

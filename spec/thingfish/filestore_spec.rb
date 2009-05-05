@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'thingfish'
 	require 'thingfish/filestore'
 rescue LoadError

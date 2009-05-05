@@ -15,7 +15,7 @@ BEGIN {
 begin
 	require 'pathname'
 	require 'tmpdir'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/metastore_behavior'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'

@@ -14,7 +14,7 @@ begin
 	require 'logger'
 	require 'fileutils'
 
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/helpers'
 
 	require 'thingfish'
@@ -43,6 +43,37 @@ describe ThingFish::Config do
 
 	before( :all ) do
 		setup_logging( :fatal )
+
+		@test_config = %{
+		---
+		port: 3474
+		ip: 127.0.0.1
+		spooldir: /vagrant/swahili
+		bufsize: 2
+		
+		logging:
+		    level: warn
+		    logfile: stderr
+		
+		plugins:
+		    filestore:
+		        name: /filestore/posix_fs
+		        root: /var/db/thingfish
+		        hashdepth: 4
+		    metadata:
+		        name: berkeleydb
+		        root: /var/db/thingfish
+		        extractors:
+		            - exif
+		            - preview
+		    filters:
+		        - json
+		        - xml
+		        - something:
+		              key: value
+		
+		mergekey: Yep.
+		}.gsub(/^\t\t/, '')
 	end
 
 	before(:each) do
@@ -53,6 +84,9 @@ describe ThingFish::Config do
 		reset_logging()
 	end
 
+	it "has reasonable defaults" do
+		@config.datadir.should == DEFAULT_DATADIR
+	end
 
 	it "dumps itself as YAML" do
 		@config.dump.should =~ /^ip:/
@@ -255,40 +289,9 @@ describe ThingFish::Config do
 
 	# Created with source
 	describe " created with source" do
-		TEST_CONFIG = %{
-		---
-		port: 3474
-		ip: 127.0.0.1
-		spooldir: /vagrant/swahili
-		bufsize: 2
-
-		logging:
-		    level: warn
-		    logfile: stderr
-
-		plugins:
-		    filestore:
-		        name: /filestore/posix_fs
-		        root: /var/db/thingfish
-		        hashdepth: 4
-		    metadata:
-		        name: berkeleydb
-		        root: /var/db/thingfish
-		        extractors:
-		            - exif
-		            - preview
-		    filters:
-		        - json
-		        - xml
-		        - something:
-		              key: value
-
-		mergekey: Yep.
-		}.gsub(/^\t\t/, '')
-
 
 		before(:each) do
-			@config = ThingFish::Config.new( TEST_CONFIG )
+			@config = ThingFish::Config.new( @test_config )
 		end
 
 		### Specifications
@@ -331,7 +334,7 @@ describe ThingFish::Config do
 	# saving if changed since loaded
 	describe " whose internal values have been changed since loaded" do
 		before(:each) do
-			@config = ThingFish::Config.new( TEST_CONFIG )
+			@config = ThingFish::Config.new( @test_config )
 			@config.port = 11451
 		end
 
@@ -352,7 +355,7 @@ describe ThingFish::Config do
 	describe " loaded from a file" do
 		before(:all) do
 			@tmpfile = Tempfile.new( 'test.conf', '.' )
-			@tmpfile.print( TEST_CONFIG )
+			@tmpfile.print( @test_config )
 			@tmpfile.close
 		end
 
@@ -385,7 +388,7 @@ describe ThingFish::Config do
 	describe " whose file changes after loading" do
 		before(:all) do
 			@tmpfile = Tempfile.new( 'test.conf', '.' )
-			@tmpfile.print( TEST_CONFIG )
+			@tmpfile.print( @test_config )
 			@tmpfile.close
 		end
 
@@ -421,7 +424,7 @@ describe ThingFish::Config do
 	describe " created by merging two other configs" do
 		before(:each) do
 			@config1 = ThingFish::Config.new
-			@config2 = ThingFish::Config.new( TEST_CONFIG )
+			@config2 = ThingFish::Config.new( @test_config )
 			@merged = @config1.merge( @config2 )
 		end
 

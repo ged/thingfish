@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'timeout'
@@ -336,7 +336,7 @@ describe ThingFish::ConnectionManager do
 		it "transforms request errors into error responses" do
 			err_response = mock( "error response object" )
 			exception = ThingFish::RequestEntityTooLargeError.new( "too big!" )
-			erroring_dispatcher = lambda { raise exception }
+			erroring_dispatcher = lambda {|_| raise exception }
 			@conn.instance_variable_set( :@dispatch_callback, erroring_dispatcher )
 
 			@conn.should_receive( :prepare_error_response ).
@@ -348,9 +348,9 @@ describe ThingFish::ConnectionManager do
 				and_return( @response )
 
 			res = nil
-			lambda {
+			# lambda {
 				res = @conn.dispatch_request( @request )
-			}.should_not raise_error()
+			# }.should_not raise_error()
 
 			res.should == err_response
 		end
@@ -358,7 +358,7 @@ describe ThingFish::ConnectionManager do
 		it "transforms other exceptions into SERVER_ERROR responses" do
 			err_response = mock( "error response object" )
 			exception = NoMethodError.new( "I'm ded" )
-			erroring_dispatcher = lambda { raise exception }
+			erroring_dispatcher = lambda {|_| raise exception }
 			@conn.instance_variable_set( :@dispatch_callback, erroring_dispatcher )
 
 			@conn.should_receive( :prepare_error_response ).
@@ -642,7 +642,7 @@ describe ThingFish::ConnectionManager do
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 
 			Timeout.timeout( 1 ) do
 				@conn.process
@@ -659,7 +659,7 @@ describe ThingFish::ConnectionManager do
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 
 			Timeout.timeout( 1 ) do
 				@conn.process
@@ -669,7 +669,7 @@ describe ThingFish::ConnectionManager do
 		it "closes the connection on connection timeouts" do
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 
 			@socket.should_receive( :read_nonblock ).and_raise( Errno::EAGAIN.new )
 			IO.should_receive( :select ).and_return( nil )
@@ -683,7 +683,7 @@ describe ThingFish::ConnectionManager do
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 
 			Timeout.timeout( 1 ) do
 				lambda {
@@ -694,7 +694,7 @@ describe ThingFish::ConnectionManager do
 
 
 		it "handles IOErrors that propagate up to #process" do
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close )
@@ -705,7 +705,7 @@ describe ThingFish::ConnectionManager do
 		end
 
 		it "handles system errors that propagate up to #process" do
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 			@socket.should_receive( :read_nonblock ).and_raise( Errno::ECONNRESET.new )
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close )
@@ -717,7 +717,7 @@ describe ThingFish::ConnectionManager do
 
 
 		it "should not try to re-close the socket while in #process's error handler" do
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
 			@socket.should_receive( :closed? ).and_return( true )
 			@socket.should_not_receive( :close )
@@ -737,7 +737,7 @@ describe ThingFish::ConnectionManager do
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close )
-			@socket.stub!( :peeraddr ).and_return( [] )
+			@socket.stub!( :peeraddr ).and_return( ["AF_INET6", 80, "localhost", "::1"] )
 
 			Timeout.timeout( 1 ) do
 				@conn.process

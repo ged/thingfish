@@ -48,7 +48,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	include ThingFish::Constants
 
 	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev: 620 $
+	SVNRev = %q$Rev$
 	
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	YAML_MIMETYPE = 'text/x-yaml'
@@ -185,7 +185,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 	include ThingFish::Constants
 
 	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev: 620 $
+	SVNRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ 'audio/mpeg', 'audio/mpg', 'audio/mp3' ].
@@ -346,7 +346,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	include ThingFish::Constants
 
 	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev: 620 $
+	SVNRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]

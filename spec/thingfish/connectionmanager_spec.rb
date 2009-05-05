@@ -14,7 +14,7 @@ begin
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'timeout'
-	
+
 	require 'thingfish'
 	require 'thingfish/config'
 	require 'thingfish/constants'
@@ -61,7 +61,7 @@ describe ThingFish::ConnectionManager do
 			and_return([ Socket::AF_INET, 1717, '208.77.188.166', 'host' ])
 		@conn.instance_variable_set( :@pipeline_max, 100 )
 		@conn.instance_variable_set( :@request_count, 8 )
-		
+
 		@conn.inspect.should =~ 
 			%r{#<ThingFish::ConnectionManager:0x[[:xdigit:]]+ host:1717 \(8/100 requests\)>}
 	end
@@ -71,7 +71,7 @@ describe ThingFish::ConnectionManager do
 			and_return([ Socket::AF_INET, 1717, '208.77.188.166', 'host' ])
 		@conn.instance_variable_set( :@pipeline_max, 100 )
 		@conn.instance_variable_set( :@request_count, 8 )
-		
+
 		@conn.session_info.should == "host:1717 (8/100 requests)"
 	end
 
@@ -106,7 +106,7 @@ describe ThingFish::ConnectionManager do
 
 		IO.should_receive( :select ).with( [@socket], nil, nil, ThingFish::ConnectionManager::DEFAULT_TIMEOUT ).
 			and_return( [@socket, nil, nil] )
-			
+
 		ThingFish::Request.should_receive( :parse ).with( TESTING_GET_REQUEST, @config, @socket ).
 			and_return( @request )
 		@request.should_receive( :header ).at_least(:once).
@@ -115,7 +115,7 @@ describe ThingFish::ConnectionManager do
 
 		@conn.read_request.should == @request
 	end
-	
+
 	it "resumes reading the request body data when the socket becomes readable again after it has blocked" do
 		tempfile = mock( "Tempfile" )
 		len = TEST_CONTENT.length
@@ -145,7 +145,7 @@ describe ThingFish::ConnectionManager do
 
 		@conn.read_request_body( @request )
 	end
-	
+
 	it "raises a timeout after reading the request body has been blocked for more than <timeout> seconds"  do
 		tempfile = mock( "Tempfile" )
 		len = TEST_CONTENT.length
@@ -198,7 +198,7 @@ describe ThingFish::ConnectionManager do
 			@request.should_receive( :http_method ).at_least(:once).
 				and_return( :GET )
 			@request.should_not_receive( :body= )
-			
+
 			lambda {
 				@conn.read_request
 			}.should raise_error( ThingFish::RequestError, /GET method should not have an entity-body/ )
@@ -280,7 +280,7 @@ describe ThingFish::ConnectionManager do
 				and_return( :fancy_content_type )
 
 			@request.stub!( :http_method )
-			
+
 			@request.should_receive( :accepts? ).with( :fancy_content_type ).
 				and_return( true )
 
@@ -436,9 +436,9 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :body= ).with( :the_html_output )
 
 			@conn.prepare_error_response( @response, @request, HTTP::REQUEST_ENTITY_TOO_LARGE )
-			
+
 		end
-		
+
 		it "outputs a text error page if the client doesn't grok HTML" do
 			@response.should_receive( :reset )
 			@response.should_receive( :status= ).with( HTTP::SERVER_ERROR )
@@ -455,21 +455,21 @@ describe ThingFish::ConnectionManager do
 
 			@conn.prepare_error_response( @response, @request, HTTP::SERVER_ERROR )
 		end
-		
-		
+
+
 		it "can load an error template for a specific HTTP error status (e.g., 404) if it exists" do
 			@conn.should_receive( :resource_exists? ).with( "errors/404.rhtml" ).and_return( true )
 			@conn.should_receive( :get_erb_resource ).with( "errors/404.rhtml" ).and_return( :the_404_template )
 			@conn.get_error_response_template( HTTP::NOT_FOUND ).should == :the_404_template
 		end
-		
+
 		it "can load an error template for a general HTTP error status (e.g., 400) if it exists" do
 			@conn.should_receive( :resource_exists? ).with( "errors/404.rhtml" ).and_return( false )
 			@conn.should_receive( :resource_exists? ).with( "errors/400.rhtml" ).and_return( true )
 			@conn.should_receive( :get_erb_resource ).with( "errors/400.rhtml" ).and_return( :the_400_template )
 			@conn.get_error_response_template( HTTP::NOT_FOUND ).should == :the_400_template
 		end
-		
+
 		it "falls back to a generic template if there isn't a template for the HTTP error status" do
 			@conn.should_receive( :resource_exists? ).with( "errors/404.rhtml" ).and_return( false )
 			@conn.should_receive( :resource_exists? ).with( "errors/400.rhtml" ).and_return( false )
@@ -478,7 +478,7 @@ describe ThingFish::ConnectionManager do
 				and_return( :the_generic_template )
 			@conn.get_error_response_template( HTTP::NOT_FOUND ).should == :the_generic_template
 		end
-		
+
 		it "returns nil if the generic template cannot be found" do
 			@conn.should_receive( :resource_exists? ).with( "errors/404.rhtml" ).and_return( false )
 			@conn.should_receive( :resource_exists? ).with( "errors/400.rhtml" ).and_return( false )
@@ -503,7 +503,7 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :header_data ).and_return( header_data )
 
 			@request.should_receive( :http_method ).and_return( :GET )
-			
+
 			io = mock( "IO object" )
 			@response.should_receive( :body ).and_return( io, io )
 			io.should_receive( :respond_to? ).with( :eof? ).and_return( true )
@@ -535,7 +535,7 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :header_data ).and_return( header_data )
 
 			@request.should_receive( :http_method ).and_return( :HEAD )
-			
+
 			buffer = status_line + EOL + header_data + EOL
 
 			# Mmmmm... so klugy.
@@ -558,7 +558,7 @@ describe ThingFish::ConnectionManager do
 				@conn.write_response( @response, @request )
 			end
 		end
-		
+
 		it "raises a timeout after writing has been blocked for more than <timeout> seconds" do
 			status_line = "HTTP/1.1 200 OK"
 			header_data = "Header: data"
@@ -566,7 +566,7 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :header_data ).and_return( header_data )
 
 			@request.should_receive( :http_method ).and_return( :HEAD )
-			
+
 			buffer = status_line + EOL + header_data + EOL
 			@socket.should_receive( :write_nonblock ).and_raise( Errno::EAGAIN.new )
 
@@ -577,7 +577,7 @@ describe ThingFish::ConnectionManager do
 				@conn.write_response( @response, @request )
 			}.should raise_error( ThingFish::Timeout, /while writing/i )
 		end
-		
+
 		it "does not write the body for a response to a HEAD" do
 			status_line = "HTTP/1.1 200 OK"
 			header_data = "Header: data"
@@ -631,19 +631,19 @@ describe ThingFish::ConnectionManager do
 
 			@conn.write_response( @response, @request )
 		end
-		
+
 		it "closes the connection if either the request or response indicate that it should close" do
 			@conn.should_receive( :read_request ).once.and_return( @request )
 			@conn.should_receive( :dispatch_request ).with( @request ).once.and_return( @response )
 			@conn.should_receive( :write_response ).with( @response, @request ).once
-			
+
 			@request.should_receive( :keepalive? ).and_return( true )
 			@response.should_receive( :keepalive? ).and_return( false )
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
-			
+
 			Timeout.timeout( 1 ) do
 				@conn.process
 			end
@@ -652,20 +652,20 @@ describe ThingFish::ConnectionManager do
 		it "closes the connection if request count exceeds pipeline max" do
 			@config.pipeline_max = 2
 			@conn.instance_variable_set( :@request_count, 1 )
-			
+
 			@conn.should_receive( :read_request ).once.and_return( @request )
 			@conn.should_receive( :dispatch_request ).with( @request ).once.and_return( @response )
 			@conn.should_receive( :write_response ).with( @response, @request ).once
-			
+
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
-			
+
 			Timeout.timeout( 1 ) do
 				@conn.process
 			end
 		end
-		
+
 		it "closes the connection on connection timeouts" do
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
@@ -676,23 +676,23 @@ describe ThingFish::ConnectionManager do
 
 			@conn.process
 		end
-		
+
 		it "closes the connection on request errors that happen in #process (#57)" do
 			exception = ThingFish::RequestError.new("malformed request: expected request-line")
 			@conn.should_receive( :read_request ).once.and_raise( exception )
-			
+
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close ).once
 			@socket.stub!( :peeraddr ).and_return( [] )
-			
+
 			Timeout.timeout( 1 ) do
 				lambda {
 					@conn.process
 				}.should_not raise_error()
 			end
 		end
-		
-		
+
+
 		it "handles IOErrors that propagate up to #process" do
 			@socket.stub!( :peeraddr ).and_return( [] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
@@ -715,7 +715,7 @@ describe ThingFish::ConnectionManager do
 			}.should_not raise_error()
 		end
 
-		
+
 		it "should not try to re-close the socket while in #process's error handler" do
 			@socket.stub!( :peeraddr ).and_return( [] )
 			@socket.should_receive( :read_nonblock ).and_raise( IOError.new("closed stream") )
@@ -731,14 +731,14 @@ describe ThingFish::ConnectionManager do
 			@conn.should_receive( :read_request ).twice.and_return( @request )
 			@conn.should_receive( :dispatch_request ).with( @request ).twice.and_return( @response )
 			@conn.should_receive( :write_response ).with( @response, @request ).twice
-			
+
 			@request.should_receive( :keepalive? ).and_return( true, true )
 			@response.should_receive( :keepalive? ).and_return( true, false )
 
 			@socket.should_receive( :closed? ).and_return( false )
 			@socket.should_receive( :close )
 			@socket.stub!( :peeraddr ).and_return( [] )
-			
+
 			Timeout.timeout( 1 ) do
 				@conn.process
 			end

@@ -6,12 +6,10 @@ require 'thingfish/request'
 require 'thingfish/response'
 
 
-#
-# ThingFish::ConnectionManager --
-#
-#
-# == Synopsis
-#
+# An HTTP connection-state and IO management class. Instances of this class are wrapped
+# around an incoming socket object when it is accepted by the ThingFish::Daemon, and
+# it manages reading and writing to the socket, timeouts, HTTP pipelining, creation and 
+# dispatch of completed requests, and assemblage of completed responses.
 #
 # == Version
 #
@@ -32,8 +30,8 @@ class ThingFish::ConnectionManager
 	include ThingFish::Loggable,
 	        ThingFish::Constants,
 	        ThingFish::Constants::Patterns,
-			ThingFish::HtmlInspectableObject,
-			ThingFish::ResourceLoader
+	        ThingFish::HtmlInspectableObject,
+	        ThingFish::ResourceLoader
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -349,9 +347,9 @@ class ThingFish::ConnectionManager
 		response.status = statuscode
 
 		# Build a pretty response if the client groks HTML
-		if request.accepts?( CONFIGURED_HTML_MIMETYPE )
-			template = self.get_error_response_template( statuscode ) or
-				raise "Can't find an error template"
+		if ( request.accepts?(CONFIGURED_HTML_MIMETYPE) && 
+			 template = self.get_error_response_template(statuscode) )
+
 			content = [ template.result( binding() ) ]
 
 			response.data[:tagline] = 'Oh, crap!'

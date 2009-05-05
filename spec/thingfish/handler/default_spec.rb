@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'spec/lib/handler_behavior'
@@ -383,7 +383,7 @@ describe ThingFish::DefaultHandler do
 			with( TEST_UUID_OBJ ).
 			and_return( true )
 
-		@request.should_receive( :bodies ).with().twice.and_return({ io, {} })
+		@request.should_receive( :bodies ).with().twice.and_return({ io => {} })
 		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
@@ -419,7 +419,7 @@ describe ThingFish::DefaultHandler do
 			with( TEST_UUID_OBJ ).
 			and_return( false )
 
-		@request.should_receive( :bodies ).twice().and_return({ io, {} })
+		@request.should_receive( :bodies ).twice().and_return({ io => {} })
 		@daemon.should_receive( :store_resource ).
 			with( io, an_instance_of(Hash), TEST_UUID_OBJ ).
 			and_return( TEST_CHECKSUM )
@@ -446,7 +446,7 @@ describe ThingFish::DefaultHandler do
 		body = StringIO.new( "~~~" * 1024 )
 		md = stub( "metadata hash" )
 
-		@request.should_receive( :bodies ).twice().and_return({ body, md })
+		@request.should_receive( :bodies ).twice().and_return({ body => md })
 		@daemon.should_receive( :store_resource ).
 			with( body, md, TEST_UUID_OBJ ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }

@@ -1,0 +1,34 @@
+--- 
+rubyforge_project: thingfish
+project_requirements: 
+  cl_xmlserial: ">= 1.1.0"
+  redland-bindings: ">= 1.0.8.1"
+project_pubdir: /usr/local/laika/www/public/thingfish/
+project_description: "ThingFish is a network-accessable, searchable, extensible datastore. It can be used to store chunks of data on the network in an application-independent way, associate the chunks with other chunks through metadata, and then search for the chunk you need later and fetch it again, all through a REST API over HTTP. "
+rubyforge_group: laika
+author_name: Michael Granger and Mahlon Smith
+project_pubhost: opensource.laika.com
+project_homepage: http://opensource.laika.com/wiki/ThingFish
+project_dependencies: 
+  pluginfactory: ">=1.0.4"
+  uuidtools: ">= 1.0.7"
+project_summary: a network-accessable, searchable, extensible datastore.
+project_name: ThingFish
+version_file: thingfish.rb
+additional_pkgfiles: 
+- etc/thingfish.conf.*
+- QUICKSTART
+- run
+- var/www/**/*.rhtml
+- var/www/static/*.{png,jpg,gif,css,js}
+dev_dependencies: 
+  sqlite3-ruby: ">= 1.2.4"
+  sequel: ">= 2.7.1"
+  ruby-mp3info: ">=0"
+  rmagick: ">=0"
+  exifr: ">=0"
+  lockfile: ">= 1.4.3"
+  json: ">=0"
+  tidy: ">=0"
+author_email: mgranger@laika.com, mahlon@laika.com
+post_install_message: ""

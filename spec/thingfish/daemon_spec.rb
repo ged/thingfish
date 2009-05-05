@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'socket'
@@ -21,6 +21,7 @@ begin
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
+		gem 'rspec', '>= 1.2.0'
 		retry
 	end
 	raise
@@ -30,6 +31,23 @@ end
 include ThingFish::TestConstants
 
 class TestHandler < ThingFish::Handler
+end
+
+module RubyProf
+	PROCESS_TIME = 1
+	CPU_TIME     = 2
+	ALLOCATIONS  = 4
+	MEMORY       = 8
+
+	class FlatPrinter
+		def initialize( *args ); end
+		def print( *args ); end
+	end
+	class GraphHtmlPrinter
+		def initialize( *args ); end
+		def print( *args ); end
+	end
+	class Result; end
 end
 
 
@@ -508,7 +526,7 @@ describe ThingFish::Daemon do
 				@daemon.instance_variable_set( :@filestore, filestore )
 
 				spool = mock( "spoolfile", :null_object => true )
-				metadata = {}
+				metadata = { :extent => '2100' }
 
 				spool.should_receive( :respond_to? ).
 					with( :unlink ).
@@ -639,6 +657,7 @@ describe ThingFish::Daemon do
 	it "uses default config IP when constructed with a differing ip config" do
 		socket = stub( "TCPServer socket", :setsockopt => nil )
 		config = ThingFish::Config.new
+		ThingFish.logger.debug "Setting value for ip to: %p" % [ TEST_IP ]
 		config.ip = TEST_IP
 
 		port = ThingFish::Config::DEFAULTS[:port]
@@ -701,7 +720,7 @@ describe ThingFish::Daemon do
 	describe " with one or more handlers in its configuration" do
 
 		before( :all ) do
-			setup_logging( :debug )
+			setup_logging( :fatal )
 		end
 
 		after( :all ) do
@@ -747,23 +766,6 @@ describe ThingFish::Daemon do
 			@config.profiling.enabled = true
 		end
 
-
-		module RubyProf
-			PROCESS_TIME = 1
-			CPU_TIME     = 2
-			ALLOCATIONS  = 4
-			MEMORY       = 8
-
-			class FlatPrinter
-				def initialize( *args ); end
-				def print( *args ); end
-			end
-			class GraphHtmlPrinter
-				def initialize( *args ); end
-				def print( *args ); end
-			end
-			class Result; end
-		end
 
 		it "attempts to load and configure the ruby-prof library" do
 			@config.profiling.metrics = %w[]

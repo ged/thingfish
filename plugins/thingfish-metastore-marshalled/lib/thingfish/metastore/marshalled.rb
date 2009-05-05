@@ -143,7 +143,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		props = propshash.dup
-		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		props.keys.each {|key| props[key.to_sym] = props.delete(key) }
 
 		@lock.lock do
 			@metadata.transaction do
@@ -157,7 +157,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### given +uuid+.
 	def update_properties( uuid, propshash )
 		props = propshash.dup
-		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		props.keys.each {|key| props[key.to_sym] = props.delete(key) }
 
 		@lock.lock do
 			@metadata.transaction do
@@ -191,7 +191,12 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	def has_property?( uuid, propname )
 		@metadata.transaction do
 			@metadata[ uuid.to_s ] ||= {}
-			return @metadata[ uuid.to_s ].key?( propname.to_sym )
+			self.log.debug "Does %p have property %p?" % [ uuid, propname ]
+			self.log.debug "  %p" % [ @metadata[uuid.to_s] ]
+			rval = @metadata[ uuid.to_s ].key?( propname.to_sym )
+			self.log.debug { rval ? "  yes it does." : "  no it doesn't" }
+			
+			return rval
 		end
 	end
 
@@ -206,12 +211,16 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 	### MetaStore API: Removes +propname+ from given +uuid+
 	def delete_property( uuid, propname )
+		rval = nil
+
 		@lock.lock do
 			@metadata.transaction do
 				@metadata[ uuid.to_s ] ||= {}
-				return @metadata[ uuid.to_s ].delete( propname.to_sym ) ? true : false
+				rval = @metadata[ uuid.to_s ].delete( propname.to_sym )
 			end
 		end
+		
+		return rval
 	end
 
 
@@ -231,14 +240,18 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
+		count = 0
+		
 		@lock.lock do
 			@metadata.transaction do
-				return 0 if @metadata[ uuid.to_s ].nil?
-				count = @metadata[ uuid.to_s ].length
-				@metadata.delete( uuid.to_s )
-				return count
+				unless @metadata[ uuid.to_s ].nil?
+					count = @metadata[ uuid.to_s ].length
+					@metadata.delete( uuid.to_s )
+				end
 			end
 		end
+		
+		return count
 	end
 
 

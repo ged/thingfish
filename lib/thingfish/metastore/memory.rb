@@ -82,7 +82,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	### in the provided +propshash+.
 	def set_properties( uuid, propshash )
 		props = propshash.dup
-		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		props.keys.each {|key| props[key.to_sym] = props.delete(key) unless key.is_a?(Symbol) }
 		@metadata[ uuid.to_s ] = props
 	end
 
@@ -91,7 +91,7 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	### given +uuid+.
 	def update_properties( uuid, propshash )
 		props = propshash.dup
-		props.each_key {|key| props[key.to_sym] = props.delete(key) }
+		props.keys.each {|key| props[key.to_sym] = props.delete(key) unless key.is_a?(Symbol) }
 		@metadata[ uuid.to_s ] = @metadata[ uuid.to_s ].merge( props )
 	end
 

@@ -57,7 +57,7 @@ module ThingFish # :nodoc:
 			ThingFish::Loggable,
 			ThingFish::HtmlInspectableObject
 
-		KEYED_METHODS = %w[ [] []= delete fetch has_key? include? member? store ]
+		KEYED_METHODS = [ :"[]", :"[]=", :delete, :fetch, :has_key?, :include?, :member?, :store ]
 
 
 		### Auto-generate methods which call the given +delegate+ after normalizing
@@ -97,7 +97,10 @@ module ThingFish # :nodoc:
 
 
 		# Delegate some methods to the underlying Hash
-		def_delegators :@hash, *( Hash.instance_methods(false) - KEYED_METHODS )
+		begin
+			unoverridden_methods = Hash.instance_methods(false).collect {|mname| mname.to_sym }
+			def_delegators :@hash, *( unoverridden_methods - KEYED_METHODS )
+		end
 
 
 		### Append the keys and values in the given +hash+ to the table, transforming
@@ -210,9 +213,9 @@ module ThingFish # :nodoc:
 		### Return a copy of +hash+ with all of its keys normalized by #normalize_key.
 		def normalize_hash( hash )
 			hash = hash.dup
-			hash.each do |key,val|
+			hash.keys.each do |key|
 				nkey = normalize_key( key )
-				hash[ nkey ] = hash.delete( key )
+				hash[ nkey ] = hash.delete( key ) if key != nkey
 			end
 
 			return hash

@@ -69,6 +69,7 @@ module ThingFish # :nodoc:
 				sym = :debug if @force_debug
 				ThingFish.logger.add( LEVEL[sym], msg, @classname, &block )
 			end
+			
 		end # ClassNameProxy
 
 		#########
@@ -125,7 +126,8 @@ module ThingFish # :nodoc:
 		### Return the normalized name of the including class, which
 		### determines what the resources directory is named.
 		def plugin_name
-			return self.class.name.
+			classname = self.class.name or return 'anonymous'
+			return classname.
 				sub( /ThingFish::/, '' ).
 				sub( /handler$/i, '' ).
 				gsub( /\W+/, '-' ).
@@ -311,7 +313,7 @@ module ThingFish # :nodoc:
 			### NotImplementedErrors when called via a concrete subclass.
 			def virtual( *syms )
 				syms.each do |sym|
-					define_method( sym ) {
+					define_method( sym ) {|*args|
 						raise ::NotImplementedError,
 							"%p does not provide an implementation of #%s" % [ self.class, sym ],
 							caller(1)

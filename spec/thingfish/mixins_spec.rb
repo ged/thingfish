@@ -11,7 +11,7 @@ BEGIN {
 
 begin
 	require 'stringio'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/helpers'
 	require 'spec/lib/constants'
 
@@ -251,6 +251,12 @@ describe "ThingFish::AbstractClass mixed into a superclass" do
 		}.should raise_error( NotImplementedError, /does not provide an implementation of/ )
 	end
 
+	it "declares the virtual methods so that they can be used with arguments under Ruby 1.9" do
+		lambda {
+			@instance.test_method( :some, :arguments )
+		}.should raise_error( NotImplementedError, /does not provide an implementation of/ )
+	end
+	
 end
 
 

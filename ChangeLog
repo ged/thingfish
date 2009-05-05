@@ -1,0 +1,3614 @@
+-- Thu, 04 Dec 2008 15:53:32 -0000 by mahlon (r620) -----
+   Added:   lib/thingfish/urimap.rb
+            -> renamed from /thingfish/branches/evented-backend/lib/thingfish/urimap.rb@r619
+            experiments/ab_patches
+            -> renamed from /thingfish/branches/evented-backend/experiments/ab_patches@r619
+            experiments/ebbtest.rb
+            -> renamed from /thingfish/branches/rack-conversion/experiments/ebbtest.rb@r605
+            spec/thingfish/connectionmanager_spec.rb
+            -> renamed from /thingfish/branches/evented-backend/spec/thingfish/connectionmanager_spec.rb@r619
+            experiments/rev_httpd.rb
+            -> renamed from /thingfish/branches/evented-backend/experiments/rev_httpd.rb@r619
+            lib/thingfish/connectionmanager.rb
+            -> renamed from /thingfish/branches/evented-backend/lib/thingfish/connectionmanager.rb@r619 (and 4 other/s)
+   Changed: spec/thingfish/exceptions_spec.rb
+            lib/thingfish/acceptparam.rb
+            misc/rake/style.rb
+            lib/thingfish/filter.rb
+            var/www/errors/500.rhtml
+            plugins/thingfish-handler-mailinglists/lib/thingfish/handler/mailinglists.rb (and 109 other/s)
+   Deleted: spec/thingfish/staticcontent_spec.rb
+            etc/thingfish.conf.example
+            experiments/ab_extra_methods.patch
+            plugins/thingfish-handler-status
+
+
+   Merge of the last 5 months of [log:thingfish/branches/evented-backend@619 work].
+
+   Among the main features in this merge:
+
+   * Removal of the Mongrel dependency, in favor of our own ConnectionManager and Handler dispatch strategy. (This was
+
+   after heavy exploration of rack, ebb, rev, io-reactor, and eventmachine.)
+
+   * The status handler has been removed. (it subclassed a Mongrel handler)
+
+   * DefaultHandler now falls back to use global 'resource_dir' configuration
+
+   * Use symbols for methods with Request.http_method()
+
+   * Startup actions for filestores and metastores renamed to 'on_startup' to denote event instead of action
+
+   * Documentation updates (more on the way)
+
+   * Config file format has changed for handlers, see example files for details
+
+   * Added connection-level profiling
+
+   * Added connection pipelining (woo woo!)
+
+   * Updated 'ab' patches for latest binaries (benchmarking)
+
+
+-- Fri, 05 Sep 2008 18:34:57 -0000 by mahlon (r609) -----
+   Added:   misc/clientlibs/python (new)
+
+   Directory for Chris' client module!
+
+
+-- Thu, 21 Aug 2008 01:25:06 -0000 by mgranger (r604) -----
+   Changed: spec/lib/helpers.rb
+            misc/rake/docs.rb
+            spec/thingfish_spec.rb
+
+    * Fix a load-order bug in thingfish_spec
+    * Remove a superfluous definition of reset_logger in the spec helpers module
+    * Clean up the darkfish requirement in the rdoc task tasklib
+
+
+-- Wed, 20 Aug 2008 16:30:05 -0000 by mahlon (r603) -----
+   Changed: plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+
+   Limit the sequel connection pool to a single connection.  The default
+   (10) interacts badly rubythreads and transactional queries (both
+   postgres and sequel produce locking errors.).
+
+
+-- Wed, 06 Aug 2008 21:34:33 -0000 by mgranger (r600) -----
+   Changed: Rakefile
+
+   Turning coverage back on for cruise build.
+
+
+-- Tue, 29 Jul 2008 16:54:29 -0000 by mgranger (r592) -----
+   Changed: plugins/thingfish-metastore-sequel/spec/thingfish/metastore/sequel_spec.rb
+
+   Turned off debugging output in the Sequel metastore spec
+
+
+-- Tue, 29 Jul 2008 16:46:55 -0000 by mgranger (r591) -----
+   Changed: spec/thingfish/filter/html_spec.rb
+
+   Fixed parent.parent issue in spec require BEGIN block
+
+
+-- Tue, 29 Jul 2008 16:46:32 -0000 by mgranger (r590) -----
+   Changed: docs/manual/src/Hackers_Guide/server-architecture.page
+            docs/manual/src/getting-started.page
+            docs/manual/src/Hackers_Guide/writing-filters.page
+            docs/manual/src/index.page
+            docs/manual/src/Developers_Guide/cookbook.page
+            docs/manual/src/Developers_Guide/connecting.page (and 4 other/s)
+
+   Fixes for the manual when run without libtidy installed
+
+
+-- Tue, 29 Jul 2008 16:46:05 -0000 by mgranger (r589) -----
+   Changed: plugins/thingfish-metastore-sequel/spec/thingfish/metastore/sequel_spec.rb
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+
+   Fixes for Sequel >= 2.1.x; older versions no longer supported
+
+
+-- Tue, 29 Jul 2008 15:55:38 -0000 by mahlon (r588) -----
+   Changed: lib/thingfish.rb
+            misc/rake/dependencies.rb
+
+    * Fix dependency case sensitivity for RedCloth
+    * Add some PluginFactory debug at startup
+
+
+-- Tue, 29 Jul 2008 15:49:56 -0000 by mgranger (r587) -----
+   Changed: misc/rake/docs.rb
+            docs
+
+   Fix manual-generation task to work with RDoc 2.0 changes in Darkfish
+
+
+-- Tue, 29 Jul 2008 15:22:14 -0000 by mgranger (r585) -----
+   Changed: Rakefile
+
+   Fix the cruisecontrol build to actually fail when specs fail
+
+
+-- Wed, 02 Jul 2008 20:55:58 -0000 by mgranger (r580) -----
+   Added:   misc/rake/docs.rb
+            -> renamed from /thingfish/trunk/misc/rake/rdoc.rb@r568
+   Changed: plugins/thingfish-filestore-filesystem/lib/thingfish/filestore/filesystem.rb
+            spec/thingfish/request_spec.rb
+            Rakefile
+            lib/thingfish/request.rb
+            plugins/thingfish-filter-mp3/lib/thingfish/filter/mp3.rb
+            plugins/thingfish-filter-image/spec/thingfish/filter/image_spec.rb (and 5 other/s)
+   Deleted: misc/rake/rdoc.rb
+
+    * Image plugin:
+    - Updated to generate and append thumbnails.
+    - Refactored the calculation of the supported formats.
+    * MP3 plugin:
+    - Modified to accept 'audio/mpg' and 'audio/mp3' as well as 'audio/mpeg'.
+    - Added some diagnostic logging for album-art extraction
+    * Fixed a bug in the formupload handler's template when uploaded files don't have an associated 
+    title.
+    * Wrapped Rakefile tasklib loading in better diagnostics
+    * Renamed the 'rdoc' tasklib to 'docs' and moved the manual task to that library to eliminate the
+    dependency on 'uv' for non-manual-related tasks.
+    * Added coverage to the spec for ThingFish::Request and made #check_body_ios check appended 
+    resource IOs as well as entity bodies.
+    * Added a 'bench' shortcut for 'benchmarks:all' to the benchmark tasklib
+    * Fixed a typo in ThingFish::Client API docs.
+    * Changed the way recursion works in ThingFish::Request#yield_each_resource -- no longer (needs) 
+    uses Enumerable::Enumerator, and eliminated newly-appended resources from sometimes being 
+    yielded back to the block. Thanks to Jeremiah Chase for pairing with me while tracking this
+    down.
+
+
+-- Tue, 01 Jul 2008 16:07:04 -0000 by mahlon (r572) -----
+   Changed: spec/thingfish/daemon_spec.rb
+            lib/thingfish/daemon.rb
+            lib/thingfish/metastore.rb
+            plugins/thingfish-filter-mp3/spec/thingfish/filter/mp3_spec.rb
+            plugins/thingfish-filter-mp3/lib/thingfish/filter/mp3.rb
+            plugins/thingfish-handler-formupload/spec/thingfish/handler/formupload_spec.rb (and 2 other/s)
+
+
+    * Add more informational goodies with album-art extracted from mp3s.
+
+    * Have the formupload handler be "resource append" aware.
+
+    * Alter ThingFish::Daemon#purge_related_resources() to allow for selective deleting.
+
+    * Add some comments to the metastore intersect_each_tuple() method.
+
+
+-- Mon, 30 Jun 2008 16:33:00 -0000 by mahlon (r568) -----
+   Added:   plugins/thingfish-filter-mp3/spec/data/PIC-1-image.mp3 (new)
+            plugins/thingfish-filter-mp3/spec/data/APIC-1-image.mp3 (new)
+            plugins/thingfish-filter-mp3/spec/data (new)
+            plugins/thingfish-filter-mp3/spec/data/PIC-2-images.mp3 (new)
+            plugins/thingfish-filter-mp3/spec/data/APIC-2-images.mp3 (new)
+   Changed: spec/thingfish/request_spec.rb
+            Rakefile
+            lib/thingfish/request.rb
+            spec/thingfish/handler/default_spec.rb
+            lib/thingfish/handler/default.rb
+            spec/thingfish/daemon_spec.rb (and 7 other/s)
+
+
+    * Add a Rake task for generating tags, using exhuberant ctags.
+
+    * Extract album art from mp3 files.
+
+    * Prune unwanted id3 tags from mp3s
+
+    * Make the default handler use the new ThingFish::Request API.
+
+    * Restructure ThingFish::Request's public interface to request bodies.
+
+    * Update the ApacheBench patch (PUT and DELETE support) for Apache 2.2.9.
+
+    * "Rollback" file storage on the event of a metadata store error.
+
+
+-- Sun, 22 Jun 2008 05:19:12 -0000 by mgranger (r561) -----
+   Changed: Rakefile
+            misc/rake/packaging.rb
+
+    * Fixed the :clobber_manual task that was breaking the CI build.
+    * Removed the deprecated 'autorequire' from the gemspec
+
+
+-- Thu, 19 Jun 2008 14:41:58 -0000 by mahlon (r560) -----
+   Added:   plugins/thingfish-filter-basicauth
+            -> renamed from /thingfish/branches/mp3-jukebox/plugins/thingfish-filter-basicauth@r559
+            docs/manual/src/Developers_Guide/cookbook.page
+            -> renamed from /thingfish/branches/mp3-jukebox/docs/manual/src/Developers_Guide/cookbook.page@r559
+            var/www/static/js/manual.js
+            -> renamed from /thingfish/branches/mp3-jukebox/var/www/static/js/manual.js@r559
+   Changed: docs/manual/src/Hackers_Guide/writing-metastores.page
+            docs/manual/src/getting-started.page
+            lib/thingfish/exceptions.rb
+            docs/manual/src/index.page
+            spec/thingfish/request_spec.rb
+            plugins/thingfish-metastore-rdf/spec/thingfish/metastore/rdf_spec.rb (and 28 other/s)
+
+   Merged ThingFish "engine" work done in the
+   [log:thingfish/branches/mp3-jukebox@551:559 mp3-jukebox branch].
+
+
+-- Mon, 02 Jun 2008 07:29:01 -0000 by mgranger (r556) -----
+   Changed: Rakefile
+
+   Adding a little diagnostics to the rask tasklib loader.
+
+
+-- Fri, 30 May 2008 15:58:14 -0000 by mgranger (r555) -----
+   Changed: Rakefile
+
+   Removing superfluous (and broken) clobber_manual task
+
+
+-- Tue, 20 May 2008 14:49:39 -0000 by mahlon (r550) -----
+   Added:   docs/manual/lib/api-filter.rb (new)
+   Changed: docs/manual/src/Hackers_Guide/writing-filters.page
+            Rakefile
+            misc/rake/lib/manual.rb
+            var/www/index_content.rhtml
+            misc/rake/rdoc.rb
+
+
+    * Add an API filter for manual pages.  Reference ThingFish API material
+
+    via XML preprocessing instruction.
+
+    * Restructure manual and API output destinations to be immediately
+
+    under ThingFish static content directories, rather than copying
+
+    it after generation.
+
+
+-- Fri, 16 May 2008 17:48:09 -0000 by mgranger (r549) -----
+   Changed: docs/manual/lib/examples-filter.rb
+            docs/manual/src/Developers_Guide/connecting.page
+            misc/rake/dependencies.rb
+
+    * Fixed dependencies-installer for ultraviolet and earlier versions of RubyGems (hopefully)
+    * Added Ultraviolet render options YAML directly to the examples filter because
+    Ultraviolet is retarded and doesn't let you provide your own programmatically.
+
+
+-- Fri, 16 May 2008 16:05:38 -0000 by mahlon (r548) -----
+   Changed: plugins/thingfish-filestore-filesystem/lib/thingfish/filestore/filesystem.rb
+            spec/thingfish/daemon_spec.rb
+            spec/thingfish/metastore_spec.rb
+            lib/thingfish/daemon.rb
+            lib/thingfish/metastore.rb
+            spec/thingfish/filestore_spec.rb (and 3 other/s)
+
+
+    * Add ThingFish::FIlesystemFileStore caching of sizes to help with
+
+    startup speed when quotas are enabled.
+
+    * Add a startup() method to Metastore and FileStore parent classes, so
+
+    plugins have the opportunity to do maintenance tasks after effective
+
+    uid is set.
+
+
+-- Fri, 16 May 2008 14:13:30 -0000 by mgranger (r547) -----
+   Added:   var/www/static/css/deveiate.css (new)
+   Changed: docs/manual/src/Hackers_Guide/server-architecture.page
+            docs/manual/src/getting-started.page
+            docs/manual/lib/examples-filter.rb
+            docs/manual/lib/links-filter.rb
+            misc/rake/lib/manual.rb
+            docs/manual/src/Developers_Guide/connecting.page (and 5 other/s)
+
+    * Fixed up CSS for the new index
+    * Converted from CodeRay highlighting to Ultraviolet 
+    * Added current-page classes to index entries
+
+
+-- Thu, 15 May 2008 21:39:37 -0000 by mahlon (r546) -----
+   Changed: docs/manual/src/Hackers_Guide/server-architecture.page
+            docs/manual/src/Hackers_Guide/index.page
+            docs/manual/src/index.page
+            docs/manual/src/Developers_Guide/index.page
+   Deleted: docs/manual/src/Hackers_Guide/images
+            docs/manual/src/Developers_Guide/examples
+            docs/manual/src/Hackers_Guide/examples
+
+
+    * Update links under the manual, use new generation method.
+
+
+-- Thu, 15 May 2008 17:22:11 -0000 by mahlon (r545) -----
+   Changed: misc/rake/lib/manual.rb
+
+
+    * Ooops, this should have been included as part of the last commit.
+
+
+-- Thu, 15 May 2008 16:21:12 -0000 by mahlon (r544) -----
+   Added:   docs/manual/lib/links-filter.rb (new)
+   Changed: docs/manual/lib/examples-filter.rb
+            docs/manual/src/Developers_Guide/index.page
+   Deleted: docs/manual/COMMON.rb
+
+
+    * Propa' link processing capability in the manual.  Now we can stop
+
+    trying to do manual framework, and start concentrating on... well,
+
+    the content.  Sweeeet.
+
+
+-- Thu, 15 May 2008 14:28:24 -0000 by mahlon (r543) -----
+   Added:   docs/manual/src/Hackers_Guide/writing-metastores.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/writing-metastores.page@r542
+            docs/manual/src/Developers_Guide
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide@r541
+            docs/manual/src/Developers_Guide/connecting.page
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide/connecting.page@r542
+            docs/manual/src/Developers_Guide/js-client.page
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide/js-client.page@r542
+            docs/manual/src/Hackers_Guide/writing-handlers.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/writing-handlers.page@r542
+            docs/manual/src/Developers_Guide/writing-your-own-client.page
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide/writing-your-own-client.page@r542 (and 6 other/s)
+   Deleted: docs/manual/src/03.Hackers_Guide
+            docs/manual/src/Developers_Guide/04.writing-your-own-client.page
+            docs/manual/src/Hackers_Guide/03.writing-filters.page
+            docs/manual/src/Hackers_Guide/04.writing-filestores.page
+            docs/manual/src/Hackers_Guide/05.writing-metastores.page
+            docs/manual/src/02.Developers_Guide (and 6 other/s)
+
+
+    * Index order is now determined from document settings, rather than
+
+    filename.
+
+
+-- Thu, 15 May 2008 14:26:46 -0000 by mahlon (r542) -----
+   Added:   docs/manual/src/03.Hackers_Guide/server-architecture.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/01.server-architecture.page@r541
+            docs/manual/src/03.Hackers_Guide/writing-filters.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/03.writing-filters.page@r541
+            docs/manual/src/03.Hackers_Guide/writing-filestores.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/04.writing-filestores.page@r541
+            docs/manual/src/03.Hackers_Guide/writing-metastores.page
+            -> renamed from /thingfish/trunk/docs/manual/src/03.Hackers_Guide/05.writing-metastores.page@r541
+            docs/manual/src/02.Developers_Guide/connecting.page
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide/01.connecting.page@r541
+            docs/manual/src/02.Developers_Guide/js-client.page
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Developers_Guide/03.js-client.page@r541 (and 4 other/s)
+   Deleted: docs/manual/src/03.Hackers_Guide/05.writing-metastores.page
+            docs/manual/src/02.Developers_Guide/01.connecting.page
+            docs/manual/src/02.Developers_Guide/03.js-client.page
+            docs/manual/src/03.Hackers_Guide/02.writing-handlers.page
+            docs/manual/src/02.Developers_Guide/02.ruby-client.page
+            docs/manual/src/02.Developers_Guide/04.writing-your-own-client.page (and 4 other/s)
+
+
+    * Indexing is now part of the document settings, rather than determined
+
+    from the file name.
+
+
+-- Thu, 15 May 2008 14:10:31 -0000 by mgranger (r541) -----
+   Changed: misc/rake/lib/manual.rb
+
+   Removed accidentally-committed debugging in the manual task
+
+
+-- Thu, 15 May 2008 14:08:00 -0000 by mgranger (r540) -----
+   Changed: docs/manual/lib/examples-filter.rb
+            docs/manual/src/index.page
+            bin/tf_plugin
+            misc/rake/lib/manual.rb
+            misc/rake/packaging.rb
+            docs/manual/layouts/default.page (and 3 other/s)
+
+    * More work on the index-generator for the manual
+    * Fixed malformed example tag in the documentation for the examples filter 
+    * Set some stuff untestable in the "Writing Filters" section (for now)
+    * Set up gem package task to include executables
+    * Added a path-modifer BEGIN block to tf_plugin
+
+
+-- Mon, 12 May 2008 17:46:28 -0000 by jdavis (r539) -----
+   Changed: bin/ml_archiver.rb
+
+
+    * removed embedded null from this file
+
+
+-- Tue, 06 May 2008 18:23:22 -0000 by bbleything (r532) -----
+   Changed: plugins/thingfish-handler-mailinglists/spec/thingfish/handler/mailinglists_spec.rb
+            plugins/thingfish-handler-mailinglists/lib/thingfish/handler/mailinglists.rb
+
+    * store the validation regex in a pattern so we can reuse it easily
+    * use full addresses (with @host)
+
+
+-- Mon, 05 May 2008 14:06:48 -0000 by mgranger (r530) -----
+   Changed: misc/rake/lib/manual.rb
+
+   Merged in some stuff from Arrow's manual task.
+
+
+-- Fri, 02 May 2008 22:55:44 -0000 by mahlon (r529) -----
+   Changed: docs/manual/src/getting-started.page
+            docs/manual/src/index.page
+            docs/manual/src/03.Hackers_Guide/05.writing-metastores.page
+            docs/manual/src/02.Developers_Guide/01.connecting.page
+            docs/manual/src/02.Developers_Guide/index.page
+            docs/manual/src/02.Developers_Guide/03.js-client.page (and 12 other/s)
+
+
+    * Checkpoint of some Manual generation work.
+
+
+-- Thu, 01 May 2008 16:28:42 -0000 by mgranger (r528) -----
+   Changed: misc/rake/lib/benchmarktask.rb
+
+   Removed experimental cruft from the benchmark graphing task.
+
+
+-- Thu, 01 May 2008 14:10:40 -0000 by mgranger (r527) -----
+   Changed: /thingfish/trunk
+            misc/rake/lib/benchmarktask.rb
+            misc/rake/benchmark.rb
+
+
+   Re-integrated Gruff graphing into the build in an optional task
+
+   'benchmarks:graphs'. Closes #24.
+
+
+-- Wed, 30 Apr 2008 16:43:03 -0000 by mgranger (r526) -----
+   Changed: /thingfish/trunk
+            misc/rake/lib/benchmarktask.rb
+
+    * Added `benchmarks` directory to the list of ignored files
+    * Added accessors and processors for the times to the Benchmark::Datapoint class.
+
+
+-- Tue, 29 Apr 2008 22:31:05 -0000 by bbleything (r525) -----
+   Changed: plugins/thingfish-handler-mailinglists/spec/thingfish/handler/mailinglists_spec.rb
+            plugins/thingfish-handler-mailinglists/lib/thingfish/handler/mailinglists.rb
+
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/lib/thingfish/handler/mailinglists.rb
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/spec/thingfish/handler/mailinglists_spec.rb
+   * factor out message counting and last post date calculation into helper methods
+   * hook up the /listname action, which returns a Hash of count and last post date
+
+
+-- Tue, 29 Apr 2008 21:57:01 -0000 by bbleything (r524) -----
+   Added:   plugins/thingfish-handler-mailinglists (new)
+            plugins/thingfish-handler-mailinglists/LICENSE (new)
+            plugins/thingfish-handler-mailinglists/Rakefile (new)
+            plugins/thingfish-handler-mailinglists/spec/thingfish/handler/mailinglists_spec.rb (new)
+            plugins/thingfish-handler-mailinglists/lib (new)
+            plugins/thingfish-handler-mailinglists/lib/thingfish/handler (new) (and 7 other/s)
+   Changed: plugins/thingfish-filestore-filesystem/lib/thingfish/filestore/filesystem.rb
+            plugins/thingfish-metastore-rdf/spec/thingfish/metastore/rdf_spec.rb
+            plugins/thingfish-metastore-marshalled/lib/thingfish/metastore/marshalled.rb
+
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/LICENSE
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/Rakefile
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/README
+   * Add boilerplate for new plugin
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/lib/thingfish/handler/mailinglists.rb
+   source:thingfish/trunkplugins/thingfish-handler-mailinglists/spec/thingfish/handler/mailinglists_spec.rb
+   * Add new mailing lists handler that can:
+   * list the lists it knows about
+   * count messages in a list
+   * give the date of the most recent post to a list
+   source:thingfish/trunkplugins/thingfish-metastore-rdf/spec/thingfish/metastore/rdf_spec.rb
+   * Make RDF metastore specs pending if Redland is not installed
+   source:thingfish/trunkplugins/thingfish-metastore-marshalled/lib/thingfish/metastore/marshalled.rb
+   * Ensure that PStore is created with a plain string instead of a Pathname
+   source:thingfish/trunkplugins/thingfish-filestore-filesystem/lib/thingfish/filestore/filesystem.rb
+   * Skip checking total filestore size if the maxsize is not set.
+
+
+-- Tue, 29 Apr 2008 18:12:04 -0000 by mahlon (r523) -----
+   Added:   misc/rake/lib/benchmarktask.rb (new)
+            misc/rake/lib/manual.rb
+            -> renamed from /thingfish/trunk/misc/rake/manual.rb@r521
+            misc/rake/lib (new)
+   Changed: spec/thingfish/config_spec.rb
+            lib/thingfish/config.rb
+            misc/rake/helpers.rb
+            Rakefile
+            experiments/ab_extra_methods.patch
+            misc/rake/benchmark.rb (and 1 other/s)
+   Deleted: misc/rake/manual.rb
+
+
+    * Allow Rakefile library loading from external sources (fix path
+
+    expansion)
+
+    * Break manual and benchmark class methods into library files, so
+
+    the actual task actions are logically separated.
+
+    * Allow config object assignment for keys that aren't part of the
+
+    original structure.
+
+    * Add a new help methods, 'find_pattern_in_pipe()', which searches
+
+    the output of a system call for a supplied regexp.
+
+    * Remove the totally unnecessary rspec_files() method from helpers.
+
+    * Lots of Benchmark reorganizations for storage of datasets.
+
+    * Added additional 'ab' functionality to benchmark tasks.
+
+    * Updated local 'ab' patch to reflect
+
+    https://issues.apache.org/bugzilla/show_bug.cgi?id=44851
+
+
+-- Tue, 29 Apr 2008 17:58:08 -0000 by bbleything (r522) -----
+   Changed: bin/ml_archiver.rb
+
+    * add flag to set verbose mode
+    * add debug and verbose messages to the message iterators to show which file is being processed
+
+
+-- Mon, 28 Apr 2008 22:15:30 -0000 by bbleything (r521) -----
+   Changed: bin/ml_archiver.rb
+
+    * add progress information to retry_failed_messages and upload_new_messages
+    * change wet_action to do a verbose_msg instead of a regular message
+
+
+-- Mon, 28 Apr 2008 20:51:06 -0000 by bbleything (r520) -----
+   Changed: bin/ml_archiver.rb
+
+   source:thingfish/trunk/bin/ml_archiver.rb
+   * rename MLArchiver class to DefaultArchiver
+   * add available_archivers registry complete with attr_reader
+   * add inherited hook to maintain archiver registry
+   * add archiver_names and get_archiver methods to facilitate looking archivers up by name
+   * add -a/--archiver flag to command line options to allow user to specify desired archiver
+   * add list_name metadatum
+   * add method to DefaultParser to return the delivered-to header as the list name
+   * add EZMLM-specific archiver that knows how to manipulate the delivered-to header to parse out the list name
+   * altered runner to use user-specified archiver to archive messages
+   * removed svn:mime-type property so we can diff this file now
+
+
+-- Thu, 24 Apr 2008 14:25:40 -0000 by mgranger (r519) -----
+   Added:   experiments/migrate_metastore.rb (new)
+
+    * Adding a one-off little wrapper script to demo metastore migration. This 
+    refs #16, but doesn't close it, as it's not really a general tool for
+    migrations, nor does it facilitate migrating filestores. Once we figure out
+    how to specify the source and target metastores on the command line, perhaps
+    we'll move it to bin/ and close the ticket.
+
+
+-- Thu, 24 Apr 2008 14:08:31 -0000 by mgranger (r518) -----
+   Added:   experiments/flood.xml (new)
+   Changed: plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+            start
+            lib/thingfish/metastore.rb
+            plugins/thingfish-metastore-sqlite/spec/thingfish/metastore/sqlite3_spec.rb
+            spec/lib/metastore_behavior.rb
+            spec/thingfish/metastore/memory_spec.rb (and 7 other/s)
+
+     * Added methods to ThingFish::MetaStore to support migration between simple
+     stores:
+     - ThingFish::MetaStore#migrate_from
+     - ThingFish::MetaStore#migrate
+     - ThingFish::MetaStore#each_resource
+     - ThingFish::MetaStore#dump_store
+     - ThingFish::MetaStore#load_store
+     - ThingFish::MetaStore#clear
+     * Generalized the way the RDF MetaStore was converting nodes to plain keys
+     and/or URIs.
+     * Made the `start` script take an optional config file argument. Thanks to Sho
+     for the suggestion.
+
+
+-- Mon, 21 Apr 2008 22:38:42 -0000 by mgranger (r517) -----
+   Changed: plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+            plugins/thingfish-filter-rfc2822/spec/thingfish/filter/rfc2822_spec.rb
+
+   * Fixed a weird bug in the ThingFish::SequelMetaStore#get_all_property_values method under FreeBSD.
+   Still not sure why this happens, but the fix should work everywhere.
+   * Reworked some tests in the rfc2822 filter that broke in different timezones (again! grrrr). Still
+   need to re-add the specific header matches to the test for 'mixed' content.
+
+
+-- Mon, 21 Apr 2008 16:14:33 -0000 by mahlon (r516) -----
+   Added:   experiments/ab_extra_methods.patch (new)
+
+
+    * Still researching Benchmarking utilities.  Slim pickings.
+
+    Worst case scenario, this patch will at least let us use
+
+    'ab' for more than the most basic HTTP methods.
+
+    Gross... but I'm not about to re-engineer 'ab' right now.
+
+
+-- Sat, 19 Apr 2008 08:34:59 -0000 by mahlon (r515) -----
+   Added:   experiments/gnuplot_example.gp (new)
+   Changed: lib/thingfish/daemon.rb
+
+
+    * Add an example gnuplot settings file for ab benchmarks.
+
+    * Log when a client disconnects prematurely.
+
+
+-- Sat, 19 Apr 2008 01:58:42 -0000 by mgranger (r514) -----
+   Changed: misc/rake/benchmark.rb
+
+   Oops. Fixing the build. Make Gruff output optional.
+
+
+-- Sat, 19 Apr 2008 01:56:12 -0000 by mgranger (r513) -----
+   Changed: misc/rake/benchmark.rb
+
+   Checkpoint of some more benchmark task work
+
+
+-- Fri, 18 Apr 2008 17:16:25 -0000 by mgranger (r512) -----
+   Changed: misc/rake/benchmark.rb
+
+   Committing more work on the benchmark Rake task. It's outputting stats via
+   `ab` currently, but since ab can't do PUT or DELETE requests it's of limited
+   usefulness. We're investigating replacing the actual core with `httperf` or
+   Apache's `flood`.
+
+
+-- Fri, 18 Apr 2008 14:19:17 -0000 by mgranger (r511) -----
+   Added:   misc/rake/benchmark.rb (new)
+
+   Adding a new benchmark rake task.
+
+
+-- Thu, 17 Apr 2008 00:15:25 -0000 by mgranger (r510) -----
+   Changed: spec/thingfish/daemon_spec.rb
+            spec/thingfish/metastore_spec.rb
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+            lib/thingfish/metastore.rb
+            lib/thingfish/config.rb
+            spec/lib/metastore_behavior.rb (and 7 other/s)
+
+    * Fixed the dependencies installer for RubyGems > 0.9.something. Apparently 
+    the only reason this worked was that RubyGems didn't clean up files
+    from older installs as part of its updater. D'oh.
+    * Added ThingFish::MetaStore#dump_store for both debugging the contents of a store and for future
+    migration tools.
+
+
+-- Tue, 15 Apr 2008 15:32:01 -0000 by mahlon (r509) -----
+   Changed: spec/thingfish/daemon_spec.rb
+            lib/thingfish/daemon.rb
+            spec/lib/constants.rb
+            spec/thingfish/config_spec.rb
+            plugins/thingfish-handler-inspect/lib/thingfish/handler/inspect.rb
+            spec/thingfish/filter/ruby_spec.rb (and 10 other/s)
+
+
+    * Allow end users to decide between normal text/html output and xhtml
+
+    strict.  We default to text/html, so 'out-of-the-box' features like
+
+    multi upload javascript and info viewing under safari work.  If you
+
+    prefer strict mode, set 'use_html_strict_mimetype' to true in your
+
+    config.  Closes #38.
+
+    * Minor CSS tweak.
+
+
+-- Tue, 15 Apr 2008 15:23:04 -0000 by mgranger (r508) -----
+   Changed: var/www/static/css/default.css
+   Deleted: var/www/static/images/leftbar.png
+            var/www/static/images/content_mid.png
+            var/www/static/images/etch.png
+            var/www/static/images/shadow.png
+            var/www/static/images/bg.png
+            var/www/static/images/content_top.png (and 3 other/s)
+
+   Added some CSS fixes with Mahlon. Glasses girl is cute.
+
+
+-- Mon, 14 Apr 2008 16:09:23 -0000 by mahlon (r507) -----
+   Changed: experiments/rdf-metastore-spike.rb
+            spec/thingfish/metastore_spec.rb
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+            start
+            lib/thingfish/metastore.rb
+            plugins/.skel/lib/thingfish/filter/TEMPLATE.rb.erb (and 6 other/s)
+
+
+    * Refactor ThingFish::MetaStore APIs:
+
+    #find_by_exact_properties() --> #find_exact_uuids()
+
+    #find_by_matching_properties() --> #find_matching_uuids()
+
+    Metastores can implement either one.  You can inherit the intersect logic
+
+    and use find_*_uuids(), or completely override find_by_*_properties() if
+
+    your metastore has a more robust way to gather UUIDs.  This removes
+
+    all the duplicate logic in the current metastores.
+
+    * Move a good portion of the SQL into constants, in the SQLite3 metastore.
+
+    * Michael is naughty too.
+
+    * Minor typo correction in Filter template.
+
+    * Remove errant space in the 'start' script.
+
+    * Correct my destruction of the RDF metastore spike.  Also keep a commented
+
+    SQLite backend storage example.   Add example SparQL search.
+
+
+-- Fri, 11 Apr 2008 20:05:06 -0000 by mgranger (r506) -----
+   Added:   etc/thingfish.conf.example
+            -> renamed from /thingfish/trunk/etc/thingfish.conf@r504
+            etc/thingfish.conf.advanced
+            -> renamed from /thingfish/trunk/etc/thingfish.conf-advanced@r504
+            etc/thingfish.conf.minimal
+            -> renamed from /thingfish/trunk/etc/thingfish.conf-minimal@r504
+   Changed: etc
+            experiments/rdf-classgen.rb
+            docs/manual/src/index.page
+            docs/manual/src/03.Hackers_Guide/05.writing-metastores.page
+            docs/manual/src/02.Developers_Guide/01.connecting.page
+            docs/manual/src/02.Developers_Guide/index.page (and 18 other/s)
+   Deleted: etc/thingfish.conf-advanced
+            etc/thingfish.conf-minimal
+
+    * Added a hack to the rfc2822 filter to show mail in the browser. This should really be done
+    in either the HTML filter or in a dedicated text filter. This will likely be removed at a
+    later date.
+    * Finished up the 'simple' metastore interface in the RDF metastore. The search interface needs
+    some cleanup still, but it's now minimally-functional as a simple store. All the really cool
+    stuff is around the corner.
+    * Factored the glob->regexp function from the marshalled metastore into the base MetaStore.
+    * Updated/fixed a bunch of manual stuff. Thanks once again to Sho Fukamachi for noticing.
+    * Added a multiple query-arg test to the metastore shared behavior
+    * Added a big disclaimer to the header of the `start` script.
+    * Renamed all the configs for consistency, added an ignore for etc/thingfish.conf to avoid 
+    clobbering Sho's config every time, and moved the old etc/thingfish.conf to 
+    etc/thingfish.conf.example. Closes #47.
+
+
+-- Wed, 09 Apr 2008 21:27:01 -0000 by mgranger (r505) -----
+   Added:   plugins/thingfish-filter-naughty/spec/thingfish (new)
+            plugins/thingfish-filter-naughty/lib/thingfish/filter (new)
+            plugins/thingfish-filter-naughty/lib/thingfish (new)
+            plugins/thingfish-filter-naughty/spec (new)
+            plugins/thingfish-filter-naughty/README (new)
+            plugins/thingfish-filter-naughty/spec/thingfish/filter/naughty_spec.rb (new) (and 7 other/s)
+   Changed: plugins/thingfish-filter-exif/README
+            docs/manual/lib/examples-filter.rb
+            plugins/thingfish-handler-inspect/README
+            plugins/thingfish-handler-formupload/README
+            experiments/rdf-metastore-spike.rb
+            README (and 23 other/s)
+
+    * Fixed the incorrect Mahlons in various files.
+    * Added a "naughty" filter as a place to collect various ways lazy or naieve plugins could cause
+    requests to fail.
+    * Checkpoint of a bit more progress on the RDF metastore.
+    * Fixed up the tf_plugin spec templates with updated boilerplate code.
+    * Fixed some broken paths in the manual-generation Rake task. Thanks to
+    Sho Fukamachi for reporting this. Fixes #46.
+    * Added missing plugin dependency for the RFC2822 filter to the `install_plugin_dependencies` task.
+    * Rewind bodies explicitly again to work around the fact that duped IOs that are read from still
+    have their underlying FILE* position modified when read from. Refs #26.
+    * Added a UUID_URN pattern for matching UUID URNs.
+
+
+-- Wed, 09 Apr 2008 20:37:49 -0000 by jjordan (r504) -----
+   Added:   bin/ml_archiver.rb (new)
+            bin/ml_unarchiver.rb (new)
+
+   Michael and I worked on the mail archiver script and the slightly inappropriately named unarchiver script.  I say that because the unarchiver is actually just a test script to create a Maildir(tm)
+
+
+-- Tue, 08 Apr 2008 18:37:07 -0000 by jjordan (r503) -----
+   Changed: spec/thingfish/daemon_spec.rb
+            start
+            plugins/thingfish-filter-rfc2822/lib/thingfish/filter/rfc2822.rb
+
+    * Added a warning log message if the RFC(2)822 filter is run with an old version of TMail installed.
+    * Fixed a bug in the spec for Daemon that assumed object_ids were positive, which turns out not to be
+    a correct assumption on Linux.
+    * Load rubygems explicitly in the start script.
+
+
+-- Tue, 08 Apr 2008 17:48:34 -0000 by mgranger (r502) -----
+   Changed: spec/thingfish/handler/default_spec.rb
+            lib/monkeypatches.rb
+            plugins/thingfish-metastore-rdf/spec/thingfish/metastore/rdf_spec.rb
+            plugins/thingfish-metastore-rdf/lib/thingfish/metastore/rdf.rb
+
+    * Checkpoint commit of more work on the RDF metastore
+    * Adding a monkeypatch to UUIDtools' .parse method that speeds it up quite a bit.
+    * Use the new logging helpers in the spec for the default handler.
+
+
+-- Tue, 08 Apr 2008 17:44:41 -0000 by mgranger (r501) -----
+   Added:   plugins/thingfish-filter-rfc2822/README (new)
+            plugins/thingfish-filter-rfc2822/spec/thingfish (new)
+            plugins/thingfish-filter-rfc2822/lib/thingfish/filter (new)
+            plugins/thingfish-filter-rfc2822 (new)
+            plugins/thingfish-filter-rfc2822/LICENSE (new)
+            plugins/thingfish-filter-rfc2822/Rakefile (new) (and 10 other/s)
+
+    * Checking in initial version of the RFC(2)822 filter.
+
+
+-- Mon, 07 Apr 2008 16:26:16 -0000 by mahlon (r500) -----
+   Changed: misc/rake/packaging.rb
+
+
+    * Remove errant tab character in gem pluginfactory dependency.
+
+    Reported by Sho Fukamachi <sho.fukamachi@gmail.com> -- thanks!!
+
+
+-- Mon, 07 Apr 2008 15:20:29 -0000 by mgranger (r499) -----
+   Changed: var/www/metadata/values.rhtml
+            spec/thingfish/request_spec.rb
+            lib/thingfish/request.rb
+            plugins/thingfish-handler-formupload/lib/thingfish/handler/formupload.rb
+            var/www/static/css/default.css
+            lib/thingfish/constants.rb (and 1 other/s)
+
+    * Fixed a bug in the way metadata was appended for subordinate resources.
+    * Added HTML-escaping to values in search result links.
+    * Temporarily set the XHTML mimetype to 'text/html' to work around bugs in our markup until we can
+    fix them/add mimetype configurability. This should address #38 and fix the multi-upload
+    in the uploadhandler's form for now.
+
+
+-- Fri, 04 Apr 2008 15:46:13 -0000 by mahlon (r498) -----
+   Changed: bin/thingfish
+            spec/thingfish/daemon_spec.rb
+            lib/thingfish/daemon.rb
+            spec/thingfish/mixins_spec.rb
+            lib/thingfish/request.rb
+            etc/thingfish.conf-advanced (and 4 other/s)
+
+
+    * Add coverage for daemon dispatch.
+
+    * Add coverage for profiling.
+
+    * Add coverage for mixins: ThingFish::Loggable#log_debug
+
+    * Add profiling support to ruby client library (and command line client.)
+
+
+-- Thu, 03 Apr 2008 04:27:34 -0000 by mahlon (r497) -----
+   Changed: lib/thingfish/config.rb
+            plugins/thingfish-filter-mp3/lib/thingfish/filter/mp3.rb
+
+
+    * Whoop, two quick backouts.
+
+    * Tune down the debug output of mp3 extracted metadata
+
+    * Profiling metrics empty array uses RubyProf::PROCESS_TIME, which is probably a sane default.
+
+
+-- Thu, 03 Apr 2008 02:33:22 -0000 by mgranger (r496) -----
+   Changed: plugins/thingfish-filter-exif/lib/thingfish/filter/exif.rb
+            lib/thingfish/config.rb
+            plugins/thingfish-filter-mp3/spec/thingfish/filter/mp3_spec.rb
+            spec/thingfish/request_spec.rb
+            lib/thingfish/request.rb
+            plugins/thingfish-filter-mp3/lib/thingfish/filter/mp3.rb (and 4 other/s)
+
+    * Add Request#append_related_resource and Request#append_metadata_for to support plugins which 
+    unwrap parts of uploaded resources and attach them as metadata, such as thumbnails, summaries, 
+    etc.
+    * Added a default metric to the default profiling config so turning on profiling will actually
+    do something without having to add a metric argument.
+
+
+-- Wed, 02 Apr 2008 18:32:39 -0000 by mahlon (r495) -----
+   Changed: spec/thingfish/daemon_spec.rb
+            lib/thingfish/daemon.rb
+            spec/thingfish/config_spec.rb
+            lib/thingfish/config.rb
+            spec/thingfish/request_spec.rb
+            lib/monkeypatches.rb (and 5 other/s)
+
+
+    * Tune down the debug output for the mp3 filter.
+
+    * Minor tweaks to look-and-feel css.  (More coming.)
+
+    * First pass at in-server profiling (ticket #43.)
+
+    * Additional re-factoring of the ThingFish::Config directory creation methods.
+
+    * Update for the Mongrel monkeypatch.  EEeeeeeKkk eek Eeeee.
+
+
+-- Mon, 24 Mar 2008 15:23:18 -0000 by mahlon (r494) -----
+   Changed: docs/manual/src/getting-started.page
+            misc/clientlibs/perl/client.pl
+            spec/thingfish/request_spec.rb
+            lib/thingfish/request.rb
+
+
+    * Small doc fixes
+
+    * StringIO doesn't behave like IO when you #dup one, if the copy is closed, so is the original.
+
+    Do an explicit check for StringIO to guard against this.
+
+    * Allow multiple uploads from the perl example client.
+
+    * Only warn on IOs that are closed.  (Shouldn't happen anymore, but leaving in to be sure.)
+
+
+-- Mon, 24 Mar 2008 14:24:10 -0000 by mgranger (r493) -----
+   Changed: spec/lib/constants.rb
+            plugins/thingfish-filter-json/Rakefile
+            spec/thingfish/request_spec.rb
+            plugins/thingfish-handler-status/Rakefile
+            plugins/thingfish-metastore-sequel/Rakefile
+            plugins/thingfish-metastore-rdf/spec/thingfish/metastore/rdf_spec.rb (and 42 other/s)
+
+    * Fixed packaging task for plugins
+    * Added ThingFish::Config#spooldir_path to return the fully-qualified path to
+    the spool directory, relative to the datadir if the spooldir is a relative
+    path.
+    * Made all plugins, handlers, etc. use the datadir and spooldir
+    * Duplicate IO before yielding it in ThingFish::Request#each_body to prevent
+    changes to it in the filters from affecting other systems' use of it.
+
+
+-- Fri, 21 Mar 2008 17:32:46 -0000 by mgranger (r492) -----
+   Changed: plugins/thingfish-metastore-rdf
+            plugins/thingfish-filter-json/Rakefile
+            plugins/thingfish-filter-json/LICENSE
+            plugins/thingfish-handler-status/LICENSE
+            plugins/thingfish-handler-status/Rakefile
+            plugins/thingfish-metastore-sequel/Rakefile (and 28 other/s)
+
+    * Fixed some broken plugin gemspecs
+    * Checkpointing some work on the RDF metastore
+
+
+-- Thu, 20 Mar 2008 15:44:51 -0000 by mahlon (r491) -----
+   Added:   QUICKSTART (new)
+            etc/thingfish.conf-minimal (new)
+   Changed: etc
+            plugins/thingfish-filter-exif/README
+            docs/manual/src/index.page
+            plugins/thingfish-handler-inspect/README
+            plugins/thingfish-filter-json/Rakefile
+            plugins/thingfish-handler-status/Rakefile (and 33 other/s)
+   Deleted: etc/thingfish.conf-testing
+            docs/LICENSE
+
+
+   This is the big "make sure ThingFish works out of the box" commit.
+
+   Thanks to Sho Fukamachi <sho.fukamachi@gmail.com> for his excellent suggestions.
+
+   * Normalize plugin Rakefile and README content, and ensure they reflect reality.
+
+   * Make sure that the default 'thingfish.conf' file uses the minimal plugin set that
+
+   most people would find useful while experimenting/evaluating ThingFish.
+
+   * Moved the -really- minimal config example to 'etc/thingfish.conf-minimal', for
+
+   reference.
+
+   * Added a 'QUICKSTART' document to aid with initial setup, and steer people
+
+   to the Manual for more advanced usage.
+
+   * Fix for the /search handler javascript, for the case where the JSON plugin is
+
+   not present.  (Fallsthrough to HTML view.)
+
+   * Removed conflicting LICENSE file.  Whoops.
+
+   * Removed webgen from the list of default dependencies.
+
+   * Added some command-line blurbs for the intended use of the 'start' script.
+
+   * Fixed a bug in ThingFish::Request#query_args -- use the uri accessor instead of the
+
+   instance variable, which in some cases was uninitialized.
+
+
+-- Wed, 19 Mar 2008 15:27:42 -0000 by mahlon (r490) -----
+   Changed: spec/thingfish/handler/default_spec.rb
+            plugins/thingfish-filter-exif/lib/thingfish/filter/exif.rb
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+
+
+    * Integer-ify EXIF::TIFF::Orientation objects before storing them into the metastore.
+
+    * Stub tests for content-disposition Time.rfc822, so parsing the date string doesn't
+
+    change to the timezone of the person running the test.  Closes #40.
+
+
+-- Mon, 17 Mar 2008 21:22:08 -0000 by mahlon (r489) -----
+   Changed: bin/thingfish
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb
+            spec/thingfish/resource_spec.rb
+            lib/thingfish/resource.rb
+            lib/thingfish/request.rb
+
+
+    * Cache ID lookups in the Sequel metastore, to be less 'chatty' with the database
+
+    with repetitive queries.   
+
+    * Improve compatibility with NULL inserts and Postgres.  (Thanks Michael!)
+
+    * Temp fix for mimetype detection for the ruby client.
+
+
+-- Sun, 16 Mar 2008 18:52:04 -0000 by mahlon (r488) -----
+   Changed: var/www/metadata/values.rhtml
+            lib/thingfish/multipartmimeparser.rb
+            lib/thingfish/metastore/memory.rb
+
+
+    * Force metadata values to strings when sorting in the HTML filter.
+
+    Fixes bug:37.
+
+    * Force metadata values to strings for equality/regexp comparisons
+
+    in ThingFish::MemoryMetastore.  Fixes bug:36.
+
+    * Automatically create the spooldir if it doesn't already exist
+
+    during multipart mime parsing.  Closes issue:34.
+
+
+-- Sun, 16 Mar 2008 07:43:19 -0000 by mahlon (r487) -----
+   Changed: plugins/thingfish-filter-json/Rakefile
+            plugins/thingfish-handler-status/Rakefile
+            plugins/thingfish-metastore-sequel/Rakefile
+            plugins/.skel/Rakefile.erb
+            plugins/thingfish-metastore-sqlite/Rakefile
+            plugins/thingfish-filter-image/Rakefile (and 13 other/s)
+
+
+    * Rename plugin Rakefile PKG_NAME(s) to reflect new plugin naming conventions.
+
+    * Completion of the Sequel metastore plugin, along with various cleanups.
+
+    This now opens up the possibility for Postgres/MySQL/etc simple metastores!
+
+    * Added an additional Log object that only allows debug messages.  This
+
+    eases debug output for libraries that accept Logger objects directly.
+
+
+-- Sat, 15 Mar 2008 00:28:20 -0000 by mahlon (r486) -----
+   Added:   plugins/thingfish-metastore-sequel/lib/thingfish (new)
+            plugins/thingfish-metastore-sequel/spec (new)
+            plugins/thingfish-metastore-sequel/spec/thingfish/metastore/sequel_spec.rb (new)
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore (new)
+            plugins/thingfish-metastore-sequel/lib/thingfish/metastore/sequel.rb (new)
+            plugins/thingfish-metastore-sequel/README (new) (and 7 other/s)
+   Changed: plugins/thingfish-metastore-sqlite/lib/thingfish/metastore/sqlite3.rb
+
+
+    * Rename default sqlite3 file from 'metadata' to 'metastore'.
+
+    * Initial commit of the Sequel metastore plugin.
+
+    This is a non-functional checkpoint commit.  Not ready for prime time... but close.  ;)
+
+
+-- Fri, 14 Mar 2008 13:39:16 -0000 by mgranger (r485) -----
+   Changed: docs/manual/src/getting-started.page
+            etc/thingfish.conf-testing
+            docs/manual/lib/examples-filter.rb
+            docs/manual/src/index.page
+            docs/manual/src/02.Developers_Guide/01.connecting.page
+            docs/manual/layouts/default.page (and 2 other/s)
+
+    * More work converting docs
+    * CSS headline margin fixes
+    * Made the testing config reflect changes in the plugin directory's 
+    layout
+
+
+-- Fri, 14 Mar 2008 00:12:35 -0000 by mahlon (r484) -----
+   Added:   plugins/thingfish-metastore-sqlite/spec/thingfish (new)
+            spec/thingfish/filter/html_spec.rb
+            -> renamed from /thingfish/trunk/spec/thingfish/filter/htmlfilter_spec.rb@r480
+            plugins/thingfish-filter-mp3/spec/thingfish/filter (new)
+            plugins/thingfish-handler-status/spec/thingfish/handler/status_spec.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-handler-status/spec/statushandler_spec.rb@r483
+            plugins/thingfish-filter-exif/spec/thingfish/filter/exif_spec.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-filter-exif/spec/exiffilter_spec.rb@r483
+            plugins/thingfish-handler-status/spec/thingfish/handler (new) (and 27 other/s)
+   Changed: lib/thingfish/daemon.rb
+            lib/thingfish/mixins.rb
+            start
+   Deleted: spec/thingfish/filter/yamlfilter_spec.rb
+            plugins/thingfish-filter-exif/spec/exiffilter_spec.rb
+            plugins/thingfish-metastore-sqlite/spec/sqlite3ms_spec.rb
+            plugins/thingfish-filter-xml/spec/xmlfilter_spec.rb
+            plugins/thingfish-metastore-marshalled/spec/marshalledms_spec.rb
+            plugins/thingfish-handler-formupload/spec/formuploadhandler_spec.rb (and 7 other/s)
+
+
+    * Moved all plugin specs to their organizationally 'correct' locations.
+
+    * Updated/converted our development 'start' script to allow us to have
+
+    our own testing config files.
+
+
+-- Thu, 13 Mar 2008 15:10:24 -0000 by mahlon (r483) -----
+   Added:   plugins/thingfish-filestore-filesystem/spec
+            -> copied from /thingfish/trunk/plugins/thingfish-filesystemfs/spec@r482
+            plugins/thingfish-metastore-rdf
+            -> renamed from /thingfish/trunk/plugins/thingfish-rdfms@r482
+            plugins/thingfish-metastore-marshalled
+            -> renamed from /thingfish/trunk/plugins/thingfish-marshalledms@r482
+            plugins/thingfish-handler-formupload/spec
+            -> copied from /thingfish/trunk/plugins/thingfish-formuploadhandler/spec@r482
+            plugins/thingfish-filestore-filesystem
+            -> renamed from /thingfish/trunk/plugins/thingfish-filesystemfs@r480
+            plugins/thingfish-filter-exif
+            -> renamed from /thingfish/trunk/plugins/thingfish-exiffilter@r480 (and 9 other/s)
+   Changed: bin/tf_plugin
+   Deleted: plugins/thingfish-rdfms
+            plugins/thingfish-marshalledms
+            plugins/thingfish-filesystemfs
+            plugins/thingfish-jsonfilter
+            plugins/thingfish-statushandler
+            plugins/thingfish-sqlite3ms (and 7 other/s)
+
+
+    * Renamed plugins to standardize on the form:
+
+    thingfish-[plugintype]-[name]
+
+    * Updated the tf_plugin convenience utility to reflect the above.
+
+
+-- Thu, 13 Mar 2008 13:49:42 -0000 by mgranger (r482) -----
+   Added:   plugins/thingfish-rdfms/spec/thingfish/metastore/rdf_spec.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-rdfms/spec/rdfms_spec.rb@r481
+            plugins/thingfish-rdfms/spec/thingfish (new)
+            plugins/thingfish-rdfms/spec/thingfish/metastore (new)
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/thingfish/exceptions_spec.rb
+            spec/lib/filestore_behavior.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            spec/thingfish/request_spec.rb
+            plugins/thingfish-formuploadhandler/spec/formuploadhandler_spec.rb (and 26 other/s)
+   Deleted: plugins/thingfish-rdfms/spec/rdfms_spec.rb
+
+    * Merged some stuff left from the working copy of my l-a-f branch.
+    * Removed mystery character from several manual pages
+
+
+-- Thu, 13 Mar 2008 13:20:09 -0000 by mgranger (r481) -----
+   Added:   var/www/static/images/shadows/smallest-70.png (new)
+            var/www/static/images/shadows/medium.png (new)
+            var/www/static/images/shadows/smallest.png (new)
+            var/www/static/images/shadows/small-10.png (new)
+            var/www/static/images/shadows/small-30.png (new)
+            var/www/static/images/shadows/small-50.png (new) (and 22 other/s)
+   Changed: docs/manual/src/getting-started.page
+            docs/manual/lib/examples-filter.rb
+            var/www/static/css/default.css
+            docs/ThingFish-Design-Diagrams.graffle
+   Deleted: var/www/static/images/medium-shadow-50.png
+            var/www/static/images/medium-shadow-70.png
+            var/www/static/images/small-shadow.png
+            var/www/static/images/large-shadow.png
+            var/www/static/images/small-shadow-50.png
+            var/www/static/images/small-shadow-70.png (and 5 other/s)
+
+   Fixed up some broken CSS from the merge, started converting manual to the new format
+
+
+-- Wed, 12 Mar 2008 22:10:34 -0000 by mgranger (r480) -----
+   Added:   plugins/thingfish-filesystemfs/spec/thingfish (new)
+            plugins/thingfish-filesystemfs
+            -> renamed from /thingfish/trunk/plugins/thingfish-fsfs@r479
+            plugins/thingfish-filesystemfs/spec/thingfish/filestore (new)
+            plugins/thingfish-filesystemfs/spec/thingfish/filestore/filesystem_spec.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-fsfs/spec/fsfs_spec.rb@r479
+   Changed: misc/rake/manual.rb
+            Rakefile
+            docs/manual/layouts/default.page
+            spec/lib/helpers.rb
+   Deleted: plugins/thingfish-fsfs
+            plugins/thingfish-filesystemfs/spec/fsfs_spec.rb
+            docs/manual/lib/default-filters.rb
+
+    * Fixed the new manual-generation system so it'll at least run 
+    successfully. Still need to fix all the source so it'll render
+    correctly, and write the index-generation piece.
+    * Reorganized the filesystem filestore to follow the new naming 
+    conventions.
+
+
+-- Wed, 12 Mar 2008 18:42:12 -0000 by mahlon (r479) -----
+   Added:   spec/thingfish/exceptions_spec.rb
+            -> renamed from /thingfish/trunk/spec/exceptions_spec.rb@r478
+            plugins/.skel/lib/thingfish/filter
+            -> renamed from /thingfish/branches/look-and-feel/plugins/.skel/lib/thingfish/filter@r478
+            spec/thingfish (new)
+            misc/rake/presentations.rb
+            -> renamed from /thingfish/branches/look-and-feel/misc/rake/presentations.rb@r478
+            var/www/static/images/etch.png
+            -> renamed from /thingfish/branches/look-and-feel/var/www/static/images/etch.png@r478
+            misc/rake/style.rb
+            -> renamed from /thingfish/branches/look-and-feel/misc/rake/style.rb@r478 (and 64 other/s)
+   Changed: docs/manual/src/03.Hackers_Guide/images
+            var/www/metadata/index.rhtml
+            var/www/index_content.rhtml
+            var/www/static
+            plugins/thingfish-mp3filter/lib/thingfish/filter/mp3.rb
+            misc/clientlibs/perl/ThingFish/Resource.pm (and 30 other/s)
+   Deleted: docs/manual/src/04.Hackers_Guide
+            spec/handler_spec.rb
+            plugins/.skel/README
+            spec/request_spec.rb
+            plugins/.skel/lib/thingfish/filestore/TEMPLATE.rb
+            docs/manual/src/05.Maintenance (and 37 other/s)
+
+
+    * Merged [log:thingfish/branches/look-and-feel@395:475 the look-and-feel branch].
+
+    * Added 'info' command to the Perl client.
+
+    * Use server introspection to find the default handler location in the Perl client.
+
+    * Updated to most recent version of the JQuery MultiFile upload plugin.
+
+
+-- Tue, 11 Mar 2008 15:45:39 -0000 by mahlon (r475) -----
+   Changed: bin/thingfish
+            etc/thingfish.conf-testing
+            spec/resource_spec.rb
+            lib/thingfish/resource.rb
+            spec/client_spec.rb
+            lib/thingfish/client.rb (and 1 other/s)
+
+
+    * Brought the ruby client up to speed with current server functionality.
+
+    Closes #29.
+
+    * Added more substantial command line help for the ruby client.
+
+    * Increased coverage on ThingFish::Client and ThingFish::Resource.
+
+
+-- Fri, 29 Feb 2008 19:05:16 -0000 by mahlon (r474) -----
+   Changed: misc/clientlibs/perl/client.pl
+
+
+    * Allow an actual URL in the perl command line client example.
+
+
+-- Fri, 29 Feb 2008 18:54:26 -0000 by mgranger (r473) -----
+   Changed: bin/thingfish
+            spec/client_spec.rb
+
+    * Cosmetic cleanup of constants in ThingFish::Client.
+    * Improved server info display for the [source: bin/thinfish command-line client].
+
+
+-- Fri, 29 Feb 2008 16:44:13 -0000 by mahlon (r471) -----
+   Changed: etc/thingfish.conf-testing
+            misc/clientlibs/perl/client.pl
+            spec/resource_spec.rb
+            misc/clientlibs/perl/ThingFish/Client.pm
+            lib/thingfish/resource.rb
+            lib/thingfish/request.rb (and 4 other/s)
+
+
+    * Bring the ruby client up to date with server APIs.
+
+    (More coverage on the way.)
+
+    * Update the perl client's 'search' to return ThingFish::Resource
+
+    objects instead of UUID strings.
+
+    * Add reset_logger() helper to specs.
+
+
+-- Tue, 26 Feb 2008 22:42:39 -0000 by mgranger (r468) -----
+   Changed: misc/rake/helpers.rb
+
+   Merged some Rakefile helper functions from other projects.
+
+
+-- Tue, 26 Feb 2008 22:30:58 -0000 by mgranger (r467) -----
+   Changed: misc/rake/svn.rb
+
+   Oops. Accidentally turned off coverage checks in the last commit. Re-enabled.
+
+
+-- Tue, 26 Feb 2008 22:10:43 -0000 by mgranger (r466) -----
+   Changed: lib/thingfish/acceptparam.rb
+            experiments/rdf-classgen.rb
+            docs/manual/src/04.Hackers_Guide/examples/erb-handler.rb
+            docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb
+            plugins/thingfish-exiffilter/lib/thingfish/filter/exif.rb
+            lib/thingfish/filter.rb (and 85 other/s)
+
+    * Merged a bunch of subversion rake stuff from other projects.
+    * Fixed keywords for a bunch of files with the svn:fix_keywords task from above.
+
+
+-- Mon, 25 Feb 2008 16:25:19 -0000 by mahlon (r465) -----
+   Changed: spec/multipartmimeparser_spec.rb
+            lib/thingfish/multipartmimeparser.rb
+            spec/daemon_spec.rb
+
+
+    * Explicitly remove the final CRLF from multipart streams.  Closes #31.
+
+
+-- Mon, 25 Feb 2008 07:44:02 -0000 by mgranger (r464) -----
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/filter/ruby_spec.rb
+            lib/thingfish/exceptions.rb
+            docs/manual/src/04.Hackers_Guide/examples/erb-handler.rb
+            plugins/thingfish-exiffilter/lib/thingfish/filter/exif.rb
+            spec/lib/constants.rb (and 43 other/s)
+
+    * Added filter introspection to the server info returned by the 
+    default handler's '/'.
+    * Converted 'text/html' responses to XHTML ones. We'll have to add some kind of translation of that
+    to the HTML filter for crappy clients.
+    * Added Emacs+rcov tasks to the Rakefile
+    * More work on the client library. Coverage sucks at the moment, and there's still big gaps, but it
+    has been far too long since I've committed.
+    * Implemented a new testing strategy for ThingFish::Daemon, which involved factoring out the
+    request/response-generation code into a separate method and changing the monkeypatch to follow
+    suit.
+    * Implemented log formatting, with the added benefit of making the RSpec output include
+    pretty-formatted logs if run under TextMate.
+    * Made the 'svn:ci' task update with --ignore-externals turned on to avoid being able to commit
+    using it if there's a problem with an external.
+
+
+-- Thu, 21 Feb 2008 01:52:30 -0000 by mahlon (r463) -----
+   Added:   misc/clientlibs/perl/ThingFish/Resource.pm (new)
+            misc/clientlibs/perl/client.pl (new)
+            misc/clientlibs/perl/ThingFish/Client.pm (new)
+            misc/clientlibs/perl/ThingFish (new)
+   Changed: lib/thingfish/daemon.rb
+            lib/thingfish/request.rb
+            spec/daemon_spec.rb
+
+
+    * Initial commit of perl bindings and example client!
+
+    * Bug fix for ticket #30.  Tests to follow shortly, we need to rework our mocks
+
+    around the Mongrel vs Thingfish request/response stuff.  Bleah.
+
+    Also, to support the mock weirdness, I added a nasty temp stub that will go
+
+    away.  Jeez, what a pain.
+
+    * Added some additional comments around Request#each_body to express intent.
+
+
+-- Mon, 18 Feb 2008 16:03:14 -0000 by mahlon (r462) -----
+   Changed: lib/thingfish/daemon.rb
+            spec/request_spec.rb
+            lib/thingfish/handler/simplemetadata.rb
+            lib/thingfish/request.rb
+            spec/daemon_spec.rb
+
+
+    * Opt to add a default content-type instead of guessing from Content-Disposition.
+
+    This reverts an earlier change, and forces the user to send Content-Type if
+
+    they want the extraction filters to run!
+
+    * Small re-factor and variable rename to remove merged metadata ambiguity.
+
+
+-- Sat, 16 Feb 2008 08:01:53 -0000 by mgranger (r461) -----
+   Changed: docs
+
+   Retargeted the rdoc external after re-organizing directories in that project.
+
+
+-- Thu, 14 Feb 2008 01:22:28 -0000 by mahlon (r460) -----
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/handler/simplemetadata.rb
+
+
+    * Return merged metadata as content response on PUT to /metadata handler.
+
+
+-- Mon, 11 Feb 2008 16:44:18 -0000 by mahlon (r459) -----
+   Changed: lib/thingfish/handler/default.rb
+            var/www/metadata/main.rhtml
+            spec/handler/default_spec.rb
+
+
+   * Force metavalue sorting to strings in metadata handler.
+
+   * On resource creation, fetch merged metadata from store.
+
+
+-- Mon, 11 Feb 2008 07:51:35 -0000 by mgranger (r458) -----
+   Changed: bin/thingfish
+            lib/thingfish/utils.rb
+            lib/thingfish.rb
+            lib/thingfish/exceptions.rb
+            lib/thingfish/handler/default.rb
+            spec/resource_spec.rb (and 8 other/s)
+
+    * Added user-agent to request logging line.
+    * Lots of work on the ruby client/resource classes.
+    * Added a monkeypatch to the HTML Rspec outputter that makes it show 
+    up more friendly in TextMate.
+    * Added customizable formatting to the log outputter
+    * Bumped ThingFish::VERSION to 0.2.0.
+    * Started work on a new and improved bin/thingfish.
+
+
+-- Fri, 08 Feb 2008 15:40:58 -0000 by mahlon (r457) -----
+   Changed: spec/filter/ruby_spec.rb
+            spec/lib/constants.rb
+            lib/thingfish/filter/yaml.rb
+            plugins/thingfish-jsonfilter/spec/jsonfilter_spec.rb
+
+
+    * Don't modify the underlying data structure on YAML stringification.
+
+    * Explicit JSON content tests.
+
+    * Freeze all test constants, hopefully will help us catch test ordering bugs sooner.
+
+
+-- Thu, 07 Feb 2008 16:37:56 -0000 by mahlon (r456) -----
+   Changed: lib/thingfish/handler/default.rb
+            spec/handler/default_spec.rb
+
+
+    * Allow explicit setting of the filename on resource fetches.
+
+    GET /[uuid]                       (no content disposition)
+
+    GET /[uuid]?attach                (content disposition, use metadata title)
+
+    GET /[uuid]?attach=whatever.jpg   (content disposition, use specified name)
+
+
+-- Thu, 07 Feb 2008 16:20:20 -0000 by mahlon (r455) -----
+   Changed: plugins/thingfish-jsonfilter/lib/thingfish/filter/json.rb
+            lib/thingfish/handler/default.rb
+            spec/filter/ruby_spec.rb
+            spec/handler/simplemetadata_spec.rb
+            spec/lib/constants.rb
+            lib/thingfish/filter/ruby.rb (and 8 other/s)
+
+
+    * Change the response behavior on conversion filters --
+
+    if we can't convert into json/xml/yaml/ruby/etc...
+
+    it's indicative of a problem, and shouldn't be absorbed.
+
+    * Be more explicit with what errors we absorb on request filters.
+
+    * Make sure that YAML output is stringified, regardless of Object type.
+
+    (Sticking to our language agnostic principles... if you want the
+
+    advantages of Ruby serialized metadata values, use the ruby filter!)
+
+    * Allow the IPAddr class to be XML Serialized.
+
+    * Conversion filters (as a general rule) shouldn't set response.status.
+
+    * Set Content-Type on DELETE to / to text/plain
+
+    * Responses to / PUT/POST return the extracted metadata, so uploads don't
+
+    need to perform a second request to fetch that data.
+
+
+-- Wed, 06 Feb 2008 18:26:03 -0000 by mahlon (r454) -----
+   Changed: lib/thingfish/daemon.rb
+            spec/daemon_spec.rb
+
+
+    * Make sure there is always a 'format' metadata key stored on upload.
+
+
+-- Fri, 01 Feb 2008 19:31:46 -0000 by mahlon (r450) -----
+   Changed: spec/filter/ruby_spec.rb
+            lib/thingfish/config.rb
+            spec/filter/yamlfilter_spec.rb
+            plugins/thingfish-jsonfilter/spec/jsonfilter_spec.rb
+
+
+    * Fill out coverage for yaml/json/ruby filters.
+
+    * Remove old reference to 'extractors' in the metadata default config.
+
+
+-- Fri, 01 Feb 2008 15:20:46 -0000 by mahlon (r449) -----
+   Added:   misc/raw-http-requests (new)
+            misc/raw-http-requests/uuid-get-request
+            -> renamed from /thingfish/trunk/misc/uuid-get-request@r448
+            misc/raw-http-requests/post-request
+            -> renamed from /thingfish/trunk/misc/post-request@r448
+            misc/raw-http-requests/put-metadata-request
+            -> renamed from /thingfish/trunk/misc/put-metadata-request@r448
+            misc/raw-http-requests/put-metadata-request-json (new)
+            misc/raw-http-requests/index-get-request
+            -> renamed from /thingfish/trunk/misc/index-get-request@r448 (and 1 other/s)
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/filter/ruby_spec.rb
+            spec/handler/simplemetadata_spec.rb
+            docs/manual/src/04.Hackers_Guide/examples/erb-handler.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb (and 26 other/s)
+   Deleted: misc/uuid-get-request
+            misc/index-get-request
+            misc/post-request
+            misc/put-metadata-request
+
+
+     * Move http examples (netcat fun) into their own directory.
+
+     * Use the Request#content_type and Response#content_type methods everywhere.
+
+     Law of Demeter.
+
+     * 'start' script is now bash explicit.
+
+
+-- Thu, 31 Jan 2008 17:06:54 -0000 by mahlon (r447) -----
+   Changed: plugins/thingfish-jsonfilter/lib/thingfish/filter/json.rb
+            spec/request_spec.rb
+            lib/thingfish/filter/yaml.rb
+            lib/thingfish/request.rb
+            spec/filter/yamlfilter_spec.rb
+            plugins/thingfish-xmlfilter/spec/xmlfilter_spec.rb (and 5 other/s)
+
+    * Add request parsing for JSON filter.
+    * Add tests for incoming JSON/YAML filters.
+    * Convenience accessors for request/response content-types
+    * This commit closes #15 and makes the SimpleMetadata handler functionally complete!  Wooo hoo!!
+
+
+-- Thu, 31 Jan 2008 15:27:19 -0000 by mgranger (r446) -----
+   Added:   misc/clientlibs/javascript/thingfish.js (new)
+            misc/clientlibs/javascript (new)
+   Changed: spec/filter/yamlfilter_spec.rb
+
+
+    * Fixed the YAML filter spec
+
+    * Added the initial notes on the javascript client library
+
+
+-- Tue, 29 Jan 2008 17:02:01 -0000 by mahlon (r444) -----
+   Added:   misc/clientlibs (new)
+            misc/clientlibs/perl (new)
+            misc/put-metadata-request (new)
+   Changed: etc/thingfish.conf-testing
+            spec/handler/simplemetadata_spec.rb
+            lib/thingfish/metastore.rb
+            spec/request_spec.rb
+            lib/thingfish/filter/yaml.rb
+            lib/thingfish/handler/simplemetadata.rb (and 4 other/s)
+
+
+    * Temporarily commenting out the status handler from conf-testing
+
+    * Factor metadata DELETE methods out a little for easier overrides
+
+    * YAML incoming request filters enabled!
+
+    * Added metastore set_safe_properties()
+
+    * Added ThingFish::Request#body accessors, instead of delegating to Mongrel
+
+
+-- Tue, 29 Jan 2008 14:32:24 -0000 by mgranger (r443) -----
+   Added:   spec/filter/ruby_spec.rb (new)
+            experiments/net-https.rb (new)
+            lib/thingfish/filter/ruby.rb (new)
+   Changed: docs/ThingFish-Design-Diagrams.graffle
+            spec/mixins_spec.rb
+            spec/handler/simplemetadata_spec.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            lib/thingfish/filter/yaml.rb
+            spec/handler_spec.rb (and 14 other/s)
+
+    * Documented some specs that are testing outside of our purview for coverage.
+    * Merged some specs for the YAML filter
+    * Changed conversion filters that were setting the status on the response.
+    * Fixed server info hash returned from a non-html request to the default handler's '/'.
+    * Beginnings of catchup work on the Ruby client library.
+    * Added Ruby conversion filter
+
+
+-- Sun, 27 Jan 2008 23:09:11 -0000 by mahlon (r442) -----
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/handler/simplemetadata.rb
+
+
+    * Ensure metadata fetches for a UUID are strings.
+
+    * Return 404 for metadata/uuid GETs to non-existing uuids.
+
+
+-- Sun, 27 Jan 2008 07:53:41 -0000 by mahlon (r441) -----
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/filter/yaml.rb
+            lib/thingfish/handler/simplemetadata.rb
+            lib/thingfish/request.rb
+            spec/lib/metastore_behavior.rb
+
+
+    * Added first pass at DELETE functionality for the metastore handler.
+
+    ** Metastore actions aren't quite prime time yet.  This is just a checkpoint. **
+
+    * Initial framework for YAML filter conversions for requests.
+
+    * ThingFish::Request#content_type() added for convenience.
+
+    * Test coverage additions for metastore behavior.
+
+
+-- Fri, 25 Jan 2008 17:37:05 -0000 by mgranger (r440) -----
+   Changed: spec/client_spec.rb
+
+   Reorganizing specs before new work on the client.
+
+
+-- Fri, 25 Jan 2008 16:32:33 -0000 by mahlon (r438) -----
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/handler/simplemetadata.rb
+
+
+    * Add batch updates via PUT to metadata /.
+
+    * Add all POST methods to simplemetadata handler.
+
+
+-- Thu, 24 Jan 2008 16:55:10 -0000 by mahlon (r437) -----
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/handler/simplemetadata.rb
+            plugins/thingfish-sqlite3ms/lib/thingfish/metastore/sqlite3.rb
+
+
+    * Checkpoint for metadata handler work.
+
+    * PUT actions now use metastore 'safe' methods.
+
+
+-- Thu, 24 Jan 2008 05:31:04 -0000 by mahlon (r435) -----
+   Changed: spec/lib/constants.rb
+            spec/lib/metastore_behavior.rb
+
+
+    * Avoid attempts to re-define constants, move from behavior specs to constants lib.
+
+
+-- Wed, 23 Jan 2008 19:19:16 -0000 by mgranger (r433) -----
+   Changed: plugins/thingfish-exiffilter/spec/exiffilter_spec.rb
+            plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            lib/thingfish/exceptions.rb
+            spec/handler/simplemetadata_spec.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb (and 16 other/s)
+
+    * Added "safety" methods to metastores.  These methods are passthroughs to 'real' property updates,
+    but first remove any properties that ThingFish relies on for Filestore consistency.
+    * Added two additional metastore API methods. 
+    - update_properties(), updates a list of properties, vs set_properties() which is a replace
+    - delete_resource(), removes all properties for a uuid and the properties under it.
+    This was the previous behavior of delete_properties(), which now deletes only the specified
+    list.
+    * Spec updates to support the rspec bundle in Textmate.
+
+
+-- Tue, 22 Jan 2008 16:59:23 -0000 by mahlon (r429) -----
+   Changed: etc/thingfish.conf-testing
+            spec/handler/simplemetadata_spec.rb
+            lib/thingfish/metastore.rb
+            lib/thingfish/handler/simplemetadata.rb
+            spec/lib/metastore_behavior.rb
+            lib/thingfish/metastore/memory.rb (and 4 other/s)
+
+    * Checkpoint commit of metastore updates via the /metadata handler.  Refs #15.
+    * Added new metastore APIs: has_uuid?(), set_properties(), and added to all current metastores.
+    * Currently just does PUT to /metadata/uuid/key and /metadata/uuid.  More to come.
+
+
+-- Fri, 04 Jan 2008 01:32:44 -0000 by mahlon (r417) -----
+   Added:   docs/manual/src/02.Getting_Started/examples/etc/big-thingfish.conf (new)
+            docs/manual/src/02.Getting_Started/examples/etc/tiny-thingfish.conf
+            -> renamed from /thingfish/trunk/docs/manual/src/02.Getting_Started/examples/etc/thingfish.conf@r414
+            docs/manual/src/04.Hackers_Guide/examples/queryarg-handler.rb (new)
+   Changed: docs/manual/src/04.Hackers_Guide/01.server-architecture.page
+            docs/manual/src/02.Getting_Started/03.running.page
+            docs/manual/src/06.Troubleshooting-FAQs/index.page
+            docs/manual/src/05.Maintenance/index.page
+            docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+   Deleted: docs/manual/src/02.Getting_Started/examples/etc/thingfish.conf
+            docs/manual/src/04.Hackers_Guide/06.daemon-customization.page
+
+
+    * Documentation updates and checkpoint.
+
+
+-- Thu, 03 Jan 2008 16:27:52 -0000 by mgranger (r416) -----
+   Changed: plugins/thingfish-imagefilter/Rakefile
+            plugins/thingfish-jsonfilter
+            Rakefile
+            plugins/thingfish-xmlfilter/spec/xmlfilter_spec.rb
+            spec/client_spec.rb
+            plugins/thingfish-exiffilter/Rakefile (and 15 other/s)
+
+    * Fixed toplevel 'gems' task by adding require for the 'Pathname' library
+    * Added a task to install plugin dependencies
+    * Fixed Gem::RemoteInstaller#install, which was broken by API changes in 
+    RubyGems 1.0.0. Will upstream this once I figure out how to write a 
+    test that expresses the failure.
+    * Made logging for ThingFish::Client's spec more consistent with other 
+    specs.
+
+
+-- Thu, 03 Jan 2008 16:01:53 -0000 by mahlon (r415) -----
+   Changed: docs/manual/src/02.Getting_Started/02.installation.page
+            Rakefile
+            lib/thingfish/handler/simplemetadata.rb
+            spec/client_spec.rb
+            spec/lib/helpers.rb
+
+    * Update tests for rspec 1.1.1.
+    * Add a tagline and title for the simple metadata page.
+
+
+-- Sat, 29 Dec 2007 18:21:06 -0000 by mgranger (r412) -----
+   Added:   docs/manual/src/04.Hackers_Guide/examples/timehandler.rhtml (new)
+            docs/manual/src/04.Hackers_Guide/images/templated-timehandler.png (new)
+            docs/manual/src/04.Hackers_Guide/examples/erb-handler.rb (new)
+            docs/manual/src/04.Hackers_Guide/examples/templated-handler.rb (new)
+            docs/manual/src/04.Hackers_Guide/examples/timehandler.html (new)
+            docs/manual/src/04.Hackers_Guide/examples/handler-config.yml (new) (and 1 other/s)
+   Changed: docs/manual/src/04.Hackers_Guide/examples/minimal-handler.rb
+            docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb
+            docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+            docs/manual/src/default.css
+
+   Adding some more manual content for Handlers.
+
+
+-- Fri, 28 Dec 2007 17:28:10 -0000 by mgranger (r411) -----
+   Changed: lib/thingfish/mixins.rb
+
+   Fixed calling convention in comment code.
+
+
+-- Thu, 20 Dec 2007 16:23:43 -0000 by mgranger (r410) -----
+   Changed: docs/ThingFish-Design-Diagrams.graffle
+            docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb
+            docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+
+   Added some more stuff to the Handlers section of the Hacker's Guide
+
+
+-- Thu, 20 Dec 2007 15:55:27 -0000 by mahlon (r409) -----
+   Changed: var/www/search/main.rhtml
+            var/www/template.rhtml
+            spec/lib/metastore_behavior.rb
+            lib/thingfish/metastore/memory.rb
+            var/www/static/css/default.css
+            lib/thingfish/handler/simplesearch.rb (and 4 other/s)
+
+    * Convert incoming search params to strings.
+    * Add trivial HTML HEAD injection from the html filter, using the response scratch pad.
+    * Re-add search/upload javascript
+    * Search HTML cleanup
+
+
+-- Mon, 17 Dec 2007 17:14:08 -0000 by mahlon (r408) -----
+   Changed: lib/thingfish/metastore.rb
+            plugins/thingfish-mp3filter/spec/mp3filter_spec.rb
+            spec/handler/simplesearch_spec.rb
+            spec/memorymetastore_spec.rb
+            spec/lib/metastore_behavior.rb
+            lib/thingfish/metastore/memory.rb (and 5 other/s)
+
+    * Add find_by_matching_properties() to all MetaStores.  Closes #6.
+    * Change the simplesearch handler to use find_by_matching_properties().
+    * Remove TEST_TITLE from mp3filter that clobbered the shared version.
+
+
+-- Tue, 11 Dec 2007 15:21:48 -0000 by mahlon (r406) -----
+   Changed: lib/thingfish/metastore.rb
+
+
+     * Add additional mandatory API docs for the base ThingFish::MetaStore class.
+
+     Closes #3.
+
+     Index: lib/thingfish/metastore.rb
+
+     ===================================================================
+
+     --- lib/thingfish/metastore.rb	(revision 405)
+
+     +++ lib/thingfish/metastore.rb	(working copy)
+
+     @@ -51,6 +51,12 @@
+
+     #   Removes all properties associated with the given +uuid+.
+
+     # [<tt>get_all_property_keys()</tt>]
+
+     #   Return an Array of all property keys in the store.
+
+     +# [<tt>get_all_property_values()</tt>]
+
+     +#   Return a uniquified Array of all values in the metastore for the specified +key+.
+
+     +# [<tt>find_by_exact_property()</tt>]
+
+     +#   Return an array of uuids whose metadata matched the criteria
+
+     +#   specified by +hash+. The criteria should be key-value pairs which describe
+
+     +#   exact metadata pairs.
+
+     #
+
+     class ThingFish::MetaStore
+
+     include PluginFactory,
+
+
+-- Tue, 11 Dec 2007 14:24:55 -0000 by mgranger (r405) -----
+   Changed: Rakefile
+
+   Added a 'spec-only' mode to the coverage tasks
+
+
+-- Sat, 01 Dec 2007 06:47:51 -0000 by mahlon (r403) -----
+   Added:   spec/filter (new)
+            spec/filter/yamlfilter_spec.rb
+            -> renamed from /thingfish/trunk/spec/yamlfilter_spec.rb@r402
+            spec/filter/htmlfilter_spec.rb
+            -> renamed from /thingfish/trunk/spec/htmlfilter_spec.rb@r402
+   Deleted: spec/yamlfilter_spec.rb
+            spec/htmlfilter_spec.rb
+
+    * Move filter specs into their own directory.
+
+
+-- Fri, 30 Nov 2007 01:52:09 -0000 by mahlon (r402) -----
+   Changed: lib/thingfish/handler/default.rb
+            lib/thingfish/daemon.rb
+            spec/handler_spec.rb
+            lib/thingfish/filter/html.rb
+            spec/handler/default_spec.rb
+            lib/thingfish/handler.rb (and 3 other/s)
+   Deleted: TODO
+
+
+    * Support HEAD requests automatically if handlers implement a handle_get_request() method.
+
+    * Remove unnecessary Synopsis from the ThingFish::DefaultHandler
+
+    * Remove the TODO file, moving its contents to Trac tickets.
+
+
+-- Wed, 28 Nov 2007 16:55:17 -0000 by mahlon (r401) -----
+   Changed: lib/thingfish/daemon.rb
+            TODO
+            spec/daemon_spec.rb
+
+
+    * Delete spool files immediately after we're done with them.  Since they
+
+    are tempfiles, the garbage collector would normally get to them eventually,
+
+    but this avoids all the additional disk resource consumption while
+
+    they are still hangin' out.
+
+    * TODO updates.
+
+
+-- Mon, 26 Nov 2007 16:22:27 -0000 by mahlon (r397) -----
+   Changed: plugins/thingfish-formuploadhandler/resources/upload.rhtml
+            plugins/thingfish-formuploadhandler/resources/uploadform.rhtml
+            plugins/thingfish-formuploadhandler/spec/formuploadhandler_spec.rb
+            plugins/thingfish-xmlfilter/spec/xmlfilter_spec.rb
+            plugins/thingfish-formuploadhandler/lib/thingfish/handler/formupload.rb
+
+
+    * Convert formuploadhandler's HTML output to use the HTML filter.
+
+    * Don't define TEST_XML_CONTENT twice in the XML filter specs.
+
+
+-- Wed, 21 Nov 2007 02:47:26 -0000 by mahlon (r394) -----
+   Changed: plugins/thingfish-jsonfilter/lib/thingfish/filter/json.rb
+            lib/thingfish/handler/default.rb
+            plugins/thingfish-imagefilter/lib/thingfish/filter/image.rb
+            plugins/thingfish-exiffilter/lib/thingfish/filter/exif.rb
+            lib/thingfish/filter.rb
+            lib/thingfish/filter/yaml.rb (and 4 other/s)
+
+
+    * Remove @config lines for filters.  I think this was accidently copied at
+
+    some point from ThingFish::Handler, and just propagated.  The filters
+
+    don't currently use it - maybe later.
+
+    * Tune down the verbosity on StaticHandler logging.
+
+
+-- Wed, 21 Nov 2007 00:11:51 -0000 by mgranger (r393) -----
+   Added:   spec/exceptions_spec.rb (new)
+   Changed: spec/handler/simplemetadata_spec.rb
+            lib/thingfish/metastore.rb
+            lib/thingfish/filter.rb
+            spec/handler/simplesearch_spec.rb
+            spec/handler_spec.rb
+            lib/thingfish/filestore.rb (and 2 other/s)
+
+   Fixed some coverage problems.
+
+
+-- Tue, 20 Nov 2007 23:15:08 -0000 by mgranger (r392) -----
+   Changed: lib/thingfish/handler/staticcontent.rb
+            etc/thingfish.conf-testing
+            spec/yamlfilter_spec.rb
+            Rakefile
+            lib/thingfish/handler/simplemetadata.rb
+            lib/thingfish/request.rb (and 5 other/s)
+
+    * Finished the half-converted inspect handler to use the HTML filter.
+    * Made the output from style:fix_indent a little more useful, added an ignore-file list for
+    files with here-docs, etc.
+    * Made the output of the inspect handler less overwhelmingly green.
+    * Fixed some indentation problems uncovered by style:fix_indent.
+
+
+-- Mon, 19 Nov 2007 21:46:26 -0000 by mgranger (r389) -----
+   Added:   var/www/template.rhtml (new)
+
+   Oops. Adding the new main template.
+
+
+-- Mon, 19 Nov 2007 21:42:34 -0000 by mgranger (r388) -----
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/handler/simplemetadata_spec.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            docs/manual/src/02.Getting_Started/03.running.page
+            spec/htmlfilter_spec.rb
+            var/www/errors/500.rhtml (and 37 other/s)
+
+    * Converted handlers to all use the new HTML filter for output instead of their own
+    self-contained templates.
+    * Added an option to the XMLFilter to disable Tidy entirely so you can run it without having
+    the Ruby 'tidy' library installed.
+    * Added/cleaned up some Rakefile stuff:
+    - Added a 'style' namespace that will be used for style checks of code pending committal.
+    - Updated the development dependencies. Still missing the filter dependencies, but 
+    I hope we can work out how to skip filter tests which fail because of dependency
+    issues.
+    - Added an inline monkeypatch for RSpec's autotester that allows the 'spec' command-line
+    program to live anywhere in your path, not just /usr/bin and ./bin.
+    - Fixed up the autotest task to work after the re-arrangement of stuff in the specs directories.
+    - Read the ThingFish version from the library file instead of having it hardcoded in the 
+    Rakefile.
+    * Added some work on the 'running' and 'connecting' docs.
+    * Changed format of logging and made it show the logging class in debug level.
+
+
+-- Fri, 16 Nov 2007 00:16:10 -0000 by mgranger (r387) -----
+   Changed: docs/manual/src/03.Developers_Guide/01.connecting.page
+            docs/manual/src/default.css
+
+   Added some stuff to the 'connecting' part of the developer's guide section of the manual.
+
+
+-- Thu, 15 Nov 2007 22:45:43 -0000 by mgranger (r386) -----
+   Changed: plugins/thingfish-imagefilter/LICENSE
+            plugins/thingfish-imagefilter/Rakefile
+            plugins/thingfish-exiffilter/LICENSE
+            plugins/thingfish-exiffilter/Rakefile
+            plugins/thingfish-mp3filter/LICENSE
+            plugins/thingfish-mp3filter/Rakefile (and 1 other/s)
+
+   A few fixups for the 'gems' rake task.
+
+
+-- Thu, 15 Nov 2007 22:36:13 -0000 by mgranger (r385) -----
+   Added:   plugins/thingfish-imagefilter (new)
+            plugins/thingfish-imagefilter/LICENSE (new)
+            plugins/thingfish-imagefilter/Rakefile (new)
+            plugins/thingfish-imagefilter/lib/thingfish/filter/image.rb (new)
+            plugins/thingfish-imagefilter/spec/data (new)
+            plugins/thingfish-imagefilter/lib (new) (and 7 other/s)
+   Changed: etc/thingfish.conf-testing
+            Rakefile
+            spec/lib/helpers.rb
+
+    * Initial release of the image filter.
+    * Added a monkeypatch to RSpec to allow both an #and_yield and a #and_return in one statement.
+
+
+-- Wed, 14 Nov 2007 17:08:49 -0000 by mahlon (r384) -----
+   Changed: plugins/thingfish-jsonfilter/lib/thingfish/filter/json.rb
+            spec/config_spec.rb
+            lib/thingfish/acceptparam.rb
+            spec/yamlfilter_spec.rb
+            spec/htmlfilter_spec.rb
+            lib/thingfish/filter/yaml.rb (and 18 other/s)
+
+
+    * Add ThingFish::Request#explicitly_accepts? method, for Accept checks sans wildcards
+
+    * Update currently filters to use explicitly_accepts?()
+
+    * Ensure response order with filters in configuration, remove reverse() in ThingFish::Daemon
+
+    so filters are executes in same order for both request and response
+
+    * Added initial 'make_html_content' method to ThingFish::Handler, this will be
+
+    overridable in the in-progress HTML output filter.
+
+    * Use Response#is_handled? instead of DEFAULT_STATUS where applicable.
+
+    * Factored out various monkeypatchin' into monkeypatches.rb.
+
+
+-- Fri, 09 Nov 2007 18:57:36 -0000 by mahlon (r383) -----
+   Changed: lib/thingfish/handler/staticcontent.rb
+            var/www/search/main.rhtml
+            bin/thingfish
+            lib/thingfish/handler/default.rb
+            lib/thingfish/daemon.rb
+            lib/thingfish/request.rb (and 2 other/s)
+
+
+    * Quickie search template modification to support a demo today!  These
+
+    will shortly be re-addressed with the HTML filter.
+
+    * Read filename/title from the defaulthandler path, in addition to the formuploadhandler one.
+
+    * Set the default content type if there is a response body set, but the type is undefined
+
+    * Add debugging to command line client in preparation for 'client catchup'
+
+
+-- Fri, 09 Nov 2007 18:06:05 -0000 by mahlon (r382) -----
+   Changed: var/www/search/main.rhtml
+            var/www/metadata/values.rhtml
+            var/www/metadata/uuid.rhtml
+
+
+    * Update /search and /metastore URI lookups to reflect the name change of the handlers.
+
+
+-- Fri, 09 Nov 2007 17:55:58 -0000 by mahlon (r381) -----
+   Added:   spec/htmlfilter_spec.rb (new)
+   Changed: etc/thingfish.conf-testing
+            lib/thingfish/daemon.rb
+            spec/response_spec.rb
+            lib/thingfish/response.rb
+            spec/daemon_spec.rb
+
+
+    * Fix NOT_ACCEPTABLE logic to ensure it only applies to successful responses
+
+    * Add convenience ThingFish::Response methods for determining HTTP status categories
+
+
+-- Fri, 09 Nov 2007 16:21:40 -0000 by mahlon (r380) -----
+   Added:   spec/handler/simplemetadata_spec.rb
+            -> renamed from /thingfish/trunk/spec/metadatahandler_spec.rb@r376
+            lib/thingfish/filter/html.rb (new)
+            lib/thingfish/handler/simplesearch.rb
+            -> renamed from /thingfish/trunk/lib/thingfish/handler/search.rb@r376
+            lib/thingfish/metastore/simple.rb (new)
+            spec/handler/simplesearch_spec.rb
+            -> renamed from /thingfish/trunk/spec/searchhandler_spec.rb@r376
+            lib/thingfish/handler/simplemetadata.rb
+            -> renamed from /thingfish/trunk/lib/thingfish/handler/metadata.rb@r376 (and 3 other/s)
+   Changed: docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb
+            Rakefile
+            plugins/thingfish-marshalledms/lib/thingfish/metastore/marshalled.rb
+            docs/manual/src/04.Hackers_Guide/examples/minimal-handler.rb
+            lib/thingfish/handler/default.rb
+            etc/thingfish.conf-testing (and 6 other/s)
+   Deleted: lib/thingfish/handler/search.rb
+            spec/metadatahandler_spec.rb
+            lib/thingfish/handler/metadata.rb
+            spec/defaulthandler_spec.rb
+            spec/searchhandler_spec.rb
+
+
+    * Convert all existing metastores to ThingFish::SimpleMetaStore.
+
+    * Switch current metadata and search handlers to use the simple metastores.
+
+    * Rewind IO body in ThingFish::Daemon#each_body for handoff to filters
+
+    * Move handler specs to their own directory.
+
+
+-- Fri, 09 Nov 2007 14:24:43 -0000 by mgranger (r379) -----
+   Changed: lib/thingfish/acceptparam.rb
+            lib/thingfish/daemon.rb
+            lib/thingfish/metastore.rb
+            lib/thingfish/request.rb
+            lib/thingfish/metastore/memory.rb
+            spec/daemon_spec.rb (and 1 other/s)
+
+    * Wrapped exception-handling around the invocation of filters in ThingFish::Daemon. This
+    will cause exceptions raised in filters to be ignored save for a message in the logs.
+    * Misc. cleanup and docs fixups
+
+
+-- Tue, 06 Nov 2007 16:42:04 -0000 by mahlon (r377) -----
+   Added:   docs/manual/src/04.Hackers_Guide/examples/minimal-handler2.rb (new)
+   Changed: docs/manual/src/04.Hackers_Guide/examples/minimal-handler.rb
+            docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+
+
+    * Checkpoint commit of some handler documentation.
+
+
+-- Thu, 01 Nov 2007 17:28:08 -0000 by mahlon (r372) -----
+   Added:   var/www/static/images/delete.png (new)
+   Changed: var/www/search/main.rhtml
+            lib/thingfish/handler/default.rb
+            var/www/static/js/search.js
+            spec/defaulthandler_spec.rb
+
+
+    * Add a 'delete' button to search result actions.
+
+    * Delete metadata on /UUID DELETE action, along with the filedata.  (oops?)
+
+
+-- Thu, 01 Nov 2007 15:40:40 -0000 by mahlon (r371) -----
+   Added:   plugins/thingfish-xmlfilter/lib (new)
+            plugins/thingfish-xmlfilter/spec/xmlfilter_spec.rb (new)
+            plugins/thingfish-xmlfilter/lib/thingfish/filter (new)
+            var/www/static/images/info.png (new)
+            plugins/thingfish-xmlfilter/lib/thingfish/filter/xml.rb (new)
+            var/www/static/images/save.png (new) (and 8 other/s)
+   Changed: spec/mixins_spec.rb
+            var/www/metadata/values.rhtml
+            Rakefile
+            var/www/metadata/uuid.rhtml
+            var/www/search/main.rhtml
+            etc/thingfish.conf-testing (and 6 other/s)
+
+
+    * Initial commit of XML output filter plugin.
+
+    * Remove coverage tests for system ruby paths under OSX.
+
+    * "Pretty up" search results for HTML view.  This is more of a spike, and
+
+    will be abstracted out at some point in the future.
+
+    * Add Integer filesize pretty printing.
+
+    * Updated our TODO!
+
+
+-- Wed, 31 Oct 2007 17:56:32 -0000 by mgranger (r370) -----
+   Added:   var/www/search/index.rhtml (new)
+            var/www/search (new)
+            var/www/metadata/index.rhtml (new)
+            var/www/metadata (new)
+            var/www/metadata/main.rhtml
+            -> renamed from /thingfish/trunk/var/www/metadata.rhtml@r367
+            var/www/metadata/values.rhtml
+            -> renamed from /thingfish/trunk/var/www/metadata_values.rhtml@r368 (and 3 other/s)
+   Changed: lib/thingfish/acceptparam.rb
+            lib/thingfish/exceptions.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            lib/thingfish/filter.rb
+            lib/thingfish/filestore.rb
+            lib/thingfish/handler/metadata.rb (and 17 other/s)
+   Deleted: var/www/metadata.rhtml
+            var/www/metadata_values.rhtml
+            var/www/metadata_uuid.rhtml
+            var/www/search.rhtml
+
+    * Added index-content generators for handlers that were missing 'em.
+    * Made the inspection handler a little easier to read and more useful.
+    * Reorganized the template resources a bit.
+    * Made a new mixin ThingFish::HtmlInspectableObject for rendering Ruby
+    objects in an HTML view.
+
+
+-- Thu, 25 Oct 2007 18:36:57 -0000 by mahlon (r369) -----
+   Changed: lib/thingfish/multipartmimeparser.rb
+
+
+    * Not entirely sure how this was working before.
+
+
+-- Thu, 25 Oct 2007 15:22:48 -0000 by mgranger (r368) -----
+   Changed: spec/config_spec.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            misc/rake/helpers.rb
+            Rakefile
+            spec/lib/metastore_behavior.rb
+            etc/thingfish.conf-advanced (and 12 other/s)
+
+    * Added transaction API to the Metastore
+    * Used transactions to speed up the sqlite3 metastore tests by about 900%.
+    * Removed empty block from the :docs rake task
+    * Added metadata browsing via the metadata and search handlers.
+    * New method ThingFish::Config#find_handler_uri
+    * Changed the testing config:
+    - use the sqlite3 metastore
+    - load the search handler
+    - load the exif filter
+    * Added some more filters to the advanced example config.
+
+
+-- Tue, 23 Oct 2007 19:16:23 -0000 by mahlon (r367) -----
+   Added:   var/www/metadata_values.rhtml (new)
+            var/www/metadata_uuid.rhtml (new)
+   Changed: spec/lib/constants.rb
+            var/www/metadata.rhtml
+            lib/thingfish/request.rb
+            spec/metadatahandler_spec.rb
+            spec/lib/metastore_behavior.rb
+            plugins/thingfish-marshalledms/lib/thingfish/metastore/marshalled.rb (and 10 other/s)
+
+
+    * Checkpoint commit for additional metadata handler functionality.
+
+    * Show all metadata for a given uuid
+
+    * Show all metadata values for a given metadata key
+
+    There is still some slightly funky bits that will get fixed asap:
+
+    * metadata and search erb templates shouldn't link to each other explicitly,
+
+    but rather check that the other is registered, and use the registered uri.
+
+    * metadata/search have no index content. (probably need their own resource dirs)
+
+    * Add new metastore API: get_all_property_values()
+
+    * Added to SQLite, memory, and marshalled metastores.
+
+    * Move searchhandler search results to top of HTML page, link to metadata.
+
+
+-- Thu, 18 Oct 2007 15:04:21 -0000 by mahlon (r366) -----
+   Added:   lib/thingfish/handler/search.rb (new)
+            var/www/search.rhtml (new)
+            spec/searchhandler_spec.rb (new)
+   Changed: plugins/thingfish-exiffilter/lib/thingfish/filter/exif.rb
+            spec/lib/constants.rb
+            lib/thingfish/request.rb
+            spec/lib/metastore_behavior.rb
+            plugins/thingfish-mp3filter/lib/thingfish/filter/mp3.rb
+            spec/defaulthandler_spec.rb (and 12 other/s)
+
+    * Initial search handler framework, and supporting metastore API to all existing metastores
+    - find_by_exact_properties (Search the metastore for one or more intersected matching metavalues)
+    * Use downcased strings instead of regexps within ThingFish::ExifFilter and ThingFish::Mp3Filter
+    * Added additional sqlite pragmas that might speed things up.  We need benchmarks.  :)
+    * Correct daemon logging on uploads to reflect correct metastore keys
+    * request#query_args() now returns 'nil' on defined keys without explicit value, instead of 'true'.
+    * request#get_body_and_metadata() made public again to support the uploading of multipart bodies -without- parsing.
+
+
+-- Thu, 18 Oct 2007 10:36:18 -0000 by mgranger (r365) -----
+   Deleted: plugins/thingfish-rdfms
+
+   Oops. Forgot I was breaking the build by doing a copy from the .skel directory. Will check it back in once it passes all its tests
+
+
+-- Tue, 16 Oct 2007 15:10:19 -0000 by mgranger (r364) -----
+   Added:   plugins/thingfish-rdfms/lib/thingfish/metastore
+            -> renamed from /thingfish/trunk/plugins/thingfish-rdfms/lib/thingfish/filestore@r363
+   Deleted: plugins/thingfish-rdfms/lib/thingfish/filestore
+
+   Fixed directory name for the RDF metastore plugin
+
+
+-- Tue, 16 Oct 2007 15:08:19 -0000 by mgranger (r363) -----
+   Added:   plugins/thingfish-rdfms
+            -> renamed from /thingfish/trunk/plugins/.skel@r362
+
+   Copy skel plugin directory for RDF metastore plugin
+
+
+-- Thu, 11 Oct 2007 15:02:13 -0000 by mahlon (r362) -----
+   Added:   plugins/thingfish-exiffilter/spec/exiffilter_spec.rb (new)
+            plugins/thingfish-exiffilter/lib/thingfish (new)
+            plugins/thingfish-exiffilter/spec (new)
+            plugins/thingfish-exiffilter/lib/thingfish/filter/exif.rb (new)
+            plugins/thingfish-exiffilter/README (new)
+            plugins/thingfish-exiffilter/lib/thingfish/filter (new) (and 6 other/s)
+   Changed: Rakefile
+   Deleted: plugins/thingfish-formuploadhandler/spec/uploadhandler_spec.rb
+
+
+    * Add convenience Rake task 'docs' for rebuilding all dynamic content.
+
+    (manual, api docs, and coverage)
+
+    * Rename spec file uploadhandler -> formuploadhandler
+
+    * Add EXIF extraction filter for jpeg and tiff content.
+
+
+-- Wed, 10 Oct 2007 21:00:00 -0000 by mgranger (r361) -----
+   Changed: docs
+
+   Okay, now replaced Rdoc generator with link to external
+
+
+-- Wed, 10 Oct 2007 20:59:08 -0000 by mgranger (r360) -----
+   Changed: docs
+   Deleted: docs/rdoc
+
+   Apparently you can replace a directory with an external in one commit. Pity.
+
+
+-- Wed, 10 Oct 2007 20:55:14 -0000 by mgranger (r359) -----
+   Changed: docs/manual/plugin/tag/example.rb
+            Rakefile
+            docs
+            docs/manual/src/03.Developers_Guide/examples/fetching.rb
+
+    * Factored out Rdoc generator into a separate project and added as an external.
+    * Cleaned up the docs-generation tasks in the Rakefile a bunch. All doc-generation
+    targets now have a symmetrical `_clobber` target.
+    * Fixed the Rcodetools code in the 'example' manual plugin.
+
+
+-- Wed, 10 Oct 2007 15:09:23 -0000 by mgranger (r358) -----
+   Changed: plugins/thingfish-mp3filter/spec/mp3filter_spec.rb
+            misc/rake/svn.rb
+            plugins/thingfish-mp3filter/lib/thingfish/filter/mp3.rb
+
+    * Removed some spammy debugging
+    * Implemented the rest of the mp3 extraction filter specs
+
+
+-- Tue, 09 Oct 2007 21:41:51 -0000 by mahlon (r357) -----
+   Changed: plugins/thingfish-mp3filter/lib/thingfish/filter/mp3.rb
+            plugins/thingfish-mp3filter/Rakefile
+
+
+    * Add Rakefile Gem description.
+
+    * Whoop, used JSON template!  JSON -> Mp3
+
+
+-- Tue, 09 Oct 2007 16:31:26 -0000 by mgranger (r356) -----
+   Added:   plugins/thingfish-mp3filter/lib (new)
+            plugins/thingfish-mp3filter/spec/mp3filter_spec.rb (new)
+            plugins/thingfish-mp3filter/lib/thingfish/filter (new)
+            plugins/thingfish-mp3filter/lib/thingfish/filter/mp3.rb (new)
+            plugins/thingfish-mp3filter/LICENSE (new)
+            plugins/thingfish-mp3filter/Rakefile (new) (and 5 other/s)
+   Changed: lib/thingfish/exceptions.rb
+            var/www/metadata.rhtml
+            lib/thingfish/request.rb
+            lib/thingfish.rb
+            lib/thingfish/handler/default.rb
+            etc/thingfish.conf-testing (and 4 other/s)
+
+    * Added new metadata extraction filter plugin for ID3 tags on MP3 data.
+    * Resolved a problem with #each_body -- it was trying to parse the parts of a multipart
+    request each time it was called instead of parsing once and caching the result. As a consequence,
+    made #each_body the only way to access bodies of even single-body requests.
+    * Fixed a stylesheet link.
+
+
+-- Mon, 08 Oct 2007 14:38:04 -0000 by mahlon (r355) -----
+   Added:   plugins/thingfish-formuploadhandler/lib/thingfish/handler/formupload.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-formuploadhandler/lib/thingfish/handler/upload.rb@r354
+   Deleted: plugins/thingfish-formuploadhandler/lib/thingfish/handler/upload.rb
+
+
+    * Part two of the uploadhandler -> formuploadhandler rename.
+
+
+-- Mon, 08 Oct 2007 14:36:41 -0000 by mahlon (r354) -----
+   Added:   plugins/thingfish-formuploadhandler
+            -> renamed from /thingfish/trunk/plugins/thingfish-uploadhandler@r353
+   Changed: plugins/thingfish-formuploadhandler/Rakefile
+            etc/thingfish.conf-testing
+            plugins/thingfish-formuploadhandler/spec/uploadhandler_spec.rb
+            plugins/thingfish-formuploadhandler/lib/thingfish/handler/upload.rb
+            etc/thingfish.conf-advanced
+            plugins/thingfish-formuploadhandler/README (and 2 other/s)
+   Deleted: plugins/thingfish-uploadhandler
+
+
+    * Renamed 'uploadhandler' to 'formuploadhandler' to mitigate confusion surrounding what to upload where.
+
+    WARNING: This is a two part commit, this first commit knowingly is broken.
+
+    * Enforce a string when instantiating a new SQLite3 metastore.
+
+
+-- Thu, 04 Oct 2007 06:21:27 -0000 by mahlon (r353) -----
+   Changed: bin/thingfish
+            plugins/thingfish-statushandler/resources/index.rhtml
+
+
+    * Use the mimetype mappings as defined in constants.rb for ThingFish command line client.
+
+    * Fix css path for status handler.
+
+
+-- Tue, 02 Oct 2007 16:01:12 -0000 by mgranger (r352) -----
+   Changed: lib/thingfish/daemon.rb
+            lib/thingfish/mixins.rb
+
+    * Move daemon and effective uid switching functionality into a mixin for daemon.rb.
+
+
+-- Tue, 02 Oct 2007 15:30:39 -0000 by mgranger (r351) -----
+   Added:   var/www/static/js
+            -> renamed from /thingfish/branches/upload_handler_merge/var/www/static/js@r350
+            var/www/static/css
+            -> renamed from /thingfish/branches/upload_handler_merge/var/www/static/css@r350
+            plugins/thingfish-uploadhandler/resources/uploadform.rhtml
+            -> renamed from /thingfish/branches/upload_handler_merge/plugins/thingfish-uploadhandler/resources/uploadform.rhtml@r350
+   Changed: lib/thingfish/exceptions.rb
+            plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+            var/www/errors/500.rhtml
+            spec/handler_spec.rb (and 20 other/s)
+   Deleted: var/www/static/default.css
+            plugins/thingfish-uploadhandler/resources/static/js/jquery.js
+
+
+   Merge from branches/upload_handler_merge rev 350.
+
+   This branch was originally intended to merge the upload plugin into the defaulthandler.
+
+   We changed our minds halfway through (made defaulthandler way too complex),
+
+   but came out with some fun stuff anyway:
+
+   * Move the upload form into its own erb template for easier future usage
+
+   (maybe in the index_content with some thickbox yum!)
+
+   * Move  parts of store_resource up into daemon.rb so uploadhandler and defaulthandler
+
+   don't have duplicated code.
+
+   * Updated jquery to 1.2.1, and moved it from the uploadhandler's resource directory into
+
+   the main static resource dir.
+
+   * Sort list of files uploaded to /upload by title.
+
+   * Organized javascript and style sheets into their own respective directories.
+
+   * Index page cleanup
+
+   * Added the HTTP status to the response error exception, rather than creating a new
+
+   error class for each response status.
+
+   * Added ThingFish::Request#metadata hash to support extraction filters
+
+   * Added caching of query arg lookup to ThingFish::Request
+
+   * Added ThingFish::Request#each_body, which does upload entity body extraction and metadata
+
+   merge. This was extracted from the DefaultHandler to provide this functionality for more
+
+   than just the upload and default handlers. Extraction filters, for example, will probably
+
+   need access to uploaded entities before they're extracted by the handlers, so consolidating
+
+   this in one spot made sense.
+
+   * Added ThingFish::Request#is_ajax_request?, which may be convenient at a future date.
+
+   * Firefox seems to treat the presense of a content_disposition header as if it always contains
+
+   the 'attachment' keyword.  Changed the conditional to affect the whole header instead
+
+   of only the keyword.
+
+
+-- Thu, 13 Sep 2007 02:27:50 -0000 by mgranger (r344) -----
+   Changed: docs/ThingFish-Design-Diagrams.graffle
+
+   Updated overview diagram
+
+
+-- Tue, 11 Sep 2007 14:54:19 -0000 by mgranger (r343) -----
+   Changed: utils.rb
+
+   Removed reference to the Artistic License
+
+
+-- Mon, 10 Sep 2007 16:01:06 -0000 by mahlon (r342) -----
+   Changed: lib/thingfish/handler/default.rb
+            spec/defaulthandler_spec.rb
+
+
+    * Wrap the Content-Disposition filename in quotes. 
+
+    I misread the RFC, it appears that this is necessary if the filename contains spaces or the like.
+
+    Better to just always quote.
+
+
+-- Mon, 10 Sep 2007 15:09:37 -0000 by mahlon (r341) -----
+   Changed: lib/thingfish/handler/default.rb
+            lib/thingfish/handler/metadata.rb
+
+
+   * Make sure we're operating on a Time object.
+
+   * Remove unneeded 'pp' require.
+
+
+-- Mon, 10 Sep 2007 08:37:03 -0000 by mgranger (r340) -----
+   Added:   etc/thingfish.conf-testing
+            -> renamed from /thingfish/trunk/etc/thingfish.conf@r337
+            start (new)
+   Changed: plugins/thingfish-marshalledms/README
+            plugins/thingfish-jsonfilter/README
+            plugins/.skel/LICENSE
+            plugins/thingfish-statushandler/README
+            plugins/thingfish-uploadhandler/README
+            Rakefile (and 9 other/s)
+
+    * Fixed license in plugin READMEs.
+    * Changed 'install' and 'uninstall' tasks into 'install_gem' and 'uninstall_gem' since
+    installing via them requires Rubygems.
+    * Attempt to fix the loading animation link in the RDoc ThickBox.
+    * Added a 'start' script to do what 'run' used to do.
+    * Reduced the README to just bare essentials
+    * Moved the 'connection' header out of the status constant and into Daemon#send_response
+    * Log the status line from Daemon#send_response.
+    * Fixed docs for some constants 
+    * Adding the testing config we were using before.
+
+
+-- Fri, 07 Sep 2007 22:46:31 -0000 by mahlon (r339) -----
+   Added:   plugins/thingfish-jsonfilter/lib/thingfish (new)
+            plugins/thingfish-jsonfilter/lib/thingfish/filter/json.rb (new)
+            plugins/thingfish-jsonfilter/spec (new)
+            plugins/thingfish-jsonfilter/README (new)
+            plugins/thingfish-jsonfilter (new)
+            etc/thingfish.conf-advanced (new) (and 6 other/s)
+   Changed: spec/lib/constants.rb
+            spec/yamlfilter_spec.rb
+            etc/thingfish.conf
+            lib/thingfish/filter/yaml.rb
+            lib/thingfish/request.rb
+
+
+    * Addition of thingfish-jsonfilter plugin.
+
+    * Debug logging cleanup for cache info.
+
+    * Example 'basic' and 'advanced' config files, 'basic' now default.
+
+    * Filters rule.
+
+
+-- Fri, 07 Sep 2007 17:06:24 -0000 by mgranger (r338) -----
+   Added:   spec/yamlfilter_spec.rb (new)
+            lib/thingfish/filter/yaml.rb (new)
+
+   Oops. Forgot to add the YAML filter in the last commit
+
+
+-- Fri, 07 Sep 2007 16:57:58 -0000 by mgranger (r337) -----
+   Changed: spec/filter_spec.rb
+            lib/thingfish/daemon.rb
+            lib/thingfish/config.rb
+            lib/thingfish/filter.rb
+            Rakefile
+            etc/thingfish.conf (and 3 other/s)
+
+    * Initial implementation of content-filtering.
+    * Initial implementation of a YAML response filter.
+
+
+-- Thu, 06 Sep 2007 18:12:00 -0000 by mgranger (r336) -----
+   Changed: docs/rdoc/generators/template/index.rhtml
+
+   Fixed the incorrect javascript link in the index page.
+
+
+-- Thu, 06 Sep 2007 17:09:08 -0000 by mgranger (r335) -----
+   Changed: lib/thingfish/handler/staticcontent.rb
+            lib/thingfish/handler/default.rb
+            spec/request_spec.rb
+            lib/thingfish/request.rb
+            spec/defaulthandler_spec.rb
+            spec/staticcontent_spec.rb (and 1 other/s)
+
+    * Added caching to the static content handler.
+    * Factored out cache header testing into the request object.
+
+
+-- Wed, 05 Sep 2007 21:52:14 -0000 by mahlon (r334) -----
+   Changed: docs/manual/src/02.Getting_Started/03.running.page
+            docs/manual/src/02.Getting_Started/examples/etc/thingfish.conf
+
+
+    * Change manual config example to reflect .html -> .rhtml change.
+
+
+-- Wed, 05 Sep 2007 16:53:02 -0000 by mgranger (r333) -----
+   Changed: plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+            docs/rdoc/generators/template/rdoc.css
+            Rakefile
+
+    * Added some clarifying comments to the #extract_statistics method of the StatusHandler
+    * Removed unused cruft from the rdoc rake task
+    * Added the CSS of shame for missing docs to the rdoc generator
+
+
+-- Wed, 05 Sep 2007 16:00:10 -0000 by mahlon (r331) -----
+   Added:   lib/thingfish/acceptparam.rb
+            -> renamed from /thingfish/branches/content_negotiation/lib/thingfish/acceptparam.rb@r330
+            plugins/thingfish-uploadhandler/resources/index_content.rhtml
+            -> renamed from /thingfish/branches/content_negotiation/plugins/thingfish-uploadhandler/resources/index_content.rhtml@r330
+            lib/thingfish/handler/staticcontent.rb
+            -> renamed from /thingfish/branches/content_negotiation/lib/thingfish/handler/staticcontent.rb@r330
+            var/www/index_content.rhtml
+            -> renamed from /thingfish/branches/content_negotiation/var/www/index_content.rhtml@r330
+            plugins/thingfish-inspecthandler/resources/index_content.rhtml
+            -> renamed from /thingfish/branches/content_negotiation/plugins/thingfish-inspecthandler/resources/index_content.rhtml@r330
+            docs/rdoc
+            -> renamed from /thingfish/branches/content_negotiation/docs/rdoc@r330 (and 7 other/s)
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            TEMPLATE.rb.tpl
+            spec/multipartmimeparser_spec.rb
+            lib/thingfish/exceptions.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            lib/thingfish/filter.rb (and 41 other/s)
+   Deleted: var/www/index_content.html
+            plugins/thingfish-inspecthandler/resources/index_content.html
+            var/www/index.html
+            plugins/thingfish-statushandler/resources/index_content.html
+            plugins/thingfish-uploadhandler/resources/index_content.html
+
+
+   Merge from the [diff:thingfish/trunk@301//thingfish/branches/content_negotiation content negotiation branch]:
+
+   * New super-pretty rdoc generation
+
+   * Framework for content filters
+
+   * Handler restructuring for content negotiations
+
+   * Updates to various handlers using ThingFish request/response objects
+
+   * Renames for erb templates (html -> rhtml)
+
+   * Content negotiated error responses with pretty html
+
+
+-- Sun, 19 Aug 2007 08:10:02 -0000 by mahlon (r309) -----
+   Added:   docs/manual/src/02.Getting_Started/examples/supervise-run-file.sh (new)
+            docs/manual/src/02.Getting_Started/04.supervise.page (new)
+   Changed: lib/thingfish/daemon.rb
+            docs/manual/src/02.Getting_Started/03.running.page
+            lib/thingfish/config.rb
+
+
+    * Add daemonizing and pidfile options to configuration.
+
+    * Add 'Running w/ supervise' page to manual.
+
+
+-- Mon, 06 Aug 2007 14:54:03 -0000 by mgranger (r300) -----
+   Added:   spec/multipartmimeparser_spec.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb@r295
+            lib/thingfish/response.rb (new)
+            lib/thingfish/multipartmimeparser.rb
+            -> renamed from /thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/multipartparser.rb@r295
+            spec/data
+            -> renamed from /thingfish/trunk/plugins/thingfish-uploadhandler/spec/data@r295
+            spec/response_spec.rb (new)
+   Changed: spec/config_spec.rb
+            plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            docs/ThingFish-Design-Diagrams.graffle
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+            etc/thingfish.conf
+            lib/thingfish/request.rb (and 6 other/s)
+   Deleted: plugins/thingfish-uploadhandler/lib/thingfish/multipartparser.rb
+            plugins/thingfish-uploadhandler/spec/data
+            plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb
+
+    * Moved multipart MIME parser out of the upload plugin into ThingFish proper.
+    * Started sketching out the places that will need to change with the
+    new request/response stuff in comments.
+    * Updated the class diagrams to reflect changes in design.
+    * Added multipart MIME parsing to ThingFish::Request.
+    * Started implementation of ThingFish::Response.
+    * Factored spool directory and buffer size into the top level of the config, and
+    added default constants to ThingFish::Constants.
+
+
+-- Fri, 03 Aug 2007 15:28:08 -0000 by mgranger (r296) -----
+   Changed: spec/lib/constants.rb
+            spec/request_spec.rb
+            lib/thingfish/request.rb
+
+   Added 'Accept' header parsing to ThingFish::Request
+
+
+-- Wed, 01 Aug 2007 16:20:43 -0000 by mgranger (r283) -----
+   Added:   lib/thingfish/filter (new)
+            lib/thingfish/filter.rb (new)
+            lib/thingfish/request.rb (new)
+            lib/thingfish/utils.rb (new)
+            spec/filter_spec.rb (new)
+            spec/request_spec.rb (new) (and 3 other/s)
+   Changed: docs/ThingFish-Design-Diagrams.graffle
+            plugins/thingfish-fsfs/lib/thingfish/filestore/filesystem.rb
+            lib/thingfish/filestore.rb
+            lib/thingfish/handler/default.rb
+            lib/thingfish/metastore.rb
+            lib/thingfish/daemon.rb (and 4 other/s)
+
+    * Initial checkpoint commit of the filters and new request/response model code.
+
+
+-- Fri, 27 Jul 2007 14:33:31 -0000 by mahlon (r282) -----
+   Changed: lib/thingfish/daemon.rb
+            docs/manual/src/02.Getting_Started/02.installation.page
+            docs/manual/src/02.Getting_Started/03.running.page
+            lib/thingfish/config.rb
+            Rakefile
+            docs/manual/src/02.Getting_Started/01.downloading.page (and 2 other/s)
+
+   source: thingfish/trunk/Rakefile
+   source: thingfish/trunk/docs/manual/src/02.Getting_Started/02.installation.page
+   * Update dependency versions for external modules
+   source: thingfish/trunk/docs/manual/src/02.Getting_Started/01.downloading.page
+   * Point to new download spot!
+   source: thingfish/trunk/docs/manual/src/02.Getting_Started/03.running.page
+   source: thingfish/trunk/spec/daemon_spec.rb
+   source: thingfish/trunk/lib/thingfish/daemon.rb
+   source: thingfish/trunk/lib/thingfish/config.rb
+   * Optionally drop privileges if running as root
+
+
+-- Wed, 25 Jul 2007 20:35:17 -0000 by mgranger (r272) -----
+   Changed: LICENSE
+            Rakefile
+            plugins/thingfish-uploadhandler
+            plugins/thingfish-fsfs/LICENSE
+            plugins/thingfish-fsfs/Rakefile
+            plugins/thingfish-sqlite3ms (and 11 other/s)
+
+    * Updated the license 
+    * Rakefile fixes and tweaks
+
+
+-- Wed, 25 Jul 2007 20:27:59 -0000 by mgranger (r271) -----
+   Changed: experiments/content-negotiation-spike.rb
+
+   Finished up the Accept-header parsing bits of the content-negotiation spike
+
+
+-- Wed, 25 Jul 2007 15:17:25 -0000 by mgranger (r269) -----
+   Deleted: plugins/thingfish-fsfs/COPYING
+            plugins/thingfish-statushandler/COPYING
+            plugins/thingfish-uploadhandler/COPYING
+            plugins/thingfish-inspecthandler/COPYING
+
+   Renamed COPYING files to "LICENSE"
+
+
+-- Mon, 23 Jul 2007 20:13:26 -0000 by mgranger (r268) -----
+   Added:   spec/lib/handler_behavior.rb (new)
+            plugins/thingfish-inspecthandler/resources/inspect.rhtml
+            -> renamed from /thingfish/trunk/plugins/thingfish-inspecthandler/resources/index.html@r262
+            plugins/thingfish-inspecthandler/resources/index_content.html (new)
+            spec/spec.opts (new)
+   Changed: plugins/thingfish-fsfs/spec/fsfs_spec.rb
+            plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/config_spec.rb
+            spec/mixins_spec.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            spec/lib/constants.rb (and 23 other/s)
+   Deleted: plugins/thingfish-inspecthandler/resources/index.html
+
+    * Factored out the http method handling bits from various handles into 
+    ThingFish::Handler
+    * Added a convenience method for building METHOD_NOT_ALLOWED responses to 
+    ThingFish::Handler: #send_method_not_allowed_response
+    * Factored out some common ThingFish::Handler behaviors into a new RSpec
+    shared behavior
+    * Added an index handler to the metadata handler that serves the list of 
+    keys in the metastore
+    * Made the commitlog stop inserting the `source:` links, as they're in the
+    commitlog view anyway.
+    * Cleaned up logging in some tests to not spam test output
+    * Updated the inspect handler to use the ResourceLoader framework
+    * Moved some constant includes up into the toplevel binding, as RSpec's
+    overloaded `include` doesn't behave in a predictable fashion.
+    * Added a guard class to ThingFish::TestConstants to avoid displaying
+    the warning about defined constants when it's required twice via different
+    paths.
+    * Added a spec/spec.opts file for `spec -O`
+
+
+-- Mon, 23 Jul 2007 20:11:21 -0000 by mgranger (r267) -----
+   Changed: .irbrc
+
+   Cleaned up some old cruft
+
+
+-- Mon, 23 Jul 2007 20:07:41 -0000 by mgranger (r266) -----
+   Changed: README
+
+   RDoc formatting fixes for the README
+
+
+-- Mon, 23 Jul 2007 19:59:25 -0000 by mgranger (r265) -----
+   Changed: lib/thingfish.rb
+
+   Made #reset_logger reset the default logger's level too.
+
+
+-- Mon, 23 Jul 2007 19:58:02 -0000 by mgranger (r264) -----
+   Added:   TODO (new)
+
+   Initial commit: listed milestones
+
+
+-- Mon, 23 Jul 2007 19:57:26 -0000 by mgranger (r263) -----
+   Changed: Rakefile
+
+    * Fixed the spec:autotest target
+    * Fixed RDoc task:
+    - Pathname objects -> strings
+    - changed target directory to 'docs/api'
+    - copy generated docs to the static content directory
+
+
+-- Sat, 21 Jul 2007 23:54:27 -0000 by mgranger (r262) -----
+   Changed: Rakefile
+
+   source:trunk/Rakefile
+   * Fixed the clean task after the generated_manual task went away.
+
+
+-- Sat, 21 Jul 2007 23:52:07 -0000 by mgranger (r261) -----
+   Changed: lib/thingfish/handler/default.rb
+            spec/mixins_spec.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            var/www/index_content.html
+            var/www/metadata.rhtml
+            Rakefile (and 3 other/s)
+
+   source:trunk/plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+   * Fixed missing constants when running standalone.
+   source:trunk/Rakefile
+   * Merged the task that copies the manual to the static resource directory with the 
+   manual-generation task.
+   * Copy the coverage stats into the static resource directory after building.
+   source:trunk/lib/thingfish/handler/default.rb
+   source:trunk/spec/defaulthandler_spec.rb
+   source:trunk/var/www/index_content.html
+   * Cleaned up and added logic to advise people how to generate the content linked 
+   from it if it doesn't exist.
+   source:trunk/var/www/metadata.rhtml
+   * Initial content.
+   source:trunk/spec/mixins_spec.rb
+   source:trunk/lib/thingfish/mixins.rb
+   * Added a method #resource_directory? to ResourceLoader that checks to be sure a 
+   directory of the specified name exists in the resource directory.
+
+
+-- Sat, 21 Jul 2007 22:17:42 -0000 by mgranger (r260) -----
+   Added:   spec/lib/filestore_behavior.rb (new)
+   Changed: plugins/thingfish-fsfs/spec/fsfs_spec.rb
+            spec/memoryfilestore_spec.rb
+            plugins/thingfish-fsfs/lib/thingfish/filestore/filesystem.rb
+            Rakefile
+            spec/lib/helpers.rb
+            misc/rake/svn.rb (and 2 other/s)
+
+   source:trunk/plugins/thingfish-fsfs/lib/thingfish/filestore/filesystem.rb
+   source:trunk/plugins/thingfish-fsfs/spec/fsfs_spec.rb
+   source:trunk/spec/memoryfilestore_spec.rb
+   source:trunk/spec/lib/filestore_behavior.rb
+   * Factored out common filestore tasks into a shared behavior
+   source:trunk/plugins/thingfish-sqlite3ms/lib/thingfish/metastore/sqlite3.rb
+   * Added missing RDoc comments
+   source:trunk/Rakefile
+   * Make the text spec a bit quieter
+   * Moved the rcov verification task into the :coverage namespace
+   source:trunk/spec/lib/helpers.rb
+   * Made the name of the temp directory generated by make_tempdir a bit more sane.
+   source:trunk/misc/rake/svn.rb
+   * Use the quieter 'spec:text' task when committing instead of the full colorized
+   one.
+
+
+-- Fri, 20 Jul 2007 16:59:28 -0000 by mgranger (r259) -----
+   Added:   spec/lib/constants.rb
+            -> renamed from /thingfish/trunk/spec/constants.rb@r254
+            var/www/metadata.rhtml (new)
+            spec/lib/metastore_behavior.rb (new)
+            spec/metadatahandler_spec.rb (new)
+            lib/thingfish/handler/metadata.rb (new)
+            spec/lib (new) (and 2 other/s)
+   Changed: plugins/thingfish-fsfs/spec/fsfs_spec.rb
+            spec/config_spec.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            plugins/thingfish-inspecthandler/lib/thingfish/handler/inspect.rb
+            etc/thingfish.conf
+            spec/handler_spec.rb (and 14 other/s)
+   Deleted: spec/constants.rb
+
+   source:trunk/spec/daemon_spec.rb
+   source:trunk/spec/constants.rb
+   source:trunk/spec/config_spec.rb
+   source:trunk/spec/handler_spec.rb
+   source:trunk/spec/client_spec.rb
+   source:trunk/spec/defaulthandler_spec.rb
+   source:trunk/spec/thingfish_spec.rb
+   source:trunk/spec/memoryfilestore_spec.rb
+   source:trunk/spec/resource_spec.rb
+   source:trunk/spec/lib/constants.rb
+   source:trunk/plugins/thingfish-fsfs/spec/fsfs_spec.rb
+   * Factored constants and helpers out into spec/lib/ files.
+   source:trunk/plugins/thingfish-inspecthandler/lib/thingfish/handler/inspect.rb
+   * Corrected synopsis
+   source:trunk/lib/thingfish/metastore.rb
+   source:trunk/lib/thingfish/metastore/memory.rb
+   source:trunk/spec/metastore_spec.rb
+   source:trunk/spec/memorymetastore_spec.rb
+   source:trunk/plugins/thingfish-sqlite3ms/lib/thingfish/metastore/sqlite3.rb
+   source:trunk/plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+   source:trunk/plugins/thingfish-marshalledms/lib/thingfish/metastore/marshalled.rb
+   source:trunk/plugins/thingfish-marshalledms/spec/marshalledms_spec.rb
+   * Moved MetaStore API specs into a shared behavior
+   * API: Added new method #get_all_property_keys to support the metadata handler.
+   source:trunk/etc/thingfish.conf
+   * Began work on a the Metadata handler
+
+
+-- Fri, 20 Jul 2007 16:57:06 -0000 by mgranger (r258) -----
+   Changed: lib/thingfish.rb
+
+   Bumped minor version after release of 0.0.1
+
+
+-- Thu, 19 Jul 2007 14:59:41 -0000 by mgranger (r255) -----
+   Changed: misc/rake/helpers.rb
+            Rakefile
+            misc/rake/svn.rb
+
+   source:trunk/Rakefile
+   * Made $dryrun and $trace globals act like they used to in the good old days of Rake.
+   source:trunk/misc/rake/helpers.rb
+   * Fixed some more svn tasks
+   source:trunk/misc/rake/svn.rb
+   * Added a trace() function that logs only if $trace is turned on
+
+
+-- Thu, 19 Jul 2007 14:31:48 -0000 by mgranger (r253) -----
+   Changed: misc/rake/svn.rb
+
+
+    * Update paths for svn convenience tasks.
+
+
+-- Wed, 18 Jul 2007 15:53:15 -0000 by mgranger (r252) -----
+   Changed: spec/thingfish_spec.rb
+
+   Added a test for the UUID monkeypatch
+
+
+-- Wed, 18 Jul 2007 15:43:42 -0000 by mgranger (r251) -----
+   Changed: spec/memoryfilestore_spec.rb
+            lib/thingfish/handler/default.rb
+            lib/thingfish/filestore/memory.rb
+            Rakefile
+            spec/memorymetastore_spec.rb
+            lib/thingfish/metastore/memory.rb (and 2 other/s)
+
+   source:thingfish/trunk/Rakefile
+   * Fixed the 'spec' task to include all the specs. Oops. :P
+   source:thingfish/trunk/spec/memoryfilestore_spec.rb
+   source:thingfish/trunk/spec/memorymetastore_spec.rb
+   source:thingfish/trunk/spec/defaulthandler_spec.rb
+   source:thingfish/trunk/lib/thingfish/metastore/memory.rb
+   source:thingfish/trunk/lib/thingfish/filestore/memory.rb
+   source:thingfish/trunk/lib/thingfish/handler/default.rb
+   * Modified to handle UUID objects for all operations on a filestore or metastore.
+
+
+-- Tue, 10 Jul 2007 17:51:46 -0000 by mgranger (r250) -----
+   Added:   misc/rake/helpers.rb (new)
+            misc/rake/svn.rb (new)
+   Changed: etc
+            lib/thingfish/exceptions.rb
+            lib/thingfish/metastore.rb
+            Rakefile
+            lib/thingfish/metastore/memory.rb
+            misc/rake/verifytask.rb (and 3 other/s)
+   Deleted: misc/rake/svnhelpers.rb
+
+   source:thingfish/trunk/Rakefile
+   source:thingfish/trunk/misc/rake/helpers.rb
+   source:thingfish/trunk/misc/rake/svn.rb
+   source:thingfish/trunk/misc/rake/verifytask.rb
+   source:thingfish/trunk/misc/rake/svnhelpers.rb
+   * Added some helper stuff for subversion and development tasks
+   source:thingfish/trunk/spec/metastore_spec.rb
+   source:thingfish/trunk/lib/thingfish/metastore/memory.rb
+   source:thingfish/trunk/lib/thingfish/exceptions.rb
+   source:thingfish/trunk/lib/thingfish/metastore.rb
+   * Added a test and a fix for the nil proxy bug (fixes #2)
+   source:thingfish/trunk/lib/thingfish/client.rb
+   * Fix for a missing constants bug
+
+
+-- Tue, 10 Jul 2007 15:56:51 -0000 by mahlon (r248) -----
+   Changed: bin/thingfish
+            lib/thingfish/client.rb
+
+
+    * More metadata attribute fixes
+
+    * Make sure content-length and extent are set in the PUT case
+
+    * Get mime-type in the PUT case
+
+
+-- Tue, 10 Jul 2007 15:23:32 -0000 by mahlon (r247) -----
+   Changed: bin/thingfish
+
+
+    * Use progname instead of $0.
+
+
+-- Tue, 10 Jul 2007 14:45:41 -0000 by mahlon (r246) -----
+   Changed: bin/thingfish
+
+
+    * Fix metadata attribute names.
+
+    * Output more usage, since I'm always looking in comments for that anyway.
+
+
+-- Mon, 09 Jul 2007 23:23:13 -0000 by mgranger (r245) -----
+   Changed: plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            Rakefile
+
+
+    * Fixed broken examples.
+
+
+-- Mon, 09 Jul 2007 22:21:31 -0000 by mgranger (r244) -----
+   Added:   plugins/thingfish-uploadhandler/resources/static/js/jquery.js (new)
+            plugins/thingfish-uploadhandler/resources/static/js (new)
+            plugins/thingfish-uploadhandler/resources/static/js/jquery.MultiFile.js (new)
+            plugins/thingfish-uploadhandler/resources/static (new)
+   Changed: docs/manual/src/03.Developers_Guide/examples/clientapi.rb
+            docs/manual/src/03.Developers_Guide/examples/instantiating.rb
+            plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+            etc/thingfish.conf
+            docs/manual/src/03.Developers_Guide/examples/storing.rb (and 3 other/s)
+
+   source:thingfish/trunk/plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+   * Dialed up the sample rate for less-dull (but perhaps less-valid?)
+   results (i.e., more than none)
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/resources/static/js/jquery.MultiFile.js
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/resources/static/js/jquery.js
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/resources/upload.rhtml
+   * Turned upload fields into a dynamically-expandable array via jQuery
+   MutliFile plugin.
+   source:thingfish/trunk/docs/manual/src/03.Developers_Guide/examples/storing.rb
+   source:thingfish/trunk/docs/manual/src/03.Developers_Guide/examples/fetching.rb
+   source:thingfish/trunk/docs/manual/src/03.Developers_Guide/examples/clientapi.rb
+   source:thingfish/trunk/docs/manual/src/03.Developers_Guide/examples/instantiating.rb
+   * Got rid of the xmpfilter comment stuff, since it wasn't working anyway.
+   source:thingfish/trunk/etc/thingfish.conf
+   * Bumped default storage up to 1GB.
+
+
+-- Mon, 09 Jul 2007 08:26:34 -0000 by mahlon (r243) -----
+   Changed: spec/config_spec.rb
+            experiments/pure_http_client.rb
+            experiments/rdf-classgen.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            Rakefile
+            spec/client_spec.rb (and 13 other/s)
+
+
+    * def -> std for stdout and stderr.
+
+
+-- Sat, 07 Jul 2007 03:33:52 -0000 by mgranger (r242) -----
+   Changed: plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/multipartparser.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/multipartparser.rb
+   * Removed comment cruft
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+   * Fixed buggy logging statement
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+   * Added tests for unsupported method handling and index content method.
+
+
+-- Sat, 07 Jul 2007 01:31:49 -0000 by mgranger (r241) -----
+   Changed: lib/thingfish/config.rb
+
+    * Made stderr and stdout unbuffered when logging to them
+
+
+-- Fri, 06 Jul 2007 16:08:13 -0000 by mgranger (r240) -----
+   Added:   plugins/thingfish-uploadhandler/spec/data/testform_truncated_metadata.form (new)
+
+   Ooops. Forgot to add the test data for the last example
+
+
+-- Fri, 06 Jul 2007 16:06:57 -0000 by mgranger (r239) -----
+   Changed: plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb
+
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb
+   * Added an example for error-handling of truncated MIME documents
+
+
+-- Fri, 06 Jul 2007 15:41:34 -0000 by mgranger (r238) -----
+   Changed: plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+   * Removed exception-handlers for both GET and POST
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+   * Added examples for GET requests
+
+
+-- Fri, 06 Jul 2007 15:09:09 -0000 by mahlon (r237) -----
+   Added:   plugins/thingfish-uploadhandler/resources/index_content.html (new)
+   Changed: plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+            var/www/index.html
+            plugins/thingfish-uploadhandler/resources/upload.rhtml
+
+
+    * use the index content generation method for plugins instead of coding into the top level index.html.
+
+    * fix comments for rdoc.
+
+
+-- Thu, 05 Jul 2007 15:32:26 -0000 by mgranger (r236) -----
+   Changed: docs/manual/plugin/tag/example.rb
+            Rakefile
+
+
+    * Fixed manual example plugin for changes in rcodetools 0.7.0.
+
+
+-- Wed, 04 Jul 2007 18:42:50 -0000 by mgranger (r235) -----
+   Changed: plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb
+            plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+            plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/lib/thingfish/handler/upload.rb
+   * Fully-qualify references to the multipart mime parser
+   * Change the upload function to reuse the parser for each request
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/spec/mpmimeparser_spec.rb
+   source:thingfish/trunk/plugins/thingfish-uploadhandler/spec/uploadhandler_spec.rb
+   * Guard against constants being declared more than once
+   * Make tested handlers use local resource directory
+   * Finish some unimplemented tests
+   * Fix the two-upload test to expect a UUID object instead of a string 
+   containing a UUID.
+
+
+-- Wed, 04 Jul 2007 00:43:17 -0000 by mahlon (r234) -----
+   Added:   plugins/thingfish-uploadhandler
+            -> renamed from /thingfish/branches/multipart_upload/plugins/thingfish-uploadhandler@r233
+            experiments/multipart_parsing
+            -> renamed from /thingfish/branches/multipart_upload/experiments/multipart_parsing@r233
+   Changed: lib/thingfish/exceptions.rb
+            loadpath.rb
+            etc/thingfish.conf
+
+
+   * Update the loadpath.rb to be more intelligent -- useful with spec -r when testing
+
+   plugins.
+
+   * Add a generic 'RequestError' exception under the ThingFish namespace.
+
+   * Minor cleanup of the default thingfish.conf.
+
+   * Most notably, support added for multipart uploads (web upload forms)
+
+   -- merged from multipart_upload branch, rev 233.  Ultra sweet!
+
+
+-- Tue, 03 Jul 2007 16:14:21 -0000 by mgranger (r233) -----
+   Changed: README
+            plugins/thingfish-statushandler/resources/index_content.html
+            lib/thingfish/mixins.rb
+
+   source:thingfish/trunk/README
+   * Extracted the index page of the wiki as README content. Stills needs some cleanup 
+   love.
+   source:thingfish/trunk/lib/thingfish/mixins.rb
+   * debugging statement
+
+
+-- Fri, 15 Jun 2007 17:55:57 -0000 by mgranger (r202) -----
+   Changed: docs/manual/src/01.Introduction/01.intended-audience.page
+            docs/manual/src/06.Troubleshooting-FAQs/index.page
+            Rakefile
+            docs/manual/src/default.css
+
+   source:thingfish/trunk/Rakefile
+   * Fixed the cruise build, which was flubbing on the package task because
+   the Rubygems task chokes on Pathname objects.
+   source:thingfish/trunk/docs/manual/src/01.Introduction/01.intended-audience.page
+   * Fixed the relocatable links.
+   source:thingfish/trunk/docs/manual/src/default.css
+   * Fixed the bottom border on image links.
+
+
+-- Tue, 12 Jun 2007 15:22:07 -0000 by mgranger (r201) -----
+   Changed: var/www/index.html
+
+
+    * Restored missing <% end %>
+
+
+-- Tue, 12 Jun 2007 15:19:15 -0000 by mahlon (r200) -----
+   Added:   bin/thingfish
+            -> copied from /thingfish/trunk/bin/thingfish2@r199
+            experiments/pure_http_client.rb
+            -> renamed from /thingfish/trunk/bin/thingfish@r199
+   Deleted: bin/thingfish2
+
+
+    * Move the original command line client out of the way, replace it with the version that uses the client library.
+
+
+-- Tue, 12 Jun 2007 14:36:13 -0000 by mahlon (r199) -----
+   Changed: var/www/static/default.css
+            docs/manual/src/04.Hackers_Guide/03.writing-filters.page
+            docs/manual/src/04.Hackers_Guide/05.writing-metastores.page
+            docs/manual/src/04.Hackers_Guide/06.daemon-customization.page
+            docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+            docs/manual/src/default.css (and 2 other/s)
+   Deleted: docs/ThingFish Manual Outline.oo3
+
+   source:thingfish/trunk/var/www/static/default.css
+   source:thingfish/trunk/docs/manual/src/default.css
+   * Add some spacing underneath caption blocks.
+   source:thingfish/trunk/docs/ThingFish Manual Outline.oo3/contents.xml
+   * Since we have a manual now, no real need to keep this old thing lying around.
+   source:thingfish/trunk/docs/manual/src/04.Hackers_Guide/03.writing-filters.page
+   source:thingfish/trunk/docs/manual/src/04.Hackers_Guide/05.writing-metastores.page
+   source:thingfish/trunk/docs/manual/src/04.Hackers_Guide/06.daemon-customization.page
+   source:thingfish/trunk/docs/manual/src/04.Hackers_Guide/02.writing-handlers.page
+   source:thingfish/trunk/docs/manual/src/04.Hackers_Guide/04.writing-filestores.page
+   * Just add some placeholder text so the reader doesn't think we forgot about a page... or five.  :)
+
+
+-- Tue, 12 Jun 2007 07:36:26 -0000 by mgranger (r198) -----
+   Added:   var/www/index_content.html (new)
+            plugins/thingfish-statushandler/resources/index_content.html (new)
+   Changed: plugins/thingfish-statushandler/spec/statushandler_spec.rb
+            spec/mixins_spec.rb
+            plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+            plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+            Rakefile
+            spec/handler_spec.rb (and 9 other/s)
+
+   source:thingfish/trunk/lib/thingfish/handler.rb
+   source:thingfish/trunk/lib/thingfish/daemon.rb
+   source:thingfish/trunk/lib/thingfish/mixins.rb
+   source:thingfish/trunk/lib/thingfish/handler/default.rb
+   source:thingfish/trunk/spec/handler_spec.rb
+   source:thingfish/trunk/spec/defaulthandler_spec.rb
+   source:thingfish/trunk/plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+   source:thingfish/trunk/plugins/thingfish-statushandler/resources/index_content.html
+   source:thingfish/trunk/plugins/thingfish-statushandler/resources/index.rhtml
+   source:thingfish/trunk/plugins/thingfish-statushandler/spec/statushandler_spec.rb
+   source:thingfish/trunk/plugins/thingfish-inspecthandler/spec/inspecthandler_spec.rb
+   source:thingfish/trunk/var/www/index_content.html
+   source:thingfish/trunk/var/www/index.html
+   * Factored out index page content into callbacks on handler plugins
+   source:thingfish/trunk/Rakefile
+   * Split out testing of plugins into a separate Rake task in an effort to separate 
+   plugins from the main distribution.
+   source:thingfish/trunk/spec/daemon_spec.rb
+   * Stubbed socket connect calls for ThingFish::Daemon to get rid of the failing tests
+   when a server was already running.
+   source:thingfish/trunk/spec/mixins_spec.rb
+   * Added a method to check for the existance of a resource.
+
+
+-- Sat, 09 Jun 2007 02:04:41 -0000 by mahlon (r197) -----
+   Changed: lib/thingfish/handler/default.rb
+
+   source:thingfish/trunk/lib/thingfish/handler/default.rb
+   * Fallthrough to potential static content isn't really an 'error', per se.
+
+
+-- Wed, 06 Jun 2007 03:31:39 -0000 by mahlon (r194) -----
+   Changed: lib/thingfish/daemon.rb
+            lib/thingfish/config.rb
+            /thingfish/trunk
+            lib/thingfish/mixins.rb
+            var/www/index.html
+            lib/thingfish/handler.rb (and 1 other/s)
+
+    r109@turdcart:  mahlon | 2007-06-05 20:32:40 -0700
+    source:thingfish/trunk/lib/thingfish/config.rb
+    * Don't delete uri registration info from the config object as it is parsed
+    * Force uris to an Array (it is plural, after all)
+    source:thingfish/trunk/lib/thingfish/daemon.rb
+    source:thingfish/trunk/lib/thingfish/handler.rb
+    * Expose the global config object to plugins, in the same fashion as the
+    metastore and filestore instance variables.
+    (reader accessor from ThingFish::Daemon, hook into Mongrel's listener hook)
+    source:thingfish/trunk/lib/thingfish/mixins.rb
+    * Typo fix.
+    source:thingfish/trunk/var/www/index.html
+    * Conditional display for the browser upload handler link.
+    (Not committed yet.)
+
+
+-- Tue, 05 Jun 2007 05:02:50 -0000 by mgranger (r193) -----
+   Changed: Rakefile
+
+
+    * Require RSpec 1.0.4, since we've removed syntax that was deprecated in that version.
+
+
+-- Tue, 05 Jun 2007 04:49:14 -0000 by mgranger (r192) -----
+   Added:   docs/manual/src/02.Getting_Started/examples/installing-dependencies.console (new)
+            docs/manual/src/02.Getting_Started/examples/starting-with-config.sh (new)
+            docs/manual/src/01.Introduction/02.design-principles.page
+            -> renamed from /thingfish/trunk/docs/manual/src/01.Introduction/02.design-goals.page@r191
+   Changed: docs/LICENSE
+            plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+            docs/manual/src/01.Introduction/index.page
+            docs/manual/src/02.Getting_Started/03.running.page
+            docs/manual/src/06.Troubleshooting-FAQs/index.page
+            Rakefile (and 18 other/s)
+   Deleted: docs/manual/src/01.Introduction/02.design-goals.page
+
+    * Factored ERb functionality out of the status handler plugin and into the
+    Laika::ResourceLoader mixin.
+    * Tuned Rdoc output a bit
+    * Made the :manual task in the Rakefile also copy the manual HTML to the default
+    handler's static content directory.
+    * Linked the manual from the default HTML index page.
+    * Made the default HTML index page into an ERb page so we can build parts of it
+    dynamically.
+    * Linked in the Maintenance and Troubleshooting chapters of the manual.
+    * Finished up most of the manual contents
+    * Renamed 'Design Goals' to 'Design Principles' to better fit what they are.
+    * Reverted the silly definition list dl.kvlist manual style to something more 
+    readable.
+    * Fixed up some deprecated calls in the specs.
+
+
+-- Fri, 01 Jun 2007 13:27:59 -0000 by mgranger (r191) -----
+   Changed: docs/manual/plugin/tag/example.rb
+            bin/thingfish2
+            spec/mixins_spec.rb
+            lib/thingfish/resource.rb
+            Rakefile
+            docs/manual/src/03.Developers_Guide/01.connecting.page (and 12 other/s)
+   Deleted: spec/rake
+
+    * Added fallback rev for SVN to the Rakefile
+    * Added some more stuff to the developer's guide. 
+    * Cleaned up some ugliness in the example manual plugin.
+    * Added another workaround for the latest RSpec, which broke ::include inside a 
+    'describe <mixinmodule>, "desc" do ... end'-form example.
+    * Added two examples for ThingFish::Client#has?
+    * Added some more examples for ThingFish::MemoryFileStore
+    * Finished up the initial version of ThingFish::Client and ThingFish::Resource.
+    * Added some fixturing methods to the spec constants module.
+    * Added a guard to ThingFish::AbstractClass for including classes that already don't
+    have a public ::new.
+    * Finished up the initial version of the command-line client (bin/thingfish2) that
+    uses ThingFish::Client instead of doing HTTP itself.
+
+
+-- Mon, 21 May 2007 07:27:38 -0000 by mahlon (r190) -----
+   Changed: /thingfish/trunk
+            var/www/index.html
+
+    r104@turdcart:  mahlon | 2007-05-21 00:28:07 -0700
+    * Add svn keywords to html.
+
+
+-- Mon, 21 May 2007 07:13:34 -0000 by mahlon (r189) -----
+   Added:   var/www/static/images/opensource-75x65-t.png (new)
+            var/www/static/images/menubg2.gif (new)
+            var/www/static/images/icons/note.png (new)
+            var/www/static/default.css (new)
+            var/www/static/images/front.jpg (new)
+            var/www/static/images/icons/bullet_go.png (new) (and 8 other/s)
+   Changed: var/www/index.html
+            lib/thingfish/handler/default.rb
+            /thingfish/trunk
+
+    r102@turdcart:  mahlon | 2007-05-21 00:13:47 -0700
+    * Add new static resources mixin to the default handler.
+    * Pretty-ify the default html, match the documentation.
+
+
+-- Wed, 16 May 2007 22:44:41 -0000 by mgranger (r188) -----
+   Added:   misc/rake (new)
+            misc/rake/verifytask.rb
+            -> renamed from /thingfish/trunk/spec/rake/verifytask.rb@r187
+            docs/manual/src/03.Developers_Guide/examples/storing.rb (new)
+            misc/rake/svnhelpers.rb (new)
+   Changed: spec/config_spec.rb
+            bin/thingfish2
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            lib/thingfish/resource.rb
+            Rakefile
+            spec/handler_spec.rb (and 17 other/s)
+   Deleted: spec/rake/verifytask.rb
+
+    * SQLite3 Metastore:
+    - Refactored schema-loading
+    - Added schema revisioning via the 'user_version' pragma (though no 
+    action is currently taken if the schema is out of date)
+    - Reworked the tests to run a bit faster
+    - Added a #clear method
+    * Added some examples of storing a resource to the developer section of the 
+    manual
+    * Some more little updates to the client docs
+    * More RSpec 0.9.x conversion
+    * Fixed the coverage percentage verification rake task
+    * Factored the #listener= callback up into the base handler so all
+    handlers have a reference to the metastore and filestore if they need 
+    them.
+    * Implemented fetching in the client library
+    * Removed a few spec examples which tested stuff outside of its area of
+    responsibility
+    * Fleshed out ThingFish::Resource to include constructors for both 
+    Net::HTTPResponse objects and IOs.
+    * Added a fixturing function for generating HTTP responses to the constants 
+    module.
+    * Factored out subversion helpers into a new rake task lib
+
+
+-- Sat, 12 May 2007 01:29:56 -0000 by mgranger (r186) -----
+   Added:   .irbrc
+            -> renamed from /thingfish/.irbrc@r185
+   Deleted: /thingfish/.irbrc
+
+   Moving .irbrc into new trunk dir
+
+
+-- Fri, 11 May 2007 23:31:11 -0000 by mgranger (r185) -----
+   Added:   bin/thingfish2 (new)
+            plugins/thingfish-sqlite3ms/resources (new)
+            plugins/thingfish-sqlite3ms/resources/base-schema.sql (new)
+   Changed: spec/mixins_spec.rb
+            plugins/thingfish-statushandler/lib/thingfish/handler/status.rb
+            plugins/thingfish-sqlite3ms/spec/sqlite3ms_spec.rb
+            lib/thingfish/resource.rb
+            spec/handler_spec.rb
+            spec/client_spec.rb (and 8 other/s)
+
+    * Factored resource-loading out into a new mixin: ThingFish::ResourceLoader
+    * Renamed the ThingFish::StaticResources mixin to 
+    ThingFish::StaticResourcesHandler for clarity about what it actually does
+    * Moved the initial schema for the SQLite3 metastore into a resource
+    that's loadable on demand
+    * Client library now implements #store.
+    * New class ThingFish::Resource for encapsulating a chunk of data fetched
+    from the server and its associated metadata.
+    * Added a synopsis for ThingFish::Daemon
+    * Added a command-line client tool that uses ThingFish::Client instead of
+    doing all the HTTP itself [source:trunk/bin/thingfish2 bin/thingfish2.
+    This should eventually replace [source:trunk/bin/thingfish bin/thingfish].
+
+
+-- Wed, 09 May 2007 23:02:01 -0000 by mahlon (r184) -----
+   Changed: lib/thingfish/handler/default.rb
+
+
+    * Remove unnecessary debug log (logged as nil)
+
+
+-- Wed, 09 May 2007 20:39:37 -0000 by mahlon (r183) -----
+   Added:   etc
+            -> renamed from /thingfish/etc@r182
+            TEMPLATE.rb.tpl
+            -> renamed from /thingfish/TEMPLATE.rb.tpl@r182
+            spec
+            -> renamed from /thingfish/spec@r182
+            misc
+            -> renamed from /thingfish/misc@r182
+            /thingfish/tags (new)
+            README
+            -> renamed from /thingfish/README@r182 (and 14 other/s)
+   Deleted: /thingfish/Rakefile
+            /thingfish/docs
+            /thingfish/loadpath.rb
+            /thingfish/utils.rb
+            /thingfish/experiments
+            /thingfish/lib (and 11 other/s)
+
+
+    * Reorganization for branching/tagging.
+
+

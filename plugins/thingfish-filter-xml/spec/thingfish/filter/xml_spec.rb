@@ -14,7 +14,7 @@ BEGIN {
 
 begin
 	require 'rbconfig'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'ipaddr'
 	require 'thingfish'
@@ -170,6 +170,11 @@ describe ThingFish::XMLFilter, " with Tidy enabled" do
 		ThingFish.logger.level = Logger::FATAL
 	end
 
+	before( :each ) do
+		pending "example doesn't work under 1.9.1" if RUBY_VERSION >= '1.9.1'
+	end
+	
+
 	after( :all ) do
 		ThingFish.reset_logger
 	end
@@ -187,7 +192,8 @@ describe ThingFish::XMLFilter, " with Tidy enabled" do
 
 
 	it "doesn't die if the tidy shared library can't be found" do
-		Kernel.stub!( :require ).and_return( true )
+		
+		ThingFish::XMLFilter.stub!( :require ).and_return( true )
 
 		lambda {
 			ThingFish::Filter.create( 'xml',

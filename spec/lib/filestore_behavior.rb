@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
 	require 'thingfish'
@@ -97,7 +97,7 @@ describe "A FileStore", :shared => true do
 	end
 	
 	it "returns nil when asked for the size of a resource it doesn't contain" do
-		@fs.size( TEST_UUID ).should be_nil
+		@fs.size( TEST_UUID ).should == nil
 	end
 
 end

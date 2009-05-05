@@ -11,7 +11,7 @@ BEGIN {
 
 begin
 	require 'stringio'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/helpers'
 	require 'spec/lib/constants'
 
@@ -34,7 +34,7 @@ describe ThingFish::Table do
 
 
 	before( :all ) do
-		setup_logging()
+		setup_logging( :fatal )
 	end
 
 	before( :each ) do
@@ -42,7 +42,7 @@ describe ThingFish::Table do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 

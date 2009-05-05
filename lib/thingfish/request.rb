@@ -343,8 +343,8 @@ class ThingFish::Request
 	### +related_metadata+::
 	###    The metadata to attach to the new resource, as a Hash.
 	def append_related_resource( resource, related_resource, related_metadata={} )
-		self.log.debug "Appending related resource %p to the list for %p" %
-			[ related_resource, resource ]
+		self.log.debug "Appending related resource %p (%p) to the list for %p" %
+			[ related_resource, related_metadata, resource ]
 
 		unless self.entity_bodies.key?( resource ) || self.related_resources.key?( resource )
 			errmsg = "Cannot append %p related to %p: it is not a part of the request" % [
@@ -376,6 +376,7 @@ class ThingFish::Request
 			raise ThingFish::ResourceError, errmsg
 		end
 
+		self.log.debug "Appending metadata %p for resource %p" % [ metadata, resource ]
 		self.metadata[ resource ].merge!( metadata )
 	end
 

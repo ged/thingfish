@@ -14,7 +14,7 @@ BEGIN {
 
 begin
 	require 'rbconfig'
-	require 'spec/runner'
+	require 'spec'
 	require 'spec/lib/constants'
 	require 'thingfish'
 	require 'thingfish/filter'

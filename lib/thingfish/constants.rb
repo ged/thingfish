@@ -1,5 +1,12 @@
 #!/usr/bin/ruby
-#
+# coding: utf-8
+
+require 'pathname'
+require 'tmpdir'
+require 'yaml'
+require 'thingfish'
+
+
 # A collection of constants for convenience and readability
 #
 # == Synopsis
@@ -17,21 +24,12 @@
 # * Michael Granger <mgranger@laika.com>
 # * Mahlon E. Smith <mahlon@laika.com>
 #
-
 # :include: LICENSE
 #
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'pathname'
-require 'tmpdir'
-require 'yaml'
-require 'thingfish'
-
-
 module ThingFish::Constants
 
 	# The subversion ID
@@ -79,7 +77,11 @@ module ThingFish::Constants
 
 	# Suck in a mapping of default mime types by file extension from the data
 	# section of this file
-	MIMETYPE_MAP = YAML.load( File.read(__FILE__).split(/^__END__/, 2).last )
+	if File.instance_methods.include?( :external_encoding )
+		MIMETYPE_MAP = YAML.load( File.read(__FILE__, :encoding => 'utf-8').split(/^__END__/, 2).last )
+	else
+		MIMETYPE_MAP = YAML.load( File.read(__FILE__).split(/^__END__/, 2).last )
+	end
 
 	# A MIME type string that indicates an entity body is XHTML
 	XHTML_MIMETYPE = 'application/xhtml+xml'

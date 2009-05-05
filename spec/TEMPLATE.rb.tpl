@@ -10,7 +10,7 @@ BEGIN {
 }
 
 begin
-	require 'spec/runner'
+	require 'spec'
 	require 'thingfish'
 	require 'thingfish/#{vars[:specified_class].downcase}'
 rescue LoadError

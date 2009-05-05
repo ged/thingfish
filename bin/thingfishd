@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# thingfishd - a network accessable, searchable datastore
+# thingfishd - start a ThingFish server
 #
 # == Synopsis
 #
@@ -12,76 +12,7 @@
 #
 #
 
-require 'rbconfig'
-require 'pathname'
-require 'optparse'
-require 'ostruct'
 require 'thingfish/daemon'
 
-include Config
+ThingFish::Daemon.run( ARGV )
 
-### Run the daemon -- Start an instance of the daemon, run until shutdown,
-### and then return from the main thread.
-def main( args )
-	opts = parse_args( args )
-	$0 = 'thingfishd'
-
-	# FIXME  (default config if no options.configfile passed)
-	config = if opts.configfile
-		ThingFish::Config.load( opts.configfile )
-	else
-		ThingFish::Config.new
-	end
-
-	ThingFish::Daemon.new( config ).start
-end
-
-
-### Parse the command line arguments and return an options struct
-def parse_args( args )
-	progname = Pathname.new( __FILE__ )
-	opts = get_default_options()
-
-	oparser = OptionParser.new do |oparser|
-		oparser.accept( Pathname ) {|path| Pathname.new(path) }
-
-		oparser.banner = "Usage: #{progname.basename} OPTIONS"
-
-		oparser.separator ''
-		oparser.separator 'Daemon Options:'
-
-		oparser.on( '--config-file=STRING', '-f STRING', Pathname,
-			"Specify a config file to use." ) do |cfg|
-			opts.configfile = cfg
-		end
-
-		oparser.separator 'Other Options:'
-
-		oparser.on_tail( '--help', '-h', FalseClass, "Display this help." ) do
-			$stderr.puts oparser
-			exit!
-        end
-
-		# Another typical switch to print the version.
-		oparser.on_tail( "--version", "Show ThingFish version" ) do
-			$stderr.puts ThingFish.version_string( true )
-			exit!
-		end
-	end
-
-	oparser.parse!
-
-	return opts
-end
-
-
-### Get the options struct filled with defaults
-def get_default_options
-	options = OpenStruct.new
-	return options
-end
-
-
-main( ARGV )
-
-# vim: set nosta noet ts=4 sw=4:

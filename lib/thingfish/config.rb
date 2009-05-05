@@ -263,9 +263,10 @@ class ThingFish::Config
 	### Construct a fully-qualified Pathname object from the given +dir+, either as-is if it is
 	### already an absolute path, or relative to the configured +datadir+ if not.
 	def qualify_path( dir )
-		sp = Pathname.new( dir )
+		sp = Pathname( dir )
+		self.log.debug "Qualifying path %p with datadir %p" % [ sp, self.datadir ]
 		return sp unless sp.relative?
-		return Pathname.new( self.datadir ) + sp
+		return Pathname( self.datadir ) + sp
 	end
 
 
@@ -311,7 +312,8 @@ class ThingFish::Config
 	### configuration.
 	def create_configured_filters
 		return self.plugins.filters.collect do |tuple|
-			name, options = *(tuple.to_a.first)
+			self.log.debug "Filter config tuple is: %p" % [ tuple ]
+			name, options = *(Array( tuple ).first)
 			self.log.info "Loading '%s' filter with options: %p" % [ name, options ]
 			ThingFish::Filter.create( name.to_s, options || {} )
 		end
@@ -488,7 +490,7 @@ class ThingFish::Config
 
 		self.class.class_eval %{
 			def #{key}; @struct.#{key}; end
-			def #{key}=(*args); @struct.#{key} = *args; end
+			def #{key}=(arg); @struct.#{key} = arg; end
 			def #{key}?; @struct.#{key}?; end
 		}
 
@@ -566,7 +568,7 @@ class ThingFish::Config
 	### Hash-wrapper that allows struct-like accessor calls on nested
 	### hashes.
 	class ConfigStruct
-		include Enumerable
+		include Enumerable, ThingFish::Loggable
 		extend Forwardable
 
 		# Mask most of Kernel's methods away so they don't collide with
@@ -719,7 +721,7 @@ class ThingFish::Config
 				}
 			}
 
-			self.__send__( sym, *args )
+			self.method( sym ).call( *args )
 		end
 	end # class ConfigStruct
 

@@ -387,6 +387,7 @@ __END__
 .evy: application/envoy
 .evy: application/x-envoy
 .exe: application/octet-stream
+.exr: image/x-exr
 .f77: text/x-fortran
 .f90: text/plain
 .f90: text/x-fortran

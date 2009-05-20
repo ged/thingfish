@@ -146,7 +146,9 @@ describe ThingFish::ImageFilter do
 			thumb_metadata[ metadata_key ] = magick_method.to_s
 		end
 
-		thumbnail.should_receive( :to_blob ).and_return( "thumbnail_data" )
+		thumb_blob = mock( "Thumbnail blob" )
+		thumbnail.should_receive( :to_blob ).and_yield( thumb_blob ).and_return( "thumbnail_data" )
+		thumb_blob.should_receive( :format= ).with( 'JPG' )
 		StringIO.should_receive( :new ).with( "thumbnail_data" ).and_return( :thumbio )
 		@request.should_receive( :append_related_resource ).with( @io, :thumbio, thumb_metadata )
 

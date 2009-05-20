@@ -272,15 +272,8 @@ class ThingFish::Request
 			key, val = arg.split('=')
 			key = URI.decode( key )
 
-			# Convert values
-			case val
-			when NilClass
-				# no-op
-			when /^\d+$/
-				val = val.to_i
-			else
-				val = URI.decode( val )
-			end
+			# Decode values
+			val = URI.decode( val ) if val
 
 			# If there's already a value in the Hash, turn it into an array if
 			# it's not already, and append the new value

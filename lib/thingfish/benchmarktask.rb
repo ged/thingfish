@@ -17,14 +17,14 @@ require 'thingfish/daemon'
 
 
 module ThingFish::Benchmark
-	
+
 	begin
 		require 'gruff'
 		HAVE_GRUFF = true
 	rescue LoadError
 		HAVE_GRUFF = false
 	end
-	
+
 	### An object class for encapsulating a single datapoint in a benchmark dataset
 	class Datapoint
 
@@ -46,7 +46,7 @@ module ThingFish::Benchmark
 			@ab_output    = ab_output
 			@bench_config = bench_config
 			@options      = options
-		
+
 			@times        = []
 			@sorted_times = nil
 		end
@@ -55,22 +55,22 @@ module ThingFish::Benchmark
 		######
 		public
 		######
-	
+
 		# The name of the datapoint
 		attr_reader :name
-		
+
 		# The HTTP method of the requests run for the datapoint
 		attr_reader :http_method
-		
+
 		# The URI of the requests run for the datapoint
 		attr_reader :uri
-		
+
 		# The statistics that ab generates on stdout
 		attr_reader :ab_output
 
 		# The config hash for the benchmark this datapoint is a member of
 		attr_reader :bench_config
-		
+
 		# The options that were used to configure the requests run for the datapoint 
 		attr_reader :options
 
@@ -80,10 +80,10 @@ module ThingFish::Benchmark
 			if @sorted_times.nil?
 				@sorted_times = @times.sort_by {|row| row[EPOCHTIME] }
 			end
-			
+
 			return @sorted_times
 		end
-		
+
 
 		### Append a row of output from 'ab' to the times for this datapoint
 		def <<( row )
@@ -91,46 +91,46 @@ module ThingFish::Benchmark
 			@times << row.chomp.split( /\t/ )[ 1..-1 ].collect {|i| Integer(i) }
 			return self
 		end
-		
-		
+
+
 		### Return the Time of the start of the benchmark
 		def start_time
 			epochseconds = self.times.first[EPOCHTIME] / 1_000_000.0
 			return Time.at( epochseconds )
 		end
-		
-		
+
+
 		### Return the Time of the end of the benchmark
 		def finish_time
 			epochseconds = self.times.last[EPOCHTIME] / 1_000_000.0
 			return Time.at( epochseconds )
 		end
-		
-		
+
+
 		### Return the number of requests processed in this benchmark
 		def count
 			@times.length
 		end
-		
-		
+
+
 		### Return the concurrency 'ab' used when running the benchmark
 		def concurrency
 			@bench_config[:concurrency]
 		end
-		
-		
+
+
 		### Return the number of seconds the benchmark took (as a Float)
 		def runtime
 			return self.finish_time - self.start_time
 		end
-		
-		
+
+
 		### Return the number of requests per second executed in this datapoint.
 		def requests_per_second
 			return self.count / self.runtime
 		end
-		
-		
+
+
 		### Generate timing statistics methods for the given +column+ of `ab` output.
 		def self::def_time_methods( column, name=column )
 			columnidx = const_get( column.to_s.upcase ) or
@@ -140,27 +140,27 @@ module ThingFish::Benchmark
 				self.times.transpose[ columnidx ]
 			end
 			alias_method "#{column}s", "#{name}_times" unless name == column
-			
+
 			define_method( "min_#{name}_time" ) do
 				self.times.transpose[columnidx].min
 			end
 			alias_method "min_#{column}", "min_#{name}_time"
-			
+
 			define_method( "max_#{name}_time" ) do
 				self.times.transpose[columnidx].max
 			end
 			alias_method "max_#{column}", "max_#{name}_time"
-			
+
 			define_method( "mean_#{name}_time" ) do
 				self.times.transpose[columnidx].inject(0) {|sum,n| sum + n } / self.count.to_f
 			end
 			alias_method "mean_#{column}", "mean_#{name}_time"
-			
+
 			define_method( "#{name}_time_standard_deviation" ) do
 				standard_deviation( self.send("#{name}_times") )
 			end
 			alias_method "#{column}_standard_deviation", "#{name}_time_standard_deviation"
-			
+
 			define_method( "#{name}_time_histogram" ) do
 				return self.times.transpose[columnidx].inject({}) {|hist,n|
 					hist[ n ] ||= 0
@@ -169,8 +169,8 @@ module ThingFish::Benchmark
 				}
 			end
 		end
-		
-		
+
+
 		def_time_methods :dtime, :processing
 		def_time_methods :ctime, :connecting
 		def_time_methods :ttime, :total
@@ -186,8 +186,8 @@ module ThingFish::Benchmark
 				self.processing_time_standard_deviation,
 			]
 		end
-		
-		
+
+
 		#######
 		private
 		#######
@@ -237,7 +237,7 @@ module ThingFish::Benchmark
 		######
 		public
 		######
-		
+
 		# The name of the dataset
 		attr_reader :name
 
@@ -250,14 +250,14 @@ module ThingFish::Benchmark
 
 		# Benchmarking config options passed to with_config()
 		attr_reader :benchmark_config
-		
+
 
 		### Append a Benchmark::Datapoint to the dataset
 		def <<( datapoint )
 			@datapoints << datapoint
 			return self
 		end
-	
+
 
 		### Create pretty graphs using the Gnuplot binary.
 		def generate_gnuplot_graphs( outputdir )
@@ -265,9 +265,9 @@ module ThingFish::Benchmark
 				trace "Skipping Gnuplot graph generation: Gnuplot not found in path."
 				return
 			end
-		
+
 			gp_io = open( '|-', 'w+' ) or exec gnuplot
-		
+
 			# gp_io.puts
 		end
 
@@ -276,7 +276,7 @@ module ThingFish::Benchmark
 		def simplename
 			return self.name.sub(/.*:/, '')
 		end
-		
+
 
 		### Create pretty graphs using the Gruff library.
 		def generate_gruff_graphs( outputdir )
@@ -321,8 +321,8 @@ module ThingFish::Benchmark
 			log "Writing graph to #{graph_file}"
 			g.write( graph_file.to_s )
 		end
-		
-		
+
+
 		### Create a graph for each datapoint showing total request times
 		def generate_gruff_requesttime_graphs( outputdir )
 			@datapoints.each do |datapoint|
@@ -372,7 +372,7 @@ module ThingFish::Benchmark
 			:concurrency => 5,
 			:count => 300,
 		}
-		
+
 		AB_PATCH_LOCATION = "https://issues.apache.org/bugzilla/show_bug.cgi?id=44851"
 
 
@@ -402,17 +402,17 @@ module ThingFish::Benchmark
 			@output_dir = DEFAULT_OUTPUT_DIR + @nsname
 		end
 
-	
+
 		######
 		public
 		######
 
 		# The name of the benchmark
 		attr_reader :name
-	
+
 		# The name of the benchmark with any namespaces removed
 		attr_reader :nsname
-	
+
 		# The current dataset being generated by the benchmark
 		attr_reader :dataset
 
@@ -435,17 +435,17 @@ module ThingFish::Benchmark
 				self.instance_eval( &act )
 			end
 		end
-	
+
 
 		### Set the output directory to something other than the default
 		def output_dir( newdir=nil )
 			if newdir
 				@output_dir = Pathname( newdir )
 			end
-			
+
 			return @output_dir
 		end
-		
+
 
 		#########
 		protected
@@ -461,7 +461,7 @@ module ThingFish::Benchmark
 				trace "Using config object 0x%0x" % [ configobj.object_id * 2 ]
 				@config = configobj
 				@benchmark_config = BENCH_CONFIG_DEFAULTS.merge( benchmark_config )
-				
+
 				@dataset = ThingFish::Benchmark::Dataset.new( self.name, @config, @benchmark_config )
 				@daemon = ThingFish::Daemon.new( @config )
 
@@ -474,7 +474,7 @@ module ThingFish::Benchmark
 				trace "Entering with_config block"
 				self.instance_eval( &block )
 				trace "Done with with_config block"
-			
+
 				save_dataset()
 			ensure
 				trace "Clearing out the config objects"
@@ -496,21 +496,21 @@ module ThingFish::Benchmark
 			savefile.open( File::CREAT|File::WRONLY ) do |fh|
 				Marshal.dump( @dataset, fh )
 			end
-		
+
 			return savefile
 		end
-	
-	
+
+
 		### Return a normalized version of the configured benchmark name.
 		def benchmarkname
 			return self.name[ /.*:(.*)$/, 1 ]
 		end
-		
+
 
 		### Define a datapoint in the current benchmark for a given config
 		def datapoint( name, http_method=:get, uri="/", options={} )
 			raise "Not in a config section" unless @config
-		
+
 			log "Adding the '#{name}' datapoint"
 			trace " ab config '%s %s' on %s port %d: concurrency: %d, iterations: %d" % [
 				http_method.to_s.upcase,
@@ -520,10 +520,10 @@ module ThingFish::Benchmark
 				@benchmark_config[:concurrency],
 				@benchmark_config[:count]
 			  ]
-		
+
 			dpname = name.gsub( /\W+/, "_" ).downcase.sub( /_$/, '' )
 			resultsfile = @output_dir + "%s.%s.tsv" % [ benchmarkname(), dpname ]
-		
+
 			ab = make_ab_command( uri, http_method, resultsfile, options )
 			trace( ab.collect {|part| part =~ /\s/ ? part.inspect : part} ) 
 
@@ -539,19 +539,19 @@ module ThingFish::Benchmark
 				end
 			end
 			trace( "ab exited with code: %d" % [ $? ] )
-		
+
 			datapoint = Datapoint.new( name, http_method, uri, ab_output, @benchmark_config, options )
 			resultsfile.each_line do |line|
 				next if line =~ /^starttime/
 				datapoint << line
 			end
-		
+
 			log( "  " + datapoint.synopsis )
-		
+
 			@dataset << datapoint
 		end
-	
-	
+
+
 		### Create a command line suitable for running ab against the given +uri+, taking
 		### command-line arguments from the ThingFish +config+ and +benchmark_config+.
 		def make_ab_command( uri, http_method, resultsfile, options )
@@ -562,19 +562,19 @@ module ThingFish::Benchmark
 			find_pattern_in_pipe( /-D\s+Send a DELETE request/, abprog, '-h' ) or
 				fail "Benchmarks require patched ab, see: #{AB_PATCH_LOCATION}"
 			trace "...patched 'ab' found."
-		
+
 			ab = [ abprog, '-g', resultsfile.to_s ]
 
 			ab << '-n' << @benchmark_config[:count].to_s       if @benchmark_config[:count]
 			ab << '-c' << @benchmark_config[:concurrency].to_s if @benchmark_config[:concurrency]
 			ab << '-t' << @benchmark_config[:timed].to_s       if @benchmark_config[:timed]
-			
+
 			if @benchmark_config[:headers]
 				@benchmark_config[:headers].each do |header, value|
 					ab << '-H' << "%s: %s" % [ header, value ]
 				end
 			end
-			
+
 			case http_method
 			when :put
 				fail "PUT requires an :entity_body" unless options[:entity_body]
@@ -590,19 +590,19 @@ module ThingFish::Benchmark
 			else
 				fail "Unsupported http_method in benchmark: %s" % [ http_method ]
 			end
-			
+
 			ab.push( "#{@config.ip}:#{@config.port}#{uri}" )
-		
+
 			return ab
 		end
-		
-	
+
+
 		### Create a ThingFish::Client object that will talk to the configured ThingFish daemon
 		### and yield it to the block to do any necessary preparation for the benchmark. The
 		### return value from the block is returned.
 		def prep
 			raise "Not in a config section" unless @config
-		
+
 			uri = "http://#{@config.ip}:#{@config.port}/"
 			log "Creating a client object for benchmark prep: #{uri}"
 			client = ThingFish::Client.new( uri )
@@ -632,7 +632,7 @@ module ThingFish::Benchmark
 			result = output.find { |line| regexp.match(line) } 
 			return $1 || result
 		end
-	
+
 	end # class Task
 
 end # module ThingFish::Benchmark

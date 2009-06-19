@@ -4,7 +4,7 @@
 require 'tmpdir'
 
 # ThingFish-specific Rakefile overrides
-#   The entrypoint into this file from the main Rakefile is the 'ocal' task,
+#   The entrypoint into this file from the main Rakefile is the 'local' task,
 #   which is included as a dependency from the main default task.
 
 
@@ -14,9 +14,14 @@ MISCDIR          = BASEDIR + 'misc'
 # Plugin constants
 PLUGINDIR        = BASEDIR + 'plugins'
 PLUGINS          = Pathname.glob( PLUGINDIR + '*' ).select {|path| path.directory? }
-PLUGIN_LIBS      = PLUGINS.collect {|dir| Pathname.glob(dir + 'lib/**/*.rb') }.flatten
-PLUGIN_RAKEFILES = PLUGINS.collect {|dir| dir + 'Rakefile' }
-PLUGIN_SPECFILES = PLUGINS.collect {|dir| Pathname.glob(dir + 'spec/**/*_spec.rb') }.flatten
+PLUGIN_LIBS      = Rake::FileList.new
+PLUGIN_RAKEFILES = Rake::FileList.new
+PLUGIN_SPECFILES = Rake::FileList.new
+PLUGINS.each do |dir|
+	PLUGIN_LIBS.include( dir + 'lib/**/*.rb' )
+	PLUGIN_RAKEFILES.include( dir + 'Rakefile' )
+	PLUGIN_SPECFILES.include( dir + 'spec/**/*_spec.rb' )
+end
 
 # Directory to keep benchmarks around in
 BENCHMARKDIR = BASEDIR + 'benchmarks'
@@ -45,7 +50,7 @@ task :install_dev_dependencies do
 	workdir = Pathname.new( Dir.tmpdir )
     unzip = which( 'unzip' ) or
 		fail "Can't extract downloads: unzip: no such file or directory"
-   
+
 	targetzip = workdir + 'clxmlserial.zip'
 	download( CL_XMLSERIAL_DIST, targetzip )
 	system( unzip, '-d', workdir, targetzip )
@@ -73,7 +78,7 @@ begin
 				task.invoke
 			end
 		end
-	
+
 		desc "Benchmark the default handler in a stripped-down server"
 		benchmark :barebones => [TESTIMAGE.to_s] do
 			config = ThingFish::Config.new do |config|
@@ -93,7 +98,7 @@ begin
 				'Accept' => 'text/x-yaml',
 				'Accept-Encoding' => 'utf8',
 			}
-			
+
 			with_config( config, :count => 500, :concurrency => 5, :headers => headers ) do # DataSet
 				resource = prep do |client|
 					res = ThingFish::Resource.from_file( TESTIMAGE, :format => 'image/jpeg' )
@@ -111,7 +116,7 @@ begin
 			end
 
 		end
-		
+
 		desc "Create Gruff graphs for all existing benchmark data"
 		task :graphs do
 			datafiles = Pathname.glob( BENCHMARKDIR + '**/*.data' )
@@ -122,7 +127,7 @@ begin
 				dataset.generate_gruff_graphs( datafile.dirname )
 			end
 		end
-		
+
 	end
 rescue LoadError => err
 	task :no_benchmarks do

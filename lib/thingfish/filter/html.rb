@@ -55,8 +55,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 	#################################################################
 
 	### Set up a new Filter object
-	def initialize( options=nil ) # :notnew:
-		options ||= {}
+	def initialize( options={} ) # :notnew:
 		@resource_dir = options['resource_dir'] || options[:resource_dir]
 		super
 	end

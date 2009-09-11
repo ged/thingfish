@@ -1,19 +1,18 @@
 --- 
-rubyforge_project: thingfish
+excluded_pkgfiles: []
+
+project_pubdir: /usr/local/laika/www/public/thingfish/
+project_pubhost: opensource.laika.com
+project_homepage: http://bitbucket.org/laika/thingfish
+rubyforge_group: laika
 project_requirements: 
   cl_xmlserial: ">= 1.1.0"
   redland-bindings: ">= 1.0.8.1"
-project_pubdir: /usr/local/laika/www/public/thingfish/
-project_description: "ThingFish is a network-accessable, searchable, extensible datastore. It can be used to store chunks of data on the network in an application-independent way, associate the chunks with other chunks through metadata, and then search for the chunk you need later and fetch it again, all through a REST API over HTTP. "
-rubyforge_group: laika
-author_name: Michael Granger and Mahlon Smith
-project_pubhost: opensource.laika.com
-project_homepage: http://opensource.laika.com/wiki/ThingFish
+project_description: "ThingFish is a extensible digital asset manager written in Ruby. It can be used to store chunks of data on the network in an application-independent way, associate the chunks with other chunks through metadata, and then search for the chunk you need later and fetch it again, all through a REST API over HTTP. "
 project_dependencies: 
   pluginfactory: ">=1.0.4"
   uuidtools: ">= 1.0.7"
-project_summary: a network-accessable, searchable, extensible datastore.
-project_name: ThingFish
+project_summary: An extensible REST-based digital asset management server.
 version_file: thingfish.rb
 additional_pkgfiles: 
 - etc/thingfish.conf.*
@@ -22,13 +21,17 @@ additional_pkgfiles:
 - var/www/**/*.rhtml
 - var/www/static/*.{png,jpg,gif,css,js}
 dev_dependencies: 
-  sqlite3-ruby: ">= 1.2.4"
-  sequel: ">= 2.7.1"
-  ruby-mp3info: ">=0"
-  rmagick: ">=0"
-  exifr: ">=0"
-  lockfile: ">= 1.4.3"
-  json: ">=0"
   tidy: ">=0"
-author_email: mgranger@laika.com, mahlon@laika.com
+  sqlite3-ruby: ">= 1.2.4"
+  ruby-mp3info: ">=0"
+  exifr: ">=0"
+  json: ">=0"
+  rmagick: ">=0"
+  sequel: ">= 2.7.1"
+  lockfile: ">= 1.4.3"
+authors: 
+  Mahlon E. Smith: mahlon@laika.com
+  Michael Granger: mgranger@laika.com
 post_install_message: ""
+project_name: ThingFish
+rubyforge_project: thingfish

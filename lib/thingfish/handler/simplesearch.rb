@@ -73,17 +73,20 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 	### Handle a GET request
 	def handle_get_request( path_info, request, response )
-		args = request.query_args.reject { |k,v| v.nil? }
+		case path_info
 
-		uuids = if args.empty?
-			[]
+		when ''
+			self.log.debug "Handling a UUID search request"
+			self.handle_uuid_search_request( request, response )
+
+		when 'full'
+			self.log.debug "Handling a full search request"
+			self.handle_full_search_request( request, response )
+
 		else
-			@metastore.find_by_matching_properties( args )
+			self.log.debug "No GET handler for %p; leaving the response alone" %
+			 	[ path_info ]
 		end
-
-		response.status = HTTP::OK
-		response.content_type = RUBY_MIMETYPE
-		response.body = uuids
 	end
 
 
@@ -110,7 +113,48 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 		return content
 	end
-	
+
+
+	#########
+	protected
+	#########
+
+	### Handle a search request and return a UUID for each result.
+	def handle_uuid_search_request( request, response )
+		args = request.query_args.reject { |k,v| v.nil? }
+
+		uuids = if args.empty?
+			[]
+		else
+			@metastore.find_by_matching_properties( args )
+		end
+
+		response.status = HTTP::OK
+		response.content_type = RUBY_MIMETYPE
+		response.body = uuids
+	end
+
+
+	### Handle a search request and return full metadata for each result.
+	def handle_full_search_request( request, response )
+		args = request.query_args.reject { |k,v| v.nil? }
+
+		uuids = if args.empty?
+			[]
+		else
+			@metastore.find_by_matching_properties( args )
+		end
+
+		metadata = uuids.inject({}) do |hash, uuid|
+			hash[ uuid ] = @metastore.get_properties( uuid )
+			hash
+		end
+
+		response.status = HTTP::OK
+		response.content_type = RUBY_MIMETYPE
+		response.body = metadata
+	end
+
 end # ThingFish::SearchHandler
 
 # vim: set nosta noet ts=4 sw=4:

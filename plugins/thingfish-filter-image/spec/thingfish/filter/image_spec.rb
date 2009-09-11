@@ -20,12 +20,18 @@ begin
 	require 'thingfish/filter'
 	require 'thingfish/filter/image'
 	require 'spec/lib/filter_behavior'
+	$have_imagefilter = true
 rescue LoadError
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
 		retry
 	end
-	raise
+
+	class ThingFish::ImageFilter
+		DEFAULT_OPTIONS = {}
+	end
+	class Magick; end
+	$have_imagefilter = false
 end
 
 include ThingFish::TestConstants
@@ -42,6 +48,8 @@ describe ThingFish::ImageFilter do
 	end
 
 	before( :each ) do
+		pending "image filter not loading correctly" unless $have_imagefilter
+
 		# Stub out some formats
 		Magick.stub!( :formats ).and_return({ 'PNG' => '*rw-', 'GIF' => '*rw+', 'JPG' => '*rw-' })
 

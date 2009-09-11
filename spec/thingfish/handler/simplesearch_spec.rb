@@ -41,11 +41,11 @@ describe ThingFish::SimpleSearchHandler do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
-	
+
 	before( :each ) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
 
@@ -84,16 +84,14 @@ describe ThingFish::SimpleSearchHandler do
 
 		# Examples
 
-		it "finds resources with equality matching on a single key" do
+		it "finds the UUID of resources with equality matching on a single key" do
 			search_terms = {
 				'namespace' => 'bangry'
 			}
 
-			@request.should_receive( :query_args ).
-				at_least(:once).
+			@request.should_receive( :query_args ).at_least(:once).
 				and_return( search_terms )
-			@metastore.should_receive( :find_by_matching_properties ).
-				with( search_terms ).
+			@metastore.should_receive( :find_by_matching_properties ).with( search_terms ).
 				and_return([ TEST_UUID ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
@@ -103,7 +101,26 @@ describe ThingFish::SimpleSearchHandler do
 			@handler.handle_get_request( '', @request, @response )
 		end
 
-		it "finds resources with equality matching multiple keys ANDed together" do
+		it "finds all properties of resources with equality matching on a single key" do
+			search_terms = {
+				'namespace' => 'bangry'
+			}
+
+			@request.should_receive( :query_args ).at_least( :once ).
+				and_return( search_terms )
+			@metastore.should_receive( :find_by_matching_properties ).with( search_terms ).
+				and_return([ TEST_UUID ])
+			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
+				and_return( :a_properties_hash )
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with({ TEST_UUID => :a_properties_hash })
+
+			@handler.handle_get_request( 'full', @request, @response )
+		end
+
+		it "finds resource UUIDs with equality matching multiple keys ANDed together" do
 			search_terms = {
 				'namespace' => 'summer',
 				'filename'  => '2-proof.jpg'
@@ -121,6 +138,33 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :body= ).with([ TEST_UUID, TEST_UUID2 ])
 
 			@handler.handle_get_request( '', @request, @response )
+		end
+
+		it "finds all resource properties with equality matching multiple keys ANDed together" do
+			search_terms = {
+				'namespace' => 'summer',
+				'filename'  => '2-proof.jpg'
+			}
+
+			@request.should_receive( :query_args ).
+				at_least(:once).
+				and_return( search_terms )
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms ).
+				and_return([ TEST_UUID, TEST_UUID2 ])
+			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
+				and_return( :a_properties_hash )
+			@metastore.should_receive( :get_properties ).with( TEST_UUID2 ).
+				and_return( :a_second_properties_hash )
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with({
+				TEST_UUID => :a_properties_hash,
+				TEST_UUID2 => :a_second_properties_hash,
+			})
+
+			@handler.handle_get_request( 'full', @request, @response )
 		end
 
 		it "can build an HTML fragment for the HTML filter" do
@@ -145,6 +189,7 @@ describe ThingFish::SimpleSearchHandler do
 			@handler.make_html_content( "uuids", @request, @response ).
 				should == "Some template that refers to uuids, args, and uripath"
 		end
+
 	end
 
 

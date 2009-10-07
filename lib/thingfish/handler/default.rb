@@ -57,9 +57,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		:resource_dir     => nil, # Use the ThingFish::Handler default
 	}
 
-	# Pattern to match UUIDs more efficiently than uuidtools
-	UUID_PATTERN = /^(#{HEX8})-(#{HEX4})-(#{HEX4})-(#{HEX2})(#{HEX2})-(#{HEX12})$/
-
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -383,7 +380,7 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 			nodes << uuid_components[5][ i, 2 ].to_i( 16 )
 		end
 
-		return UUID.new( time_low, time_mid, time_hi_and_version,
+		return UUIDTools::UUID.new( time_low, time_mid, time_hi_and_version,
 		                 clock_seq_hi_and_reserved, clock_seq_low, nodes )
 	end
 

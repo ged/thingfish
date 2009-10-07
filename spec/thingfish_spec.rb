@@ -102,13 +102,4 @@ describe ThingFish do
 end
 
 
-describe UUID, " (local monkeypatches)" do
-
-	it "is equal to a String with the same UUID in it" do
-		uuidobj = UUID.parse( TEST_UUID )
-		uuidobj.should == TEST_UUID
-	end
-
-end
-
 # vim: set nosta noet ts=4 sw=4 ft=rspec:

@@ -414,7 +414,7 @@ class ThingFish::Daemon
 	### create/update any associated metadata.
 	def store_resource( body, body_metadata, uuid=nil )
 		new_resource = uuid.nil?
-		uuid ||= UUID.timestamp_create
+		uuid ||= UUIDTools::UUID.timestamp_create
 
 		# :BRANCH: Deletes new resources if there's an error while storing
 		# :BRANCH: Doesn't delete it if it's an update

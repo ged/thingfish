@@ -400,7 +400,7 @@ describe ThingFish::Daemon do
 			### Resource storing
 
 			it "knows how to store a new resource" do
-				UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
+				UUIDTools::UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
 				metadata = mock( "metadata hash", :null_object => true )
 
@@ -569,7 +569,7 @@ describe ThingFish::Daemon do
 
 
 			it "cleans up new resources if there's an error while storing the resource" do
-				UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
+				UUIDTools::UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
 				metadata = mock( "metadata hash", :null_object => true )
 
@@ -591,7 +591,7 @@ describe ThingFish::Daemon do
 
 
 			it "cleans up new resources if there's an error while storing the metadata" do
-				UUID.should_receive( :timestamp_create ).and_return( TEST_UUID_OBJ )
+				UUIDTools::UUID.should_receive( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
 				metadata = mock( "metadata hash", :null_object => true )
 

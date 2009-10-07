@@ -3,7 +3,7 @@
 
 <h2>Values for '<%= key %>' property</h2>
 <ul>
-<% values.reject { |v| v == '' }.collect { |v| v.to_s }.sort.each do |value| %>
+<% values.reject {|v| v == '' }.collect {|v| v.to_s }.sort.each do |value| %>
 	<% if search_uri %> 
 	<li><a href="<%= search_uri %>?<%= key %>=<%= u value %>"><%= h value %></a></li>
 	<% else %>

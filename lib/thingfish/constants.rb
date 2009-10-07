@@ -5,6 +5,7 @@ require 'pathname'
 require 'tmpdir'
 require 'yaml'
 require 'thingfish'
+require 'uuidtools'
 
 
 # A collection of constants for convenience and readability
@@ -240,13 +241,13 @@ module ThingFish::Constants
 		    509 => "Undefined HTTP Status",
 		    510 => "Not Extended"
 		}
-		
-		
+
+
 		# Methods which aren't allowed to have an entity-body
 		SHALLOW_METHODS = [ :GET, :HEAD, :DELETE ]
 	end
-	
-	
+
+
 	module Patterns
 		# Patterns for matching UUIDs and parts of UUIDs
 		HEX12 = /[[:xdigit:]]{12}/
@@ -256,6 +257,9 @@ module ThingFish::Constants
 
 		# Pattern for matching a plain UUID string
 		UUID_REGEXP = /#{HEX8}-#{HEX4}-#{HEX4}-#{HEX4}-#{HEX12}/
+
+		# Pattern to match UUIDs more efficiently than uuidtools
+		UUID_PATTERN = /^(#{HEX8})-(#{HEX4})-(#{HEX4})-(#{HEX2})(#{HEX2})-(#{HEX12})$/
 
 		# Pattern for matching UUID URNs, capturing the UUID string
 		UUID_URN = /urn:uuid:(#{UUID_REGEXP})/i

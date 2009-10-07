@@ -390,7 +390,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	###		datadir/66/f6/7c/e6 --> datadir/66/.size
 	###
 	def sizecache( filepath )
-		dir = (1..@hashdepth - 1).inject( filepath.dirname ) { |pn, _| pn.parent }
+		dir = (1..@hashdepth - 1).inject( filepath.dirname ) {|pn, _| pn.parent }
 		return dir + '.size'
 	end
 
@@ -424,7 +424,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		#
 		if @cachesizes and ! cachefiles.empty?
 			self.log.debug 'Using filestore cache to determine total size...'
-			sum = cachefiles.values.inject { |sum, val| sum + val }
+			sum = cachefiles.values.inject {|sum, val| sum + val }
 		end
 
 		# Remove cache files if they exist and caching is disabled, since the files
@@ -432,7 +432,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		#
 		unless @cachesizes or cachefiles.empty?
 			self.log.debug 'Removing previously cached filestore size files'
-			cachefiles.each_key { |file| file.unlink }
+			cachefiles.each_key {|file| file.unlink }
 		end
 
 		# We don't have a sum, which means we either don't have caching enabled or we

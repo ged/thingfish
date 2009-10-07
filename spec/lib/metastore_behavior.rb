@@ -3,9 +3,9 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-	
+
 	libdir = basedir + "lib"
-	
+
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
@@ -66,7 +66,7 @@ describe "A MetaStore", :shared => true do
 		@store.get_property( TEST_UUID, TEST_PROP2 ).should == TEST_PROPVALUE2
 		@store.get_property( TEST_UUID, 'cake' ).should be_nil()
 	end
-	
+
 	it "can set update properties for a UUID" do
 		@store.set_property( TEST_UUID, 'cake', 'is a lie' )
 		props = {
@@ -78,7 +78,7 @@ describe "A MetaStore", :shared => true do
 		@store.get_property( TEST_UUID, TEST_PROP2 ).should == TEST_PROPVALUE2
 		@store.get_property( TEST_UUID, 'cake' ).should == 'is a lie'
 	end
-	
+
 	it "can get a property belonging to a UUID object" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.get_property( TEST_UUID_OBJ, TEST_PROP ).should == TEST_PROPVALUE
@@ -186,8 +186,8 @@ describe "A MetaStore", :shared => true do
 		@store.get_all_property_keys.should include( TEST_PROP.to_sym )
 		@store.get_all_property_keys.should include( TEST_PROP2.to_sym )
 	end
-	
-	
+
+
 	it "can fetch all values for a given key in the store" do
 		@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 		@store.set_property( TEST_UUID2, TEST_PROP, TEST_PROPVALUE2 )
@@ -196,16 +196,16 @@ describe "A MetaStore", :shared => true do
 		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE )
 		@store.get_all_property_values( TEST_PROP ).should include( TEST_PROPVALUE2 )
 	end
-	
-	
+
+
 	# Searching APIs
-	
+
 	it "can find UUID by single-property exact match" do
 		@store.set_property( TEST_UUID, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
 
 		found = @store.find_by_exact_properties( 'title' => TEST_TITLE )
-		
+
 		found.should have(1).members
 		found.first.should == TEST_UUID
 	end
@@ -222,7 +222,7 @@ describe "A MetaStore", :shared => true do
 		 	'title'    => TEST_TITLE,
 			'namespace' => 'devlibrary'
 		  )
-		
+
 		found.should have(1).members
 		found.first.should == TEST_UUID
 	end
@@ -241,7 +241,7 @@ describe "A MetaStore", :shared => true do
 			'namespace' => 'dev*',
 			'bitrate'   => 160
 		  )
-		
+
 		found.should have(1).members
 		found.first.should == TEST_UUID
 	end
@@ -260,12 +260,12 @@ describe "A MetaStore", :shared => true do
 			'namespace' => ['dev*', '*y'],
 			'bitrate'   => 160
 		  )
-		
+
 		found.should have(1).members
 		found.first.should == TEST_UUID
 	end
 
-	
+
 	it "can iterate over all of its resources, yielding them as uuid/prophash pairs" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :bitrate, '160' )
@@ -273,24 +273,24 @@ describe "A MetaStore", :shared => true do
 
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :namespace, 'private' )
-		
+
 		results = {}
 		@store.each_resource do |uuid, properties|
 			results[ uuid ] = properties
 		end
-		
+
 		results.should have(2).members
 		results.keys.should include( TEST_UUID, TEST_UUID2 )
 		results[ TEST_UUID ].keys.should have(3).members 
 		results[ TEST_UUID ][:title].should == TEST_TITLE
 		results[ TEST_UUID ][:bitrate].should == '160'
 		results[ TEST_UUID ][:namespace].should == 'devlibrary'
-		
+
 		results[ TEST_UUID2 ].keys.should have(2).members 
 		results[ TEST_UUID2 ][:title].should == TEST_TITLE
 		results[ TEST_UUID2 ][:namespace].should == 'private'
 	end
-	
+
 
 
 	describe "import/export/migration API" do
@@ -314,7 +314,7 @@ describe "A MetaStore", :shared => true do
 			dumpstruct[ TEST_UUID ].keys.should have(3).members
 			dumpstruct[ TEST_UUID ].keys.should include( :title, :bitrate, :namespace )
 			dumpstruct[ TEST_UUID ].values.should include( TEST_TITLE, '160', 'devlibrary' )
-			
+
 			dumpstruct[ TEST_UUID2 ].should be_an_instance_of( Hash )
 			dumpstruct[ TEST_UUID2 ].keys.should have(2).members
 			dumpstruct[ TEST_UUID2 ].keys.should include( :title, :namespace )
@@ -330,14 +330,14 @@ describe "A MetaStore", :shared => true do
 			@store.set_property( TEST_UUID2, :namespace, 'private' )
 
 			@store.transaction { @store.load_store({}) }
-			
+
 			@store.should_not have_uuid( TEST_UUID )
 			@store.should_not have_uuid( TEST_UUID2 )
 		end
 
 		it "can load the store from a Hash" do
 			@store.transaction { @store.load_store(TEST_DUMPSTRUCT) }
-			
+
 			@store.get_property( TEST_UUID,  :title ).should == TEST_TITLE
 			@store.get_property( TEST_UUID,  :bitrate ).should == '160'
 			@store.get_property( TEST_UUID,  :namespace ).should == 'devlibrary'
@@ -345,15 +345,15 @@ describe "A MetaStore", :shared => true do
 			@store.get_property( TEST_UUID2, :title ).should == TEST_TITLE
 			@store.get_property( TEST_UUID2, :namespace ).should == 'private'
 		end
-		
-		
+
+
 		it "can migrate directly from another metastore" do
 			other_store = mock( "other metastore mock" )
 			expectation = other_store.should_receive( :migrate )
 			TEST_DUMPSTRUCT.each do |uuid, properties|
 				expectation.and_yield( uuid, properties )
 			end
-			
+
 			@store.migrate_from( other_store )
 
 			@store.get_property( TEST_UUID,  :title ).should == TEST_TITLE
@@ -376,7 +376,7 @@ describe "A MetaStore", :shared => true do
 			@store.migrate do |uuid, properties|
 				results[ uuid ] = properties
 			end
-			
+
 			results.should have(2).members
 			results.keys.should include( TEST_UUID, TEST_UUID2 )
 			results[ TEST_UUID ].keys.should have(3).members 
@@ -390,19 +390,19 @@ describe "A MetaStore", :shared => true do
 		end
 
 	end
-	
+
 
 	describe " (safety methods)" do
-		
+
 		it "eliminates system attributes from properties passed through #set_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
-			
+
 			@store.set_safe_properties( TEST_UUID, 
 				:extent => "0",
 				:checksum => '',
 				TEST_PROP => 'something else'
 			  )
-			
+
 			@store.get_property( TEST_UUID, 'extent' ).should == TEST_PROPSET['extent']
 			@store.get_property( TEST_UUID, 'checksum' ).should == TEST_PROPSET['checksum']
 			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
@@ -412,24 +412,24 @@ describe "A MetaStore", :shared => true do
 
 		it "eliminates system attributes from properties passed through #update_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
-			
+
 			@store.update_safe_properties( TEST_UUID, 
 				:extent => "0",
 				:checksum => '',
 				TEST_PROP => 'something else'
 			  )
-			
+
 			@store.get_property( TEST_UUID, 'extent' ).should == TEST_PROPSET['extent']
 			@store.get_property( TEST_UUID, 'checksum' ).should == TEST_PROPSET['checksum']
 			@store.get_property( TEST_UUID, TEST_PROP ).should == 'something else'
 		end
-		
-		
+
+
 		it "eliminates system attributes from properties passed through #delete_safe_properties" do
 			@store.set_properties( TEST_UUID, TEST_PROPSET )
-			
+
 			@store.delete_safe_properties( TEST_UUID, :extent, :checksum, TEST_PROP )
-			
+
 			@store.should have_property( TEST_UUID, 'extent' )
 			@store.should have_property( TEST_UUID, 'checksum' )
 			@store.should_not have_property( TEST_UUID, TEST_PROP )
@@ -440,21 +440,21 @@ describe "A MetaStore", :shared => true do
 			@store.set_safe_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 			@store.get_property( TEST_UUID, TEST_PROP ).should == TEST_PROPVALUE			
 		end
-		
-		
+
+
 		it "refuses to update system properties via #set_safe_property" do
 			lambda {
 				@store.set_safe_property( TEST_UUID, 'extent', 0 )
 			}.should raise_error( ThingFish::MetaStoreError, /used by the system/ )
 		end
 
-		
+
 		it "deletes properties safely via #set_safe_property" do
 			@store.set_property( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
 			@store.delete_safe_property( TEST_UUID, TEST_PROP )
 			@store.has_property?( TEST_UUID, TEST_PROP ).should be_false			
 		end
-		
+
 
 		it "refuses to delete system properties via #delete_safe_property" do
 			lambda {
@@ -462,16 +462,16 @@ describe "A MetaStore", :shared => true do
 			}.should raise_error( ThingFish::MetaStoreError, /used by the system/ )
 		end
 	end
-	
-	
+
+
 	# Transaction API
-	
+
 	it "can execute a block in the context of a transaction" do
 		ran_block = false
 		@store.transaction do
 			ran_block = true
 		end
-		
+
 		ran_block.should be_true()
 	end
 

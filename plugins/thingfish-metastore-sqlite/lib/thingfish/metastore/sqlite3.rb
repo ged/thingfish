@@ -342,7 +342,7 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Returns a list of all property keys in the database.
 	def get_all_property_keys
 		return @metadata.execute( 'SELECT DISTINCT key FROM metakey' ).
-			flatten.collect { |k| k.to_sym }
+			flatten.collect {|k| k.to_sym }
 	end
 
 

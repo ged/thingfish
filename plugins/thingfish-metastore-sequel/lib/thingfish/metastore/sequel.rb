@@ -214,7 +214,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		r  = @metadata[ :resources ]
 		mv = @metadata[ :metaval ]
 		mk = @metadata[ :metakey ]
-		props = propnames.collect { |prop| prop.to_s }
+		props = propnames.collect {|prop| prop.to_s }
 
 		mv.filter( :r_id => r.filter( :uuid => uuid.to_s ).select( :id ),
 		           :m_id => mk.filter( :key => props ).select( :id ) ).delete
@@ -240,7 +240,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Returns a list of all property keys in the database.
 	def get_all_property_keys
 		@metadata[ :metakey ].select( :key ).distinct.map( :key ).
-			collect { |k| k.to_sym }
+			collect {|k| k.to_sym }
 	end
 
 

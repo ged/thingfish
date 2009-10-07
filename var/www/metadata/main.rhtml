@@ -5,7 +5,7 @@
 <p>There appears to be a severe lack of metadata!</p>
 <% else %>
 <ul>
-<% values.collect { |key| key.to_s }.sort.each do |key| %>
+<% values.collect {|key| key.to_s }.sort.each do |key| %>
 	<li><a href="<%= request.uri.path + '/' + key %>"><%= key %></a></li>
 <% end %>
 </ul>

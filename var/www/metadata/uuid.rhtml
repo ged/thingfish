@@ -6,7 +6,7 @@
 		<th>Attribute</th>
 		<th>Value</th>
 	</tr>
-<% values.sort_by { |k,v| k.to_s }.each do |key, value| %>
+<% values.sort_by {|k,v| k.to_s }.each do |key, value| %>
 	<tr>
 		<td><%= key %></td>
 		<% if search_uri %>

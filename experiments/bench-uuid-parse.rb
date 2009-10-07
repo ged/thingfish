@@ -21,10 +21,13 @@ BEGIN {
 }
 
 
+require 'rubygems'
 require 'benchmark'
 require 'uuidtools'
+require 'thingfish'
 require 'thingfish/constants'
 
+include UUIDTools
 
 include ThingFish::Constants::Patterns
 UUID_PATTERN = 	/^(#{HEX8})-(#{HEX4})-(#{HEX4})-(#{HEX2})(#{HEX2})-(#{HEX12})$/
@@ -49,7 +52,7 @@ def parse_uuid( uuid_string )
 		nodes << uuid_components[5][ i, 2 ].to_i( 16 )
 	end
 
-	return UUID.new( time_low, time_mid, time_hi_and_version,
+	return UUIDTools::UUID.new( time_low, time_mid, time_hi_and_version,
 	                 clock_seq_hi_and_reserved, clock_seq_low, nodes )
 end
 
@@ -63,8 +66,8 @@ Benchmark.bm( 10 ) do |bench|
 	bench.report( "Null") do
 		n.times {}
 	end
-	bench.report( "UUID.parse" ) do
-		n.times { u = UUID.parse(uuid) }
+	bench.report( "UUIDTools::UUID.parse" ) do
+		n.times { u = UUIDTools::UUID.parse(uuid) }
 	end
 	bench.report( "parse_uuid" ) do
 		n.times { u = parse_uuid(uuid) }
@@ -79,6 +82,6 @@ end
 # Running 10000 iterations
 #                 user     system      total        real
 # Null        0.010000   0.000000   0.010000 (  0.002958)
-# UUID.parse  1.500000   0.030000   1.530000 (  1.733187)
+# UUIDTools::UUID.parse  1.500000   0.030000   1.530000 (  1.733187)
 # parse_uuid  0.780000   0.010000   0.790000 (  0.985533)
 # 

@@ -39,7 +39,7 @@ module ThingFish::TestConstants
 		TEST_PROPVALUE2		  = 'long walks on the beach'
 		TEST_CHECKSUM		  = Digest::MD5.hexdigest( TEST_CONTENT )
 		TEST_CONTENT_TYPE	  = CONFIGURED_HTML_MIMETYPE
-		TEST_UUID_OBJ	      = UUID.parse( '60acc01e-cd82-11db-84d1-7ff059e49450' )
+		TEST_UUID_OBJ	      = UUIDTools::UUID.parse( '60acc01e-cd82-11db-84d1-7ff059e49450' )
 		TEST_ACCEPT_HEADER    = 'application/x-yaml, application/json; q=0.2, text/xml; q=0.75'
 		TEST_TITLE            = 'Muffin the Panda Goes To School'
 		TEST_PROPSET 		  = {
@@ -53,7 +53,7 @@ module ThingFish::TestConstants
 			{:pine_cone  => 'sandwiches'},
 			{:olive_oil  => 'pudding'},
 		]
-		
+
 		TESTING_GET_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" )
 		GET / HTTP/1.1
 		Host: localhost:3474
@@ -65,7 +65,7 @@ module ThingFish::TestConstants
 		Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
 		Keep-Alive: 300
 		Connection: close
-		
+
 		END_OF_REQUEST
 
 		TESTING_DELETE_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" )
@@ -79,7 +79,7 @@ module ThingFish::TestConstants
 		Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
 		Keep-Alive: 300
 		Connection: close
-		
+
 		END_OF_REQUEST
 
 		TESTING_POST_REQUEST = (<<-END_OF_REQUEST).gsub!( /^\t\t/, '' ).gsub( /\n/, "\r\n" ) + TEST_CONTENT
@@ -95,7 +95,7 @@ module ThingFish::TestConstants
 		Content-Type: text/plain
 		Content-Length: #{TEST_CONTENT.length}
 		Connection: close
-		
+
 		END_OF_REQUEST
 
 		# Fixtured HTTP responses
@@ -112,13 +112,13 @@ module ThingFish::TestConstants
 
 		SPECDIR = Pathname.new( __FILE__ ).dirname
 		DATADIR = SPECDIR + 'data'
-		
+
 		# Testing patterns
 		VALID_HTTPDATE = /\w{3}, \d\d \w{3} \d{4} \d\d:\d\d:\d\d \w{3}/
-		
+
 		# Freeze all constants so one test's constants stomping on 
 		# others are detected earlier.
-		constants.each { |const| const_get( const ).freeze }
+		constants.each {|const| const_get( const ).freeze }
 
 	end
 end

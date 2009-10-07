@@ -248,7 +248,7 @@ class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 			uuidhash = request.body
 
 			# check uuids sent to us are valid
-			unknown_uuids = uuidhash.find_all { |uuid, _| ! @metastore.has_uuid?( uuid ) }
+			unknown_uuids = uuidhash.find_all {|uuid, _| ! @metastore.has_uuid?( uuid ) }
 
 			if unknown_uuids.empty?
 				uuidhash.each do |uuid, props|

@@ -84,7 +84,7 @@ USERS = %w[mahlon michael bob luna]
 store = ThingFish::Metastore.new
 
 30.times do |i|
-	uuid = UUID.timestamp_create
+	uuid = UUIDTools::UUID.timestamp_create
 	metadata = store[ uuid.to_s ]
 	metadata.permissions = rand(1_000_000).to_s
 	metadata.mimetype = 'text/plain'

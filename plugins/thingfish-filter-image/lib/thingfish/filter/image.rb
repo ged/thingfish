@@ -274,7 +274,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	def create_thumbnail( image, title )
 		self.log.debug "Making thumbnail of max dimensions: [%d X %d]" % @thumb_dimensions
 		thumb = image.resize_to_fit( *@thumb_dimensions )
-		imgdata = thumb.to_blob { |img| img.format = 'JPG' }
+		imgdata = thumb.to_blob {|img| img.format = 'JPG' }
 
 		metadata = self.extract_metadata( thumb )
 		metadata.merge!({

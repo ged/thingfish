@@ -86,7 +86,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 
 				attributes = %w{ width height comment bits }
 				attributes += parser.exif.to_hash.keys.
-							  map { |exif_key| exif_key.to_s } if parser.exif?
+							  map {|exif_key| exif_key.to_s } if parser.exif?
 
 		    # TIFF image
 			#
@@ -94,7 +94,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 				parser = EXIFR::TIFF.new( body )
 
 				attributes = %w{ width height size }
-				attributes += parser.to_hash.keys.map { |exif_key| exif_key.to_s }
+				attributes += parser.to_hash.keys.map {|exif_key| exif_key.to_s }
 
 			# We don't handle anything else.
 			#

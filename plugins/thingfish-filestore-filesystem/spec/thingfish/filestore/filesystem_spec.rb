@@ -148,7 +148,7 @@ describe ThingFish::FilesystemFileStore do
 		it "can calculate the size of all files stored in the filestore" do
 			uuids = []
 			10.times do
-				uuid = UUID.timestamp_create
+				uuid = UUIDTools::UUID.timestamp_create
 				uuids << uuid
 				@fs.store( uuid, TEST_RESOURCE_CONTENT )
 				@fs.total_size.should == uuids.length * TEST_RESOURCE_CONTENT.length

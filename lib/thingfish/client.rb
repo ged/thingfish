@@ -386,7 +386,7 @@ class ThingFish::Client
 	### responds_to? #uuid.
 	def delete( argument )
 		argument = argument.uuid if argument.respond_to?( :uuid )
-		uuid = UUID.parse( argument )
+		uuid = UUIDTools::UUID.parse( argument )
 
 		uri = self.server_uri( :default )
 		request = Net::HTTP::Delete.new( uri.path + "#{uuid}" )

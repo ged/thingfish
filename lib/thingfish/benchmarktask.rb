@@ -629,7 +629,7 @@ module ThingFish::Benchmark
 				output << stderr.gets until stderr.eof?
 			end
 
-			result = output.find { |line| regexp.match(line) } 
+			result = output.find {|line| regexp.match(line) } 
 			return $1 || result
 		end
 

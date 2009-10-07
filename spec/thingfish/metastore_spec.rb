@@ -39,12 +39,12 @@ describe ThingFish::MetaStore do
 	before( :all ) do
 		setup_logging( :debug )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
 
-	
+
 
 	describe " (derivative class that doesn't implement virtual methods)" do
 
@@ -153,7 +153,7 @@ describe ThingFish::MetaStore do
 		end
 
 		it "returns the same ResourceProxy for a string UUID as for the same UUID object" do
-			uuid_obj = UUID.parse( TEST_UUID )
+			uuid_obj = UUIDTools::UUID.parse( TEST_UUID )
 			@metastore[ TEST_UUID ].should == @metastore[ uuid_obj ]
 		end
 

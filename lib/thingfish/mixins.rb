@@ -280,7 +280,7 @@ module ThingFish # :nodoc:
 
 			Dir.chdir('/')
 			File.umask(0)
-			[ $stdin, $stdout, $stderr ].each { |io| io.send( :reopen, '/dev/null' ) }
+			[ $stdin, $stdout, $stderr ].each {|io| io.send( :reopen, '/dev/null' ) }
 		end
 
 

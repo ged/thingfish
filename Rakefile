@@ -197,7 +197,7 @@ RUBYFORGE_PROJECT = 'thingfish'
 # Gem dependencies: gemname => version
 DEPENDENCIES = {
 	'pluginfactory' => '>=1.0.4',
-	'uuidtools' => '>= 1.0.7',
+	'uuidtools' => '~> 2.0.0',
 }
 
 # Developer Gem dependencies: gemname => version

@@ -475,10 +475,12 @@ class ThingFish::Daemon
 
 	### Remove any resources that have a +related_to+ of the given UUID, and
 	### the given +relation+ (or any relation if none is specified)
+	### :TODO: Purge recursively?
 	def purge_related_resources( uuid, relation=nil )
-		uuids = @metastore.find_by_exact_properties( :related_to => uuid.to_s, :relation => relation )
-		self.log.debug "Found UUIDS for purging: %p" % [ uuids ]
-		uuids.each do |subuuid|
+		results = @metastore.find_by_exact_properties( :related_to => uuid.to_s, :relation => relation )
+		self.log.debug "Found %d UUIDS for purging" % [ results.length ]
+
+		results.each do |subuuid,_|
 			self.log.debug "purging appended resource %s for %s" % [ subuuid, uuid ]
 			@metastore.delete_resource( subuuid )
 			@filestore.delete( subuuid )

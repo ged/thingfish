@@ -1,6 +1,11 @@
 #!/usr/bin/ruby
+
+require 'thingfish/metastore/simple'
+require 'thingfish/constants'
+require 'thingfish/mixins'
+
 #
-# ThingFish::MemoryMetaStore
+# ThingFish::MemoryMetaStore - an in-memory metastore (not persistent)
 #
 # == Synopsis
 #
@@ -25,14 +30,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'thingfish/metastore/simple'
-require 'thingfish/constants'
-require 'thingfish/mixins'
-
-### In-memory metadata store
 class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Loggable
 
@@ -161,17 +159,16 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
 		key = key.to_sym
 
-		matching_uuids = @metadata.keys.find_all do |uuid|
-			@metadata[ uuid ][ key ].to_s == value
+		matching_pairs = @metadata.find_all do |uuid, props|
+			props[ key ].to_s == value
 		end
 
-		return matching_uuids
+		return Hash[ *(matching_pairs.flatten) ]
 	end
 
 
@@ -181,11 +178,11 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 		key = key.to_sym
 		re = self.glob_to_regexp( value )
 
-		matching_uuids = @metadata.keys.find_all do |uuid|
-			re.match( @metadata[ uuid ][ key ].to_s )
+		matching_pairs = @metadata.find_all do |uuid, props|
+			re.match( props[ key ].to_s )
 		end
 
-		return matching_uuids
+		return Hash[ *(matching_pairs.flatten) ]
 	end
 
 

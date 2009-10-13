@@ -282,17 +282,19 @@ class ThingFish::MetaStore
 	end
 
 
-	### Return an array of UUIDs whose metadata exactly matches the key-value pairs in +hash+.
-	def find_by_exact_properties( hash )
-		self.intersect_each_tuple( hash ) do |key,value|
+	### Return an array of UUIDs whose metadata exactly matches the key-value pairs in +hash+. If
+	### the optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
+	def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
+		self.intersect_each_tuple( hash, order, limit, offset ) do |key,value|
 			self.find_exact_uuids( key, value )
 		end
 	end
 
 
-	### Return an array of UUIDs whose metadata wildcard matches the key-value pairs in +hash+.
-	def find_by_matching_properties( hash )
-		self.intersect_each_tuple( hash ) do |key,value|
+	### Return an array of UUIDs whose metadata wildcard matches the key-value pairs in +hash+. If
+	### the optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
+	def find_by_matching_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
+		self.intersect_each_tuple( hash, order, limit, offset ) do |key,value|
 			self.find_matching_uuids( key, value )
 		end
 	end
@@ -375,9 +377,9 @@ class ThingFish::MetaStore
 
 
 	### Remove nil values from the given +hash+, then yield key/value pairs as tuples. The block is
-	### expected to return UUIDs that match the yielded tuple. The returned UUID sets are then
+	### expected to return a hash keyed by UUID of that match the yielded tuple. The returned UUID sets are then
 	### intersected, and any UUIDs common to all matched tuples are returned.
-	def intersect_each_tuple( hash )
+	def intersect_each_tuple( hash, order, limit, offset )
 
 		# Trim nil values out of the hash then make a search pair for each key/value combination.
 		#   { 'format' => ['image/png', 'image/jpeg' ], 'extent' => 3400 }
@@ -394,22 +396,25 @@ class ThingFish::MetaStore
 
 		# Iterate over each search pair, searching for matches, then narrowing the results by
 		# intersecting the previous resultset with the current one.
-		uuids = tuples.inject(nil) do |ary, pair|
+		resultset = tuples.inject({}) do |union_resultset, pair|
 			key, value = *pair
 			key = key.to_s
 
-			matching_uuids = yield( key, value )
-
-			if ary
-				ary &= matching_uuids
-			else
-				ary = matching_uuids
-			end
-
-			ary
+			matching_set = yield( key, value )
+			union_resultset.merge!( matching_set )
+			union_resultset.delete_if {|uuid, _| !matching_set.key?(uuid) }
+			union_resultset
 		end
 
-		return uuids ? uuids : []
+		return [] if resultset.empty?
+
+		# Do ordering
+		tuples = resultset.sort_by do |uuid, props|
+			# :TODO: Find some better stand-in for Nil than the empty string?
+			props.values_at( *order ).collect {|val| val || '' } + [ uuid ]
+		end
+
+		return tuples[ offset, limit ]
 	end
 
 end # class ThingFish::MetaStore

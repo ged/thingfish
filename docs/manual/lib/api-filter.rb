@@ -72,8 +72,7 @@ class APIFilter < Manual::Page::Filter
 			]
 		else
 			link_text ||= classname
-			error_message = "Could not find a link for class '%s' (looking for %s)" %
-				[ classname, classfile ]
+			error_message = "Could not find a link for class '%s'" % [ classname ]
 			$stderr.puts( error_message )
 			return %{<a href="#" title="#{error_message}" class="broken-link">#{link_text}</a>}
 		end

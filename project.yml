@@ -11,7 +11,7 @@ project_requirements:
 project_description: "ThingFish is a extensible digital asset manager written in Ruby. It can be used to store chunks of data on the network in an application-independent way, associate the chunks with other chunks through metadata, and then search for the chunk you need later and fetch it again, all through a REST API over HTTP. "
 project_dependencies: 
   pluginfactory: ">=1.0.4"
-  uuidtools: ">= 1.0.7"
+  uuidtools: "~> 2.0.0"
 project_summary: An extensible REST-based digital asset management server.
 version_file: thingfish.rb
 additional_pkgfiles: 

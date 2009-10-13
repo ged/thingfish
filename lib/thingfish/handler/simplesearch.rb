@@ -48,11 +48,8 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	static_resources_dir "static"
 
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# The character that separates search criteria
+	TERM_SEPARATOR = ';'
 
 
 	#################################################################
@@ -72,20 +69,15 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	######
 
 	### Handle a GET request
-	def handle_get_request( path_info, request, response )
-		case path_info
+	def handle_get_request( search_terms, request, response )
+		terms = self.split_terms( search_terms )
 
-		when ''
-			self.log.debug "Handling a UUID search request"
-			self.handle_uuid_search_request( request, response )
-
-		when 'full'
+		if request.query_args.key?( 'full' )
 			self.log.debug "Handling a full search request"
-			self.handle_full_search_request( request, response )
-
+			self.handle_full_search_request( request, response, terms )
 		else
-			self.log.debug "No GET handler for %p; leaving the response alone" %
-			 	[ path_info ]
+			self.log.debug "Handling a UUID search request"
+			self.handle_uuid_search_request( request, response, terms )
 		end
 	end
 
@@ -120,14 +112,16 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	#########
 
 	### Handle a search request and return a UUID for each result.
-	def handle_uuid_search_request( request, response )
-		args = request.query_args.reject { |k,v| v.nil? }
+	def handle_uuid_search_request( request, response, terms )
+		order, limit, offset = self.normalize_search_arguments( request )
+		self.log.debug "Handling UUID search request for terms=%p, order=%p, limit=%p, offset=%p" %
+			[ terms, order, limit, offset ]
 
-		uuids = if args.empty?
-			[]
-		else
-			@metastore.find_by_matching_properties( args )
-		end
+		uuids = if terms.empty?
+		        	[]
+		        else
+		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
+		        end
 
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
@@ -136,14 +130,14 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 
 	### Handle a search request and return full metadata for each result.
-	def handle_full_search_request( request, response )
-		args = request.query_args.reject { |k,v| v.nil? }
+	def handle_full_search_request( request, response, terms )
+		order, limit, offset = self.normalize_search_arguments( request )
 
-		uuids = if args.empty?
-			[]
-		else
-			@metastore.find_by_matching_properties( args )
-		end
+		uuids = if terms.empty?
+		        	[]
+		        else
+		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
+		        end
 
 		metadata = uuids.inject({}) do |hash, uuid|
 			hash[ uuid ] = @metastore.get_properties( uuid )
@@ -153,6 +147,47 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
 		response.body = metadata
+	end
+
+
+	### Split the terms in the given +termstring+ into a Hash, keyed by symbol.
+	def split_terms( termstring )
+		raise ThingFish::RequestError,
+			"extraneous path info in search terms" if termstring.index('/')
+
+		self.log.debug "Splitting terms from term string %p" % [ termstring ]
+		pairs = URI.decode( termstring ).split( TERM_SEPARATOR )
+
+		terms = pairs.inject( {} ) do |terms, pair|
+			key, value = pair.split( '=', 2 )
+			terms[ key ] = value
+			terms
+		end
+		self.log.debug "  terms are: %p" % [ terms ]
+
+		return terms
+	end
+
+
+	### Extract search parameters from the given query +args+ and return them as 
+	### normalized values.
+	def normalize_search_arguments( request )
+		args   = request.query_args
+		limit  = args[:limit].to_i.nonzero? || DEFAULT_LIMIT
+		offset = args[:offset].to_i
+
+		order = case args[:order]
+			when Array
+				args[:order]
+			when String
+				args[:order].split( /\s*,\s*/ )
+			else
+				[]
+			end
+
+		order = order.reject {|prop| prop !~ PROPERTY_NAME_REGEXP }.collect {|field| field.to_sym }
+
+		return order, limit, offset
 	end
 
 end # ThingFish::SearchHandler

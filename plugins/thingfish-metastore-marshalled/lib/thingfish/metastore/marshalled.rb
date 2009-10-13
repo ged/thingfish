@@ -1,4 +1,14 @@
 #!/usr/bin/ruby
+
+require 'pathname'
+require 'pstore'
+require 'lockfile'
+require 'set'
+
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/metastore/simple'
+
 #
 # ThingFish::MarshalledMetaStore-- a metastore plugin for ThingFish.
 #
@@ -32,25 +42,6 @@
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-
-begin
-	require 'pathname'
-	require 'pstore'
-	require 'lockfile'
-	require 'set'
-
-	require 'thingfish'
-	require 'thingfish/exceptions'
-	require 'thingfish/metastore/simple'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-### ThingFish::MarshalledMetaStore-- a metastore plugin for ThingFish
 class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 	# SVN Revision
@@ -195,7 +186,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 			self.log.debug "  %p" % [ @metadata[uuid.to_s] ]
 			rval = @metadata[ uuid.to_s ].key?( propname.to_sym )
 			self.log.debug { rval ? "  yes it does." : "  no it doesn't" }
-			
+
 			return rval
 		end
 	end
@@ -219,7 +210,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 				rval = @metadata[ uuid.to_s ].delete( propname.to_sym )
 			end
 		end
-		
+
 		return rval
 	end
 
@@ -241,7 +232,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Removes all properties from given +uuid+
 	def delete_resource( uuid )
 		count = 0
-		
+
 		@lock.lock do
 			@metadata.transaction do
 				unless @metadata[ uuid.to_s ].nil?
@@ -250,7 +241,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 				end
 			end
 		end
-		
+
 		return count
 	end
 
@@ -294,17 +285,18 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
 		key = key.to_sym
-		matching_uuids = []
+		results = nil
 
 		@lock.lock do
-			@metadata.transaction(true) do
-				@metadata.roots.each do |uuid|
-					matching_uuids << uuid if @metadata[ uuid ][ key ] == value
+			@metadata.transaction( true ) do
+				results = @metadata.roots.inject({}) do |dumpstruct, uuid|
+					dumpstruct[ uuid ] = @metadata[ uuid ].dup if @metadata[ uuid ][ key ] == value
+					dumpstruct
 				end
 			end
 		end
 
-		return matching_uuids
+		return results
 	end
 
 
@@ -312,18 +304,20 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	### specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		key = key.to_sym
-		matching_uuids = []
+		results = nil
 		re = self.glob_to_regexp( value )
 
 		@lock.lock do
-			@metadata.transaction(true) do
-				@metadata.roots.each do |uuid|
-					matching_uuids << uuid if re.match( @metadata[ uuid ][ key ] )
+			@metadata.transaction( true ) do
+				results = @metadata.roots.inject({}) do |dumpstruct, uuid|
+					dumpstruct[ uuid ] = @metadata[ uuid ].dup if
+						re.match( @metadata[ uuid ][ key ] )
+					dumpstruct
 				end
 			end
 		end
 
-		return matching_uuids
+		return results
 	end
 
 

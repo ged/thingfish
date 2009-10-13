@@ -81,7 +81,7 @@ describe ThingFish::Daemon do
 
 
 	### Handler registration
-	
+
 	it "asks its config for a URImap and starts each handler from it" do
 		uri = '/cellphone/not/walkietalkie'
 		config = mock( "config" ).as_null_object
@@ -93,7 +93,7 @@ describe ThingFish::Daemon do
 		config.should_receive( :create_configured_urimap ).and_return( urimap )
 		urimap.should_receive( :handlers ).and_return( [handler] )
 		handler.should_receive( :on_startup ).with( duck_type( :filestore ) )
-		
+
 		ThingFish::Daemon.new( config )
 	end
 
@@ -146,7 +146,7 @@ describe ThingFish::Daemon do
 
 
 		describe "startup" do
-			
+
 			it "starts its filestore, metastore, and listener thread on startup" do
 				Process.should_receive( :euid ).at_least( :once ).and_return( 266 )
 
@@ -457,13 +457,18 @@ describe ThingFish::Daemon do
 				metastore = mock( "metastore", :null_object => true )
 				@daemon.instance_variable_set( :@metastore, metastore )
 
+				results = [
+					[ TEST_UUID2, {:title => 'Chunker'} ],
+					[ TEST_UUID3, {:title => 'Chunker'} ],
+				]
+
 				search_criteria = {
 					:related_to => TEST_UUID,
 					:relation   => 'thumbnail'
 				}
 				metastore.should_receive( :find_by_exact_properties ).
 					with( search_criteria ).
-					and_return( [ TEST_UUID2, TEST_UUID3 ])
+					and_return( results )
 
 				metastore.should_receive( :delete_resource ).with( TEST_UUID2 )
 				metastore.should_receive( :delete_resource ).with( TEST_UUID3 )
@@ -473,20 +478,23 @@ describe ThingFish::Daemon do
 				@daemon.purge_related_resources( TEST_UUID, 'thumbnail' )
 			end
 
-
 			it "knows how to purge all related resources" do
 				filestore = mock( "filestore" )
 				@daemon.instance_variable_set( :@filestore, filestore )
 				metastore = mock( "metastore" )
 				@daemon.instance_variable_set( :@metastore, metastore )
 
+				results = [
+					[ TEST_UUID2, {:title => 'Chunker'} ],
+					[ TEST_UUID3, {:title => 'Chunker'} ],
+				]
 				search_criteria = {
 					:related_to => TEST_UUID,
 					:relation => nil
 				}
 				metastore.should_receive( :find_by_exact_properties ).
 					with( search_criteria ).
-					and_return( [ TEST_UUID2, TEST_UUID3 ])
+					and_return( results )
 
 				metastore.should_receive( :delete_resource ).with( TEST_UUID2 )
 				metastore.should_receive( :delete_resource ).with( TEST_UUID3 )
@@ -496,6 +504,7 @@ describe ThingFish::Daemon do
 				@daemon.purge_related_resources( TEST_UUID )
 			end
 
+			it "knows how to recursively purge related resources"
 
 			it "doesn't propagate errors that occur while storing a related resource" do
 				related_body = mock( "related body IO" )
@@ -685,7 +694,7 @@ describe ThingFish::Daemon do
 			@config = ThingFish::Config.new
 			@config.user = 'not-root'
 			@daemon = ThingFish::Daemon.new( @config )
-			
+
 			@listener_thread = mock( "listener thread" )
 		end
 
@@ -694,7 +703,7 @@ describe ThingFish::Daemon do
 			@daemon.should_receive( :start_supervisor_thread )
 			@daemon.should_receive( :start_listener ).and_return( @listener_thread )
 			@listener_thread.should_receive( :join )
-			
+
 			Process.should_receive( :euid ).at_least( :once ).and_return(0)
 
 			pwent = mock( 'not-root pw entry' )
@@ -824,7 +833,7 @@ describe ThingFish::Daemon do
 
 			fh = mock( "filehandle" )
 			File.should_receive( :open ).with( /\d+\.\d+#-?[[:xdigit:]]+#search\.html$/, 'w' ).and_yield( fh )
-			
+
 			### We're currently working on the marshalling aspect of ruby-prof.
 			###
 			# Marshal.should_receive( :dump ).with([ tf_request, result ]).and_return( :dumped_stuff )

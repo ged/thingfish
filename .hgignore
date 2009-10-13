@@ -1,2 +1,4 @@
 ^etc/thingfish\.conf-.*
-^docs
+^docs/manual/output
+^docs/api
+^junk/

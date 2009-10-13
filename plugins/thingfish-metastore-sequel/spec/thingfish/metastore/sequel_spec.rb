@@ -50,7 +50,8 @@ describe ThingFish::SequelMetaStore do
 		reset_logging()
 	end
 
-	it_should_behave_like "A MetaStore"
+	# it_should_behave_like "A MetaStore"
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

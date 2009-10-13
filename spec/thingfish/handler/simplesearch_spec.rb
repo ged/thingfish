@@ -38,6 +38,9 @@ include ThingFish::TestConstants
 
 describe ThingFish::SimpleSearchHandler do
 
+	DEFAULT_ORDER = []
+	DEFAULT_OFFSET = 0
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -89,17 +92,46 @@ describe ThingFish::SimpleSearchHandler do
 				'namespace' => 'bangry'
 			}
 
-			@request.should_receive( :query_args ).at_least(:once).
-				and_return( search_terms )
-			@metastore.should_receive( :find_by_matching_properties ).with( search_terms ).
+			@request.should_receive( :query_args ).at_least( :once ).and_return({})
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ TEST_UUID ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID ])
 
-			@handler.handle_get_request( '', @request, @response )
+			@handler.handle_get_request( 'namespace=bangry', @request, @response )
 		end
+
+
+		it "unescapes URI-escaped characters in search terms" do
+			search_terms = {
+				'path' => 'production/kate&nate/frame002_177.mov'
+			}
+
+			@request.should_receive( :query_args ).at_least( :once ).and_return({})
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
+				and_return([ TEST_UUID ])
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with([ TEST_UUID ])
+
+			@handler.handle_get_request( 'path=production%2Fkate%26nate%2Fframe002_177.mov',
+			 	@request, @response )
+		end
+
+
+		it "returns a bad request response if there is extraneous path info (additional slashes)" do
+			@metastore.should_not_receive( :find_by_matching_properties )
+
+			expect {
+				@handler.handle_get_request( 'key=/unescaped/path', @request, @response )
+			}.to raise_error( ThingFish::RequestError, /extraneous path info/i )
+		end
+
 
 		it "finds all properties of resources with equality matching on a single key" do
 			search_terms = {
@@ -107,8 +139,9 @@ describe ThingFish::SimpleSearchHandler do
 			}
 
 			@request.should_receive( :query_args ).at_least( :once ).
-				and_return( search_terms )
-			@metastore.should_receive( :find_by_matching_properties ).with( search_terms ).
+				and_return({ 'full' => nil })
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ TEST_UUID ])
 			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
 				and_return( :a_properties_hash )
@@ -117,7 +150,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with({ TEST_UUID => :a_properties_hash })
 
-			@handler.handle_get_request( 'full', @request, @response )
+			@handler.handle_get_request( 'namespace=bangry', @request, @response )
 		end
 
 		it "finds resource UUIDs with equality matching multiple keys ANDed together" do
@@ -130,14 +163,14 @@ describe ThingFish::SimpleSearchHandler do
 				at_least(:once).
 				and_return( search_terms )
 			@metastore.should_receive( :find_by_matching_properties ).
-				with( search_terms ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ TEST_UUID, TEST_UUID2 ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID, TEST_UUID2 ])
 
-			@handler.handle_get_request( '', @request, @response )
+			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end
 
 		it "finds all resource properties with equality matching multiple keys ANDed together" do
@@ -146,11 +179,10 @@ describe ThingFish::SimpleSearchHandler do
 				'filename'  => '2-proof.jpg'
 			}
 
-			@request.should_receive( :query_args ).
-				at_least(:once).
-				and_return( search_terms )
+			@request.should_receive( :query_args ).at_least(:once).
+				and_return({ 'full' => '1' })
 			@metastore.should_receive( :find_by_matching_properties ).
-				with( search_terms ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ TEST_UUID, TEST_UUID2 ])
 			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
 				and_return( :a_properties_hash )
@@ -164,7 +196,7 @@ describe ThingFish::SimpleSearchHandler do
 				TEST_UUID2 => :a_second_properties_hash,
 			})
 
-			@handler.handle_get_request( 'full', @request, @response )
+			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end
 
 		it "can build an HTML fragment for the HTML filter" do

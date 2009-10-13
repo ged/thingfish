@@ -26,12 +26,12 @@ end
 
 
 describe "A Handler", :shared => true do
-	include ThingFish::TestConstants
-	include ThingFish::SpecHelpers
+	include ThingFish::TestConstants,
+	        ThingFish::SpecHelpers
 
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 end

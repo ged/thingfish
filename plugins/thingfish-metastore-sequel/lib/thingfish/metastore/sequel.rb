@@ -11,7 +11,7 @@
 #		"sequel", :sequel_connect => 'postgres://user:password@host/database'
 #  	)
 #
-#   # SQLite memory backend
+#   # SQLite memory backend	
 #   ms = ThingFish::MetaStore.create( 'sequel' )
 #
 #   ms.set_property( uuid, 'hands', 'buttery' )
@@ -255,14 +255,43 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	### Return an array of UUIDs whose metadata exactly matches the key-value pairs in +hash+. If
+	### the optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
+	def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
+		dataset = @metadata[ :resources, :metakey, :metaval ]
+		hash.each do |key, value|
+			dataset.filter!( :metakey__key  => key.to_s,
+				:metakey__id   => :metaval__m_id,
+				:metaval__val  => value,
+				:metaval__r_id => :resources__id )
+		end
+
+		results = nil
+		order << 'uuid'
+		uuids = dataset.order( *order ).limit( limit, offset ).select( :uuid )
+		dataset.filter( :meta )
+	end
+
+
+	### Return an array of UUIDs whose metadata wildcard matches the key-value pairs in +hash+. If
+	### the optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
+	def find_by_matching_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
+		self.intersect_each_tuple( hash, order, limit, offset ) do |key,value|
+			self.find_matching_uuids( key, value )
+		end
+	end
+
+
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
+	###
+	### ----------------------------------------------------------------------------------
+	### FIXME: Besides optimizing these methods (this method will go away entirely, to
+	### be replaced with find_by_exact_properties()) -- don't forget to implicitly append
+	### UUID to the ordering
+	### ----------------------------------------------------------------------------------
+	###
 	def find_exact_uuids( key, value )
-		return @metadata[ :resources, :metakey, :metaval ].
-			filter( :metakey__key  => key.to_s,
-					:metakey__id   => :metaval__m_id,
-					:metaval__val  => value,
-					:metaval__r_id => :resources__id ).map( :uuid )
 	end
 
 

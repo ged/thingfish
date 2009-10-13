@@ -179,12 +179,16 @@ implementation examples!
 	<dd class="description">
 		Receives a @key@ and a @value@ to search against.
 		Should return a unique array of resource uuids found that match the search criteria _exactly_.
+		
+		<!--  TODO:  limit, offset, order -->
 	</dd>
 
 	<dt>@#find_matching_uuids@</dt>
 	<dd class="description">
 		Receives a @key@ and a wildcard @value@ to search against.
 		Should return a unique array of resource uuids found that match the search criteria _partially_.
+		
+		<!--  TODO:  limit, offset, order -->
 	</dd>
 
 	<dt>@#dump_store@</dt>

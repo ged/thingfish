@@ -108,6 +108,10 @@ module ThingFish::Constants
 	HEADER_FORMAT      = "%s: %s\r\n".freeze
 
 
+	# The default search result size if none is specified
+	DEFAULT_LIMIT = 100
+
+
 	# HTTP status and result constants
 	module HTTP
 		SWITCHING_PROTOCOLS 		  = 101

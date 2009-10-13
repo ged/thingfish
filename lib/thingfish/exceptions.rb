@@ -67,7 +67,7 @@ module ThingFish
 
 		attr_reader :status
 	end
-	
+
 	# 500: Error while dispatching a request
 	class DispatchError < ThingFish::ServerError; end
 

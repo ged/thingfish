@@ -1,4 +1,19 @@
 #!/usr/bin/ruby
+
+require 'pathname'
+require 'rdf/redland'
+require 'rdf/redland/constants'
+require 'rdf/redland/schemas/rdfs'
+require 'rdf/redland/dc'
+require 'uuidtools'
+require 'set'
+require 'uri'
+
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/metastore'
+require 'thingfish/constants'
+
 #
 # ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in an
 # RDF knowledgebase.
@@ -36,32 +51,6 @@
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-
-begin
-	require 'pathname'
-	require 'rdf/redland'
-	require 'rdf/redland/constants'
-	require 'rdf/redland/schemas/rdfs'
-	require 'rdf/redland/dc'
-	require 'uuidtools'
-	require 'set'
-	require 'uri'
-
-	require 'thingfish'
-	require 'thingfish/exceptions'
-	require 'thingfish/metastore'
-	require 'thingfish/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in
-### a RDF knowledgebase.
 class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns

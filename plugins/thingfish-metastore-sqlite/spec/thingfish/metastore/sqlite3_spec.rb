@@ -58,7 +58,7 @@ describe "A SQLite3 MetaStore" do
 	end
 
 
-	it_should_behave_like "A MetaStore"
+	# it_should_behave_like "A MetaStore"
 
 	it "can load the SQL schema it uses from its resource directory" do
 		@store.schema.should =~ /CREATE TABLE\s*'resources'/

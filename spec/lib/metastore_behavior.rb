@@ -24,10 +24,10 @@ rescue LoadError
 	raise
 end
 
+include ThingFish::TestConstants
 
 describe "A MetaStore", :shared => true do
-	include ThingFish::TestConstants,
-	        ThingFish::SpecHelpers
+	include ThingFish::SpecHelpers
 
 	unless defined?( TEST_DUMPSTRUCT )
 		TEST_DUMPSTRUCT = {
@@ -200,14 +200,31 @@ describe "A MetaStore", :shared => true do
 
 	# Searching APIs
 
-	it "can find UUID by single-property exact match" do
+	it "can find UUIDs by single-property exact match" do
 		@store.set_property( TEST_UUID, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
 
 		found = @store.find_by_exact_properties( 'title' => TEST_TITLE )
 
 		found.should have(1).members
-		found.first.should == TEST_UUID
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+	end
+
+
+	it "can find ordered UUIDs by single-property exact match" do
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+		@store.set_property( TEST_UUID2, :description, 'Another description.' )
+
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+		@store.set_property( TEST_UUID,  :description, 'This is a description.' )
+
+		found = @store.find_by_exact_properties( {'title' => TEST_TITLE}, ['description'] )
+
+		found.should have(2).members
+		found.first[0] == TEST_UUID2
+		found.last[0]  == TEST_UUID
 	end
 
 
@@ -224,7 +241,7 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first.should == TEST_UUID
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary'} ]
 	end
 
 
@@ -243,7 +260,8 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first.should == TEST_UUID
+		found.first.should == 
+			[ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary', :bitrate => '160'} ]
 	end
 
 
@@ -262,7 +280,7 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first.should == TEST_UUID
+		found.first[0] == TEST_UUID
 	end
 
 

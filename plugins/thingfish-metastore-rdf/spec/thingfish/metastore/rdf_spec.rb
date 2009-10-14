@@ -12,8 +12,11 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
+$rdfmetastore_load_error = nil
+
 begin
 	require 'rbconfig'
+	require 'ipaddr'
 
 	require 'spec'
 	require 'spec/lib/constants'
@@ -23,9 +26,7 @@ begin
 	require 'thingfish'
 	require 'thingfish/metastore'
 	require 'thingfish/metastore/rdf'
-
-	$have_rdf = true
-rescue LoadError
+rescue LoadError => err
 	unless Object.const_defined?( :Gem )
 		require 'rubygems'
 		retry
@@ -34,106 +35,54 @@ rescue LoadError
 	class ThingFish::RdfMetaStore
 		DEFAULT_OPTIONS = {}
 	end
-	$have_rdf = false
+
+	$rdfmetastore_load_error = err
 end
 
-
-#####################################################################
-###	C O N T E X T S
-#####################################################################
-
 describe ThingFish::RdfMetaStore do
-	include ThingFish::SpecHelpers,
-		ThingFish::Constants,
-		ThingFish::TestConstants
-
-
-	DEFAULTS = ThingFish::RdfMetaStore::DEFAULT_OPTIONS
 
 	before(:all) do
 		setup_logging( :fatal )
 	end
 
 	before( :each ) do
-		pending "no Redland libraries installed" unless $have_rdf
-		@triplestore = mock( "triplestore", :null_object => true )
+		pending "couldn't load the RDF metastore: %s" % [ $rdfmetastore_load_error ] if
+			$rdfmetastore_load_error
+		@store = ThingFish::MetaStore.create( 'rdf', nil, nil, :label => nil )
 	end
 
 	after( :all ) do
 		reset_logging()
 	end
 
+	
+	it "registers IPAddr with Redleaf's node-conversion table" do
+		addr = IPAddr.new( '192.168.16.87/32' )
+		ipaddr_typeuri = ThingFish::RdfMetaStore::IANA_NUMBERS[:ipaddr]
 
-	it "ignores the 'new' key in the config options hash" do
-		# (Alphabetically ordered)
-		stringopts = "hash-type='memory',new='yes',password='',write='yes'"
-		Redland::TripleStore.should_receive( :new ).
-			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
-			and_return( @triplestore )
-		Redland::Model.stub!( :new ).and_return( :model )
-
-		config = { :options => {:new => 'no'} }
-		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
+		Redleaf::NodeUtils.make_object_typed_literal( addr ).should ==
+			[ "ipv4:192.168.16.87/255.255.255.255", ipaddr_typeuri ]
 	end
-
-
-	it "ignores the 'write' key in the config options hash" do
-		# (Alphabetically ordered)
-		stringopts = "hash-type='memory',new='yes',password='',write='yes'"
-		Redland::TripleStore.should_receive( :new ).
-			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
-			and_return( @triplestore )
-		Redland::Model.stub!( :new ).and_return( :model )
-
-		config = { :options => {:write => 'no'} }
-		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
+	
+	it "converts Rational numbers to decimal approximations" do
+		num = Rational( 3,8 )
+		lit_tuple = Redleaf::NodeUtils.make_object_typed_literal( num )
+			
+		lit_tuple[0].should be_close( 3.0/8.0, 0.001 )
+		lit_tuple[1].should == Redleaf::Constants::CommonNamespaces::XSD[:decimal]
 	end
+	
 
-
-	it "doesn't clobber a password if specified in the config options hash" do
-		# (Alphabetically ordered)
-		stringopts = "hash-type='memory',new='yes',password='n\\'robot',write='yes'"
-		Redland::TripleStore.should_receive( :new ).
-			with( DEFAULTS[:store], DEFAULTS[:name], stringopts ).
-			and_return( @triplestore )
-		Redland::Model.stub!( :new ).and_return( :model )
-
-		config = { :options => {:password => "n'robot"} }
-		ThingFish::MetaStore.create( 'rdf', nil, nil, config )
+	### Shared behavior specification
+	it_should_behave_like "A MetaStore"
+	
+	
+	it "converts 'nil' metadata values to empty strings" do
+		uuid = UUID.timestamp_create
+		@store.set_property( uuid, :exif_comment, nil )
+		@store.get_property( uuid, :exif_comment ).should == ''
 	end
-
-
-	describe " with default configuration values " do
-
-		STORE_OPTIONS = {
-			:store => 'hashes',
-			:hash_type => 'memory',
-		  }
-
-		before( :each ) do
-			pending "no Redland libraries installed" unless $have_rdf
-		    @store = ThingFish::MetaStore.create( 'rdf', nil, nil, STORE_OPTIONS )
-		end
-
-		after( :each ) do
-			# @store.clear
-		end
-
-
-		### Shared behavior specification
-		it_should_behave_like "A MetaStore"
-
-
-		### Schema stuff
-
-		it "loads RDF vocabularies specified in the config"
-		it "maps incoming pairs onto user-specified vocabularies first"
-		it "maps incoming pairs onto standard vocabularies if there is no matching predicate in " +
-		   "the user-specified vocabularies"
-		it "maps incoming pairs onto the thingfish vocabulary if there is no matching predicate in " +
-		   "either the user-specified vocabularies or the standard vocabularies"
-
-	end
+	
 end
 
 # vim: set nosta noet ts=4 sw=4:

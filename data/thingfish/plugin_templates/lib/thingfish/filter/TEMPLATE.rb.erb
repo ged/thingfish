@@ -1,4 +1,9 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'thingfish'
+require 'thingfish/filter'
+require 'thingfish/mixins'
+
 # 
 # A <%= @name %> filter for ThingFish
 # 
@@ -16,41 +21,18 @@
 #
 # Please see the file LICENSE in the 'docs' directory for licensing details.
 #
-
-begin
-	require 'thingfish'
-	require 'thingfish/mixins'
-	require 'thingfish/constants'
-	require 'thingfish/acceptparam'
-	require 'thingfish/filter'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### A <%= @name %> filter for ThingFish
 class ThingFish::<%= @name.capitalize %>Filter < ThingFish::Filter
 	include ThingFish::Loggable,
-		ThingFish::Constants
+	        ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
 
-	# SVN Id
-	SVNId = %q$Id$
+	# Plugin version constant
+	VERSION = '0.0.1'
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse('x-application/undetermined') ]
 	HANDLED_TYPES.freeze
 
-
-	#################################################################
-	###	I N S T A N C E   M E T H O D S
-	#################################################################
 
 	######
 	public

@@ -1,4 +1,9 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/metastore/simple'
+
 #
 # A <%= @name %> metastore plugin for ThingFish.
 #
@@ -23,33 +28,13 @@
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-
-begin
-	require 'thingfish'
-	require 'thingfish/exceptions'
-	require 'thingfish/metastore/simple'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-### ThingFish::<%= @name.capitalize %>MetaStore-- a metastore plugin for ThingFish
 class ThingFish::<%= @name.capitalize %>MetaStore < ThingFish::SimpleMetaStore
+	include ThingFish::Loggable,
+		ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
+	### Plugin version constant
+	VERSION = '0.0.1'
 
-	# SVN Id
-	SVNId = %q$Id$
-
-	
-	
-	#################################################################
-	###	I N S T A N C E   M E T H O D S
-	#################################################################
 
 	######
 	public

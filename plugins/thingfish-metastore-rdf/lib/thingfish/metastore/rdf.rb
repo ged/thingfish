@@ -1,40 +1,29 @@
 #!/usr/bin/ruby
 
-require 'pathname'
-require 'rdf/redland'
-require 'rdf/redland/constants'
-require 'rdf/redland/schemas/rdfs'
-require 'rdf/redland/dc'
-require 'uuidtools'
-require 'set'
-require 'uri'
+begin
+	require 'pathname'
+	require 'set'
+	require 'redleaf'
+	require 'uuidtools'
+	require 'ipaddr'
+	require 'rational'
+	require 'socket'
 
-require 'thingfish'
-require 'thingfish/exceptions'
-require 'thingfish/metastore'
-require 'thingfish/constants'
+	require 'thingfish'
+	require 'thingfish/exceptions'
+	require 'thingfish/metastore'
+	require 'thingfish/metastore/simple'
+	require 'thingfish/constants'
+rescue LoadError
+	unless Object.const_defined?( :Gem )
+		require 'rubygems'
+		retry
+	end
+	raise
+end
 
-#
-# ThingFish::RdfMetaStore -- a metastore plugin for ThingFish that stores metadata in an
-# RDF knowledgebase.
-#
-# == Synopsis
-#
-#   require 'thingfish/metastore'
-#
-#   ms = ThingFish::MetaStore.create( "rdf",
-#           :store => 'hashes',
-#           :hash_type => 'bdb',
-#           :dir => '/tmp/thingfish/metastore' )
-#
-#   ms.set_property( uuid, 'hands', 'buttery' )
-#   ms.get_property( uuid, 'pliz_count' )			# => 2
-#   ms.get_properties( uuid )						# => {...}
-#
-#   metadata = ms[ uuid ]
-#   metadata.format = 'application/x-yaml'
-#   metadata.format		# => 'application/x-yaml'
-#   metadata.format?		# => true
+# ThingFish::RdfMetaStore -- a simple metastore plugin for ThingFish that
+# stores metadata in an RDF knowledgebase using Redleaf.
 #
 # == Version
 #
@@ -51,9 +40,18 @@ require 'thingfish/constants'
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-class ThingFish::RdfMetaStore < ThingFish::MetaStore
+class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Constants,
-		ThingFish::Constants::Patterns
+		ThingFish::Constants::Patterns,
+		Redleaf::Constants::CommonNamespaces
+
+	# Schemas for the ThingFish RDF metastore
+	#
+	module Schemas
+		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2009/04/thingfish-schema#'
+		THINGFISH_NS = Redleaf::Namespace.new( THINGFISH_URL )
+	end
+	include Schemas
 
 	# SVN Revision
 	SVNRev = %q$Rev$
@@ -61,15 +59,25 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	# SVN Id
 	SVNId = %q$Id$
 
-	# The default root directory
+	# Default options for the store, regardless of backend.
+	#
 	DEFAULT_OPTIONS = {
-		:store => 'hashes',
+		:store     => 'hashes',
 		:hash_type => 'memory',
-		:name => 'thingfish',
+		:label     => 'rdf-metastore'
 	}
 
-	# The SPARQL query template to use for searching
-	QUERY_TEMPLATE = <<-END
+	# The SPARQL query template to use for exact searching
+	EXACT_QUERY_TEMPLATE = <<-END
+		SELECT ?uuid
+		WHERE
+		{
+			?uuid %s .
+		}
+	END
+
+	# The SPARQL query template to use for regex match searching
+	REGEX_QUERY_TEMPLATE = <<-END
 		SELECT ?uuid
 		WHERE
 		{
@@ -78,154 +86,33 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		}
 	END
 
+	### Register some types with Redleaf's node-conversion tables
 
-	### A few (hopefully) gentle additions for Redland::Uri
-	module Redland::UriUtils
-		include ThingFish::Constants::Patterns
+	# There's almost certainly an actual URI for IP addresses, but I 
+	# can't find it
+	IANA_NUMBERS = Redleaf::Namespace.new( 'http://www.iana.org/numbers/' )
 
-		### Return the Redland::Uri object as a URI object.
-		def to_ruby_uri
-			uristring = self.to_s.sub( /^\[([^\]]+)\]$/ ) { $1 }
-			URI.parse( uristring )
-		rescue URI::InvalidURIError => err
-			raise err, "#{self.to_s}: could not be parsed as a URI", err.backtrace
-		end
+	Redleaf::NodeUtils.register_new_class( IPAddr, IANA_NUMBERS[:ipaddr] ) do |addr|
+		af = case addr.family
+		     when Socket::AF_INET then "ipv4"
+		     when Socket::AF_INET6 then "ipv6"
+		     else "unknown" end
+		ip = addr.to_string
 
+		# Regretably the only way to actually get the mask_addr as a string
+		mask = addr.send( :_to_string, addr.instance_variable_get(:@mask_addr) )
 
-		### If the receiver is a UUID URN, return it after stripping the schema part
-		### of the URI. Otherwise, returns nil.
-		def to_uuid
-			self.to_s[ UUID_URN, 1 ]
-		end
-
-		append_features Redland::Uri
+		"%s:%s/%s" % [ af, ip, mask ]
 	end
 
-
-	# TODO: Change to parse vocabularies, thereby allowing user to add their
-	# own via the config. Order of lookup would be:
-	#   * User vocabularies
-	#   * Standard vocabularies (DC, DCMI, etc.)
-	#   * Fallback to ThingFish namespace
-
-	### Map the given +key+ to a URI in one of the loaded vocabularies and return
-	### it as a Redland::Node.
-	def self::map_to_node( key )
-		return Schemas::THINGFISH_NS[ key.to_s ]
+	Redleaf::NodeUtils.register_new_type( IANA_NUMBERS[:ipaddr] ) do |literal_string|
+		IPAddr.new( literal_string[/.*:(.*)/, 1] )
 	end
 
-
-	### Unmap the given Redland::uri into a simple Symbol keyword.
-	def self::unmap_from_node( rdfuri )
-		uri = case rdfuri
-		      when Redland::Uri
-		      	uri = rdfuri.to_ruby_uri
-		      when Redland::Node
-		      	uri = rdfuri.uri.to_ruby_uri
-		      else
-		      	raise "Ack."
-		      end
-
-		property = uri.fragment || uri.path[ %r{/(\w+)$}, 1 ] or
-			raise "Couldn't map %p into a property" % [ uristring ]
-		return property.to_sym
-	end
-
-
-	# Predicate map that translates simple-string keys to their Dublin Core,
-	# DCMI Type Vocabulary, or RDF Schema equivalents.
-	PredicateMap = {
-		# Dublin Core
-		:contributor           => 'http://purl.org/dc/elements/1.1/contributor',
-		:coverage              => 'http://purl.org/dc/elements/1.1/coverage',
-		:creator               => 'http://purl.org/dc/elements/1.1/creator',
-		:date                  => 'http://purl.org/dc/elements/1.1/date',
-		:description           => 'http://purl.org/dc/elements/1.1/description',
-		:format                => 'http://purl.org/dc/elements/1.1/format',
-		:identifier            => 'http://purl.org/dc/elements/1.1/identifier',
-		:language              => 'http://purl.org/dc/elements/1.1/language',
-		:publisher             => 'http://purl.org/dc/elements/1.1/publisher',
-		:relation              => 'http://purl.org/dc/elements/1.1/relation',
-		:rights                => 'http://purl.org/dc/elements/1.1/rights',
-		:source                => 'http://purl.org/dc/elements/1.1/source',
-		:subject               => 'http://purl.org/dc/elements/1.1/subject',
-		:title                 => 'http://purl.org/dc/elements/1.1/title',
-		:type                  => 'http://purl.org/dc/elements/1.1/type',
-
-		# DCMI Elements
-		:abstract              => 'http://purl.org/dc/terms/abstract',
-		:accessRights          => 'http://purl.org/dc/terms/accessRights',
-		:accrualMethod         => 'http://purl.org/dc/terms/accrualMethod',
-		:accrualPeriodicity    => 'http://purl.org/dc/terms/accrualPeriodicity',
-		:accrualPolicy         => 'http://purl.org/dc/terms/accrualPolicy',
-		:alternative           => 'http://purl.org/dc/terms/alternative',
-		:audience              => 'http://purl.org/dc/terms/audience',
-		:available             => 'http://purl.org/dc/terms/available',
-		:bibliographicCitation => 'http://purl.org/dc/terms/bibliographicCitation',
-		:conformsTo            => 'http://purl.org/dc/terms/conformsTo',
-		:created               => 'http://purl.org/dc/terms/created',
-		:dateAccepted          => 'http://purl.org/dc/terms/dateAccepted',
-		:dateCopyrighted       => 'http://purl.org/dc/terms/dateCopyrighted',
-		:dateSubmitted         => 'http://purl.org/dc/terms/dateSubmitted',
-		:educationLevel        => 'http://purl.org/dc/terms/educationLevel',
-		:extent                => 'http://purl.org/dc/terms/extent',
-		:hasFormat             => 'http://purl.org/dc/terms/hasFormat',
-		:hasPart               => 'http://purl.org/dc/terms/hasPart',
-		:hasVersion            => 'http://purl.org/dc/terms/hasVersion',
-		:instructionalMethod   => 'http://purl.org/dc/terms/instructionalMethod',
-		:isFormatOf            => 'http://purl.org/dc/terms/isFormatOf',
-		:isPartOf              => 'http://purl.org/dc/terms/isPartOf',
-		:isReferencedBy        => 'http://purl.org/dc/terms/isReferencedBy',
-		:isReplacedBy          => 'http://purl.org/dc/terms/isReplacedBy',
-		:isRequiredBy          => 'http://purl.org/dc/terms/isRequiredBy',
-		:issued                => 'http://purl.org/dc/terms/issued',
-		:isVersionOf           => 'http://purl.org/dc/terms/isVersionOf',
-		:license               => 'http://purl.org/dc/terms/license',
-		:mediator              => 'http://purl.org/dc/terms/mediator',
-		:medium                => 'http://purl.org/dc/terms/medium',
-		:modified              => 'http://purl.org/dc/terms/modified',
-		:provenance            => 'http://purl.org/dc/terms/provenance',
-		:references            => 'http://purl.org/dc/terms/references',
-		:replaces              => 'http://purl.org/dc/terms/replaces',
-		:requires              => 'http://purl.org/dc/terms/requires',
-		:rightsHolder          => 'http://purl.org/dc/terms/rightsHolder',
-		:spatial               => 'http://purl.org/dc/terms/spatial',
-		:tableOfContents       => 'http://purl.org/dc/terms/tableOfContents',
-		:temporal              => 'http://purl.org/dc/terms/temporal',
-		:valid                 => 'http://purl.org/dc/terms/valid',
-
-		# DCMI Types
-		:Collection            => 'http://purl.org/dc/dcmitype/Collection',
-		:Dataset               => 'http://purl.org/dc/dcmitype/Dataset',
-		:Event                 => 'http://purl.org/dc/dcmitype/Event',
-		:Image                 => 'http://purl.org/dc/dcmitype/Image',
-		:InteractiveResource   => 'http://purl.org/dc/dcmitype/InteractiveResource',
-		:MovingImage           => 'http://purl.org/dc/dcmitype/MovingImage',
-		:PhysicalObject        => 'http://purl.org/dc/dcmitype/PhysicalObject',
-		:Service               => 'http://purl.org/dc/dcmitype/Service',
-		:Software              => 'http://purl.org/dc/dcmitype/Software',
-		:Sound                 => 'http://purl.org/dc/dcmitype/Sound',
-		:StillImage            => 'http://purl.org/dc/dcmitype/StillImage',
-		:Text                  => 'http://purl.org/dc/dcmitype/Text',
-	}
-
-	DEFAULT_VOCABULARIES = %w[
-		http://purl.org/dc/elements/1.1/
-		http://purl.org/dc/terms/
-		http://purl.org/dc/dcmitype/
-		http://www.w3.org/1999/02/22-rdf-syntax-ns
-		http://www.w3.org/2000/01/rdf-schema
-	]
-
-
-	# Schemas for the ThingFish RDF metastore
-	module Schemas
-		UUID = Redland::Namespace.new( 'urn:uuid:' )
-
-		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2007/02/thingfish-schema#'
-		THINGFISH_NS = Redland::Namespace.new( THINGFISH_URL )
-	end
-
+	# Convert Rationals to their floating-point approximation, and Time objects to
+	# xsd:dateTimes. :FIXME: Times should probably be converted to UTC times.
+	Redleaf::NodeUtils.register_new_class( Rational, XSD[:decimal], :to_f )
+	Redleaf::NodeUtils.register_new_class( Time, XSD[:dateTime], :to_s )
 
 
 	#################################################################
@@ -242,274 +129,84 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	###
 	### [:store]
 	###   The type of store to use. See http://librdf.org/docs/storage.html if you're not
-	###   sure which one you should use. Defaults to the in-memory 'hashes' store.
+	###   sure which one you should use. Defaults to the 'hashes' store.
 	###
 	### The type of store you've chosen will dictate which further options are
-	### accessible/required:
+	### accessible/required.
 	###
-	### For the 'hashes' store:
-	###
-	### [:hash_type]
-	###   The type of hash store to use (+memory+ or +bdb+).
-	def initialize( datadir, spooldir, config={} )
-		self.log.debug "Initializing an RDF metastore with options: %p" % [config]
-		opts = DEFAULT_OPTIONS.merge( config[:options] || {} )
+	def initialize( datadir, spooldir, options={} )
+		opts = DEFAULT_OPTIONS.merge( options )
 
-		# Extract the type and name of the store out of the options hash, then build an
-		# option string from the remaining items
-		storetype = opts.delete( :store )
-		name = opts.delete( :name )
-		opts[:dir] = datadir.to_s if datadir
-		optstring = make_optstring( opts )
+		storetype  = opts.delete( :store )
+		storelabel = opts.delete( :label )
+		opts[ :dir ] ||= datadir.to_s
+		opts[ :new ] ||= false
 
-		self.log.debug "Creating a %p store named %p, with options = %p" %
-			[ storetype, name, optstring ]
-		@store = Redland::TripleStore.new( storetype, name, optstring )
-		@model = Redland::Model.new( @store )
+		Redleaf.logger = ThingFish.logger
+
+		unless Redleaf::Store.backends.include?( storetype )
+			raise ThingFish::MetaStoreError,
+				"Your Redland installation does not support the %s store." % [ storetype ]
+		end
+
+		self.log.debug "Creating Redleaf store: %s" % [ storetype ]
+		@store = Redleaf::Store.create( storetype, storelabel, opts )
+		@graph = @store.graph
 
 		super
 	end
+
 
 
 	######
 	public
 	######
 
-	attr_reader :store, :model
-
-
-	### Output the current model to the log
-	def log_model
-		self.log.debug do
-			dumplines = []
-			@model.triples {|s,p,o| dumplines << "#{s}:#{p}:#{o}" }
-
-			"Model is: \n  %s" % [ dumplines.join("\n  ") ]
-		end
-	end
-
-
-	### Permanently remove all statements from the backing model.
-	def clear
-		@model.statements do |stmt|
-			@model.delete_statement( stmt )
-		end
-	end
-
-
-
-	###
-	### Simple Metastore API
-	###
-
-	SORTED_TRIPLES_QUERY = %q{
-		SELECT ?uuid, ?pred, ?obj
-		WHERE { ?uuid ?pred ?obj }
-		ORDER BY ?uuid
-	}
-
-	NULL_NODE = Redland::BNode.new
-
-
-	### Metastore API: Yield all the metadata in the store one resource at a time
-	def each_resource # :yields: uuid, properties_hash
-		query = Redland::Query.new( SORTED_TRIPLES_QUERY, 'sparql' )
-
-		current_uuid = NULL_NODE
-		propset = nil
-
-		res = @model.query_execute( query ) or return
-
-		until res.finished?
-			uuid = res.binding_value_by_name( 'uuid' )
-			key =  unmap_uri( res.binding_value_by_name('pred') )
-			value = res.binding_value_by_name( 'obj' ).to_s
-			self.log.debug "Adding [%s -> %s] to the proplist for %s" %
-				[ key, value, uuid.uri ]
-
-			# Yield the set of values found for the previous UUID if we're on to a
-			# new one
-			if uuid != current_uuid
-				yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
-				propset = {}
-			end
-
-			current_uuid = uuid
-			propset[ key ] = value
-
-			res.next
-		end
-
-		# Yield the final set
-		yield( current_uuid.uri.to_uuid, propset ) unless current_uuid.blank?
-	end
-
-
-	### Metastore API: Returns +true+ if the given +uuid+ exists in the metastore.
-	def has_uuid?( uuid )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-
-		statements = @model.find( uuid_urn, nil, nil )
-
-		return statements.empty? ? false : true
-	end
-
-
-	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
-	def has_property?( uuid, propname )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = map_property( propname )
-
-		statements = @model.find( uuid_urn, prop_url, nil )
-
-		self.log.debug "Statements array is %sempty." % [ statements.empty? ? "" : "not "]
-		return statements.empty? ? false : true
-	end
-
-
-	### MetaStore API: Set the property associated with +uuid+ specified by
-	### +propname+ to the given +value+.
-	def set_property( uuid, propname, value )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = map_property( propname )
-
-		res = @model.create_resource( uuid_urn )
-
-		res.update_property( prop_url, value.to_s )
-	end
-
-
-	### MetaStore API: Set the properties associated with the given +uuid+ to
-	### those in the provided +hash+, eliminating any others already set.
-	def set_properties( uuid, hash )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		resource = @model.create_resource( uuid_urn )
-
-		resource.delete_properties
-
-		hash.each do |propname, value|
-			prop_url = map_property( propname )
-			resource.update_property( prop_url, value )
-		end
-	end
-
-
-	### Merge the properties in the provided +hash+ with those associated with
-	### the given +uuid+.
-	def update_properties( uuid, hash )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		resource = @model.create_resource( uuid_urn )
-
-		hash.each do |propname, value|
-			prop_url = map_property( propname )
-			resource.update_property( prop_url, value.to_s )
-		end
+	### Execute a block in the scope of a transaction, committing it when the block returns.
+	### If an exception is raised in the block, the transaction is aborted. This is a
+	### no-op by default, but left to specific metastores to provide a functional
+	### implementation if it is useful/desired.
+	def transaction
+		rval = yield
+		@store.sync if @store.persistent?
+		return rval
 	end
 
 
 	### MetaStore API: Return the property associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = map_property( propname )
-
-		res = @model.create_resource( uuid_urn )
-
-		property = res.get_property( prop_url ) or return nil
-		return property.to_s
+		return @graph.objects( uuid_urn(uuid), map_property(propname) ).first
 	end
 
 
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
+	###
+	### For the RDF simple store, all predicates are mapped to the THINGFISH namespace.
 	def get_properties( uuid )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-
-		res = @model.create_resource( uuid_urn )
-
-		proplist = {}
-		res.get_properties do |prop, value|
-			key = unmap_uri( prop.uri )
-#			self.log.debug "Property is: %p" % [ key ]
-
-			if proplist[key]
-				if proplist[key].is_a?( Array )
-					proplist[key] << value.to_s
-				else
-					proplist[key] = [ proplist[key], value.to_s ]
-				end
-			else
-				proplist[key] = value.to_s
-			end
-		end
-
-		return proplist
-	end
-
-
-	### MetaStore API: Removes +propname+ from given +uuid+
-	def delete_property( uuid, propname )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		prop_url = map_property( propname )
-
-		res = @model.create_resource( uuid_urn )
-		res.delete_property( prop_url )
-	end
-
-
-	### MetaStore API: Removes the specified +properties+ associated with the given +uuid+.
-	def delete_properties( uuid, *properties )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		res = @model.create_resource( uuid_urn )
-
-		properties.collect {|prop| map_property(prop) }.each do |prop_url|
-			res.delete_property( prop_url )
+		return @graph[ uuid_urn(uuid), nil, nil ].inject({}) do |hash, statement|
+			name = unmap_property( statement.predicate ).to_sym
+			hash[ name ] = statement.object
+			hash
 		end
 	end
 
 
-	### MetaStore API: Removes all predicates for a given +uuid+.
-	### There is no difference between removing all predicates for a given
-	### subject and removing the subject itself in an RDF model.
-	def delete_resource( uuid )
-		uuid_urn = Schemas::UUID[ uuid.to_s ]
-		res = @model.create_resource( uuid_urn )
-		res.delete_properties
-	end
-
-
-	### MetaStore API: Return all property keys in store
-	###
-	### FIXME:  Two big issues here, both of which are -probably- deeper probs with the RDF
-	### bindings.
-	### 	1) The Set is not able to identify identical predicates as identical, so you end up
-	###        with the superset of predicates instead of a unique set.  We may be able to work
-	###        around this in a gross fashion (string comparisons, manual uniquing, etc)
-	###     2) The triples() model method seems to be entirely broken with a postgres backed
-	###        store.  Ouch.  This is a more concerning problem, especially since our main
-	###        mode of ThingFish metastore operation at LAIKA is planned to be RDF+postgres.
-	###
+	### MetaStore API: Returns a list of all property keys in the database.
 	def get_all_property_keys
 		predicates = Set.new
-
-		# I don't know how to do this any other way than a full scan. Surely there
-		# must be one?
-		@model.triples do |subj, pred, obj|
-			predicates.add( pred )
-		end
-
-		return predicates.to_a.collect {|uri| unmap_uri(uri) }.uniq
+		@graph.statements.collect {|st| predicates.add(st.predicate) }
+		return predicates.collect {|pred| unmap_property(pred) }
 	end
 
 
-	### MetaStore API: Return a uniquified Array of all values in the metastore for the
-	### specified +prop+.
-	def get_all_property_values( prop )
-		prop_url = map_property( prop )
+	### MetaStore API: Return a uniquified Array of all values in the metastore for
+	### the specified +key+.
+	def get_all_property_values( key )
 		values = Set.new
-
-		@model.find( nil, prop_url, nil ) do |_, _, object|
-			values.add( object.value )
+		@graph[ nil, map_property(key), nil ].each do |st|
+			values.add( st.object )
 		end
 
 		return values.to_a
@@ -522,32 +219,30 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	def find_by_exact_properties( hash )
 		self.log.debug "Searching for %p" % [ hash ]
 
-		uris = hash.reject {|k,v| v.nil? }.inject(nil) do |ary, pair|
-			key, value = *pair
-			property = map_property( key.to_s )
-			self.log.debug "  finding %s nodes in the model whose object is %p" %
-				[ property, value ]
-
-			stmts = @model.find( nil, property, value )
-			self.log.debug "  found %d matching statements" % [ stmts.length ]
-
-			if ary
-				nodes = stmts.collect {|stmt| stmt.subject.uri.to_s }
-				self.log.debug "  intersecting %p with %p" % [ nodes, ary ]
-				ary &= nodes
-			else
-				nodes = stmts.collect {|stmt| stmt.subject.uri.to_s }
-				self.log.debug "  initializing resource array with %p" % [ nodes ]
-				ary = nodes
+		# Flatten the hash of query args into an array of tuples
+		pairs = []
+		hash.reject {|_,val| val.nil? }.each do |key, vals|
+			[vals].flatten.each do |val|
+				pairs << [ key, val ]
 			end
-
-			ary
 		end
 
-		self.log.debug "Search yielded %d resulting resource URIs" % [ uris.length ]
+		self.log.debug "Building a query using pairs: %p" % [ pairs ]
+		predicates = Set.new
 
-		return [] unless uris
-		return uris.collect {|uri| uri[ UUID_URN, 1 ] }
+		# Create a set of predicates and filters out of the tuples.
+		pairs.each do |key, value|
+			property = map_property( key )
+			predicates.add( "<#{property}> #{Redleaf.make_literal_string(value)}" )
+		end
+
+		# Now combine the predicates and filters into a SPARQL query
+		querystring = EXACT_QUERY_TEMPLATE % [ predicates.to_a.join(" ;\n") ]
+		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
+		res = @graph.query( querystring ) or return []
+
+		# Map results into simple UUID strings
+		return res.collect {|row| uuid_obj(row[:uuid]).to_s }
 	end
 
 
@@ -571,7 +266,7 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		# Create a set of predicates and filters out of the tuples.
 		pairs.each do |key, pattern|
 			property = map_property( key )
-			predicates.add( "<#{property.uri}> ?#{key}" )
+			predicates.add( "<#{property}> ?#{key}" )
 
 			re = self.glob_to_regexp( pattern )
 			string_re = re.inspect[ %r{/(.*)/i}, 1 ]
@@ -579,42 +274,166 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		end
 
 		# Now combine the predicates and filters into a SPARQL query
-		querystring = QUERY_TEMPLATE % [
+		querystring = REGEX_QUERY_TEMPLATE % [
 			predicates.to_a.join( " ;\n" ),
 			filters.to_a.join( " .\n" ),
 		  ]
+
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-		query = Redland::Query.new( querystring )
-		res = @model.query_execute( query ) or return []
+		res = @graph.query( querystring ) or return []
 
 		# Map results into simple UUID strings
-		uuids = []
-		until res.finished?
-			urn = res.binding_value_by_name( 'uuid' )
-			self.log.debug "Get result URN: %s" % [ urn.uri ]
-			uuids << urn.uri.to_uuid
-			res.next
+		return res.collect {|row| uuid_obj(row[:uuid]).to_s }
+	end
+
+
+	SORTED_TRIPLES_QUERY = %q{
+		SELECT ?uuid, ?pred, ?obj
+		WHERE { ?uuid ?pred ?obj }
+		ORDER BY ?uuid
+	}
+
+	### Metastore API: Yield all the metadata in the store one resource at a time
+	def each_resource # :yields: uuid, properties_hash
+		current_uuid = nil
+		propset = nil
+		
+		res = @graph.query( SORTED_TRIPLES_QUERY ) or return
+		
+		res.each do |row|
+			uuid = uuid_obj( row[:uuid] ).to_s
+			key = unmap_property( row[:pred] )
+			value = row[:obj]
+
+			self.log.debug "Adding [%s -> %s] to the proplist for %s" %
+				[ key, value, uuid ]
+
+			# Yield the set of values found for the previous UUID if we're on to a
+			# new one
+			if uuid != current_uuid
+				yield( current_uuid, propset ) unless current_uuid.nil?
+				propset = {}
+			end
+
+			current_uuid = uuid
+			propset[ key ] = value
 		end
 
-		return uuids
+		# Yield the final set
+		yield( current_uuid, propset ) unless current_uuid.nil?
+	end
+
+
+	### MetaStore API: Set the property associated with +uuid+ specified by
+	### +propname+ to the given +value+.
+	def set_property( uuid, propname, value )
+		# properties are stored uniquely.
+		value = '' if value.nil?
+		@graph << [ uuid_urn(uuid), map_property(propname), value ]
+	end
+
+
+	### MetaStore API: Set the properties associated with the given +uuid+ to those
+	### in the provided +propshash+.
+	def set_properties( uuid, propshash )
+		self.transaction do
+			subject = uuid_urn( uuid )
+			@graph.remove( [subject, nil, nil] )
+
+			statements = propshash.inject([]) do |stmts, pair|
+				pred, obj = *pair
+				obj = '' if obj.nil?
+				stmts << [ subject, THINGFISH_NS[pred], obj ]
+				stmts
+			end
+
+			@graph.append( *statements )
+		end
+	end
+
+
+	### MetaStore API: Merge the provided +propshash+ into the properties associated with the
+	### given +uuid+.
+	def update_properties( uuid, propshash )
+		self.transaction do
+			subject = uuid_urn( uuid )
+
+			statements = propshash.inject([]) do |stmts, pair|
+				pred, obj = *pair
+				obj = '' if obj.nil?
+				stmts << [ subject, map_property(pred), obj ]
+				stmts
+			end
+
+			@graph.append( *statements )
+		end
+	end
+
+
+	### MetaStore API: Removes +propname+ from given +uuid+
+	def delete_property( uuid, propname )
+		self.transaction do
+			@graph.remove( [uuid_urn(uuid), map_property(propname), nil] ).first
+		end
+	end
+
+
+	### MetaStore API: Removes the specified +properties+ associated with +uuid+ from the 
+	### store.
+	def delete_properties( uuid, *properties )
+		subject = uuid_urn( uuid )
+		self.transaction do
+			properties.each do |propname|
+				@graph.remove([ subject, map_property(propname), nil ])
+			end
+		end
+	end
+	
+
+	### MetaStore API: Removes all references to the resource associated with +uuid+ from
+	### the store.
+	def delete_resource( uuid )
+		self.transaction do
+			@graph.remove([ uuid_urn(uuid), nil, nil ])
+		end
+	end
+	
+	
+	### MetaStore API: Deletes all metadata from the store.
+	def clear
+		self.transaction do
+			@graph.remove([ nil, nil, nil ])
+		end
+	end
+	
+
+	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
+	def has_property?( uuid, propname )
+		return @graph.has_predicate_about?( uuid_urn(uuid), map_property(propname) )
+	end
+
+
+	### MetaStore API: Returns +true+ if the given +uuid+ exists in the metastore.
+	def has_uuid?( uuid )
+		return ! @graph[ uuid_urn(uuid), nil, nil ].empty?
 	end
 
 
 	### Metastore API: Dump all values in the store as a Hash keyed by UUID.
 	def dump_store
-		dumpstruct = {}
+		return @graph.inject({}) do |dumpstruct, statement|
+			# Skip triples that aren't about UUIDs
+			next unless statement.subject.is_a?( URI ) &&
+				statement.subject.opaque =~ /^uuid:/
 
-		# I don't know how to do this any other way than a full scan. Surely there
-		# must be one?
-		@model.triples do |subj, pred, obj|
-			keyword = self.class.unmap_from_node( pred )
-			uuid = subj.uri.to_uuid
+			keyword = unmap_property( statement.predicate )
+			uuid = statement.subject.opaque[/.*:(.*)/, 1]
 
 			dumpstruct[ uuid ] ||= {}
-			dumpstruct[ uuid ][ keyword.to_sym ] = obj.literal.to_s
+			dumpstruct[ uuid ][ keyword ] = statement.object.to_s
+			
+			dumpstruct
 		end
-
-		return dumpstruct
 	end
 
 
@@ -623,12 +442,12 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 		self.clear
 
 		hash.each do |uuid, properties|
-			uuid_urn = Schemas::UUID[ uuid.to_s ]
-			resource = @model.create_resource( uuid_urn )
+			uuid_urn = make_uuid_urn( uuid )
 
 			properties.each do |propname, value|
-				prop_url = map_property( propname )
-				resource.add_property( prop_url, value )
+				predicate = map_property( propname )
+				value = '' if value.nil?
+				@graph << [ uuid_urn, predicate, value ]
 			end
 		end
 
@@ -640,41 +459,38 @@ class ThingFish::RdfMetaStore < ThingFish::MetaStore
 	private
 	#######
 
-	### Map the given +propname+ into a registered namespace, falling back to
-	### the ThingFish namespace if it doesn't exist in any registered schema.
+	### Make a UUID URN out of the given +uuid+.
+	def make_uuid_urn( uuid )
+		return URI("urn:uuid:#{uuid}")
+	end
+	alias_method :uuid_urn, :make_uuid_urn
+
+
+	### Make a UUID object out of a UUID URN.
+	def make_uuid_object( urn )
+		return UUID.parse( urn.opaque[/.*:(.*)/, 1] )
+	end
+	alias_method :uuid_obj, :make_uuid_object
+
+
+	### Map the specified +propname+ to a predicate URI and return it.
 	def map_property( propname )
-		return ThingFish::RdfMetaStore.map_to_node( propname )
+		# :TODO: Decide how predicates should actually be mapped
+		return THINGFISH_NS[propname]
 	end
+	
 
-
-	### Map the URI back into a simple keyword Symbol.
-	def unmap_uri( uri )
-		return ThingFish::RdfMetaStore.unmap_from_node( uri )
+	### Unmap the specified +predicate+ to a property name and return it.
+	def unmap_property( predicate )
+		# :TODO: Decide how predicates should actually be unmapped
+		return (predicate.fragment || Pathname( predicate.path ).basename).to_sym
 	end
-
-
-	### Make a Redland-style option string from an option hash.
-	def make_optstring( options )
-
-		# Eliminate pairs we need to control ourselves
-		options[:new]        = 'yes'
-		options[:write]      = 'yes'
-
-		# Connections to the postgres backend *require* the password key, even if it's just an
-		# empty string and/or the connection request is trusted in pg_hba.conf.
-		options[:password] ||= nil
-
-		# Transform keys: :hash_type => 'hash-type'
-		# Escape single quotes since the Redland stringification doesn't take this into account.
-		pairs = options.collect {|k,v| [k.to_s.gsub(/_/, '-'), v.to_s.gsub(/'/, "\\\\'")] }
-
-		# Sort them by key, quote them, and then catenate them all together with commas
-		return pairs.
-			sort_by {|key,_| key }.
-			collect {|pair| "%s='%s'" % pair }.join( ',' )
-	end
+	
 
 end # class ThingFish::RdfMetaStore
+
+
+__END__
 
 # vim: set nosta noet ts=4 sw=4:
 

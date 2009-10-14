@@ -1,4 +1,5 @@
 ^etc/thingfish\.conf-.*
 ^docs/manual/output
 ^docs/api
+^pkg/
 ^junk/

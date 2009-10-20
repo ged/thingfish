@@ -55,7 +55,7 @@ describe ThingFish::RdfMetaStore do
 		reset_logging()
 	end
 
-	
+
 	it "registers IPAddr with Redleaf's node-conversion table" do
 		addr = IPAddr.new( '192.168.16.87/32' )
 		ipaddr_typeuri = ThingFish::RdfMetaStore::IANA_NUMBERS[:ipaddr]
@@ -63,26 +63,26 @@ describe ThingFish::RdfMetaStore do
 		Redleaf::NodeUtils.make_object_typed_literal( addr ).should ==
 			[ "ipv4:192.168.16.87/255.255.255.255", ipaddr_typeuri ]
 	end
-	
+
 	it "converts Rational numbers to decimal approximations" do
 		num = Rational( 3,8 )
 		lit_tuple = Redleaf::NodeUtils.make_object_typed_literal( num )
-			
+
 		lit_tuple[0].should be_close( 3.0/8.0, 0.001 )
 		lit_tuple[1].should == Redleaf::Constants::CommonNamespaces::XSD[:decimal]
 	end
-	
+
 
 	### Shared behavior specification
 	it_should_behave_like "A MetaStore"
-	
-	
+
+
 	it "converts 'nil' metadata values to empty strings" do
-		uuid = UUID.timestamp_create
+		uuid = UUIDTools::UUID.timestamp_create
 		@store.set_property( uuid, :exif_comment, nil )
 		@store.get_property( uuid, :exif_comment ).should == ''
 	end
-	
+
 end
 
 # vim: set nosta noet ts=4 sw=4:

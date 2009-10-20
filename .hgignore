@@ -2,4 +2,4 @@
 ^docs/manual/output
 ^docs/api
 ^pkg/
-^junk/
+^junk/^docs/asset\-vocabulary\.xml$

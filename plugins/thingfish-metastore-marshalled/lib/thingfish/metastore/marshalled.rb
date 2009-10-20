@@ -152,6 +152,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 
 		@lock.lock do
 			@metadata.transaction do
+				@metadata[ uuid.to_s ] ||= {}
 				@metadata[ uuid.to_s ].merge!( props )
 			end
 		end

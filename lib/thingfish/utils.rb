@@ -292,13 +292,35 @@ module ThingFish # :nodoc:
 	end # class LogFormatter
 
 
-	### An alternate formatter for Logger instances that outputs <dd> HTML
-	### fragments.
+	# 
+	# An alternate formatter for Logger instances that outputs +div+ HTML
+	# fragments.
+	# 
+	# == Usage
+	# 
+	#   require 'thingfish/utils'
+	#   ThingFish.logger.formatter = ThingFish::HtmlLogFormatter.new( ThingFish.logger )
+	# 
+	# == Version
+	#
+	#  $Id$
+	#
+	# == Authors
+	#
+	# * Michael Granger <ged@FaerieMUD.org>
+	#
+	# :include: LICENSE
+	#
+	#--
+	#
+	# Please see the file LICENSE in the 'docs' directory for licensing details.
+	#
 	class HtmlLogFormatter < Logger::Formatter
 		include ERB::Util  # for html_escape()
 
+		# The default HTML fragment that'll be used as the template for each log message.
 		HTML_LOG_FORMAT = %q{
-		<dd class="log-message %5$s">
+		<div class="log-message %5$s">
 			<span class="log-time">%1$s.%2$06d</span>
 			[
 				<span class="log-pid">%3$d</span>
@@ -309,7 +331,7 @@ module ThingFish # :nodoc:
 			:
 			<span class="log-name">%6$s</span>
 			<span class="log-message-text">%7$s</span>
-		</dd>
+		</div>
 		}
 
 		### Override the logging formats with ones that generate HTML fragments
@@ -336,7 +358,7 @@ module ThingFish # :nodoc:
 				time.usec,                                                    # %2$d
 				Process.pid,                                                  # %3$d
 				Thread.current == Thread.main ? 'main' : Thread.object_id,    # %4$s
-				severity,                                                     # %5$s
+				severity.downcase,                                            # %5$s
 				progname,                                                     # %6$s
 				html_escape( msg ).gsub(/\n/, '<br />')                       # %7$s
 			]

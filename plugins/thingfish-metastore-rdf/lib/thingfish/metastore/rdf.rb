@@ -1,26 +1,18 @@
 #!/usr/bin/ruby
 
-begin
-	require 'pathname'
-	require 'set'
-	require 'redleaf'
-	require 'uuidtools'
-	require 'ipaddr'
-	require 'rational'
-	require 'socket'
+require 'pathname'
+require 'set'
+require 'redleaf'
+require 'uuidtools'
+require 'ipaddr'
+require 'rational'
+require 'socket'
 
-	require 'thingfish'
-	require 'thingfish/exceptions'
-	require 'thingfish/metastore'
-	require 'thingfish/metastore/simple'
-	require 'thingfish/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/metastore'
+require 'thingfish/metastore/simple'
+require 'thingfish/constants'
 
 # ThingFish::RdfMetaStore -- a simple metastore plugin for ThingFish that
 # stores metadata in an RDF knowledgebase using Redleaf.
@@ -213,10 +205,11 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata matched the criteria specified
-	### by +hash+. The criteria should be key-value pairs which describe
-	### exact metadata pairs. This is an exact match search.
-	def find_by_exact_properties( hash )
+	### MetaStore API: Return an array of tuples of the form:
+	###   [ UUID, { :key => «value» } ]
+	### whose metadata exactly matches the key-value pairs in +hash+. If the 
+	### optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
+	def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
 		self.log.debug "Searching for %p" % [ hash ]
 
 		# Flatten the hash of query args into an array of tuples
@@ -227,22 +220,33 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 
+		# Create a set of predicates and filters out of the tuples.
 		self.log.debug "Building a query using pairs: %p" % [ pairs ]
 		predicates = Set.new
-
-		# Create a set of predicates and filters out of the tuples.
 		pairs.each do |key, value|
 			property = map_property( key )
 			predicates.add( "<#{property}> #{Redleaf.make_literal_string(value)}" )
 		end
 
+		# Make the ORDER BY clause
+		orderattrs = []
+		order.each do |attrname|
+			property = map_property( attrname )
+			predicates.add( "<#{property}> ?#{attrname}" )
+			orderattrs << "?#{attrname}"
+		end
+		orderattrs << "?uuid"
+
 		# Now combine the predicates and filters into a SPARQL query
 		querystring = EXACT_QUERY_TEMPLATE % [ predicates.to_a.join(" ;\n") ]
-		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-		res = @graph.query( querystring ) or return []
+		querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
+		querystring << " LIMIT %d" % [ limit ] if limit
+		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
 
-		# Map results into simple UUID strings
-		return res.collect {|row| uuid_obj(row[:uuid]).to_s }
+		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
+		uuids = @graph.query( querystring ) or return []
+
+		return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
 	end
 
 
@@ -280,10 +284,24 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		  ]
 
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-		res = @graph.query( querystring ) or return []
+		uuids = @graph.query( querystring ) or return []
 
 		# Map results into simple UUID strings
-		return res.collect {|row| uuid_obj(row[:uuid]).to_s }
+		return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
+	end
+
+
+	### Map an Array of UUIDs to an Array of tuples of the form returned by 
+	### #find_by_exact_properties and #find_by_matching_properties.
+	def make_uuid_tuples( uuids )
+		return uuids.inject([]) do |results, uuid|
+			props = @graph[ uuid, nil, nil ].inject({}) do |hash, stmt|
+				self.log.debug "Injecting over predicates about %p: %p" % [ uuid, stmt ]
+				hash[ unmap_property(stmt.predicate) ] = stmt.object
+				hash
+			end
+			results << [ make_uuid_string(uuid), props ]
+		end
 	end
 
 
@@ -297,9 +315,9 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	def each_resource # :yields: uuid, properties_hash
 		current_uuid = nil
 		propset = nil
-		
+
 		res = @graph.query( SORTED_TRIPLES_QUERY ) or return
-		
+
 		res.each do |row|
 			uuid = uuid_obj( row[:uuid] ).to_s
 			key = unmap_property( row[:pred] )
@@ -388,7 +406,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 			end
 		end
 	end
-	
+
 
 	### MetaStore API: Removes all references to the resource associated with +uuid+ from
 	### the store.
@@ -397,15 +415,15 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 			@graph.remove([ uuid_urn(uuid), nil, nil ])
 		end
 	end
-	
-	
+
+
 	### MetaStore API: Deletes all metadata from the store.
 	def clear
 		self.transaction do
 			@graph.remove([ nil, nil, nil ])
 		end
 	end
-	
+
 
 	### MetaStore API: Returns +true+ if the given +uuid+ has a property +propname+.
 	def has_property?( uuid, propname )
@@ -431,7 +449,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 
 			dumpstruct[ uuid ] ||= {}
 			dumpstruct[ uuid ][ keyword ] = statement.object.to_s
-			
+
 			dumpstruct
 		end
 	end
@@ -454,7 +472,6 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-
 	#######
 	private
 	#######
@@ -468,7 +485,16 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 
 	### Make a UUID object out of a UUID URN.
 	def make_uuid_object( urn )
-		return UUID.parse( urn.opaque[/.*:(.*)/, 1] )
+		return UUIDTools::UUID.parse( make_uuid_string(urn) )
+	end
+	alias_method :uuid_obj, :make_uuid_object
+
+
+	### Make a UUID string out of a UUID URN.
+	def make_uuid_string( urn )
+		raise ArgumentError,
+			"%p doesn't have an opaque attribute" % [urn] unless urn.respond_to?( :opaque )
+		return urn.opaque[/.*:(.*)/, 1]
 	end
 	alias_method :uuid_obj, :make_uuid_object
 
@@ -478,14 +504,13 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		# :TODO: Decide how predicates should actually be mapped
 		return THINGFISH_NS[propname]
 	end
-	
+
 
 	### Unmap the specified +predicate+ to a property name and return it.
 	def unmap_property( predicate )
 		# :TODO: Decide how predicates should actually be unmapped
 		return (predicate.fragment || Pathname( predicate.path ).basename).to_sym
 	end
-	
 
 end # class ThingFish::RdfMetaStore
 

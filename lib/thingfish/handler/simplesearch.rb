@@ -71,6 +71,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	### Handle a GET request
 	def handle_get_request( search_terms, request, response )
 		terms = self.split_terms( search_terms )
+		self.log.debug "Query args are: %p" % [ request.query_args ]
 
 		if request.query_args.key?( 'full' )
 			self.log.debug "Handling a full search request"
@@ -117,7 +118,8 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 		self.log.debug "Handling UUID search request for terms=%p, order=%p, limit=%p, offset=%p" %
 			[ terms, order, limit, offset ]
 
-		uuids = if terms.empty?
+		# :TODO: Modify this to use #find_by_exact if possible.
+		tuples = if terms.empty?
 		        	[]
 		        else
 		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
@@ -125,28 +127,26 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
-		response.body = uuids
+		response.body = tuples.collect {|pair| pair.first }
 	end
 
 
 	### Handle a search request and return full metadata for each result.
 	def handle_full_search_request( request, response, terms )
 		order, limit, offset = self.normalize_search_arguments( request )
+		self.log.debug "Handling full search request for terms=%p, order=%p, limit=%p, offset=%p" %
+			[ terms, order, limit, offset ]
 
-		uuids = if terms.empty?
+		# :TODO: Modify this to use #find_by_exact if possible.
+		tuples = if terms.empty?
 		        	[]
 		        else
 		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
 		        end
 
-		metadata = uuids.inject({}) do |hash, uuid|
-			hash[ uuid ] = @metastore.get_properties( uuid )
-			hash
-		end
-
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
-		response.body = metadata
+		response.body = tuples
 	end
 
 

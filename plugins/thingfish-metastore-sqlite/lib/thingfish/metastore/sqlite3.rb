@@ -359,9 +359,20 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		return @metadata.execute( SQL_GET_ALL_PROPERTY_VALUES, key ).flatten.compact
 	end
 
+	SQL_SELECT_UUIDS = %q{
+		SELECT r.uuid, k.key, v.val
+		FROM resources AS r,
+		     metakey AS k,
+		     metaval AS v
+		WHERE
+			r.id IN ( %s ) AND
+			r.id = v.r_id AND
+			k.id = v.m_id
+	}
 
 	SQL_SELECT_EXACT = %q{
-		SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
+		SELECT r.id
+		FROM resources AS r, metakey AS k, metaval AS v
 		WHERE
 			k.key  = :key AND
 			k.id   = v.m_id AND
@@ -372,12 +383,19 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
-		return @metadata.execute( SQL_SELECT_EXACT, key.to_s, value ).flatten
+		ids = @metadata.execute( SQL_SELECT_MATCHING, key.to_s, value )
+		query = SQL_SELECT_UUIDS % [ ids.join(',') ]
+		return @metadata.execute( query ).inject({}) do |tuples,row|
+			tuples[ row[0] ] ||= {}
+			tuples[ row[0] ][ row[1].to_sym ] = row[2]
+			tuples
+		end
 	end
 
 
 	SQL_SELECT_MATCHING = %q{
-		SELECT uuid FROM resources AS r, metakey AS k, metaval AS v
+		SELECT r.id
+		FROM resources AS r, metakey AS k, metaval AS v
 		WHERE
 			k.key  = :key AND
 			k.id   = v.m_id AND
@@ -389,7 +407,14 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 	### specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		value = value.to_s.gsub( '*', '%' )
-		return @metadata.execute( SQL_SELECT_MATCHING, key.to_s, value ).flatten
+		ids = @metadata.execute( SQL_SELECT_MATCHING, key.to_s, value )
+
+		query = SQL_SELECT_UUIDS % [ ids.join(',') ]
+		return @metadata.execute( query ).inject({}) do |tuples,row|
+			tuples[ row[0] ] ||= {}
+			tuples[ row[0] ][ row[1].to_sym ] = row[2]
+			tuples
+		end
 	end
 
 

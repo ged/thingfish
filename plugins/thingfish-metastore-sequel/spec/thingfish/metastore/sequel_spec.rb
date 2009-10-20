@@ -50,7 +50,7 @@ describe ThingFish::SequelMetaStore do
 		reset_logging()
 	end
 
-	# it_should_behave_like "A MetaStore"
+	it_should_behave_like "A MetaStore"
 
 end
 

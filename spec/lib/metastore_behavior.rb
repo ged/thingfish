@@ -200,7 +200,7 @@ describe "A MetaStore", :shared => true do
 
 	# Searching APIs
 
-	it "can find UUIDs by single-property exact match" do
+	it "can find tuples by single-property exact match" do
 		@store.set_property( TEST_UUID, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
 
@@ -211,7 +211,7 @@ describe "A MetaStore", :shared => true do
 	end
 
 
-	it "can find ordered UUIDs by single-property exact match" do
+	it "can find ordered tuples by single-property exact match" do
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :namespace, 'private' )
 		@store.set_property( TEST_UUID2, :description, 'Another description.' )
@@ -228,7 +228,71 @@ describe "A MetaStore", :shared => true do
 	end
 
 
-	it "can find UUIDs by multi-property exact match" do
+	it "returns tuples in UUID order from a single-property exact match with no other order attributes" do
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+		@store.set_property( TEST_UUID2, :description, 'Another description.' )
+
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+		@store.set_property( TEST_UUID,  :description, 'This is a description.' )
+
+		found = @store.find_by_exact_properties( {'title' => TEST_TITLE}, [] )
+
+		found.should have(2).members
+		found.map {|tuple| tuple.first }.should == [ TEST_UUID, TEST_UUID2 ].sort
+	end
+
+
+	it "can return a subset of found exact-match tuples" do
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+		found = @store.find_by_exact_properties( {'title' => TEST_TITLE}, [:namespace], 1 )
+
+		found.should have(1).members
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary'} ]
+	end
+
+
+	it "can return an offset subset of found exact-match tuples" do
+		uuids = []
+		20.times do |i|
+			uuid = UUIDTools::UUID.timestamp_create
+			uuids << uuid
+			title = TEST_TITLE + " (Episode %02d)" % [ i + 1 ]
+			@store.set_property( uuid, :title, title )
+			@store.set_property( uuid, :namespace, 'devlibrary' )
+		end
+
+		0.step( 15, 5 ) do |offset|
+			found = @store.find_by_exact_properties( {'namespace' => 'devlibrary'}, [:title], 5, offset )
+
+			found.should have( 5 ).members
+			uuid, props = *found.first
+			uuid.should == uuids[ offset ].to_s
+			props[:title].should == TEST_TITLE + " (Episode %02d)" % [ offset + 1 ]
+		end
+	end
+
+
+	it "returns an empty array for offsets that exceed the number of results" do
+		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
+		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
+
+		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :namespace, 'private' )
+
+		found = @store.find_by_exact_properties( {'namespace' => 'private'}, [], 10, 1 )
+
+		found.should be_empty()
+	end
+
+
+	it "can find tuples by multi-property exact match" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
 
@@ -245,7 +309,7 @@ describe "A MetaStore", :shared => true do
 	end
 
 
-	it "can find UUIDs by multi-property wildcard match" do
+	it "can find tuples by multi-property wildcard match" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :bitrate, '160' )
 		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
@@ -265,7 +329,7 @@ describe "A MetaStore", :shared => true do
 	end
 
 
-	it "can find UUIDs by multi-property wildcard match with multiple values for a single key" do
+	it "can find tuples by multi-property wildcard match with multiple values for a single key" do
 		@store.set_property( TEST_UUID,  :title, TEST_TITLE )
 		@store.set_property( TEST_UUID,  :bitrate, '160' )
 		@store.set_property( TEST_UUID,  :namespace, 'devlibrary' )
@@ -281,6 +345,7 @@ describe "A MetaStore", :shared => true do
 
 		found.should have(1).members
 		found.first[0] == TEST_UUID
+		found.first[1].should be_a( Hash )
 	end
 
 

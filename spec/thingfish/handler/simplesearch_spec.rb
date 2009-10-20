@@ -95,7 +95,7 @@ describe ThingFish::SimpleSearchHandler do
 			@request.should_receive( :query_args ).at_least( :once ).and_return({})
 			@metastore.should_receive( :find_by_matching_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
-				and_return([ TEST_UUID ])
+				and_return([ [TEST_UUID, :a_properties_hash] ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
@@ -113,7 +113,7 @@ describe ThingFish::SimpleSearchHandler do
 			@request.should_receive( :query_args ).at_least( :once ).and_return({})
 			@metastore.should_receive( :find_by_matching_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
-				and_return([ TEST_UUID ])
+				and_return([ [TEST_UUID, :a_properties_hash] ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
@@ -142,13 +142,11 @@ describe ThingFish::SimpleSearchHandler do
 				and_return({ 'full' => nil })
 			@metastore.should_receive( :find_by_matching_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
-				and_return([ TEST_UUID ])
-			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
-				and_return( :a_properties_hash )
+				and_return([ TEST_UUID, :a_properties_hash ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
-			@response.should_receive( :body= ).with({ TEST_UUID => :a_properties_hash })
+			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
 
 			@handler.handle_get_request( 'namespace=bangry', @request, @response )
 		end
@@ -164,7 +162,7 @@ describe ThingFish::SimpleSearchHandler do
 				and_return( search_terms )
 			@metastore.should_receive( :find_by_matching_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
-				and_return([ TEST_UUID, TEST_UUID2 ])
+				and_return([ [TEST_UUID, :a_properties_hash], [TEST_UUID2, :a_second_properties_hash] ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
@@ -183,18 +181,14 @@ describe ThingFish::SimpleSearchHandler do
 				and_return({ 'full' => '1' })
 			@metastore.should_receive( :find_by_matching_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
-				and_return([ TEST_UUID, TEST_UUID2 ])
-			@metastore.should_receive( :get_properties ).with( TEST_UUID ).
-				and_return( :a_properties_hash )
-			@metastore.should_receive( :get_properties ).with( TEST_UUID2 ).
-				and_return( :a_second_properties_hash )
+				and_return([ [TEST_UUID, :a_properties_hash], [TEST_UUID2, :a_second_properties_hash] ])
 
 			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 			@response.should_receive( :status= ).with( HTTP::OK )
-			@response.should_receive( :body= ).with({
-				TEST_UUID => :a_properties_hash,
-				TEST_UUID2 => :a_second_properties_hash,
-			})
+			@response.should_receive( :body= ).with([
+				[TEST_UUID,   :a_properties_hash],
+				[TEST_UUID2,  :a_second_properties_hash],
+			])
 
 			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end

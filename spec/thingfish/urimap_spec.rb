@@ -36,7 +36,7 @@ describe ThingFish::UriMap do
 	include ThingFish::SpecHelpers
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 	end
 
 	before( :each ) do

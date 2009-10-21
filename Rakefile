@@ -160,7 +160,7 @@ require RAKE_TASKDIR + 'helpers.rb'
 
 # Define some constants that depend on the 'svn' tasklib
 if hg = which( 'hg' )
-	id = IO.read('|-') or exec hg, 'id', '-n'
+	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
 	PKG_BUILD = id.chomp[ /^[[:xdigit:]]+/ ]
 else
 	PKG_BUILD = 0
@@ -202,19 +202,13 @@ DEPENDENCIES = {
 
 # Developer Gem dependencies: gemname => version
 DEVELOPMENT_DEPENDENCIES = {
-	'amatch'      => '>= 0.2.3',
-	'rake'        => '>= 0.8.1',
+	'rake'        => '>= 0.8.7',
 	'rcodetools'  => '>= 0.7.0.0',
-	'rcov'        => '>= 0',
-	'RedCloth'    => '>= 4.0.3',
-	'rspec'       => '>= 0',
-	'rubyforge'   => '>= 0',
-	'termios'     => '>= 0',
-	'text-format' => '>= 1.0.0',
-	'tmail'       => '>= 1.2.3.1',
-	'libxml-ruby' => '>= 0.8.3',
 	'rdoc'        => '>= 2.4.3',
-	'tidy' => '>=0',
+	'RedCloth'    => '>= 4.0.3',
+	'rspec'       => '>= 1.2.6',
+	'rubyforge'   => '>= 0',
+	'text-format' => '>= 1.0.0',
 	'sqlite3-ruby' => '>= 1.2.4',
 	'ruby-mp3info' => '>=0',
 	'json' => '>=0',

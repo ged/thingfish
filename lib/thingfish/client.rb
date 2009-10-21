@@ -129,7 +129,7 @@ class ThingFish::Client
 
 	# The content of the User-Agent header send with all requests
 	USER_AGENT_HEADER = "%s/%s.%d" %
-		[ self.name.downcase.gsub(/\W+/, '-'), ThingFish::VERSION, SVNRev[/\d+/] ]
+		[ self.name.downcase.gsub(/\W+/, '-'), ThingFish::VERSION, SVNRev[/\d+/] || 0 ]
 
 	# Maximum size of a resource response that's kept in-memory. Anything larger
 	# gets buffered to a tempfile.

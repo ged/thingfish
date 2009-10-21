@@ -34,7 +34,7 @@ include UtilityFunctions
 plugin_libs = Pathname.glob( 'plugins/*/lib' )
 # puts plugin_libs
 
-plugin_libs.each {|lib| $LOAD_PATH.unshift(lib) }
+plugin_libs.each {|lib| $LOAD_PATH.unshift(lib.to_s) }
 suffix = nil
 if user = Etc.getpwuid( Process.euid )
 	suffix = user.name

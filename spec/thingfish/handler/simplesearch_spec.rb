@@ -93,7 +93,7 @@ describe ThingFish::SimpleSearchHandler do
 			}
 
 			@request.should_receive( :query_args ).at_least( :once ).and_return({})
-			@metastore.should_receive( :find_by_matching_properties ).
+			@metastore.should_receive( :find_by_exact_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ [TEST_UUID, :a_properties_hash] ])
 
@@ -111,7 +111,7 @@ describe ThingFish::SimpleSearchHandler do
 			}
 
 			@request.should_receive( :query_args ).at_least( :once ).and_return({})
-			@metastore.should_receive( :find_by_matching_properties ).
+			@metastore.should_receive( :find_by_exact_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ [TEST_UUID, :a_properties_hash] ])
 
@@ -140,7 +140,7 @@ describe ThingFish::SimpleSearchHandler do
 
 			@request.should_receive( :query_args ).at_least( :once ).
 				and_return({ 'full' => nil })
-			@metastore.should_receive( :find_by_matching_properties ).
+			@metastore.should_receive( :find_by_exact_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ TEST_UUID, :a_properties_hash ])
 
@@ -160,7 +160,7 @@ describe ThingFish::SimpleSearchHandler do
 			@request.should_receive( :query_args ).
 				at_least(:once).
 				and_return( search_terms )
-			@metastore.should_receive( :find_by_matching_properties ).
+			@metastore.should_receive( :find_by_exact_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ [TEST_UUID, :a_properties_hash], [TEST_UUID2, :a_second_properties_hash] ])
 
@@ -179,7 +179,7 @@ describe ThingFish::SimpleSearchHandler do
 
 			@request.should_receive( :query_args ).at_least(:once).
 				and_return({ 'full' => '1' })
-			@metastore.should_receive( :find_by_matching_properties ).
+			@metastore.should_receive( :find_by_exact_properties ).
 				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
 				and_return([ [TEST_UUID, :a_properties_hash], [TEST_UUID2, :a_second_properties_hash] ])
 
@@ -192,6 +192,44 @@ describe ThingFish::SimpleSearchHandler do
 
 			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end
+
+
+		it "uses metastore string matching interface for a wildcard term" do
+			search_terms = { 'weapon' => 'crepe*' }
+
+			@request.should_receive( :query_args ).at_least( :once ).
+				and_return({ 'full' => nil })
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
+				and_return([ TEST_UUID, :a_properties_hash ])
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
+
+			@handler.handle_get_request( 'weapon=crepe*', @request, @response )
+		end
+
+
+		it "uses metastore string matching interface if any terms contain wildcards" do
+			search_terms = {
+				'weapon' => 'crepe*',
+				'target' => 'vehicle'
+			}
+
+			@request.should_receive( :query_args ).at_least( :once ).
+				and_return({ 'full' => nil })
+			@metastore.should_receive( :find_by_matching_properties ).
+				with( search_terms, DEFAULT_ORDER, DEFAULT_LIMIT, DEFAULT_OFFSET ).
+				and_return([ TEST_UUID, :a_properties_hash ])
+
+			@response.should_receive( :content_type= ).with( RUBY_MIMETYPE )
+			@response.should_receive( :status= ).with( HTTP::OK )
+			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
+
+			@handler.handle_get_request( 'weapon=crepe*;target=vehicle', @request, @response )
+		end
+
 
 		it "can build an HTML fragment for the HTML filter" do
 			erb_template = ERB.new( "A template that refers to <%= uri %>" )

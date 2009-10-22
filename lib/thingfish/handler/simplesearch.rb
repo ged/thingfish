@@ -25,7 +25,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
+#
 #
 
 require 'thingfish'
@@ -71,6 +71,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	### Handle a GET request
 	def handle_get_request( search_terms, request, response )
 		terms = self.split_terms( search_terms )
+
 		self.log.debug "Query args are: %p" % [ request.query_args ]
 
 		if request.query_args.key?( 'full' )
@@ -114,16 +115,8 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 	### Handle a search request and return a UUID for each result.
 	def handle_uuid_search_request( request, response, terms )
-		order, limit, offset = self.normalize_search_arguments( request )
-		self.log.debug "Handling UUID search request for terms=%p, order=%p, limit=%p, offset=%p" %
-			[ terms, order, limit, offset ]
-
-		# :TODO: Modify this to use #find_by_exact if possible.
-		tuples = if terms.empty?
-		        	[]
-		        else
-		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
-		        end
+		self.log.debug "Handling UUID search request for terms=%p" % [ terms ]
+		tuples = self.find_resources( request, terms )
 
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
@@ -133,16 +126,8 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 	### Handle a search request and return full metadata for each result.
 	def handle_full_search_request( request, response, terms )
-		order, limit, offset = self.normalize_search_arguments( request )
-		self.log.debug "Handling full search request for terms=%p, order=%p, limit=%p, offset=%p" %
-			[ terms, order, limit, offset ]
-
-		# :TODO: Modify this to use #find_by_exact if possible.
-		tuples = if terms.empty?
-		        	[]
-		        else
-		        	@metastore.find_by_matching_properties( terms, order, limit, offset )
-		        end
+		self.log.debug "Handling full search request for terms=%p" % [ terms ]
+		tuples = self.find_resources( request, terms )
 
 		response.status = HTTP::OK
 		response.content_type = RUBY_MIMETYPE
@@ -169,7 +154,23 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	end
 
 
-	### Extract search parameters from the given query +args+ and return them as 
+	### Given a +ThingFish::Request+ and a +terms+ hash, returns an array of matching resources.
+	def find_resources( request, terms )
+		order, limit, offset = self.normalize_search_arguments( request )
+
+		tuples = if terms.empty?
+					[]
+		        elsif terms.values.find {|term| term.index('*')}
+					@metastore.find_by_matching_properties( terms, order, limit, offset )
+		        else
+					@metastore.find_by_exact_properties( terms, order, limit, offset )
+		        end
+
+		return tuples
+	end
+
+
+	### Extract search parameters from the given query +args+ and return them as
 	### normalized values.
 	def normalize_search_arguments( request )
 		args   = request.query_args

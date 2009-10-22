@@ -691,7 +691,7 @@ describe ThingFish::Client do
 
 		it "can find resources by their metadata attributes" do
 			path_and_query = TEST_SERVER_INFO['handlers']['simplesearch'].first +
-				'?format=image/jpeg;title=*energylegs*'
+				'/format=image%2Fjpeg;title=*energylegs*?full'
 			Net::HTTP::Get.should_receive( :new ).with( path_and_query ).
 				and_return( @request )
 
@@ -701,11 +701,16 @@ describe ThingFish::Client do
 				and_yield( @response )
 			Net::HTTPOK.should_receive( :=== ).with( @response ).and_return( true )
 
-			uuids = [ TEST_UUID, TEST_UUID2, TEST_UUID3 ]
+			resources = [
+				[ TEST_UUID,  { :soapy => 'finger' } ],
+				[ TEST_UUID2, { :soapy => 'giants' } ],
+				[ TEST_UUID3, { :soapy => 'shame'  } ]
+			]
+
 			@response.should_receive( :[] ).with( /content-type/i ).
 				and_return( RUBY_MARSHALLED_MIMETYPE )
 			@response.should_receive( :body ).
-				and_return( Marshal.dump(uuids) )
+				and_return( Marshal.dump(resources) )
 
 			criteria = {
 				:format => 'image/jpeg',
@@ -716,12 +721,13 @@ describe ThingFish::Client do
 			results.should be_an_instance_of( Array )
 			results.should have( 3 ).members
 			results.collect {|r| r.uuid }.
-				should include( TEST_UUID, TEST_UUID2, TEST_UUID3 )
+				should == [ TEST_UUID, TEST_UUID2, TEST_UUID3 ]
+			results.collect {|r| r.metadata[:soapy] }.
+				should == %w[ finger giants shame ]
 		end
 
 
 	end # REST API
-
 end
 
 # vim: set nosta noet ts=4 sw=4:

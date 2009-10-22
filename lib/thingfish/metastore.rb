@@ -284,7 +284,7 @@ class ThingFish::MetaStore
 
 	### Return an array of tuples of the form:
 	###   [ UUID, { :key => «value» } ]
-	### whose metadata exactly matches the key-value pairs in +hash+. If the 
+	### whose metadata exactly matches the key-value pairs in +hash+. If the
 	### optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
 	def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
 		self.intersect_each_tuple( hash, order, limit, offset ) do |key,value|
@@ -295,7 +295,7 @@ class ThingFish::MetaStore
 
 	### Return an array of tuples of the form:
 	###   [ UUID, { :key => «value» } ]
-	### whose metadata wildcard-matches the key-value pairs in +hash+. If the 
+	### whose metadata wildcard-matches the key-value pairs in +hash+. If the
 	### optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
 	def find_by_matching_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
 		self.intersect_each_tuple( hash, order, limit, offset ) do |key,value|

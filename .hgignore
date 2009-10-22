@@ -3,3 +3,5 @@
 ^docs/api
 ^pkg/
 ^junk/^docs/asset\-vocabulary\.xml$
+^misc/junk
+

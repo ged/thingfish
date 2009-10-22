@@ -135,6 +135,9 @@ class ThingFish::Client
 	# gets buffered to a tempfile.
 	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes
 
+	# Characters that should be URI escaped before sending to the search handler.
+	ESCAPE_CHARS = Regexp.union( URI::REGEXP::UNSAFE, %r{/} )
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -403,16 +406,18 @@ class ThingFish::Client
 	### of metadata keys and the desired matching values.
 	def find( criteria={} )
 		uri = self.server_uri( :simplesearch )
-		query_args = make_query_args( criteria )
-		request = Net::HTTP::Get.new( uri.path + query_args )
+		terms = make_query_args( criteria )
+		request = Net::HTTP::Get.new( uri.path + terms + '?full' )
 		resources = []
 
 		request['Accept'] = ACCEPT_HEADER
 		send_request( request ) do |response|
 			response.error! unless response.is_a?( Net::HTTPSuccess )
-			uuids = self.extract_response_body( response )
-			uuids.each do |uuid|
-				resources << ThingFish::Resource.new( nil, self, uuid )
+			results = self.extract_response_body( response )
+			results.each do |uuid, metadata|
+				resource = ThingFish::Resource.new( nil, self, uuid )
+				resource.metadata = metadata
+				resources << resource
 			end
 		end
 
@@ -514,10 +519,10 @@ class ThingFish::Client
 	### Given a +hash+, build and return a query argument string.
 	def make_query_args( hash )
 		query_args = hash.collect do |k,v|
-			"%s=%s" % [ URI.escape(k.to_s), URI.escape(v.to_s) ]
+			"%s=%s" % [ URI.escape(k.to_s, ESCAPE_CHARS ), URI.escape(v.to_s, ESCAPE_CHARS ) ]
 		end
 
-		return '?' + query_args.sort.join(';')
+		return '/' + query_args.sort.join(';')
 	end
 
 

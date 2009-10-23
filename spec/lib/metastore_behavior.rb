@@ -211,6 +211,17 @@ describe "A MetaStore", :shared => true do
 	end
 
 
+	it "can find tuples by single-property case insensitive exact match" do
+		@store.set_property( TEST_UUID, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
+
+		found = @store.find_by_exact_properties( 'title' => TEST_TITLE.downcase )
+
+		found.should have(1).members
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+	end
+
+
 	it "can find ordered tuples by single-property exact match" do
 		@store.set_property( TEST_UUID2, :title, TEST_TITLE )
 		@store.set_property( TEST_UUID2, :namespace, 'private' )
@@ -306,6 +317,28 @@ describe "A MetaStore", :shared => true do
 
 		found.should have(1).members
 		found.first.should == [ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary'} ]
+	end
+
+
+	it "can find tuples by single-property wildcard match" do
+		@store.set_property( TEST_UUID, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
+
+		found = @store.find_by_matching_properties( 'title' => 'Muffin*' )
+
+		found.should have(1).members
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+	end
+
+
+	it "can find tuples by single-property case insensitive wildcard match" do
+		@store.set_property( TEST_UUID, :title, TEST_TITLE )
+		@store.set_property( TEST_UUID2, :title, 'Squonk the Sea-Ranger' )
+
+		found = @store.find_by_matching_properties( 'title' => 'muffin*' )
+
+		found.should have(1).members
+		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
 	end
 
 

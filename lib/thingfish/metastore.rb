@@ -76,11 +76,12 @@ require 'thingfish/exceptions'
 # the #find_by_exact_properties() and #find_by_matching_properties() methods.
 #
 # [<tt>find_exact_uuids()</tt>]
-#   Return an array of uuids whose metadata matched the criteria
-#   specified by +key+ and +value+. This is an exact match search.
+#	Return a hash keyed on uuid whose metadata values matched
+#	the criteria specified by +key+ and +value+. This is an exact match search.
 # [<tt>find_matching_uuids()</tt>]
-#   Return an array of uuids whose metadata matched the criteria
-#   specified by +key+ and +value+. This is a wildcard search.
+#	Return a hash keyed on uuid whose metadata values matched
+#	the criteria specified by +key+ and +value+. This is a wildcard search.
+#
 class ThingFish::MetaStore
 	include Enumerable,
 	        PluginFactory,

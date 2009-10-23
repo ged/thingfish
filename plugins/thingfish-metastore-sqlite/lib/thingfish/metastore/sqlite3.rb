@@ -376,14 +376,14 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 		WHERE
 			k.key  = :key AND
 			k.id   = v.m_id AND
-			v.val  = :value AND
+			lower(v.val) = :value AND
 			v.r_id = r.id
 	}
 
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
-		ids = @metadata.execute( SQL_SELECT_MATCHING, key.to_s, value )
+		ids = @metadata.execute( SQL_SELECT_EXACT, key.to_s, value.downcase )
 		query = SQL_SELECT_UUIDS % [ ids.join(',') ]
 		return @metadata.execute( query ).inject({}) do |tuples,row|
 			tuples[ row[0] ] ||= {}

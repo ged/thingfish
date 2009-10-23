@@ -261,7 +261,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		ids = @metadata[ :resources, :metakey, :metaval ].
 			filter( :metakey__key  => key.to_s,
 					:metakey__id   => :metaval__m_id,
-					:metaval__val  => value,
+					:lower[ :metaval__val ] => value.downcase,
 					:metaval__r_id => :resources__id ).map( :r_id )
 
 		return @metadata[ :resources, :metakey, :metaval ].
@@ -280,7 +280,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	def find_matching_uuids( key, value )
 		value = value.to_s.gsub( '*', '%' )
 		ids = @metadata[ :resources, :metakey, :metaval ].
-			filter( (:metaval__val.like(value)) &
+			filter( (:metaval__val.like(value, :case_insensitive => true)) &
 			        {:metakey__key  => key.to_s,
 			         :metakey__id   => :metaval__m_id,
 			         :metaval__r_id => :resources__id} ).map( :r_id )

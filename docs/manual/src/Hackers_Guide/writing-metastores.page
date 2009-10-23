@@ -174,14 +174,14 @@ implementation examples!
 
 	<dt>@#find_exact_uuids( key, value )@</dt>
 	<dd class="description">
-		Return an @Array@ of UUIDs whose metadata exactly matched the criteria
-		specified by +key+ and +value+.
+		Return a @Hash@ keyed on uuid whose metadata values exactly matched
+		the criteria specified by @key@ and @value@.
 	</dd>
 
 	<dt>@#find_matching_uuids( key, value )@</dt>
 	<dd class="description">
-		Return an array of uuids whose metadata matched the criteria
-		specified by @key@ and @value@. This is a wildcard search.
+		Return a @Hash@ keyed on uuid whose metadata values matched
+		the criteria specified by @key@ and @value@. This is a wildcard search.
 	</dd>
 
 	<dt>@#dump_store@</dt>

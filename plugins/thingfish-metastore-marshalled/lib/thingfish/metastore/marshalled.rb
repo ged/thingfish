@@ -282,8 +282,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata matched the criteria
-	### specified by +key+ and +value+. This is an exact match search.
+	### MetaStore API: Return a hash keyed on uuid whose metadata values matched
+	### the criteria specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
 		key = key.to_sym
 		results = nil
@@ -291,7 +291,7 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 		@lock.lock do
 			@metadata.transaction( true ) do
 				results = @metadata.roots.inject({}) do |dumpstruct, uuid|
-					dumpstruct[ uuid ] = @metadata[ uuid ].dup if @metadata[ uuid ][ key ] == value
+					dumpstruct[ uuid ] = @metadata[ uuid ].dup if @metadata[ uuid ][ key ].downcase == value.downcase
 					dumpstruct
 				end
 			end
@@ -301,8 +301,8 @@ class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API:  Return an array of uuids whose metadata matched the criteria
-	### specified by +key+ and +value+. This is a wildcard search.
+	### MetaStore API: Return a hash keyed on uuid whose metadata values matched
+	### the criteria specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		key = key.to_sym
 		results = nil

@@ -159,21 +159,21 @@ class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API: Return an array of uuids whose metadata matched the criteria
-	### specified by +key+ and +value+. This is an exact match search.
+	### MetaStore API: Return a hash keyed on uuid whose metadata values matched
+	### the criteria specified by +key+ and +value+. This is an exact match search.
 	def find_exact_uuids( key, value )
 		key = key.to_sym
 
 		matching_pairs = @metadata.find_all do |uuid, props|
-			props[ key ].to_s == value
+			props[ key ].to_s.downcase == value.downcase
 		end
 
 		return Hash[ *(matching_pairs.flatten) ]
 	end
 
 
-	### MetaStore API:  Return an array of uuids whose metadata matched the criteria
-	### specified by +key+ and +value+. This is a wildcard search.
+	### MetaStore API: Return a hash keyed on uuid whose metadata values matched
+	### the criteria specified by +key+ and +value+. This is a wildcard search.
 	def find_matching_uuids( key, value )
 		key = key.to_sym
 		re = self.glob_to_regexp( value )

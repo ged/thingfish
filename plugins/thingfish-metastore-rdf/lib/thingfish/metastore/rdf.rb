@@ -205,55 +205,58 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
+	### NOTE: Aliased #find_by_exact_properties to #find_by_matching_properties for 
+	###       case-insensitivity
+
 	### MetaStore API: Return an array of tuples of the form:
 	###   [ UUID, { :key => «value» } ]
 	### whose metadata exactly matches the key-value pairs in +hash+. If the 
 	### optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
-	def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
-		self.log.debug "Searching for %p" % [ hash ]
-
-		# Flatten the hash of query args into an array of tuples
-		pairs = []
-		hash.reject {|_,val| val.nil? }.each do |key, vals|
-			[vals].flatten.each do |val|
-				pairs << [ key, val ]
-			end
-		end
-
-		# Create a set of predicates and filters out of the tuples.
-		self.log.debug "Building a query using pairs: %p" % [ pairs ]
-		predicates = Set.new
-		pairs.each do |key, value|
-			property = map_property( key )
-			predicates.add( "<#{property}> #{Redleaf.make_literal_string(value)}" )
-		end
-
-		# Make the ORDER BY clause
-		orderattrs = []
-		order.each do |attrname|
-			property = map_property( attrname )
-			predicates.add( "<#{property}> ?#{attrname}" )
-			orderattrs << "?#{attrname}"
-		end
-		orderattrs << "?uuid"
-
-		# Now combine the predicates and filters into a SPARQL query
-		querystring = EXACT_QUERY_TEMPLATE % [ predicates.to_a.join(" ;\n") ]
-		querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
-		querystring << " LIMIT %d" % [ limit ] if limit
-		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
-
-		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-		uuids = @graph.query( querystring ) or return []
-
-		return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
-	end
+	# def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
+	# 	self.log.debug "Searching for %p" % [ hash ]
+	# 
+	# 	# Flatten the hash of query args into an array of tuples
+	# 	pairs = []
+	# 	hash.reject {|_,val| val.nil? }.each do |key, vals|
+	# 		[vals].flatten.each do |val|
+	# 			pairs << [ key, val ]
+	# 		end
+	# 	end
+	# 
+	# 	# Create a set of predicates and filters out of the tuples.
+	# 	self.log.debug "Building a query using pairs: %p" % [ pairs ]
+	# 	predicates = Set.new
+	# 	pairs.each do |key, value|
+	# 		property = map_property( key )
+	# 		predicates.add( "<#{property}> #{Redleaf.make_literal_string(value)}" )
+	# 	end
+	# 
+	# 	# Make the ORDER BY clause
+	# 	orderattrs = []
+	# 	order.each do |attrname|
+	# 		property = map_property( attrname )
+	# 		predicates.add( "<#{property}> ?#{attrname}" )
+	# 		orderattrs << "?#{attrname}"
+	# 	end
+	# 	orderattrs << "?uuid"
+	# 
+	# 	# Now combine the predicates and filters into a SPARQL query
+	# 	querystring = EXACT_QUERY_TEMPLATE % [ predicates.to_a.join(" ;\n") ]
+	# 	querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
+	# 	querystring << " LIMIT %d" % [ limit ] if limit
+	# 	querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
+	# 
+	# 	self.log.debug "SPARQL query is: \n%s" % [ querystring ]
+	# 	uuids = @graph.query( querystring ) or return []
+	# 
+	# 	return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
+	# end
 
 
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
 	### specified by +hash+. The criteria should be key-value pairs which describe
 	### partial metadata pairs.  This is a wildcard search.
-	def find_by_matching_properties( hash )
+	def find_by_matching_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
 
 		# Flatten the hash of query args into an array of tuples
 		pairs = []
@@ -277,11 +280,25 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 			filters.add( %Q:FILTER regex(?#{key}, "#{string_re}", "i"): )
 		end
 
+		# Make the ORDER BY clause
+		orderattrs = []
+		order.each do |attrname|
+			property = map_property( attrname )
+			predicates.add( "<#{property}> ?#{attrname}" )
+			orderattrs << "?#{attrname}"
+		end
+		orderattrs << "?uuid"
+
 		# Now combine the predicates and filters into a SPARQL query
 		querystring = REGEX_QUERY_TEMPLATE % [
 			predicates.to_a.join( " ;\n" ),
 			filters.to_a.join( " .\n" ),
 		  ]
+
+		# Now combine the predicates and filters into a SPARQL query
+		querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
+		querystring << " LIMIT %d" % [ limit ] if limit
+		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
 
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
 		uuids = @graph.query( querystring ) or return []
@@ -289,6 +306,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		# Map results into simple UUID strings
 		return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
 	end
+	alias_method :find_by_exact_properties, :find_by_matching_properties
 
 
 	### Map an Array of UUIDs to an Array of tuples of the form returned by 

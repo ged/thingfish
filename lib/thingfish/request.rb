@@ -37,8 +37,8 @@ require 'thingfish/multipartmimeparser'
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -53,12 +53,6 @@ class ThingFish::Request
 			ThingFish::HtmlInspectableObject
 
 	extend Forwardable
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Pattern to match the contents of ETag and If-None-Match headers
 	ENTITY_TAG_PATTERN = %r{

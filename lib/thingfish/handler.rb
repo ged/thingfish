@@ -17,8 +17,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -52,12 +52,6 @@ class ThingFish::Handler
 		ThingFish::Constants,
 		ThingFish::HtmlInspectableObject
 
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Pattern to match valid http method handlers
 	HANDLER_PATTERN = /^handle_([a-z]+)_request$/

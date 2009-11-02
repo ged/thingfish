@@ -14,8 +14,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -39,11 +39,8 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		ThingFish::Constants,
 		ThingFish::ResourceLoader
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
@@ -102,7 +99,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 	###   {
 	###     'version'   => [ 1, 0 ],                    # Filter version
 	###     'supports'  => [],                          # Unused
-	###     'rev'       => 460,                         # SVN rev of plugin
+	###     'rev'       => 460,                         # VCS rev of plugin
 	###     'accepts'   => [''],                        # Mimetypes the filter accepts from requests
 	###     'generates' => ['application/xhtml+xml'],   # Mimetypes the filter can convert responses to
 	###   }
@@ -110,7 +107,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => [],
 			'generates' => [CONFIGURED_HTML_MIMETYPE],
 		  }

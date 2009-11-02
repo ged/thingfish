@@ -14,8 +14,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -39,11 +39,8 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
@@ -118,7 +115,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	###   {
 	###     'version'  => [ 0, 60 ],               # YAML.rb version
 	###     'supports' => [ [1,0], [1,1] ],        # Supported YAML versions
-	###     'rev'      => 460,                     # SVN rev of plugin
+	###     'rev'      => 460,                     # VCS rev of plugin
 	###   }
 	def info
 		yaml_rb_version = YAML::VERSION.split('.').collect {|i| Integer(i) }
@@ -129,7 +126,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		return {
 			'version'  => yaml_rb_version,
 			'supports' => supported_yaml_version,
-			'rev'      => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => [YAML_MIMETYPE],
 			'generates' => [YAML_MIMETYPE],
 		}

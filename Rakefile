@@ -7,8 +7,8 @@
 # Copyright (c) 2007-2009 The FaerieMUD Consortium
 #
 # Authors:
-#  * Michael Granger <mgranger@laika.com>
-#  * Mahlon E. Smith <mahlon@laika.com>
+#  * Michael Granger <ged@FaerieMUD.org>
+#  * Mahlon E. Smith <mahlon@martini.nu>
 #
 
 BEGIN {
@@ -235,7 +235,7 @@ GEMSPEC   = Gem::Specification.new do |gem|
   	  ].join( "\n" )
 
 	gem.authors           = "Michael Granger, Mahlon E. Smith"
-	gem.email             = ["mahlon@laika.com", "mgranger@laika.com"]
+	gem.email             = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
 	gem.homepage          = 'http://bitbucket.org/laika/thingfish'
 	gem.rubyforge_project = RUBYFORGE_PROJECT
 

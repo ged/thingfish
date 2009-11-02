@@ -34,8 +34,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -57,13 +57,6 @@ class ThingFish::FileStore
 	        ThingFish::Loggable,
 	        ThingFish::AbstractClass,
 			ThingFish::HtmlInspectableObject
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
 
 
 	#################################################################

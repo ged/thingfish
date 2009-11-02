@@ -11212,8 +11212,8 @@ Request}</string>
 	<dict>
 		<key>kMDItemAuthors</key>
 		<array>
-			<string>Michael Granger &lt;mgranger@laika.com&gt;</string>
-			<string>Mahlon E. Smith &lt;mahlon@laika.com&gt;</string>
+			<string>Michael Granger &lt;ged@FaerieMUD.org&gt;</string>
+			<string>Mahlon E. Smith &lt;mahlon@martini.nu&gt;</string>
 		</array>
 		<key>kMDItemCopyright</key>
 		<string>LAIKA, Inc</string>

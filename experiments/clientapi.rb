@@ -54,5 +54,5 @@ entry = client.fetch( uuid )
 
 
 ### Search for resources
-entries = client.find( :format => 'image/jpeg', :owner => 'mailto:mgranger@laika.com' )
+entries = client.find( :format => 'image/jpeg', :owner => 'mailto:ged@FaerieMUD.org' )
 

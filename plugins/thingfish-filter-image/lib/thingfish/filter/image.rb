@@ -14,8 +14,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -46,11 +46,8 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# The default dimensions of thumbnails
 	DEFAULT_THUMBNAIL_DIMENSIONS = [ 100, 100 ]
@@ -226,7 +223,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 	###   {
 	###     'version'   => [ 1, 0 ],    # Filter version
 	###     'supports'  => [],          # The versions of ImageMagick/RMagick the plugin uses
-	###     'rev'       => 460,         # SVN rev of plugin
+	###     'rev'       => 460,         # VCS rev of plugin
 	###     'accepts'   => [...],       # Mimetypes the filter accepts from requests
 	###     'generates' => [...],       # Mimetypes the filter can convert responses to
 	###   }
@@ -242,7 +239,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => supports,
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => accepts,
 			'generates' => generates,
 		  }

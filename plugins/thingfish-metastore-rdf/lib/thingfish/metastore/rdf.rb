@@ -23,8 +23,8 @@ require 'thingfish/constants'
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -44,12 +44,6 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		THINGFISH_NS = Redleaf::Namespace.new( THINGFISH_URL )
 	end
 	include Schemas
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Default options for the store, regardless of backend.
 	#

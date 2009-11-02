@@ -14,8 +14,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -40,10 +40,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		ThingFish::Constants
 
 	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
@@ -114,7 +111,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 	###   {
 	###     'version'   => [ 1, 8, 6 ],                 # Ruby version
 	###     'supports'  => [ [4,2] ],                   # Supported Marshal version/s
-	###     'rev'       => 460,                         # SVN rev of plugin
+	###     'rev'       => 460,                         # VCS rev of plugin
 	###     'accepts'   => ['x-ruby/marshalled-data'],  # Mimetypes the filter accepts from requests
 	###     'generates' => ['x-ruby/marshalled-data'],  # Mimetypes the filter can convert responses to
 	###   }
@@ -129,7 +126,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		return {
 			'version'   => ruby_version,
 			'supports'  => supported_marshal_version,
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => mimetypes,
 			'generates' => mimetypes,
 		  }

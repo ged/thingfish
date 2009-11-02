@@ -14,12 +14,12 @@ An MP3 metadata-extraction filter for ThingFish.
 
 == Authors
 
- * Michael Granger <mgranger@laika.com>
- * Mahlon E. Smith <mahlon@laika.com>
+ * Michael Granger <ged@FaerieMUD.org>
+ * Mahlon E. Smith <mahlon@martini.nu>
 
 == License
 
-Copyright (c) 2007, LAIKA, Inc
+Copyright (c) 2007-2009, Michael Granger and Mahlon E. Smith
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

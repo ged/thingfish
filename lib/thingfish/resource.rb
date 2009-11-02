@@ -41,8 +41,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -65,17 +65,10 @@ class ThingFish::Resource
 		ThingFish::Constants,
 		ThingFish::Constants::Patterns
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
 
 	# The maximum number of bytes before the resource instance's data is
 	# written out to a tempfile
 	MAX_INMEMORY_BODY = 128.kilobytes
-
 
 
 	#################################################################

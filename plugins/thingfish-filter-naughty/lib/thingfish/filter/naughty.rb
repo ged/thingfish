@@ -8,8 +8,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -39,11 +39,8 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse('*/*') ]
@@ -102,7 +99,7 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 	###   {
 	###     'version'   => [1, 0],       # Filter version
 	###     'supports'  => [],           # Any specific version information unique to the filter
-	###     'rev'       => 460,          # SVN rev of plugin
+	###     'rev'       => 460,          # VCS rev of plugin
 	###     'accepts'   => [...],        # Mimetypes the filter accepts from requests
 	###     'generates' => [...],        # Mimetypes the filter can convert responses to
 	###   }
@@ -112,7 +109,7 @@ class ThingFish::NaughtyFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }

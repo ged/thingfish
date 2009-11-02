@@ -75,34 +75,24 @@ end
 #   [+debug+]
 #     If set to +true+, print trace execution progress on stdout.
 #
-#
-# == License
-#
-# Copyright (c) 2007 LAIKA, Inc. Most rights reserved.
-#
-# This work is licensed under the Creative Commons Attribution-ShareAlike
-# License. To view a copy of this license, visit
-# http://creativecommons.org/licenses/by-sa/1.0/ or send a letter to Creative
-# Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
-#
 # == Version
 #
 #  $Id$
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
+# :include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the top-level directory for licensing details.
 #
 class ThingFish::FilesystemFileStore < ThingFish::FileStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Number of bytes in one megabyte
 	ONE_MEGABYTE = 1.megabyte

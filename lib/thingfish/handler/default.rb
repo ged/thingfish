@@ -17,8 +17,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -43,12 +43,6 @@ class ThingFish::DefaultHandler < ThingFish::Handler
 		ThingFish::Constants::Patterns,
 		ThingFish::Loggable,
 		ThingFish::StaticResourcesHandler
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# Config defaults
 	CONFIG_DEFAULTS = {

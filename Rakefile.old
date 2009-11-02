@@ -4,10 +4,10 @@
 #
 # Based on Ben Bleything's Rakefile for Linen (URL?)
 #
-# Copyright (c) 2007 LAIKA, Inc.
+# Copyright (c) 2007-2009, Michael Granger and Mahlon E. Smith
 #
 # Mistakes:
-#  * Michael Granger <mgranger@laika.com>
+#  * Michael Granger <ged@FaerieMUD.org>
 #
 
 BEGIN {

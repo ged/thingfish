@@ -33,8 +33,8 @@ require 'thingfish/metastore/simple'
 #
 # == Authors
 #
-#  * Michael Granger <mgranger@laika.com>
-#  * Mahlon E. Smith <mahlon@laika.com>
+#  * Michael Granger <ged@FaerieMUD.org>
+#  * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -43,12 +43,6 @@ require 'thingfish/metastore/simple'
 # Please see the file LICENSE in the base directory for licensing details.
 #
 class ThingFish::MarshalledMetaStore < ThingFish::SimpleMetaStore
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The default options to use when creating locks. See the docs for Lockfile for
 	# more info on what these values mean

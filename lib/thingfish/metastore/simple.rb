@@ -17,8 +17,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -32,16 +32,7 @@ require 'thingfish'
 require 'thingfish/metastore'
 
 ### Base class for ThingFish MetaStore plugins
-class ThingFish::SimpleMetaStore < ThingFish::MetaStore
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
-end # class ThingFish::SimpleMetaStore
-
+class ThingFish::SimpleMetaStore < ThingFish::MetaStore ; end
 
 # vim: set nosta noet ts=4 sw=4:
 

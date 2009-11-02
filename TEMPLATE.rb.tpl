@@ -12,28 +12,22 @@
 # 
 # == Authors
 # 
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 # 
 # :include: LICENSE
 #
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
 
 
 ### #{vars[:description]}
 class #{ vars[:class] } < #{ vars[:superclass] }
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
-
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 end # class #{ vars[:class] }
 

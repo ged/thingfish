@@ -30,8 +30,8 @@
 #
 # == Authors
 #
-# * Mahlon E. Smith <mahlon@laika.com>
-# * Michael Granger <mgranger@laika.com>
+# * Mahlon E. Smith <mahlon@martini.nu>
+# * Michael Granger <ged@FaerieMUD.org>
 #
 # :include: LICENSE
 #
@@ -57,13 +57,6 @@ class ThingFish::FormUploadHandler < ThingFish::Handler
 	        ThingFish::ResourceLoader
 
 	extend Forwardable
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S

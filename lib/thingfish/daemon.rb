@@ -23,8 +23,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -68,13 +68,6 @@ class ThingFish::Daemon
 		ThingFish::Daemonizable,
 		ThingFish::ResourceLoader,
 		ThingFish::HtmlInspectableObject
-
-	# The subversion ID
-	SVNId = %q$Id$
-
-	# The SVN revision number
-	SVNRev = %q$Rev$
-
 
 	### An exception class for signalling daemon threads that they need to shut down
 	class Shutdown < Exception; end
@@ -362,7 +355,7 @@ class ThingFish::Daemon
 		if force
 			self.log.warn "Forceful shutdown. Terminating %d active connection threads." %
 				[ @connection_threads.list.length ]
-			self.log.debudebug "  Active threads: %p" % [ @connection_threads.list ]
+			self.log.debug "  Active threads: %p" % [ @connection_threads.list ]
 
 			@connection_threads.list.each do |t|
 				t.raise( Shutdown )

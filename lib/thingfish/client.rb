@@ -78,8 +78,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -114,13 +114,8 @@ class ThingFish::Client
 	# Assure that 1.2 features present in net/http
 	Net::HTTP.version_1_2
 
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# Accept header sent with HTTP requests: prefer directly-marshalled Ruby
 	# objects, but fall back to YAML
@@ -128,8 +123,11 @@ class ThingFish::Client
 		[ RUBY_MARSHALLED_MIMETYPE, Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION ]
 
 	# The content of the User-Agent header send with all requests
-	USER_AGENT_HEADER = "%s/%s.%d" %
-		[ self.name.downcase.gsub(/\W+/, '-'), ThingFish::VERSION, SVNRev[/\d+/] || 0 ]
+	USER_AGENT_HEADER = "%s/%s.%d" % [
+		self.name.downcase.gsub(/\W+/, '-'),
+		ThingFish::VERSION,
+		VCSRev.match( /: (\w+)/ )[1] || 0
+	]
 
 	# Maximum size of a resource response that's kept in-memory. Anything larger
 	# gets buffered to a tempfile.

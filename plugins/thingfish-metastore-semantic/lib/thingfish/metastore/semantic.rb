@@ -32,25 +32,29 @@ require 'thingfish/constants'
 #
 # Please see the file LICENSE in the base directory for licensing details.
 #
-class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
+class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
 		Redleaf::Constants::CommonNamespaces
 
 	# Schemas for the ThingFish RDF metastore
-	#
 	module Schemas
 		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2009/04/thingfish-schema#'
 		THINGFISH_NS = Redleaf::Namespace.new( THINGFISH_URL )
 	end
 	include Schemas
 
+	# Version-control Revision
+	VCSRev = %q$Rev$
+
+	# Version-control Id
+	VCSId = %q$Id$
+
 	# Default options for the store, regardless of backend.
-	#
 	DEFAULT_OPTIONS = {
 		:store     => 'hashes',
 		:hash_type => 'memory',
-		:label     => 'rdf-metastore'
+		:label     => 'semantic-metastore'
 	}
 
 	# The SPARQL query template to use for exact searching
@@ -105,7 +109,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new RDF Metastore that will use the given +datadir+ and +spooldir+ for
+	### Create a new Semantic Metastore that will use the given +datadir+ and +spooldir+ for
 	### its store and for any temporary files, respectively.
 	###
 	### The +config+ options supported depend on what features you've
@@ -169,7 +173,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 	### MetaStore API: Get the set of properties associated with the given +uuid+ as
 	### a hashed keyed by property names as symbols.
 	###
-	### For the RDF simple store, all predicates are mapped to the THINGFISH namespace.
+	### :TODO: map predicates to the appropriate namespace.
 	def get_properties( uuid )
 		return @graph[ uuid_urn(uuid), nil, nil ].inject({}) do |hash, statement|
 			name = unmap_property( statement.predicate ).to_sym
@@ -524,7 +528,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		return (predicate.fragment || Pathname( predicate.path ).basename).to_sym
 	end
 
-end # class ThingFish::RdfMetaStore
+end # class ThingFish::SemanticMetaStore
 
 
 __END__

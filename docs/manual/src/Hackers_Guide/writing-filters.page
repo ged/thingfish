@@ -47,8 +47,8 @@ require 'yaml'
 class ThingFish::YAMLFilter < ThingFish::Filter
 	include ThingFish::Constants
 
-	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev$
+	# VCS Revision (for the #info hash)
+	VCSRev = %q$Rev$
 	
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
 	YAML_MIMETYPE = 'text/x-yaml'
@@ -65,7 +65,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	###   {
 	###       'version'  => [ 0, 60 ],          # YAML.rb version
 	###       'supports' => [ [1,0], [1,1] ],   # Supported YAML versions
-	###       'rev'      => 460                 # SVN rev of plugin
+	###       'rev'      => 460                 # VCS rev of plugin
 	###   }
  	def info
 		yaml_rb_version = YAML::VERSION.split('.').collect {|i| Integer(i) }
@@ -74,9 +74,9 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		end
 
 		return {
-			'version'  => yaml_rb_version,
-			'supports' => supported_yaml_version,
-			'rev'      => Integer( SVNRev[/\d+/] || 0 ),
+			'version'   => yaml_rb_version,
+			'supports'  => supported_yaml_version,
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => [YAML_MIMETYPE],
 			'generates' => [YAML_MIMETYPE]
 		}
@@ -184,8 +184,8 @@ require 'mp3info'
 class ThingFish::MP3Filter < ThingFish::Filter
 	include ThingFish::Constants
 
-	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev$
+	# VCS Revision (for the #info hash)
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ 'audio/mpeg', 'audio/mpg', 'audio/mp3' ].
@@ -220,7 +220,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => Mp3Info::VERSION.split('.'),
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }
@@ -345,8 +345,8 @@ require 'thingfish/acceptparams'
 class ThingFish::RubyFilter < ThingFish::Filter
 	include ThingFish::Constants
 
-	# SVN Revision (for the #info hash)
-	SVNRev = %q$Rev$
+	# VCS Revision (for the #info hash)
+	VCSRev = %q$Rev$
 
 	# The Array of types this filter is interested in
 	HANDLED_TYPES = [ ThingFish::AcceptParam.parse(RUBY_MIMETYPE) ]
@@ -380,7 +380,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		return {
 			'version'   => ruby_version,
 			'supports'  => supported_marshal_version,
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => mimetypes,
 			'generates' => mimetypes,
 		  }

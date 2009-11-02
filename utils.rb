@@ -16,7 +16,7 @@
 #         list of conditions and the following disclaimer in the documentation and/or
 #         other materials provided with the distribution.
 #   
-#       * Neither the name of LAIKA, nor the names of its contributors may be used to
+#       * Neither the name of the authors, nor the names of its contributors may be used to
 #         endorse or promote products derived from this software without specific prior
 #         written permission.
 #   

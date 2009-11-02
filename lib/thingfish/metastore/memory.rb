@@ -22,8 +22,8 @@ require 'thingfish/mixins'
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -33,12 +33,6 @@ require 'thingfish/mixins'
 #
 class ThingFish::MemoryMetaStore < ThingFish::SimpleMetaStore
 	include ThingFish::Loggable
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 
 	#################################################################

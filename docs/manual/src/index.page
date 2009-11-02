@@ -192,20 +192,20 @@ needed:
 
 h2. Authors
 
-* Michael Granger <"mgranger@laika.com":mailto:mgranger@laika.com>
-* Mahlon E. Smith <"mahlon@laika.com":mailto:mahlon@laika.com>
+* Michael Granger <"ged@FaerieMUD.org":mailto:ged@FaerieMUD.org>
+* Mahlon E. Smith <"mahlon@martini.nu":mailto:mahlon@martini.nu>
 
-*ThingFish* is copyrighted Open Source software written by the Information Systems
-department of LAIKA, Inc., a media and entertainment company in Portland, OR.
+*ThingFish* is copyrighted Open Source software originally conceived as a asset management
+utility for LAIKA, Inc., a media and entertainment company in Portland, OR.
 
-It was developed in-house for the web-based applications created there, but is being
+It was developed off-hours for the web-based applications created there, and is being
 shared with the community in appreciation of all the fine free and Open Source software in
 use at the studio.
 
 
 h2. License
 
-Copyright © 2007-2008, LAIKA, Inc
+Copyright © 2007-2009, Michael Granger and Mahlon E. Smith
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are
@@ -216,7 +216,7 @@ permitted provided that the following conditions are met:
 * Redistributions in binary form must reproduce the above copyright notice, this list of
   conditions and the following disclaimer in the documentation and/or other materials
   provided with the distribution.
-* Neither the name of LAIKA nor the names of its contributors may be used to
+* Neither the name of the authors nor the names of its contributors may be used to
   endorse or promote products derived from this software without specific prior written
   permission.
 

@@ -19,8 +19,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -41,12 +41,6 @@ class ThingFish::AcceptParam
 	include Comparable,
 		ThingFish::Loggable,
 		ThingFish::HtmlInspectableObject
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The default quality value (weight) if none is specified
 	Q_DEFAULT = 1.0

@@ -30,8 +30,8 @@ dev_dependencies:
   sequel: ">= 2.7.1"
   lockfile: ">= 1.4.3"
 authors: 
-  Mahlon E. Smith: mahlon@laika.com
-  Michael Granger: mgranger@laika.com
+  Mahlon E. Smith: mahlon@martini.nu
+  Michael Granger: ged@FaerieMUD.org
 post_install_message: ""
 project_name: ThingFish
 rubyforge_project: thingfish

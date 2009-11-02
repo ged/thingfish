@@ -22,8 +22,8 @@ require 'uuidtools'
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -33,11 +33,8 @@ require 'uuidtools'
 #
 module ThingFish::Constants
 
-	# The subversion ID
-	SVNId = %q$Id$
-
-	# The SVN revision number
-	SVNRev = %q$Rev$
+	# The VCS revision number
+	VCSRev = %q$Rev$
 
 	# The default listening ip or hostname
 	DEFAULT_BIND_IP = '0.0.0.0'
@@ -74,7 +71,7 @@ module ThingFish::Constants
 	SERVER_SOFTWARE = "ThingFish/#{SERVER_VERSION}"
 
 	# Version and name of the server + subversion rev
-	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{SVNRev})"
+	SERVER_SOFTWARE_DETAILS = "#{SERVER_SOFTWARE} (#{VCSRev})"
 
 	# Suck in a mapping of default mime types by file extension from the data
 	# section of this file

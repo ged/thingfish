@@ -10,8 +10,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -35,12 +35,6 @@ class ThingFish::StaticContentHandler < ThingFish::Handler
 		ThingFish::Constants::Patterns,
 		ThingFish::Loggable
 
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The name of an index file to look for should the request specify a directory
 	DEFAULT_INDEX_FILE = 'index.html'

@@ -15,7 +15,7 @@ TF_DIR			= BASEDIR.parent.parent
 TF_LIBDIR		= TF_DIR + 'lib'
 
 PKG_NAME	  	= "thingfish-filter-mp3"
-PKG_VERSION	  	= "0.2.0"
+PKG_VERSION	  	= "0.3.0"
 PKG_FILE_NAME 	= PKG_NAME + '-' + PKG_VERSION
               	
 RELEASE_NAME  	= "REL #{PKG_VERSION}"
@@ -67,7 +67,7 @@ gemspec = Gem::Specification.new do |gem|
 	gem.description = "An Mp3 metadata-extraction filter for ThingFish."
 
 	gem.authors  	= "Michael Granger and Mahlon E. Smith"
-	gem.email  		= "mgranger@laika.com, mahlon@laika.com"
+	gem.email  		= "ged@FaerieMUD.org, mahlon@martini.nu"
 	gem.homepage 	= "http://opensource.laika.com/wiki/ThingFish"
 
 	gem.rubyforge_project = 'laika'
@@ -79,7 +79,7 @@ gemspec = Gem::Specification.new do |gem|
 
   	gem.files += Dir.glob( "resources/**/*" )
 
-  	gem.add_dependency( 'thingfish', '>= 0.2.0' )
+  	gem.add_dependency( 'thingfish', '>= 0.3.0' )
   	gem.add_dependency( 'ruby-mp3info', '>= 0.5.1' )
 end
 

@@ -8,8 +8,8 @@
 #
 # == Authors
 #
-# * Mahlon E. Smith <mahlon@laika.com>
-# * Michael Granger <mgranger@laika.com>
+# * Mahlon E. Smith <mahlon@martini.nu>
+# * Michael Granger <ged@FaerieMUD.org>
 #
 # :include: LICENSE
 #
@@ -39,12 +39,8 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# The header to set to indicate how to authenticate
 	AUTHENTICATE_HEADER = 'WWW-Authenticate'
@@ -126,7 +122,7 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 	###   {
 	###     'version'   => [1, 0],       # Filter version
 	###     'supports'  => [],           # Any specific version information unique to the filter
-	###     'rev'       => 460,          # SVN rev of plugin
+	###     'rev'       => 460,          # VCS rev of plugin
 	###     'accepts'   => [...],        # Mimetypes the filter accepts from requests
 	###     'generates' => [...],        # Mimetypes the filter can convert responses to
 	###   }
@@ -136,7 +132,7 @@ class ThingFish::BasicAuthFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
-			'rev'       => Integer( SVNRev[/\d+/] || 0 ),
+			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }

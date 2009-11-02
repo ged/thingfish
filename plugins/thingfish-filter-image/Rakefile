@@ -70,7 +70,7 @@ gemspec = Gem::Specification.new do |gem|
 	EOF
 
 	gem.authors  	= "Michael Granger and Mahlon E. Smith"
-	gem.email  		= "mgranger@laika.com, mahlon@laika.com"
+	gem.email  		= "ged@FaerieMUD.org, mahlon@martini.nu"
 	gem.homepage 	= "http://opensource.laika.com/"
 
 	gem.rubyforge_project = 'laika'
@@ -81,7 +81,7 @@ gemspec = Gem::Specification.new do |gem|
 	gem.test_files 	= SPEC_FILES
 
 
-  	gem.add_dependency( 'thingfish', '>= 0.2.0' )
+  	gem.add_dependency( 'thingfish', '>= 0.3.0' )
   	gem.add_dependency( 'rmagick', '>= 2.2.2' )
 end
 

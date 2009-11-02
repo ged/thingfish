@@ -8,8 +8,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -36,11 +36,8 @@ end
 ### Toplevel namespace module
 module ThingFish
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
+	# VCS Revision
+	VCSRev = %q$Rev$
 
 	# Package version
 	VERSION = '0.3.0'
@@ -97,7 +94,10 @@ module ThingFish
 	### Return the server's version string
 	def self::version_string( include_buildnum=false )
 		vstring = "%s %s" % [ self.name, VERSION ]
-		vstring << " (build %d)" % [ SVNRev[/\d+/].to_i ] if include_buildnum
+		if include_buildnum
+			build = VCSRev.match( /: (\w+)/ )[1] || 0
+			vstring << " (build %s)" % [ build ]
+		end
 		return vstring
 	end
 end # module ThingFish

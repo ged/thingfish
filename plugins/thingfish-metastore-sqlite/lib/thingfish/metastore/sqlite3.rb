@@ -23,8 +23,8 @@
 #
 # == Authors
 #
-#  * Michael Granger <mgranger@laika.com>
-#  * Mahlon E. Smith <mahlon@laika.com>
+#  * Michael Granger <ged@FaerieMUD.org>
+#  * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -79,12 +79,6 @@ class ThingFish::SQLite3MetaStore < ThingFish::SimpleMetaStore
 
 	include ThingFish::Loggable,
 	        ThingFish::ResourceLoader
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The name of the schema file under resources/
 	SCHEMA_RESOURCE_NAME = 'base-schema.sql'

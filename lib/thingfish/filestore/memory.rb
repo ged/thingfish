@@ -18,8 +18,8 @@
 #
 # == Authors
 #
-# * Michael Granger <mgranger@laika.com>
-# * Mahlon E. Smith <mahlon@laika.com>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 #
 # :include: LICENSE
 #
@@ -37,12 +37,6 @@ require 'thingfish/filestore'
 
 ### An in-memory filestore plugin for ThingFish
 class ThingFish::MemoryFileStore < ThingFish::FileStore
-
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
 
 	# The default maximum size of the store
 	DEFAULT_MAXSIZE = 2 ** 18  # 256k

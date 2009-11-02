@@ -51,12 +51,6 @@ class ThingFish::MailinglistsHandler < ThingFish::Handler
 		ThingFish::Constants,
 		ThingFish::ResourceLoader
 
-	# SVN Revision
-	SVNRev = %q$Rev$
-
-	# SVN Id
-	SVNId = %q$Id$
-
 	# Patterns for matching list names
 	LIST_NAME_PATTERN = /[\w+.-]+/i
 	LIST_HOST_PATTERN = /[\w+.-]+\.[a-z]{2,}/i

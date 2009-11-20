@@ -1,5 +1,12 @@
 #!/usr/bin/ruby
-#
+
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/mixins'
+
+require 'tempfile'
+
+
 # ThingFish::Resource -- a resource in a ThingFish store
 #
 # == Synopsis
@@ -49,17 +56,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'thingfish'
-require 'thingfish/exceptions'
-require 'thingfish/mixins'
-
-require 'tempfile'
-
-
-### Resource wrapper class
 class ThingFish::Resource
 	include ThingFish::Loggable,
 		ThingFish::Constants,

@@ -11,36 +11,35 @@ require 'socket'
 require 'thingfish'
 require 'thingfish/exceptions'
 require 'thingfish/metastore'
-require 'thingfish/metastore/simple'
 require 'thingfish/constants'
 
-# ThingFish::RdfMetaStore -- a simple metastore plugin for ThingFish that
-# stores metadata in an RDF knowledgebase using Redleaf.
-#
+# ThingFish::SemanticMetaStore -- a simple metastore plugin for
+# ThingFish that stores metadata in an RDF knowledgebase using Redleaf.
+# 
 # == Version
-#
-#  $Id$
-#
+# 
+# $Id$
+# 
 # == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
+# 
+# * Michael Granger <ged@FaerieMUD.org> * Mahlon E. Smith <mahlon@martini.nu>
+# 
 # :include: LICENSE
-#
-#---
-#
-# Please see the file LICENSE in the base directory for licensing details.
-#
-class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
+# 
+# ---
+# 
+# Please see the file LICENSE in the base directory for licensing
+# details.
+# 
+class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
 		Redleaf::Constants::CommonNamespaces
 
 	# Schemas for the ThingFish RDF metastore
 	module Schemas
-		THINGFISH_URL  = 'http://opensource.laika.com/rdf/2009/04/thingfish-schema#'
-		THINGFISH_NS = Redleaf::Namespace.new( THINGFISH_URL )
+		THINGFISH_URL = 'http://thingfish.org/rdf/2009/11/thingfish.owl#'
+		THINGFISH_NS  = Redleaf::Namespace.new( THINGFISH_URL )
 	end
 	include Schemas
 
@@ -50,11 +49,24 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 	# Version-control Id
 	VCSId = %q$Id$
 
+	# The hash of vocabularies that ThingFish requires
+	DEFAULT_VOCABULARIES = {
+		:thingfish => THINGFISH_URL,
+		:rdf       => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+		:xsd       => 'http://www.w3.org/2001/XMLSchema#',
+		:dc        => 'http://purl.org/dc/elements/1.1/',
+		:owl       => 'http://www.w3.org/2002/07/owl#',
+		:foaf      => 'http://xmlns.com/foaf/0.1/#',
+		:rdfs      => 'http://www.w3.org/2000/01/rdf-schema#',
+		:cc        => 'http://creativecommons.org/schema.rdf#',
+	}
+
 	# Default options for the store, regardless of backend.
 	DEFAULT_OPTIONS = {
-		:store     => 'hashes',
-		:hash_type => 'memory',
-		:label     => 'semantic-metastore'
+		:store        => 'hashes',
+		:hash_type    => 'bdb',
+		:label        => 'semantic-metastore',
+		:vocabularies => {},
 	}
 
 	# The SPARQL query template to use for exact searching
@@ -140,12 +152,12 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 		end
 
 		self.log.debug "Creating Redleaf store: %s" % [ storetype ]
-		@store = Redleaf::Store.create( storetype, storelabel, opts )
-		@graph = @store.graph
+		@store        = Redleaf::Store.create( storetype, storelabel, opts )
+		@graph        = @store.graph
+		@vocabularies = convert_to_namespaces( DEFAULT_VOCABULARIES.merge(opts[:vocabularies]) )
 
 		super
 	end
-
 
 
 	######
@@ -163,7 +175,7 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-	### MetaStore API: Return the property associated with +uuid+ specified by
+	### MetaStore API: Return the values associated with +uuid+ specified by
 	### +propname+. Returns +nil+ if no such property exists.
 	def get_property( uuid, propname )
 		return @graph.objects( uuid_urn(uuid), map_property(propname) ).first
@@ -201,54 +213,6 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 
 		return values.to_a
 	end
-
-
-	### NOTE: Aliased #find_by_exact_properties to #find_by_matching_properties for 
-	###       case-insensitivity
-
-	### MetaStore API: Return an array of tuples of the form:
-	###   [ UUID, { :key => «value» } ]
-	### whose metadata exactly matches the key-value pairs in +hash+. If the 
-	### optional +order+, +limit+, and +offset+ are given, use them to limit the result set.
-	# def find_by_exact_properties( hash, order=[], limit=DEFAULT_LIMIT, offset=0 )
-	# 	self.log.debug "Searching for %p" % [ hash ]
-	# 
-	# 	# Flatten the hash of query args into an array of tuples
-	# 	pairs = []
-	# 	hash.reject {|_,val| val.nil? }.each do |key, vals|
-	# 		[vals].flatten.each do |val|
-	# 			pairs << [ key, val ]
-	# 		end
-	# 	end
-	# 
-	# 	# Create a set of predicates and filters out of the tuples.
-	# 	self.log.debug "Building a query using pairs: %p" % [ pairs ]
-	# 	predicates = Set.new
-	# 	pairs.each do |key, value|
-	# 		property = map_property( key )
-	# 		predicates.add( "<#{property}> #{Redleaf.make_literal_string(value)}" )
-	# 	end
-	# 
-	# 	# Make the ORDER BY clause
-	# 	orderattrs = []
-	# 	order.each do |attrname|
-	# 		property = map_property( attrname )
-	# 		predicates.add( "<#{property}> ?#{attrname}" )
-	# 		orderattrs << "?#{attrname}"
-	# 	end
-	# 	orderattrs << "?uuid"
-	# 
-	# 	# Now combine the predicates and filters into a SPARQL query
-	# 	querystring = EXACT_QUERY_TEMPLATE % [ predicates.to_a.join(" ;\n") ]
-	# 	querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
-	# 	querystring << " LIMIT %d" % [ limit ] if limit
-	# 	querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
-	# 
-	# 	self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-	# 	uuids = @graph.query( querystring ) or return []
-	# 
-	# 	return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
-	# end
 
 
 	### MetaStore API: Return an array of uuids whose metadata matched the criteria
@@ -517,8 +481,24 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 
 	### Map the specified +propname+ to a predicate URI and return it.
 	def map_property( propname )
-		# :TODO: Decide how predicates should actually be mapped
-		return THINGFISH_NS[propname]
+		# TODO: untaint the propname
+		self.log.debug "Mapping property %p to the appropriate vocabulary." % [ propname ]
+		qname, predicate = propname.to_s.split( /:/, 2 )
+
+		if predicate.nil?
+			self.log.debug "  no qname prefix; assuming it's a thingfish property"
+			predicate = qname
+			qname = 'thingfish'
+		end
+
+		# :TODO: Perhaps raise a more-specific exception later, as this isn't necessarily
+		# a problem on the server side. It should probably translate to a REQUEST_ERROR
+		# instead of a SERVER_ERROR.
+		raise ThingFish::MetaStoreError, "no vocabulary loaded for qname %p" % [ qname ] unless
+			@vocabularies.include?( qname.to_sym )
+
+		self.log.debug "  mapped to %p in the %p namespace" % [ predicate, qname ]
+		return @vocabularies[ qname.to_sym ][ predicate ]
 	end
 
 
@@ -526,6 +506,20 @@ class ThingFish::SemanticMetaStore < ThingFish::SimpleMetaStore
 	def unmap_property( predicate )
 		# :TODO: Decide how predicates should actually be unmapped
 		return (predicate.fragment || Pathname( predicate.path ).basename).to_sym
+	end
+
+
+	######
+	public
+	######
+
+	### Convert the values in the specified Hash of +vocabularies+ to Redleaf::Namespaces and
+	### return the new Hash.
+	def convert_to_namespaces( vocabularies )
+		return vocabularies.inject( {} ) do |newhash, (qname, uri)|
+			newhash[ qname.to_sym ] = Redleaf::Namespace.new( uri )
+			newhash
+		end
 	end
 
 end # class ThingFish::SemanticMetaStore

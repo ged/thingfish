@@ -1,5 +1,11 @@
 #!/usr/bin/ruby
-#
+
+require 'thingfish'
+require 'thingfish/exceptions'
+require 'thingfish/mixins'
+require 'thingfish/utils'
+
+
 # ThingFish::AcceptParam -- a parser for request Accept headers,
 # allowing for weighted and wildcard comparisions.
 #
@@ -27,16 +33,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'thingfish'
-require 'thingfish/exceptions'
-require 'thingfish/mixins'
-require 'thingfish/utils'
-
-
-### A parsed Accept-header parameter
 class ThingFish::AcceptParam
 	include Comparable,
 		ThingFish::Loggable,

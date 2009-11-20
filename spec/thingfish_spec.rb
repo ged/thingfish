@@ -46,7 +46,7 @@ describe ThingFish do
 
 
 	it "returns a version string with a build number if asked" do
-		ThingFish.version_string(true).should =~ /\w+ [\d.]+ \(build \d+\)/
+		ThingFish.version_string(true).should =~ /\w+ [\d.]+ \(build [[:xdigit:]]+\)/
 	end
 
 

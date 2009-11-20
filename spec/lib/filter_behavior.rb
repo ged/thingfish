@@ -46,14 +46,13 @@ describe "A Filter", :shared => true do
 		@filter.info.should have_key( 'supports' )
 		@filter.info['supports'].should be_an_instance_of( Array )
 		@filter.info.should have_key( 'rev' )
-		@filter.info['rev'].to_s.should =~ /^\d+$/
+		@filter.info['rev'].to_s.should =~ /^[[:xdigit:]]+$/
 	end
 
 
 	it "knows what its plugin name is" do
 		@filter.class.plugin_name.should be_an_instance_of( String )
 	end
-	
-	
+
 end
 

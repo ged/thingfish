@@ -1,5 +1,23 @@
 #!/usr/bin/ruby
-#
+
+require 'socket'
+require 'uuidtools'
+require 'logger'
+require 'sync'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/config'
+require 'thingfish/connectionmanager'
+require 'thingfish/exceptions'
+require 'thingfish/mixins'
+require 'thingfish/filestore'
+require 'thingfish/metastore'
+require 'thingfish/handler'
+require 'thingfish/request'
+require 'thingfish/response'
+
+
 # ThingFish daemon class
 #
 # == Synopsis
@@ -32,36 +50,6 @@
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
 #
-
-begin
-	require 'socket'
-	require 'uuidtools'
-	require 'logger'
-	require 'sync'
-
-	require 'thingfish'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-require 'thingfish/constants'
-require 'thingfish/config'
-require 'thingfish/connectionmanager'
-require 'thingfish/exceptions'
-require 'thingfish/mixins'
-require 'thingfish/filestore'
-require 'thingfish/metastore'
-require 'thingfish/handler'
-require 'thingfish/request'
-require 'thingfish/response'
-
-
-### ThingFish daemon class
 class ThingFish::Daemon
 	include ThingFish::Constants,
 		ThingFish::Loggable,

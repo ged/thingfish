@@ -123,7 +123,7 @@ class ThingFish::Client
 		[ RUBY_MARSHALLED_MIMETYPE, Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION ]
 
 	# The content of the User-Agent header send with all requests
-	USER_AGENT_HEADER = "%s/%s.%d" % [
+	USER_AGENT_HEADER = "%s/%s.%s" % [
 		self.name.downcase.gsub(/\W+/, '-'),
 		ThingFish::VERSION,
 		VCSRev.match( /: (\w+)/ )[1] || 0

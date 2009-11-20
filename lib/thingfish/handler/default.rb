@@ -1,5 +1,14 @@
-#!/usr/bin/ruby
-#
+#!/usr/bin/env ruby
+
+require 'pp'
+require 'time'
+require 'uuidtools'
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
+
 # The default top-level handler for the thingfish daemon. This handler provides
 # five basic services:
 #
@@ -26,17 +35,6 @@
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
 #
-
-require 'pp'
-require 'time'
-require 'uuidtools'
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/handler'
-require 'thingfish/mixins'
-
-
-### The default top-level handler for the thingfish daemon
 class ThingFish::DefaultHandler < ThingFish::Handler
 
 	include ThingFish::Constants,

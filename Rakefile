@@ -33,6 +33,14 @@ rescue LoadError
 	end
 end
 
+begin
+	require 'rubyfems'
+rescue LoadError
+	module Gem
+		class Specification; end
+	end
+end
+
 require 'rbconfig'
 require 'rake'
 require 'rake/testtask'
@@ -204,11 +212,16 @@ DEPENDENCIES = {
 DEVELOPMENT_DEPENDENCIES = {
 	'rake'        => '>= 0.8.7',
 	'rcodetools'  => '>= 0.7.0.0',
+	'rcov'        => '>= 0.8.1.2.0',
 	'rdoc'        => '>= 2.4.3',
 	'RedCloth'    => '>= 4.0.3',
 	'rspec'       => '>= 1.2.6',
 	'rubyforge'   => '>= 0',
+	'termios'     => '>= 0',
 	'text-format' => '>= 1.0.0',
+	'tmail'       => '>= 1.2.3.1',
+	'diff-lcs'    => '>= 1.1.2',
+	'tidy' => '>=0',
 	'sqlite3-ruby' => '>= 1.2.4',
 	'ruby-mp3info' => '>=0',
 	'json' => '>=0',
@@ -237,7 +250,9 @@ GEMSPEC   = Gem::Specification.new do |gem|
 	gem.authors           = "Michael Granger, Mahlon E. Smith"
 	gem.email             = ["mahlon@martini.nu", "ged@FaerieMUD.org"]
 	gem.homepage          = 'http://bitbucket.org/laika/thingfish'
-	gem.rubyforge_project = RUBYFORGE_PROJECT
+
+	# Apparently this isn't actually the 'project'?
+	gem.rubyforge_project = RUBYFORGE_GROUP
 
 	gem.has_rdoc          = true
 	gem.rdoc_options      = RDOC_OPTIONS

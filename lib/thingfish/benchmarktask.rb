@@ -1,11 +1,4 @@
-# 
-# Benchmarking Task library
-# $Id$
-# 
-# Authors:
-# * Michael Granger <ged@faeriemud.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-# 
+#!/usr/bin/env ruby
 
 require 'open3'
 require 'digest/md5'
@@ -16,6 +9,24 @@ require 'thingfish/config'
 require 'thingfish/daemon'
 
 
+# 
+# Benchmarking Task library
+# 
+# == Version
+#
+#  $Id$
+#
+# == Authors
+#
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
+# :include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the top-level directory for licensing details.
+#
 module ThingFish::Benchmark
 
 	begin

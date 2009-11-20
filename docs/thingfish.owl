@@ -1,0 +1,45 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <http://creativecommons.org/schema.rdf#> .
+
+dc:title
+    a owl:AnnotationProperty .
+
+<http://thingfish.org/rdf/2009/11/thingfish.owl>
+    dc:creator <http://martini.nu/mahlon-foaf.rdf#me>,
+				<http://deveiate.org/foaf.xml#me>;
+    dc:date "2009/11/12"^^xsd:date ;
+    dc:title "ThingFish Asset Vocabulary" ;
+    a owl:Ontology ;
+    rdfs:comment "The vocabulary for assets in a ThingFish store." ;
+    owl:imports <http://creativecommons.org/schema.rdf> ,
+     			<http://xmlns.com/foaf/0.1/> ;
+    owl:versionInfo "$Id$" .
+
+<http://martini.nu/mahlon-foaf.rdf#me>
+	a foaf:Person .
+
+<http://deveiate.org/foaf.xml#me>
+	a foaf:Person .
+
+#MAP THINGFISH "AUTO" PROPS TO DC HERE!!
+<http://thingfish.org/rdf/2009/11/thingfish.owl#title>
+	owl:sameAs dc:title
+
+dc:creator
+    a owl:AnnotationProperty .
+
+<http://thingfish.org/rdf/2009/11/thingfish.owl#uuid>
+    a owl:DatatypeProperty ;
+    rdfs:comment "The UUID of the asset's data in the ThingFish store." .
+
+dc:date
+    a owl:AnnotationProperty .
+
+<http://thingfish.org/rdf/2009/11/thingfish.owl#Asset>
+    a owl:Class .
+

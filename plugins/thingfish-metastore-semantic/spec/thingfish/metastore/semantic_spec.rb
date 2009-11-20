@@ -46,7 +46,7 @@ describe ThingFish::SemanticMetaStore do
 	end
 
 	before( :each ) do
-		pending "couldn't load the RDF metastore: %s" % [ $rdfmetastore_load_error ] if $_load_error
+		pending "couldn't load the semantic metastore: %s" % [ $_load_error ] if $_load_error
 		@store = ThingFish::MetaStore.create( 'semantic', nil, nil, :label => nil )
 	end
 
@@ -77,9 +77,14 @@ describe ThingFish::SemanticMetaStore do
 
 
 	it "converts 'nil' metadata values to empty strings" do
-		uuid = UUIDTools::UUID.timestamp_create
-		@store.set_property( uuid, :exif_comment, nil )
-		@store.get_property( uuid, :exif_comment ).should == ''
+		@store.set_property( TEST_UUID, 'dc:title', nil )
+		@store.get_property( TEST_UUID, 'dc:title' ).should == ''
+	end
+
+	it "raises an exception when there is an unmapped qname" do
+		expect {
+			@store.set_property( TEST_UUID, 'meat:stinky', nil )
+		}.to raise_error( ThingFish::MetaStoreError, /no vocab/ )
 	end
 
 end

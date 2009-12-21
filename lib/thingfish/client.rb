@@ -126,7 +126,7 @@ class ThingFish::Client
 	USER_AGENT_HEADER = "%s/%s.%s" % [
 		self.name.downcase.gsub(/\W+/, '-'),
 		ThingFish::VERSION,
-		VCSRev.match( /: (\w+)/ )[1] || 0
+		VCSRev[ /: (\w+)/, 1 ] || 0
 	]
 
 	# Maximum size of a resource response that's kept in-memory. Anything larger

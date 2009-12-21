@@ -9,9 +9,9 @@
 
 === Requirements
 
-ThingFish is written in ruby, and is tested using version 1.8.6:
+ThingFish is written in ruby, and is tested using version 1.8.7:
 
-  * Ruby (>= 1.8.6): http://www.ruby-lang.org/en/downloads/
+  * Ruby (>= 1.8.7): http://www.ruby-lang.org/en/downloads/
 
 Other versions may work, but are not tested.
 

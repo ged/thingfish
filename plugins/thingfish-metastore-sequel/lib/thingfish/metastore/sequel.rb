@@ -255,7 +255,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		ids = @metadata[ :resources, :metakey, :metaval ].
 			filter( :metakey__key  => key.to_s,
 					:metakey__id   => :metaval__m_id,
-					:lower[ :metaval__val ] => value.downcase,
+					:lower.sql_function( :metaval__val ) => value.downcase,
 					:metaval__r_id => :resources__id ).map( :r_id )
 
 		return @metadata[ :resources, :metakey, :metaval ].

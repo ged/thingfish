@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+ #!/usr/bin/ruby
 
 require 'pathname'
 require 'set'
@@ -22,7 +22,8 @@ require 'thingfish/constants'
 # 
 # == Authors
 # 
-# * Michael Granger <ged@FaerieMUD.org> * Mahlon E. Smith <mahlon@martini.nu>
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
 # 
 # :include: LICENSE
 # 
@@ -34,6 +35,7 @@ require 'thingfish/constants'
 class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,
+		ThingFish::ResourceLoader,
 		Redleaf::Constants::CommonNamespaces
 
 	# Schemas for the ThingFish RDF metastore
@@ -51,14 +53,15 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 
 	# The hash of vocabularies that ThingFish requires
 	DEFAULT_VOCABULARIES = {
-		:thingfish => THINGFISH_URL,
-		:rdf       => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-		:xsd       => 'http://www.w3.org/2001/XMLSchema#',
-		:dc        => 'http://purl.org/dc/elements/1.1/',
-		:owl       => 'http://www.w3.org/2002/07/owl#',
-		:foaf      => 'http://xmlns.com/foaf/0.1/#',
-		:rdfs      => 'http://www.w3.org/2000/01/rdf-schema#',
-		:cc        => 'http://creativecommons.org/schema.rdf#',
+		:thingfish => THINGFISH_NS.to_s,
+		:rdf       => RDF.to_s,
+		:xsd       => XSD.to_s,
+		:dc        => DC.to_s,
+		:dcterms   => DC_TERMS.to_s,
+		:owl       => OWL.to_s,
+		:foaf      => FOAF.to_s,
+		:rdfs      => RDFS.to_s,
+		:cc        => CC.to_s,
 	}
 
 	# Default options for the store, regardless of backend.
@@ -74,7 +77,8 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		SELECT ?uuid
 		WHERE
 		{
-			?uuid %s .
+			?uuid a thingfish:Asset ;
+			      %s .
 		}
 	END
 
@@ -83,8 +87,9 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		SELECT ?uuid
 		WHERE
 		{
-			?uuid %s .
-			%s
+			?uuid a thingfish:Asset ;
+			      %s .
+			      %s
 		}
 	END
 
@@ -156,6 +161,14 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		@graph        = @store.graph
 		@vocabularies = convert_to_namespaces( DEFAULT_VOCABULARIES.merge(opts[:vocabularies]) )
 
+		@resource_dir = options['resource_dir'] || options[:resource_dir]
+		@graph.load( 'file:' + (self.resource_dir + 'dcterms.rdf').to_s )
+		@dcterms = @graph.
+			subjects( RDF[:type], RDF[:Property] ).
+			reject {|res| !res.to_s.index(DC_TERMS.to_s) == 0 }.
+			map {|res| res.to_s[%r{.*/(.*)$}, 1].to_sym }
+		self.log.debug "dcterms predicates are: %p" % [ @dcterms ]
+
 		super
 	end
 
@@ -163,6 +176,16 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	######
 	public
 	######
+
+	# The Redleaf::Store that is behind the metastore
+	attr_reader :store
+
+	# The Redleaf::Graph that metadata is stored in
+	attr_reader :graph
+
+	# The Hash of vocabularies used by the metastore, keyed by qname
+	attr_accessor :vocabularies
+
 
 	### Execute a block in the scope of a transaction, committing it when the block returns.
 	### If an exception is raised in the block, the transaction is aborted. This is a
@@ -235,11 +258,12 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		# Create a set of predicates and filters out of the tuples.
 		pairs.each do |key, pattern|
 			property = map_property( key )
-			predicates.add( "<#{property}> ?#{key}" )
+			placeholder = key.gsub( /\W+/, '_' )
+			predicates.add( "<#{property}> ?#{placeholder}" )
 
 			re = self.glob_to_regexp( pattern )
 			string_re = re.inspect[ %r{/(.*)/i}, 1 ]
-			filters.add( %Q:FILTER regex(?#{key}, "#{string_re}", "i"): )
+			filters.add( %Q:FILTER regex(?#{placeholder}, "#{string_re}", "i"): )
 		end
 
 		# Make the ORDER BY clause
@@ -263,7 +287,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
 
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
-		uuids = @graph.query( querystring ) or return []
+		uuids = @graph.query( querystring, self.vocabularies ) or return []
 
 		# Map results into simple UUID strings
 		return self.make_uuid_tuples( uuids.collect {|row| row[:uuid] } )
@@ -287,7 +311,10 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 
 	SORTED_TRIPLES_QUERY = %q{
 		SELECT ?uuid, ?pred, ?obj
-		WHERE { ?uuid ?pred ?obj }
+		WHERE {
+			?uuid a thingfish:Asset;
+			      ?pred ?obj .
+		}
 		ORDER BY ?uuid
 	}
 
@@ -296,7 +323,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		current_uuid = nil
 		propset = nil
 
-		res = @graph.query( SORTED_TRIPLES_QUERY ) or return
+		res = @graph.query( SORTED_TRIPLES_QUERY, self.vocabularies ) or return
 
 		res.each do |row|
 			uuid = uuid_obj( row[:uuid] ).to_s
@@ -327,7 +354,10 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	def set_property( uuid, propname, value )
 		# properties are stored uniquely.
 		value = '' if value.nil?
-		@graph << [ uuid_urn(uuid), map_property(propname), value ]
+		subj = uuid_urn( uuid )
+		@graph <<
+			[ subj, RDF[:type], THINGFISH_NS[:Asset] ] <<
+			[ subj, map_property(propname), value ]
 	end
 
 
@@ -341,9 +371,12 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 			statements = propshash.inject([]) do |stmts, pair|
 				pred, obj = *pair
 				obj = '' if obj.nil?
-				stmts << [ subject, THINGFISH_NS[pred], obj ]
+				stmts << [ subject, map_property(pred), obj ]
 				stmts
 			end
+
+			# uuid a thingfish:Asset ;
+			statements << [ subject, RDF[:type], THINGFISH_NS[:Asset] ]
 
 			@graph.append( *statements )
 		end
@@ -362,6 +395,9 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 				stmts << [ subject, map_property(pred), obj ]
 				stmts
 			end
+
+			# uuid a thingfish:Asset ;
+			statements << [ subject, RDF[:type], THINGFISH_NS[:Asset] ]
 
 			@graph.append( *statements )
 		end
@@ -421,7 +457,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	def dump_store
 		return @graph.inject({}) do |dumpstruct, statement|
 			# Skip triples that aren't about UUIDs
-			next unless statement.subject.is_a?( URI ) &&
+			next dumpstruct unless statement.subject.is_a?( URI ) &&
 				statement.subject.opaque =~ /^uuid:/
 
 			keyword = unmap_property( statement.predicate )
@@ -472,6 +508,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 
 	### Make a UUID string out of a UUID URN.
 	def make_uuid_string( urn )
+		self.log.debug "Making a UUID string from: %p" % [ urn ]
 		raise ArgumentError,
 			"%p doesn't have an opaque attribute" % [urn] unless urn.respond_to?( :opaque )
 		return urn.opaque[/.*:(.*)/, 1]
@@ -488,7 +525,11 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 		if predicate.nil?
 			self.log.debug "  no qname prefix; assuming it's a thingfish property"
 			predicate = qname
-			qname = 'thingfish'
+			if @dcterms.include?( predicate.to_sym )
+				qname = 'dcterms'
+			else
+				qname = 'thingfish'
+			end
 		end
 
 		# :TODO: Perhaps raise a more-specific exception later, as this isn't necessarily
@@ -505,7 +546,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 	### Unmap the specified +predicate+ to a property name and return it.
 	def unmap_property( predicate )
 		# :TODO: Decide how predicates should actually be unmapped
-		return (predicate.fragment || Pathname( predicate.path ).basename).to_sym
+		return (predicate.fragment || Pathname( predicate.path ).basename).to_s.to_sym
 	end
 
 

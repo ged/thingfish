@@ -47,7 +47,9 @@ describe ThingFish::SemanticMetaStore do
 
 	before( :each ) do
 		pending "couldn't load the semantic metastore: %s" % [ $_load_error ] if $_load_error
-		@store = ThingFish::MetaStore.create( 'semantic', nil, nil, :label => nil )
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent.parent + 'resources'
+		@store = ThingFish::MetaStore.create( 'semantic', nil, nil,
+			:label => nil, :resource_dir => resdir )
 	end
 
 	after( :all ) do

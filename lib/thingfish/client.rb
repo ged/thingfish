@@ -1,4 +1,18 @@
 #!/usr/bin/ruby
+
+require 'net/http'
+require 'net/https'
+require 'uri'
+require 'forwardable'
+require 'date'
+require 'set'
+require 'tmpdir'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/mixins'
+require 'thingfish/resource'
+
 #
 # ThingFish::Client -- The Ruby ThingFish client library
 #
@@ -86,24 +100,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'net/http'
-require 'net/https'
-require 'uri'
-require 'forwardable'
-require 'date'
-require 'set'
-require 'tmpdir'
-
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/mixins'
-require 'thingfish/resource'
-
-
-### The thingfish client library
 class ThingFish::Client
 	include ThingFish::Constants::Patterns,
 			ThingFish::Constants,
@@ -126,7 +123,7 @@ class ThingFish::Client
 	USER_AGENT_HEADER = "%s/%s.%s" % [
 		self.name.downcase.gsub(/\W+/, '-'),
 		ThingFish::VERSION,
-		VCSRev[ /: (\w+)/, 1 ] || 0
+		VCSRev.match( /: (\w+)/ )[1] || 0
 	]
 
 	# Maximum size of a resource response that's kept in-memory. Anything larger
@@ -134,7 +131,20 @@ class ThingFish::Client
 	MAX_INMEMORY_RESPONSE_SIZE = 128.kilobytes
 
 	# Characters that should be URI escaped before sending to the search handler.
-	ESCAPE_CHARS = Regexp.union( URI::REGEXP::UNSAFE, %r{/} )
+	ESCAPE_CHARS = if URI::REGEXP.const_defined?( :PATTERN )
+			%r{
+				[^
+					#{URI::REGEXP::PATTERN::RESERVED}
+					#{URI::REGEXP::PATTERN::UNRESERVED}
+				]
+				|
+				/
+			}x
+		elsif URI::REGEXP.const_defined?( :UNSAFE )
+			Regexp.union( URI::REGEXP::UNSAFE, %r{/} )
+		else
+			raise "Couldn't find the UNSAFE constant in the URI library!"
+		end
 
 
 	#################################################################

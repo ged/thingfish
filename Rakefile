@@ -4,7 +4,7 @@
 #
 # Based on various other Rakefiles, especially one by Ben Bleything
 #
-# Copyright (c) 2007-2009 The FaerieMUD Consortium
+# Copyright (c) 2007-2010 The FaerieMUD Consortium
 #
 # Authors:
 #  * Michael Granger <ged@FaerieMUD.org>
@@ -74,9 +74,9 @@ if VERSION_FILE.exist? && buildrev = ENV['CC_BUILD_LABEL']
 	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ] + '.' + buildrev
 elsif VERSION_FILE.exist?
 	PKG_VERSION = VERSION_FILE.read[ /VERSION\s*=\s*['"](\d+\.\d+\.\d+)['"]/, 1 ]
-else
-	PKG_VERSION = '0.0.0'
 end
+
+PKG_VERSION ||= '0.0.0'
 
 PKG_FILE_NAME = "#{PKG_NAME.downcase}-#{PKG_VERSION}"
 GEM_FILE_NAME = "#{PKG_FILE_NAME}.gem"
@@ -173,7 +173,7 @@ require RAKE_TASKDIR + 'helpers.rb'
 # Set the build ID if the mercurial executable is available
 if hg = which( 'hg' )
 	id = IO.read('|-') or exec hg.to_s, 'id', '-n'
-	PKG_BUILD = 'pre' + id.chomp[ /^[[:xdigit:]]+/ ]
+	PKG_BUILD = 'pre' + (id.chomp[ /^[[:xdigit:]]+/ ] || '1')
 else
 	PKG_BUILD = 'pre0'
 end
@@ -220,14 +220,14 @@ DEVELOPMENT_DEPENDENCIES = {
 	'text-format' => '>= 1.0.0',
 	'tmail'       => '>= 1.2.3.1',
 	'diff-lcs'    => '>= 1.1.2',
-	'sequel' => '>= 2.7.1',
+	'tidy' => '>=0',
 	'sqlite3-ruby' => '>= 1.2.4',
 	'ruby-mp3info' => '>=0',
-	'rmagick' => '>=0',
-	'exifr' => '>=0',
-	'lockfile' => '>= 1.4.3',
 	'json' => '>=0',
-	'tidy' => '>=0',
+	'exifr' => '>=0',
+	'rmagick' => '>=0',
+	'lockfile' => '>= 1.4.3',
+	'sequel' => '>= 2.7.1',
 }
 
 # Non-gem requirements: packagename => version
@@ -313,7 +313,7 @@ task :local
 
 ### Task: clean
 CLEAN.include 'coverage', '**/*.orig', '**/*.rej'
-CLOBBER.include 'artifacts', 'coverage.info', PKGDIR
+CLOBBER.include 'artifacts', 'coverage.info', 'ChangeLog', PKGDIR
 
 ### Task: changelog
 file 'ChangeLog' do |task|

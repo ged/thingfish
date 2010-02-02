@@ -160,7 +160,7 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 		tuples = if terms.empty?
 					[]
-		        elsif terms.values.find {|term| term.index('*')}
+		        elsif terms.values.compact.find {|term| term.index('*')}
 					@metastore.find_by_matching_properties( terms, order, limit, offset )
 		        else
 					@metastore.find_by_exact_properties( terms, order, limit, offset )

@@ -25,7 +25,6 @@
 require 'thingfish/mixins'
 require 'thingfish/constants'
 
-
 ### Add HTML output to the core Object
 class Object
 	include ThingFish::HtmlInspectableObject
@@ -37,4 +36,15 @@ class Numeric
 	        ThingFish::NumericConstantMethods::Bytes
 end
 
+
+require 'bigdecimal'
+
+### Cast BigDecimals to YAML floats
+class BigDecimal
+	def to_yaml( opts={} )
+		YAML.quick_emit( self.object_id, opts ) do |out|
+			out.scalar( "tag:yaml.org,2002:float", self.to_s )
+		end
+	end
+end
 

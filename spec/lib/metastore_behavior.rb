@@ -207,7 +207,10 @@ describe "A MetaStore", :shared => true do
 		found = @store.find_by_exact_properties( 'title' => TEST_TITLE )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
 	end
 
 
@@ -218,7 +221,10 @@ describe "A MetaStore", :shared => true do
 		found = @store.find_by_exact_properties( 'title' => TEST_TITLE.downcase )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
 	end
 
 
@@ -265,7 +271,11 @@ describe "A MetaStore", :shared => true do
 		found = @store.find_by_exact_properties( {'title' => TEST_TITLE}, [:namespace], 1 )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary'} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
+		properties[:namespace].should == 'devlibrary'
 	end
 
 
@@ -316,7 +326,11 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary'} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
+		properties[:namespace].should == 'devlibrary'
 	end
 
 
@@ -327,7 +341,10 @@ describe "A MetaStore", :shared => true do
 		found = @store.find_by_matching_properties( 'title' => 'Muffin*' )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
 	end
 
 
@@ -338,7 +355,10 @@ describe "A MetaStore", :shared => true do
 		found = @store.find_by_matching_properties( 'title' => 'muffin*' )
 
 		found.should have(1).members
-		found.first.should == [ TEST_UUID, {:title => TEST_TITLE} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
 	end
 
 
@@ -357,8 +377,12 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first.should == 
-			[ TEST_UUID, {:title => TEST_TITLE, :namespace => 'devlibrary', :bitrate => '160'} ]
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
+		properties[:namespace].should == 'devlibrary'
+		properties[:bitrate].should == '160'
 	end
 
 
@@ -377,8 +401,12 @@ describe "A MetaStore", :shared => true do
 		  )
 
 		found.should have(1).members
-		found.first[0] == TEST_UUID
-		found.first[1].should be_a( Hash )
+		uuid, properties = found.first
+
+		uuid.should == TEST_UUID
+		properties[:title].should == TEST_TITLE
+		properties[:namespace].should == 'devlibrary'
+		properties[:bitrate].should == '160'
 	end
 
 
@@ -397,12 +425,12 @@ describe "A MetaStore", :shared => true do
 
 		results.should have(2).members
 		results.keys.should include( TEST_UUID, TEST_UUID2 )
-		results[ TEST_UUID ].keys.should have(3).members 
+		results[ TEST_UUID ].keys.should have_at_least(3).members
 		results[ TEST_UUID ][:title].should == TEST_TITLE
 		results[ TEST_UUID ][:bitrate].should == '160'
 		results[ TEST_UUID ][:namespace].should == 'devlibrary'
 
-		results[ TEST_UUID2 ].keys.should have(2).members 
+		results[ TEST_UUID2 ].keys.should have_at_least(2).members
 		results[ TEST_UUID2 ][:title].should == TEST_TITLE
 		results[ TEST_UUID2 ][:namespace].should == 'private'
 	end
@@ -427,12 +455,12 @@ describe "A MetaStore", :shared => true do
 			dumpstruct.keys.should include( TEST_UUID, TEST_UUID2 )
 
 			dumpstruct[ TEST_UUID ].should be_an_instance_of( Hash )
-			dumpstruct[ TEST_UUID ].keys.should have(3).members
+			dumpstruct[ TEST_UUID ].keys.should have_at_least(3).members
 			dumpstruct[ TEST_UUID ].keys.should include( :title, :bitrate, :namespace )
 			dumpstruct[ TEST_UUID ].values.should include( TEST_TITLE, '160', 'devlibrary' )
 
 			dumpstruct[ TEST_UUID2 ].should be_an_instance_of( Hash )
-			dumpstruct[ TEST_UUID2 ].keys.should have(2).members
+			dumpstruct[ TEST_UUID2 ].keys.should have_at_least(2).members
 			dumpstruct[ TEST_UUID2 ].keys.should include( :title, :namespace )
 			dumpstruct[ TEST_UUID2 ].values.should include( TEST_TITLE, 'private' )
 		end
@@ -493,14 +521,14 @@ describe "A MetaStore", :shared => true do
 				results[ uuid ] = properties
 			end
 
-			results.should have(2).members
+			results.should have_at_least(2).members
 			results.keys.should include( TEST_UUID, TEST_UUID2 )
-			results[ TEST_UUID ].keys.should have(3).members 
+			results[ TEST_UUID ].keys.should have_at_least(3).members
 			results[ TEST_UUID ][:title].should == TEST_TITLE
 			results[ TEST_UUID ][:bitrate].should == '160'
 			results[ TEST_UUID ][:namespace].should == 'devlibrary'
 
-			results[ TEST_UUID2 ].keys.should have(2).members 
+			results[ TEST_UUID2 ].keys.should have_at_least(2).members
 			results[ TEST_UUID2 ][:title].should == TEST_TITLE
 			results[ TEST_UUID2 ][:namespace].should == 'private'
 		end

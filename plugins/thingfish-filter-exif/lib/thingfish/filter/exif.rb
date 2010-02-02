@@ -153,9 +153,25 @@ class ThingFish::ExifFilter < ThingFish::Filter
 
 		exif = {}
 		attributes.each do |exif_key|
+			self.log.debug "  normalizing %p..." % [ exif_key ]
 			exif_val = parser.send( exif_key )
-			exif_val = exif_val.to_i if exif_val.is_a?( EXIFR::TIFF::Orientation )
-			exif[ ('exif:' + exif_key).to_sym ] = exif_val
+
+			if exif_val.is_a?( EXIFR::TIFF::Orientation )
+				exif_val = exif_val.to_i
+			elsif exif_key == 'gps_latitude'
+				self.log.debug "    gps lat values: %p" % [ exif_val ]
+				deg, min, secs = *exif_val
+				hemisphere = parser.gps_latitude_ref
+				exif_val = ( deg + (min / 60.0) + (secs / 3600) ) * ( hemisphere == 'S' ? -1 : 1 )
+			elsif exif_key == 'gps_longitude'
+				self.log.debug "    gps long values: %p" % [ exif_val ]
+				deg, min, secs = *exif_val
+				hemisphere = parser.gps_longitude_ref
+				exif_val = ( deg + min / 60.0 + secs / 3600 ) * ( hemisphere == 'W' ? -1 : 1 )
+			end
+
+			keyname = exif_key.gsub( /_(\w)/ ) { $1.upcase }
+			exif[ ('exif:' + keyname).to_sym ] = exif_val
 		end
 
 		return exif
@@ -165,5 +181,4 @@ end # class ThingFish::ExifFilter
 
 
 # vim: set nosta noet ts=4 sw=4:
-
 

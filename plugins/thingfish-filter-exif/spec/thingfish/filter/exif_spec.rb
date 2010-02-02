@@ -24,13 +24,14 @@ require 'thingfish/acceptparam'
 require 'thingfish/filter/exif'
 
 
+include ThingFish::TestConstants
+include ThingFish::Constants
+
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::ExifFilter do
-	include ThingFish::Constants
-	include ThingFish::TestConstants
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -43,10 +44,10 @@ describe ThingFish::ExifFilter do
 		@io.stub!( :path ).and_return( :a_dummy_path )
 		@response = stub( "response object" )
 
-		@request = mock( "request object" , :null_object => true )
+		@request = mock( "request object" )
 		@request.stub!( :http_method ).and_return( :POST )
 
-		@exif_parser = mock( "exif parser", :null_object => true )
+		@exif_parser = mock( "exif parser" )
 		EXIFR::JPEG.stub!( :new ).and_return( @exif_parser )
 		EXIFR::TIFF.stub!( :new ).and_return( @exif_parser )
 	end
@@ -137,6 +138,47 @@ describe ThingFish::ExifFilter do
 		@request.should_receive( :http_method ).any_number_of_times.
 			and_return( :GET )
 		@request.should_not_receive( :each_body )
+
+		@filter.handle_request( @request, @response )
+	end
+
+	it "converts GPS lat and long data into their canonical representation" do
+		exif_data = {
+			:gps_latitude      => [Rational(45,1), Rational(641,20), Rational(0,1)],
+			:gps_latitude_ref  => "N",
+			:gps_longitude     => [Rational(122,1), Rational(4183,100), Rational(0,1)],
+			:gps_longitude_ref => "W",
+			:width             => 320,
+			:height            => 240,
+			:size              => '320x240',
+			:model             => 'Pinhole Camera 2000',
+		}
+
+		extracted_metadata = {
+			:'exif:gpsLatitude'     => 45.5341666666667,
+			:'exif:gpsLatitudeRef'  => "N",
+			:'exif:gpsLongitude'    => -122.697166666667,
+			:'exif:gpsLongitudeRef' => "W",
+			:'exif:width'           => 320,
+			:'exif:height'          => 240,
+			:'exif:size'            => '320x240',
+			:'exif:model'           => 'Pinhole Camera 2000',
+		}
+
+		request_metadata = { :format => 'image/tiff' }
+		@request.stub!( :each_body ).and_yield( @io, request_metadata )
+
+		@exif_parser.should_not_receive( :exif? )
+		@exif_parser.should_receive( :to_hash ).and_return( exif_data )
+		exif_data.each do |field, val|
+			@exif_parser.should_receive( field ).at_least( :once ).and_return( val )
+		end
+		@request.should_receive( :append_metadata_for ) do |io, metadata|
+			io.should be_equal( @io )
+			metadata.keys.should include( *(extracted_metadata.keys) )
+			metadata[:'exif:gpsLatitude'].should be_close( 45.5341666666667, 0.001 )
+			metadata[:'exif:gpsLongitude'].should be_close( -122.697166666667, 0.001 )
+		end
 
 		@filter.handle_request( @request, @response )
 	end

@@ -158,8 +158,9 @@ class ThingFish::SimpleSearchHandler < ThingFish::Handler
 	def find_resources( request, terms )
 		order, limit, offset = self.normalize_search_arguments( request )
 
+		# If no terms are given, just return everything (up to the current limit, if set).
 		tuples = if terms.empty?
-					[]
+					@metastore.get_resource_set( order, limit, offset )
 		        elsif terms.values.compact.find {|term| term.index('*')}
 					@metastore.find_by_matching_properties( terms, order, limit, offset )
 		        else

@@ -283,7 +283,7 @@ class ThingFish::SemanticMetaStore < ThingFish::MetaStore
 
 		# Now combine the predicates and filters into a SPARQL query
 		querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
-		querystring << " LIMIT %d" % [ limit ] if limit
+		querystring << " LIMIT %d" % [ limit ] if limit.nonzero?
 		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
 
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]

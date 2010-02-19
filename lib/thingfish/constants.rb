@@ -106,7 +106,7 @@ module ThingFish::Constants
 
 
 	# The default search result size if none is specified
-	DEFAULT_LIMIT = 100
+	DEFAULT_LIMIT = 0
 
 
 	# HTTP status and result constants

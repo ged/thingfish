@@ -1,32 +1,4 @@
 #!/usr/bin/ruby
-#
-# The base metastore class for ThingFish
-#
-# == Synopsis
-#
-#   require 'thingfish/metastore'
-#
-#   class MyMetaStore < ThingFish::MetaStore
-#       # ...
-#   end
-#
-#
-# == Version
-#
-#  $Id$
-#
-# == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
-# :include: LICENSE
-#
-#---
-#
-# Please see the file LICENSE in the top-level directory for licensing details.
-
-#
 
 require 'pluginfactory'
 require 'thingfish'
@@ -82,6 +54,21 @@ require 'thingfish/exceptions'
 #	Return a hash keyed on uuid whose metadata values matched
 #	the criteria specified by +key+ and +value+. This is a wildcard search.
 #
+# == Version
+#
+#  $Id$
+#
+# == Authors
+#
+# * Michael Granger <ged@FaerieMUD.org>
+# * Mahlon E. Smith <mahlon@martini.nu>
+#
+# :include: LICENSE
+#
+#---
+#
+# Please see the file LICENSE in the top-level directory for licensing details.
+# 
 class ThingFish::MetaStore
 	include Enumerable,
 	        PluginFactory,
@@ -375,9 +362,10 @@ class ThingFish::MetaStore
 	end
 
 
-	### Remove nil values from the given +hash+, then yield key/value pairs as tuples. The block is
-	### expected to return a hash keyed by UUID of that match the yielded tuple. The returned UUID sets are then
-	### intersected, and any UUIDs common to all matched tuples are returned.
+	### Remove nil values from the given +hash+, then yield key/value pairs as tuples. The 
+	### block is expected to return a hash keyed by UUID of resources that match the yielded tuple. 
+	### The returned UUID sets are then intersected, and any UUIDs common to all matched 
+	### tuples are returned.
 	def intersect_each_tuple( hash, order, limit, offset )
 
 		# Trim nil values out of the hash then make a search pair for each key/value combination.
@@ -413,7 +401,11 @@ class ThingFish::MetaStore
 			props.values_at( *order ).collect {|val| val || '' } + [ uuid ]
 		end
 
-		return tuples[ offset, limit ]
+		if limit.nonzero?
+			return tuples[ offset, limit ]
+		else
+			return tuples[ offset..-1 ]
+		end
 	end
 
 end # class ThingFish::MetaStore

@@ -21,7 +21,7 @@ begin
 	require 'spec'
 	require 'spec/lib/constants'
 	require 'spec/lib/helpers'
-	require 'spec/lib/metastore_behavior'
+	require 'spec/lib/advanced_metastore_behavior'
 
 	require 'thingfish'
 	require 'thingfish/metastore'
@@ -75,7 +75,7 @@ describe ThingFish::SemanticMetaStore do
 
 
 	### Shared behavior specification
-	it_should_behave_like "A MetaStore"
+	it_should_behave_like "An advanced MetaStore"
 
 
 	it "converts 'nil' metadata values to empty strings" do

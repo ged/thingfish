@@ -260,7 +260,7 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 
 		return @metadata[ :resources, :metakey, :metaval ].
 			filter( {:metakey__id   => :metaval__m_id,
-			         :metaval__r_id => :resources__id,
+				     :metaval__r_id => :resources__id,
 					 :resources__id => ids} ).inject({}) do |tuples,row|
 				tuples[ row[:uuid] ] ||= {}
 				tuples[ row[:uuid] ][ row[:key].to_sym ] = row[:val]
@@ -345,7 +345,6 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 	end
 
 
-
 	#########
 	protected
 	#########
@@ -406,4 +405,5 @@ class ThingFish::SequelMetaStore < ThingFish::SimpleMetaStore
 		#
 		return @metadata[ key ] << { column => value.to_s }
 	end
-end
+
+end # class ThingFish::SequelMetaStore

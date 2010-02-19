@@ -72,6 +72,14 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		}
 	END
 
+	# The SPARQL query to use when selecting arbitrary sets of triples
+	SORTED_TRIPLES_QUERY = %q{
+		SELECT ?uuid, ?pred, ?obj
+		WHERE { ?uuid ?pred ?obj }
+		ORDER BY ?uuid
+	}
+
+
 	### Register some types with Redleaf's node-conversion tables
 
 	# There's almost certainly an actual URI for IP addresses, but I 
@@ -291,7 +299,7 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 
 		# Now combine the predicates and filters into a SPARQL query
 		querystring << "ORDER BY %s" % [ orderattrs.join(' ') ]
-		querystring << " LIMIT %d" % [ limit ] if limit
+		querystring << " LIMIT %d" % [ limit ] if limit.nonzero?
 		querystring << " OFFSET %d" % [ offset ] if offset.nonzero?
 
 		self.log.debug "SPARQL query is: \n%s" % [ querystring ]
@@ -316,12 +324,6 @@ class ThingFish::RdfMetaStore < ThingFish::SimpleMetaStore
 		end
 	end
 
-
-	SORTED_TRIPLES_QUERY = %q{
-		SELECT ?uuid, ?pred, ?obj
-		WHERE { ?uuid ?pred ?obj }
-		ORDER BY ?uuid
-	}
 
 	### Metastore API: Yield all the metadata in the store one resource at a time
 	def each_resource # :yields: uuid, properties_hash

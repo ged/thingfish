@@ -1,4 +1,11 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+require 'thingfish/filter'
+
 #
 # A basicauth filter for ThingFish
 #
@@ -16,25 +23,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'thingfish'
-	require 'thingfish/mixins'
-	require 'thingfish/constants'
-	require 'thingfish/acceptparam'
-	require 'thingfish/filter'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### A basicauth filter for ThingFish
 class ThingFish::BasicAuthFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants

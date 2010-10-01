@@ -3,26 +3,20 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+
 	libdir = basedir + "lib"
-	
+
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'thingfish'
-	require 'thingfish/constants'
-	require 'thingfish/filestore'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/filestore'
 
 
 describe "A FileStore", :shared => true do
@@ -69,7 +63,7 @@ describe "A FileStore", :shared => true do
 	it "silently ignores deletes of non-existant keys" do
 		@fs.delete( 'porksausage' ).should be_false
 	end
-	
+
 	it "returns false when checking has_file? for a file it does not have" do
 		@fs.has_file?( TEST_UUID ).should be_false
 	end
@@ -95,7 +89,7 @@ describe "A FileStore", :shared => true do
 		@fs.size( TEST_UUID ).should == TEST_RESOURCE_CONTENT.length
 		@fs.size( TEST_UUID_OBJ ).should == TEST_RESOURCE_CONTENT.length
 	end
-	
+
 	it "returns nil when asked for the size of a resource it doesn't contain" do
 		@fs.size( TEST_UUID ).should == nil
 	end

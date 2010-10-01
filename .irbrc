@@ -1,4 +1,4 @@
-#!/usr/bin/ruby -*- ruby -*-
+#!/usr/bin/env ruby -*- ruby -*-
 
 BEGIN {
 	require 'pathname'

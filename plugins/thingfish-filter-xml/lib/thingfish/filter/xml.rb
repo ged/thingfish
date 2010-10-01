@@ -1,4 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'rbconfig'
+require 'cl/xmlserial'
+require 'ipaddr'
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+
 #
 # An XML conversion filter for ThingFish.
 #
@@ -42,36 +52,24 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'rbconfig'
-	require 'cl/xmlserial'
-	require 'ipaddr'
-
-	require 'thingfish'
-	require 'thingfish/mixins'
-	require 'thingfish/constants'
-	require 'thingfish/acceptparam'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-### Allow some additional base classes to be XML serialized.
 module XmlStringifiable
 	def instance_data_to_xml( element )
 		element.add_text( self.to_s )
 	end
 end
 
-[ NilClass, Symbol, IPAddr ].each do |klass|
-	XmlSerialization.send( :append_features, klass )
-	XmlStringifiable.send( :append_features, klass )
+class NilClass
+	include XmlSerialization,
+	        XmlStringifiable
+end
+class Symbol
+	include XmlSerialization,
+	        XmlStringifiable
+end
+class IPAddr
+	include XmlSerialization,
+	        XmlStringifiable
 end
 
 

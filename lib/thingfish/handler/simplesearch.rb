@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # A search handler for the thingfish daemon. This handler provides a REST
 # interface to searching for resources which match criteria concerning their

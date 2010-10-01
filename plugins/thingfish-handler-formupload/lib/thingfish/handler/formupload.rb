@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # Accept and unwrap multipart form uploads, as documented at
 # http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html

@@ -9,28 +9,28 @@ BEGIN {
 	libdir = basedir + 'lib'
 
 	$LOAD_PATH.unshift( pluginlibdir ) unless $LOAD_PATH.include?( pluginlibdir )
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
+require 'rbconfig'
+
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/filter_behavior'
+
+require 'thingfish'
+require 'thingfish/filter'
+
 begin
-	require 'rbconfig'
-
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/filter_behavior'
-
-	require 'thingfish'
-	require 'thingfish/filter'
 	require 'thingfish/filter/rfc2822'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+	$tmail_loaderror = nil
+rescue LoadError => err
+	$tmail_loaderror = err
 
+	class ThingFish::Rfc2822Filter; end
+end
 
 
 #####################################################################
@@ -48,6 +48,9 @@ describe ThingFish::Rfc2822Filter do
 	end
 
 	before( :each ) do
+		if $tmail_loaderror
+			pending "installation of the tmail gem (%s)" % [ $tmail_loaderror.message ]
+		end
 		@filter = ThingFish::Filter.create( 'rfc2822' )
 	end
 

@@ -1,4 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'pathname'
+require 'pluginfactory'
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/daemon'
+
+
 #
 # The base HTTP handler type for ThingFish
 #
@@ -26,25 +36,6 @@
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
 #
-
-begin
-	require 'pathname'
-	require 'pluginfactory'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-require 'thingfish'
-require 'thingfish/mixins'
-require 'thingfish/constants'
-require 'thingfish/daemon'
-
-
-### Base class for ThingFish Handler plugins
 class ThingFish::Handler
 	include PluginFactory,
 		ThingFish::Loggable,

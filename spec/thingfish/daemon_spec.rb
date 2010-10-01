@@ -6,26 +6,20 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'socket'
-	require 'thingfish'
-	require 'thingfish/daemon'
-	require 'thingfish/config'
-	require 'thingfish/urimap'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		gem 'rspec', '>= 1.2.0'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+
+require 'socket'
+
+require 'thingfish'
+require 'thingfish/daemon'
+require 'thingfish/config'
+require 'thingfish/urimap'
 
 
 include ThingFish::TestConstants

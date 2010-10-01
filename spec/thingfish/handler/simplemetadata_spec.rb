@@ -6,26 +6,20 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/handler_behavior'
-	require 'time'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/handler_behavior'
 
-	require 'thingfish'
-	require 'thingfish/handler/simplemetadata'
-	require 'thingfish/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'time'
+
+require 'thingfish'
+require 'thingfish/handler/simplemetadata'
+require 'thingfish/constants'
 
 
 include ThingFish::Constants
@@ -39,11 +33,11 @@ describe ThingFish::SimpleMetadataHandler do
 	before( :all ) do
 		setup_logging( :fatal )
 	end
-	
+
 	after( :all ) do
 		reset_logging()
 	end
-	
+
 	before(:each) do
 		@handler   = ThingFish::SimpleMetadataHandler.new( '/metadata', {} )
 		@metastore = mock( "metastore" )
@@ -58,7 +52,7 @@ describe ThingFish::SimpleMetadataHandler do
 
 		before(:each) do
 			@config = ThingFish::Config.new
-			
+
 			@handler          = ThingFish::SimpleMetadataHandler.new( '/metadata', {} )
 			@request          = mock( "request" )
 			@request_headers  = mock( "request headers" )
@@ -67,7 +61,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@daemon           = mock( "daemon" )
 			@metastore        = mock( "metastore" )
 			@filestore        = mock( "filestore" )
-			
+
 			@request.stub!( :uri ).and_return( URI.parse('http://localhost:3474/metadata') )
 			@response.stub!( :headers ).and_return( @response_headers )
 			@request.stub!( :headers ).and_return( @request_headers )
@@ -317,7 +311,7 @@ describe ThingFish::SimpleMetadataHandler do
 				and_return( false )
 			@metastore.should_receive( :set_safe_property ).
 				with( TEST_UUID, TEST_PROP, TEST_PROPVALUE )
-					
+
 			@response.should_receive( :content_type= ).with( 'text/plain' )
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::CREATED )

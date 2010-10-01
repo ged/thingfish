@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # ThingFish::UriMap -- a map of the server's urispace which determines
 # which handlers are invoked for any URI.

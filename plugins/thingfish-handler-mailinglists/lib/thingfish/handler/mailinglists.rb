@@ -1,4 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'pp'
+require 'rbconfig'
+require 'pathname'
+require 'thingfish/mixins'
+require 'thingfish/handler'
+require 'thingfish/constants'
+require 'thingfish/exceptions'
+
+
 #
 # inspect mailing list messages as parsed by the RFC 2822 filter.
 #
@@ -25,27 +35,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'pp'
-	require 'rbconfig'
-	require 'pathname'
-	require 'thingfish/mixins'
-	require 'thingfish/handler'
-	require 'thingfish/constants'
-	require 'thingfish/exceptions'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### A mailinglists handler for ThingFish
 class ThingFish::MailinglistsHandler < ThingFish::Handler
 	include ThingFish::Loggable,
 		ThingFish::Constants,

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # Benchmark UUIDTools' UUID parser vs. the one in the FilesystemFileStore plugin.
 # 
@@ -11,7 +11,7 @@ BEGIN {
 	libdir = basedir + "lib"
 
 	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
-	
+
 	Pathname.glob( basedir + 'plugins' + '*' + 'lib' ) do |pluginlib|
 		$LOAD_PATH.unshift( pluginlib.to_s )
 	end
@@ -19,7 +19,6 @@ BEGIN {
 	require basedir + "utils.rb"
 	include UtilityFunctions
 }
-
 
 require 'rubygems'
 require 'benchmark'

@@ -6,30 +6,23 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'tempfile'
-	require 'logger'
-	require 'fileutils'
+require 'tempfile'
+require 'logger'
+require 'fileutils'
 
-	require 'spec'
-	require 'spec/lib/helpers'
+require 'spec'
+require 'spec/lib/helpers'
 
-	require 'thingfish'
-	require 'thingfish/config'
-	require 'thingfish/constants'
-	require 'thingfish/filestore'
-	require 'thingfish/metastore'
-	require 'thingfish/handler'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'thingfish'
+require 'thingfish/config'
+require 'thingfish/constants'
+require 'thingfish/filestore'
+require 'thingfish/metastore'
+require 'thingfish/handler'
 
 
 include ThingFish::Constants
@@ -50,11 +43,11 @@ describe ThingFish::Config do
 		ip: 127.0.0.1
 		spooldir: /vagrant/swahili
 		bufsize: 2
-		
+
 		logging:
 		    level: warn
 		    logfile: stderr
-		
+
 		plugins:
 		    filestore:
 		        name: /filestore/posix_fs
@@ -71,7 +64,7 @@ describe ThingFish::Config do
 		        - xml
 		        - something:
 		              key: value
-		
+
 		mergekey: Yep.
 		}.gsub(/^\t\t/, '')
 	end
@@ -254,11 +247,11 @@ describe ThingFish::Config do
 		ThingFish.logger = Logger.new( log )
 
 		@config.create_configured_urimap
-		
+
 		log.rewind
 		log.read.should =~ %r{URI map is: \S+}
 	end
-	
+
 	it "autogenerates accessors for non-existant struct members" do
 		@config.plugins.filestore.maxsize = 1024
 		@config.plugins.filestore.maxsize.should == 1024
@@ -270,7 +263,7 @@ describe ThingFish::Config do
 
 		@config.create_configured_filters
 	end
-	
+
 
 	# With no source
 	describe " created with no source" do
@@ -327,7 +320,7 @@ describe ThingFish::Config do
 
 			filters.should == [:json, :xml, :something]
 		end
-		
+
 	end
 
 
@@ -584,7 +577,7 @@ describe ThingFish::Config do
 			}.should raise_error( RuntimeError, /isn't populated yet/i )
 		end
 
-		
+
 		it "yields tuples for handlers that should be mapped into the urispace" do
 			ThingFish::Handler.should_receive( :create ).with( 'simplemetadata', '/metadata', {} ).
 				and_return( :metadata )

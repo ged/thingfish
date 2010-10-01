@@ -8,25 +8,24 @@ BEGIN {
 	libdir = basedir + "lib"
 	pluglibdir = plugindir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/filter_behavior'
+
+require 'rbconfig'
+
+require 'thingfish'
+require 'thingfish/filter'
+
 begin
-	require 'rbconfig'
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'thingfish'
-	require 'thingfish/filter'
 	require 'thingfish/filter/image'
-	require 'spec/lib/filter_behavior'
 	$have_imagefilter = true
 rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-
 	class ThingFish::ImageFilter
 		DEFAULT_OPTIONS = {}
 	end

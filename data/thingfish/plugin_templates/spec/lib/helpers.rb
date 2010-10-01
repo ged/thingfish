@@ -1,23 +1,16 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # coding: utf-8
 
-begin
-	require 'thingfish'
-	require 'thingfish/constants'
-	require 'thingfish/utils'
-	
-	require 'digest/md5'
-	require 'net/http'
-	require 'net/protocol'
+require 'spec/lib/constants'
 
-	require 'spec/lib/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'digest/md5'
+require 'net/http'
+require 'net/protocol'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/utils'
+
 
 include ThingFish::TestConstants
 include ThingFish::Constants
@@ -43,8 +36,8 @@ module ThingFish::SpecHelpers
 		end
 		return response
 	end
-	
-	
+
+
 	### Return the correct Net::HTTPResponse class for the given +code+ (because it's
 	### private in Net::HTTPResponse itself)
 	def response_class_for_httpcode( code )
@@ -52,8 +45,8 @@ module ThingFish::SpecHelpers
 		Net::HTTPResponse::CODE_CLASS_TO_OBJ[code[0,1]] or
 		HTTPUnknownResponse
 	end
-	
-	
+
+
 	### Return a Net::HTTPSuccess object with empty contents, as if from a HEAD 
 	### request.
 	def with_fixtured_http_head_response
@@ -66,7 +59,7 @@ module ThingFish::SpecHelpers
 		end
 		return response
 	end
-	
+
 	### Create a temporary working directory and return
 	### a Pathname object for it.
 	###
@@ -78,17 +71,17 @@ module ThingFish::SpecHelpers
 		  ]
 		tempdir = Pathname.new( Dir.tmpdir ) + dirname
 		tempdir.mkpath
-		
+
 		return tempdir
 	end
-	
+
 
 	### Reset the logging subsystem to its default state.
 	def reset_logging
 		ThingFish.reset_logger
 	end
-	
-	
+
+
 	### Alter the output of the default log formatter to be pretty in SpecMate output
 	def setup_logging( level=Logger::FATAL )
 
@@ -96,7 +89,7 @@ module ThingFish::SpecHelpers
 		if ThingFish::Loggable::LEVEL.key?( level )
 			level = ThingFish::Loggable::LEVEL[ level ]
 		end
-		
+
 		logger = Logger.new( $stderr )
 		ThingFish.logger = logger
 		ThingFish.logger.level = level
@@ -106,7 +99,7 @@ module ThingFish::SpecHelpers
 			ThingFish.logger.formatter = ThingFish::HtmlLogFormatter.new( logger )
 		end
 	end
-	
+
 end
 
 # Override the badly-formatted output of the RSpec HTML formatter
@@ -115,27 +108,27 @@ require 'spec/runner/formatter/html_formatter'
 class Spec::Runner::Formatter::HtmlFormatter
 	def example_failed( example, counter, failure )
 		failure_style = failure.pending_fixed? ? 'pending_fixed' : 'failed'
-		
+
 		unless @header_red
 			@output.puts "    <script type=\"text/javascript\">makeRed('rspec-header');</script>"
 			@header_red = true
 		end
-		
+
 		unless @example_group_red
 			css_class = 'example_group_%d' % [current_example_group_number || 0]
 			@output.puts "    <script type=\"text/javascript\">makeRed('#{css_class}');</script>"
 			@example_group_red = true
 		end
-		
+
 		move_progress()
-		
+
 		@output.puts "    <dd class=\"spec #{failure_style}\">",
 		             "      <span class=\"failed_spec_name\">#{h(example.description)}</span>",
 		             "      <div class=\"failure\" id=\"failure_#{counter}\">"
 		if failure.exception
 			backtrace = format_backtrace( failure.exception.backtrace )
 			message = failure.exception.message
-			
+
 			@output.puts "        <div class=\"message\"><code>#{h message}</code></div>",
 			             "        <div class=\"backtrace\"><pre>#{backtrace}</pre></div>"
 		end
@@ -143,7 +136,7 @@ class Spec::Runner::Formatter::HtmlFormatter
 		if extra = extra_failure_content( failure )
 			@output.puts( extra )
 		end
-		
+
 		@output.puts "      </div>",
 		             "    </dd>"
 		@output.flush
@@ -151,7 +144,7 @@ class Spec::Runner::Formatter::HtmlFormatter
 
 
 	alias_method :default_global_styles, :global_styles
-	
+
 	def global_styles
 		css = default_global_styles()
 		css << %Q{
@@ -224,7 +217,7 @@ class Spec::Runner::Formatter::HtmlFormatter
 				color:  white;
 			}
 		}
-		
+
 		return css
 	end
 end

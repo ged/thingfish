@@ -1,4 +1,4 @@
-#!/usr/bin/ruby 
+#!/usr/bin/env ruby 
 # 
 # A collection of standard filters for the manual generation tasklib.
 # 
@@ -39,7 +39,7 @@ end
 ### caption::
 ###   A small blurb to put below the pulled-out example in the HTML.
 class ExamplesFilter < Manual::Page::Filter
-	
+
 	DEFAULTS = {
 		:language     => :ruby,
 		:line_numbers => :inline,
@@ -62,7 +62,7 @@ class ExamplesFilter < Manual::Page::Filter
 			)?
 		\?>
 	  }x
-	
+
 	EndPI = %r{ <\? end (?: \s+ example )? \s* \?> }x
 
 
@@ -85,8 +85,8 @@ class ExamplesFilter < Manual::Page::Filter
 			raise
 		end
 	end
-	
-	
+
+
 	######
 	public
 	######
@@ -94,15 +94,15 @@ class ExamplesFilter < Manual::Page::Filter
 	### Process the given +source+ for <?example ... ?> processing-instructions, calling out
 	def process( source, page, metadata )
 		scanner = StringScanner.new( source )
-		
+
 		buffer = ''
 		until scanner.eos?
 			startpos = scanner.pos
-			
+
 			# If we find an example
 			if scanner.skip_until( ExamplePI )
 				contents = ''
-				
+
 				# Append the interstitial content to the buffer
 				if ( scanner.pos - startpos > scanner.matched.length )
 					offset = scanner.pos - scanner.matched.length - 1
@@ -112,13 +112,13 @@ class ExamplesFilter < Manual::Page::Filter
 				# Append everything up to it to the buffer and save the contents of
 				# the tag
 				params = scanner[1]
-				
+
 				# Now find the end of the example or complain
 				contentpos = scanner.pos
 				scanner.skip_until( EndPI ) or
 					raise "Unterminated example at line %d" % 
 						[ scanner.string[0..scanner.pos].count("\n") ]
-				
+
 				# Now build the example and append to the buffer
 				if ( scanner.pos - contentpos > scanner.matched.length )
 					offset = scanner.pos - scanner.matched.length - 1
@@ -134,11 +134,11 @@ class ExamplesFilter < Manual::Page::Filter
 		end
 		buffer << scanner.rest
 		scanner.terminate
-		
+
 		return buffer
 	end
-	
-	
+
+
 	### Filter out 'example' macros, doing syntax highlighting, and running
 	### 'testable' examples through a validation process appropriate to the
 	### language the example is in.
@@ -147,7 +147,7 @@ class ExamplesFilter < Manual::Page::Filter
 		caption = options.delete( :caption )
 		content = ''
 		lang = options.delete( :language ).to_s
-		
+
 		# Test it if it's testable
 		if options[:testable]
 			content = test_content( body, lang, page )
@@ -179,7 +179,7 @@ class ExamplesFilter < Manual::Page::Filter
 		end
 		return DEFAULTS.merge( args )
 	end
-	
+
 
 	### Test the given +content+ with a rule specific to the given +language+.
 	def test_content( body, language, page )
@@ -194,8 +194,8 @@ class ExamplesFilter < Manual::Page::Filter
 			return body
 		end
 	end
-	
-		
+
+
 	### Test the specified Ruby content for valid syntax
 	def test_ruby_content( source, page )
 		# $stderr.puts "Testing ruby content..."
@@ -222,8 +222,8 @@ class ExamplesFilter < Manual::Page::Filter
 		return "%s while testing: %s\n  %s" %
 			[ err.class.name, err.message, err.backtrace.join("\n  ") ]
 	end
-	
-	
+
+
 	### Test the specified YAML content for valid syntax
 	def test_yaml_content( source, metadata )
 		YAML.load( source )
@@ -232,13 +232,13 @@ class ExamplesFilter < Manual::Page::Filter
 	else
 		return source
 	end
-	
-	
+
+
 	### Highlights the given +content+ in language +lang+.
 	def highlight( content, options, lang )
 		source = ERB::Util.html_escape( content )
 		return %Q{\n\n<pre class="brush:#{lang}">#{source}</pre>\n\n}
 	end
-	
+
 end
 

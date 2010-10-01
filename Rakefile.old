@@ -21,8 +21,6 @@ BEGIN {
 }
 
 
-require 'rubygems'
-
 require 'rake'
 require 'tmpdir'
 require 'pathname'

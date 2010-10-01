@@ -1,4 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'mp3info'
+
+require 'thingfish'
+require 'thingfish/filter'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+
+
 #
 # An MP3 metadata-extraction filter for ThingFish
 #
@@ -23,26 +33,6 @@
 #
 # Please see the LICENSE file for licensing details.
 #
-
-
-begin
-	require 'mp3info'
-
-	require 'thingfish'
-	require 'thingfish/filter'
-	require 'thingfish/mixins'
-	require 'thingfish/constants'
-	require 'thingfish/acceptparam'
-rescue LoadError => err
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### A MP3-metadata extraction filter for ThingFish. It extracts metadata from requests
 class ThingFish::MP3Filter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants

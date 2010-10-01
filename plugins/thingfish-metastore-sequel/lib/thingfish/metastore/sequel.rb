@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # ThingFish::SequelMetaStore-- a metastore plugin for ThingFish.
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # A metastore that uses simple key/value pairs for ThingFish
 #

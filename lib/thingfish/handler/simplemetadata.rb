@@ -1,4 +1,11 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'thingfish'
+require 'thingfish/metastore/simple'
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
 #
 # A metadata handler for the thingfish daemon. This handler provides
 # a REST interface to metadata information when the daemon is configured
@@ -25,23 +32,6 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
-begin
-	require 'thingfish'
-	require 'thingfish/metastore/simple'
-	require 'thingfish/constants'
-	require 'thingfish/handler'
-	require 'thingfish/mixins'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-### The default metadata handler for the thingfish daemon when configured with
-### a ThingFish::SimpleMetaStore.
 class ThingFish::SimpleMetadataHandler < ThingFish::Handler
 	include ThingFish::Constants,
 		ThingFish::Constants::Patterns,

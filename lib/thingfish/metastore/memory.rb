@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 require 'thingfish/metastore/simple'
 require 'thingfish/constants'

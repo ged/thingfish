@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # The static resources handler -- serves static content from a directory. This is the
 # handler that's installed by the ThingFish::StaticResourcesHandler mixin ahead of

@@ -1,8 +1,12 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'thingfish/mixins'
+require 'thingfish/constants'
+
 #
-# This file
-# includes various necessary modifications to libraries we depend on. It pains us to
-# do it, but sometimes you just gotta patch the monkey.
+# This file includes various necessary modifications to libraries we
+# depend on. It pains us to do it, but sometimes you just gotta patch
+# the monkey.
 #
 # == Version
 #
@@ -21,9 +25,6 @@
 #
 #
 #
-
-require 'thingfish/mixins'
-require 'thingfish/constants'
 
 ### Add HTML output to the core Object
 class Object

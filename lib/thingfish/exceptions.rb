@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # A collection of exceptions for exceptional error handling.  har!
 #

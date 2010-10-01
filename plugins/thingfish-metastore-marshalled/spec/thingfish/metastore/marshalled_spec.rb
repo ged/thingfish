@@ -8,26 +8,20 @@ BEGIN {
 	libdir = basedir + "lib"
 	pluglibdir = plugindir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-begin
-	require 'pathname'
-	require 'tmpdir'
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/metastore_behavior'
-	require 'thingfish/metastore/marshalled'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/metastore_behavior'
 
+require 'pathname'
+require 'tmpdir'
+
+require 'thingfish/metastore/marshalled'
 
 
 #####################################################################
@@ -56,7 +50,6 @@ describe ThingFish::MarshalledMetaStore do
 	after( :all ) do
 		reset_logging()
 	end
-
 
 
 	it_should_behave_like "A MetaStore"

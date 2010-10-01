@@ -6,32 +6,26 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/handler_behavior'
-	require 'time'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/handler_behavior'
 
-	require 'thingfish'
-	require 'thingfish/handler/default'
-	require 'thingfish/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'time'
+
+require 'thingfish'
+require 'thingfish/handler/default'
+require 'thingfish/constants'
+
 
 
 include ThingFish::Constants
 include ThingFish::TestConstants
 include ThingFish::SpecHelpers
-
 
 #####################################################################
 ###	C O N T E X T S

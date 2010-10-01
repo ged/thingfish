@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # ThingFish::SQLite3MetaStore-- a metastore plugin for ThingFish.
 #

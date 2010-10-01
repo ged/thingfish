@@ -9,35 +9,32 @@ BEGIN {
 	libdir = basedir + 'lib'
 
 	$LOAD_PATH.unshift( pluginlibdir ) unless $LOAD_PATH.include?( pluginlibdir )
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
 $rdfmetastore_load_error = nil
 
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/metastore_behavior'
+
+require 'rbconfig'
+require 'ipaddr'
+
+require 'thingfish'
+require 'thingfish/metastore'
+
 begin
-	require 'rbconfig'
-	require 'ipaddr'
-
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/metastore_behavior'
-
-	require 'thingfish'
-	require 'thingfish/metastore'
 	require 'thingfish/metastore/rdf'
 rescue LoadError => err
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-
 	class ThingFish::RdfMetaStore
 		DEFAULT_OPTIONS = {}
 	end
-
 	$rdfmetastore_load_error = err
 end
+
 
 describe ThingFish::RdfMetaStore do
 

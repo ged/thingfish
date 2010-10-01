@@ -8,13 +8,14 @@ BEGIN {
 	libdir = basedir + "lib"
 	pluglibdir = plugindir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
 require 'pathname'
 require 'tmpdir'
-require 'spec/runner'
+require 'spec'
 require 'spec/lib/constants'
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'

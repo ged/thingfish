@@ -1,58 +1,41 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'ostruct'
+require 'tmail'
+require 'thingfish/client'
+require 'thingfish/resource'
+
 # 
-# Check the specified MAILDIR for new messages, delivering each to the given instance of ThingFish if any are found.
+# Check the specified MAILDIR for new messages, delivering each to the 
+# given instance of ThingFish if any are found.
 # 
 # == Synopsis
 #
 #   $ ml_archiver.rb OPTIONS MAILDIR [THINGFISH_HOST]
 # 
-
-BEGIN {
-	require 'pathname'
-	
-	basedir = Pathname.new( __FILE__ ).dirname.parent
-	libdir = basedir + 'lib'
-
-	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
-}
-
-begin
-	require 'optparse'
-	require 'ostruct'
-	require 'tmail'
-	require 'thingfish/client'
-	require 'thingfish/resource'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
 class DefaultArchiver
-	
+
 	@available_archivers = [ self ]
 	class << self
 		attr_reader :available_archivers
 	end
-	
-	
+
+
 	### When inherited, register the new subclass as an available archiver.
 	def self::inherited( klass )
 		@available_archivers << klass
 		super
 	end
-	
-	
+
+
 	### Return a list of human-friendly archiver names with the word "archiver"
 	### stripped off and the remainder downcased.
 	def self::archiver_names
 		available_archivers.map {|klass| klass.name.sub( /Archiver$/, '' ).downcase }
 	end
-	
-	
+
+
 	### Given a human-friendly archiver name, return the corresponding class
 	### object
 	def self::get_archiver( name )
@@ -60,7 +43,7 @@ class DefaultArchiver
 
 		raise "Ambiguous archiver name '#{name}'; found: #{archiver.inspect}" if
 			archiver.size > 1
-			
+
 		raise "No archiver found to match '#{name}'" if archiver.empty?
 
 		return archiver.first
@@ -84,15 +67,15 @@ class DefaultArchiver
 
 			oparser.separator ''
 			oparser.separator "Runtime options"
-			
+
 			oparser.on( '-v', '--verbose', FalseClass, "Turn verbose output on" ) do
 				options.verbose = true
 			end
-			
+
 			oparser.on( '-d', '--debug', FalseClass, "Turn debugging output on" ) do
 				options.debugging = true
 			end
-				
+
 			oparser.on( '-n', '--dry-run', FalseClass, "Don't actually upload anything, ",
 				"just show what would be done." ) do
 				options.dryrun = true
@@ -101,7 +84,7 @@ class DefaultArchiver
 			oparser.on( '-k', '--keep-going', FalseClass, "Keep going after an upload error." ) do
 				options.keepgoing = true
 			end
-			
+
 			oparser.on( '-a', '--archiver=STRING', String,
 				"Select which archiver to use.",
 				"Available archivers: ",
@@ -148,7 +131,7 @@ class DefaultArchiver
 		options.dryrun		= false
 		options.keepgoing	= false
 		options.archiver    = 'default'
-		
+
 		return options
 	end
 
@@ -216,7 +199,7 @@ class DefaultArchiver
 		# For each new mail
 		maildir.each_port do |port|
 			debug_msg "processing port in file #{port.filename}"
-			
+
 			if port.seen?
 				verbose_msg "skipping seen port"
 				next
@@ -290,8 +273,8 @@ class DefaultArchiver
 
 		debug_msg "Uploaded as %s" % [ resource.uuid ]
 	end
-	
-	
+
+
 	### Given a mailing list message, parse out the name of the mailing list
 	### that it was sent to
 	def parse_list_name( message )
@@ -304,7 +287,7 @@ class DefaultArchiver
 		$stderr.puts( msg.chomp )
 		$stderr.flush
 	end
-		
+
 
 	### Output +msg+ to STDERR and flush it if $VERBOSE is true.
 	def verbose_msg( msg )

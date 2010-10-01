@@ -6,24 +6,20 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'rbconfig'
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'thingfish'
-	require 'thingfish/filter'
-	require 'thingfish/filter/ruby'
-	require 'spec/lib/filter_behavior'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/filter_behavior'
+
+require 'rbconfig'
+
+require 'thingfish'
+require 'thingfish/filter'
+require 'thingfish/filter/ruby'
+
 
 include ThingFish::TestConstants
 include ThingFish::Constants

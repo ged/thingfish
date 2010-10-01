@@ -3,26 +3,20 @@
 BEGIN {
 	require 'pathname'
 	basedir = Pathname.new( __FILE__ ).dirname.parent
-	
+
 	libdir = basedir + "lib"
-	
+
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-begin
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'thingfish'
-	require 'thingfish/constants'
-	require 'thingfish/filter'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/filter'
 
 
 describe "A Filter", :shared => true do
@@ -53,7 +47,7 @@ describe "A Filter", :shared => true do
 	it "knows what its plugin name is" do
 		@filter.class.plugin_name.should be_an_instance_of( String )
 	end
-	
-	
+
+
 end
 

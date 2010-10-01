@@ -1,9 +1,10 @@
 --- 
 excluded_pkgfiles: []
 
-project_pubdir: /usr/local/laika/www/public/thingfish/
-project_pubhost: opensource.laika.com
+project_pubdir: /usr/local/www/public/code/
+project_pubhost: deveiate.org
 project_homepage: http://bitbucket.org/laika/thingfish
+gem_pubhost: rubygems.org
 project_requirements: 
   cl_xmlserial: ">= 1.1.0"
   redland-bindings: ">= 1.0.8.1"

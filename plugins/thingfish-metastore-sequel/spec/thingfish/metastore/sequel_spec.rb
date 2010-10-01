@@ -8,25 +8,21 @@ BEGIN {
 	libdir = basedir + "lib"
 	pluglibdir = plugindir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-begin
-	require 'pathname'
-	require 'tmpdir'
-	require 'spec'
-	require 'spec/lib/metastore_behavior'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'thingfish/metastore/sequel'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/metastore_behavior'
+
+require 'pathname'
+require 'tmpdir'
+
+require 'thingfish/metastore/sequel'
+
 
 include ThingFish::SpecHelpers
 include ThingFish::TestConstants

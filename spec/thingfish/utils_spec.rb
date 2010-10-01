@@ -9,20 +9,13 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
-begin
-	require 'stringio'
-	require 'spec'
-	require 'spec/lib/helpers'
-	require 'spec/lib/constants'
+require 'spec'
+require 'spec/lib/helpers'
+require 'spec/lib/constants'
 
-	require "thingfish/utils"
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'stringio'
+
+require 'thingfish/utils'
 
 
 #####################################################################
@@ -138,7 +131,7 @@ describe ThingFish::Table do
 		ot['accept'].should == 'thing'
 		ot['cookie-flavor'].should == 'peanut butter'
 	end
-	
+
 
 	it "dupes its inner hash when duped" do
 		newtable = @table.dup

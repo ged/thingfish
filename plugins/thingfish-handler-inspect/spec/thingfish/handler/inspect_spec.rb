@@ -8,28 +8,23 @@ BEGIN {
 	libdir = basedir + "lib"
 	pluglibdir = plugindir + "lib"
 
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-begin
-	require 'pathname'
-	require 'stringio'
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/handler_behavior'
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/handler_behavior'
 
-	require 'thingfish/constants'
-	require 'thingfish/handler/inspect'
-	require 'thingfish/exceptions'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'pathname'
+require 'stringio'
+
+require 'thingfish/constants'
+require 'thingfish/handler/inspect'
+require 'thingfish/exceptions'
+
 
 include ThingFish::Constants,
 		ThingFish::TestConstants,

@@ -1,4 +1,15 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'pp'
+require 'rbconfig'
+require 'pathname'
+
+require 'thingfish/mixins'
+require 'thingfish/handler'
+require 'thingfish/constants'
+require 'thingfish/exceptions'
+
+
 #
 # Output a quick inspection page
 #
@@ -24,27 +35,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'pp'
-	require 'rbconfig'
-	require 'pathname'
-	require 'thingfish/mixins'
-	require 'thingfish/handler'
-	require 'thingfish/constants'
-	require 'thingfish/exceptions'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### Output a quick inspection page
 class ThingFish::InspectHandler < ThingFish::Handler
 	include ThingFish::Loggable,
 		ThingFish::Constants,

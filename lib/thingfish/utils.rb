@@ -1,4 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'forwardable'
+require 'logger'
+require 'erb'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/mixins'
+
+
 #
 # A collection of little utility classes used elsewhere throughout the code
 #
@@ -36,18 +46,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'forwardable'
-require 'logger'
-require 'erb'
-
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/mixins'
-
-
 module ThingFish # :nodoc:
 
 	### A case-insensitive multivalue hash that allows access via Symbol or String.

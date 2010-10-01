@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # 
 # Spike to test out class and mixin generation from RDF specs/schemas
 #

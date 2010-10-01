@@ -9,29 +9,26 @@ BEGIN {
 	libdir = basedir + 'lib'
 
 	$LOAD_PATH.unshift( pluginlibdir ) unless $LOAD_PATH.include?( pluginlibdir )
+	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
 $_load_error = nil
 
+require 'rbconfig'
+require 'ipaddr'
+
+require 'spec'
+require 'spec/lib/constants'
+require 'spec/lib/helpers'
+require 'spec/lib/advanced_metastore_behavior'
+
+require 'thingfish'
+require 'thingfish/metastore'
+
 begin
-	require 'rbconfig'
-	require 'ipaddr'
-
-	require 'spec'
-	require 'spec/lib/constants'
-	require 'spec/lib/helpers'
-	require 'spec/lib/advanced_metastore_behavior'
-
-	require 'thingfish'
-	require 'thingfish/metastore'
 	require 'thingfish/metastore/semantic'
 rescue LoadError => err
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-
 	class ThingFish::SemanticMetaStore
 		DEFAULT_OPTIONS = {}
 	end

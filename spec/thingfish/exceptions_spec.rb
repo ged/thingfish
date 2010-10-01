@@ -9,20 +9,13 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
-begin
-	require 'stringio'
-	require 'spec'
-	require 'spec/lib/helpers'
-	require 'spec/lib/constants'
+require 'spec'
+require 'spec/lib/helpers'
+require 'spec/lib/constants'
 
-	require "thingfish/exceptions"
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'stringio'
+
+require 'thingfish/exceptions'
 
 
 include ThingFish::SpecHelpers

@@ -1,4 +1,9 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'logger'
+require 'pluginfactory'
+require 'uuidtools'
+
 #
 # Network-accessable searchable datastore
 #
@@ -16,24 +21,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'logger'
-	require 'pluginfactory'
-	require 'uuidtools'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-
-### Toplevel namespace module
 module ThingFish
 
 	# VCS Revision

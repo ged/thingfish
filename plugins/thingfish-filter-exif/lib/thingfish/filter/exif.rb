@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # An EXIF metadata-extraction filter for ThingFish, using ruby's exifr module.
 # http://exifr.rubyforge.org/

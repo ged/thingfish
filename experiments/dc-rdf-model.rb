@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 # Load the Dublin Core and the RDF namespace and schema into a model and drop into IRB
 # 

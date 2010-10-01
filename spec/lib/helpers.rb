@@ -1,23 +1,15 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # coding: utf-8
 
-begin
-	require 'thingfish'
-	require 'thingfish/constants'
-	require 'thingfish/utils'
+require 'spec/lib/constants'
 
-	require 'digest/md5'
-	require 'net/http'
-	require 'net/protocol'
+require 'digest/md5'
+require 'net/http'
+require 'net/protocol'
 
-	require 'spec/lib/constants'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/utils'
 
 
 module ThingFish::SpecHelpers

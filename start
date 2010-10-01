@@ -17,7 +17,7 @@
 # 
 
 BEGIN {
-	$LOAD_PATH.unshift( 'lib' )
+	$LOAD_PATH.unshift( File.expand_path('./lib') )
 }
 
 require 'rubygems'

@@ -1,4 +1,12 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'RMagick'
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+
 #
 # An image conversion/extraction filter for ThingFish
 #
@@ -22,26 +30,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-begin
-	require 'RMagick'
-
-	require 'thingfish'
-	require 'thingfish/mixins'
-	require 'thingfish/constants'
-	require 'thingfish/acceptparam'
-rescue LoadError
-	unless Object.const_defined?( :Gem )
-		require 'rubygems'
-		retry
-	end
-	raise
-end
-
-
-### An image extraction and conversion filter for ThingFish.
 class ThingFish::ImageFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants

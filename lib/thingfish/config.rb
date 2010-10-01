@@ -1,4 +1,20 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
+
+require 'tmpdir'
+require 'pathname'
+require 'forwardable'
+require 'yaml'
+require 'logger'
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/mixins'
+require 'thingfish/utils'
+require 'thingfish/filter'
+require 'thingfish/filestore'
+require 'thingfish/metastore'
+require 'thingfish/urimap'
+
 #
 # The ThingFish config reader/writer class
 #
@@ -25,24 +41,6 @@
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
 #
-
-require 'tmpdir'
-require 'pathname'
-require 'forwardable'
-require 'yaml'
-require 'logger'
-
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/mixins'
-require 'thingfish/utils'
-require 'thingfish/filter'
-require 'thingfish/filestore'
-require 'thingfish/metastore'
-require 'thingfish/urimap'
-
-
-### The configuration reader/writer class for ThingFish::Daemon.
 class ThingFish::Config
 	extend Forwardable
 
@@ -698,11 +696,10 @@ class ThingFish::Config
 		### Handle calls to key-methods
 		def method_missing( sym, *args )
 			key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
-			return nil unless sym.to_s =~ /=$/ || @hash.key?( key )
 
 			self.class.class_eval {
 				define_method( key ) {
-					if @hash[ key ].is_a?( Hash )
+					if !@hash[ key] || @hash[ key ].is_a?( Hash )
 						@hash[ key ] = ConfigStruct.new( @hash[key] )
 					end
 

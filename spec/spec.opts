@@ -1,5 +1,4 @@
--r
-loadpath.rb
 -f
 s
 -c
+-Du

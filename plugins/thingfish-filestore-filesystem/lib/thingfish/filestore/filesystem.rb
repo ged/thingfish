@@ -121,7 +121,7 @@ class ThingFish::FilesystemFileStore < ThingFish::FileStore
 		:poll_max_sleep => 0.08,
 		:dont_clean     => false,
 		:dont_sweep     => false,
-		:debug			=> false,
+		:debug			=> true,
 	}
 
 

@@ -403,7 +403,10 @@ class ThingFish::Config
 
 	### Returns +true+ for methods which can be autoloaded
 	def respond_to?( sym )
-		return true if @struct.member?( sym.to_s.sub(/(=|\?)$/, '').to_sym )
+		self.log.debug "Checking response to %p message..." % [ sym ]
+		key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
+		self.log.debug "  normalized key is: %p, struct members are: %p" % [ key, @struct.members ]
+		return true if @struct.member?( key )
 		super
 	end
 
@@ -480,11 +483,13 @@ class ThingFish::Config
 		key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
 		return nil unless @struct.member?( key )
 
-		self.class.class_eval %{
-			def #{key}; @struct.#{key}; end
-			def #{key}=(arg); @struct.#{key} = arg; end
-			def #{key}?; @struct.#{key}?; end
-		}
+		reader    = lambda { @struct[key] }
+		writer    = lambda {|arg| @struct[key] = arg }
+		predicate = lambda { @struct.send("#{key}?") }
+
+		self.class.send( :define_method, key, &reader )
+		self.class.send( :define_method, "#{key}=", &writer )
+		self.class.send( :define_method, "${key}?", &predicate )
 
 		return self.method( sym ).call( *args )
 	end
@@ -560,14 +565,15 @@ class ThingFish::Config
 	### Hash-wrapper that allows struct-like accessor calls on nested
 	### hashes.
 	class ConfigStruct
-		include Enumerable, ThingFish::Loggable
+		include Enumerable,
+		        ThingFish::Loggable
 		extend Forwardable
 
 		# Mask most of Kernel's methods away so they don't collide with
 		# config values.
 		Kernel.methods(false).each {|meth|
 			next unless method_defined?( meth )
-			next if /^(?:__|dup|object_id|inspect|class|raise|method_missing)/.match( meth )
+			next if /^(?:__|dup|object_id|inspect|class|raise|method_missing|log)/.match( meth )
 			undef_method( meth )
 		}
 
@@ -590,6 +596,19 @@ class ThingFish::Config
 		# Modification flag. Set to +true+ to indicate the contents of the
 		# Struct have changed since it was created.
 		attr_writer :modified
+
+
+		### Return a human-readable representation of the object suitable for
+		### debugging.
+		def inspect
+			default = super
+			return "#<%p 0x%0x: %s (%s)>" % [
+				self.class,
+				self.object_id * 2,
+				default,
+				self.modified? ? "modified" : "not modified"
+			]
+		end
 
 
 		### Returns +true+ if the ConfigStruct or any of its sub-structs
@@ -626,7 +645,10 @@ class ThingFish::Config
 		### Return +true+ if the receiver responds to the given
 		### method. Overridden to grok autoloaded methods.
 		def respond_to?( sym, priv=false )
+			raise "Chumba!"
+			self.log.debug "Checking response to %p message..." % [ sym ]
 			key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
+			self.log.debug "  normalized key is: %p, hash keys are: %p" % [ key, @hash.keys ]
 			return true if @hash.key?( key )
 			super
 		end

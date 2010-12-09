@@ -5,6 +5,9 @@ BEGIN {
 	basedir = Pathname.new( __FILE__ ).dirname
 	libdir = basedir + "lib"
 
+	puts ">>> Adding #{basedir} to load path..."
+	$LOAD_PATH.unshift( basedir.to_s )
+
 	puts ">>> Adding #{libdir} to load path..."
 	$LOAD_PATH.unshift( libdir.to_s )
 

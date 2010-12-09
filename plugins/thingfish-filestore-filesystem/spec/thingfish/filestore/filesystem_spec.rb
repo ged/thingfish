@@ -20,7 +20,16 @@ require 'spec/lib/filestore_behavior'
 
 require 'pathname'
 require 'tmpdir'
+require 'lockfile'
 require 'thingfish/filestore/filesystem'
+
+
+class Lockfile
+	def trace( s=nil )
+		s ||= yield
+		ThingFish.logger.debug( s )
+	end
+end
 
 
 #####################################################################
@@ -28,7 +37,6 @@ require 'thingfish/filestore/filesystem'
 #####################################################################
 
 # protected -> public for testing ease
-#
 class ThingFish::FilesystemFileStore
 	public :sizecache
 end
@@ -54,8 +62,9 @@ describe ThingFish::FilesystemFileStore do
 		before(:each) do
 			lockopts = ThingFish::FilesystemFileStore::DEFAULT_LOCKING_OPTIONS
 			lockopts[ :debug ] = true
-			
-		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir, :locking => lockopts )
+
+		    @fs = ThingFish::FileStore.create( 'filesystem', @tmpdir, @spooldir,
+		 		:locking => lockopts )
 			@io = StringIO.new( TEST_RESOURCE_CONTENT )
 		end
 

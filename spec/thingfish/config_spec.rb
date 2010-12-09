@@ -35,7 +35,7 @@ describe ThingFish::Config do
 	include ThingFish::SpecHelpers
 
 	before( :all ) do
-		setup_logging( :fatal )
+		setup_logging( :debug )
 
 		@test_config = %{
 		---
@@ -87,8 +87,10 @@ describe ThingFish::Config do
 	end
 
 	it "responds to methods which are the same as struct members" do
-		@config.respond_to?( :ip ).should == true
-		@config.plugins.respond_to?( :urimap ).should == true
+		@config.should respond_to( :ip )
+		plugins = @config.plugins
+		ThingFish.logger.debug "@config.plugins is a %p: %p" % [ plugins.class, plugins ]
+		plugins.should respond_to( :urimap )
 		@config.respond_to?( :pork_sausage ).should == false
 	end
 

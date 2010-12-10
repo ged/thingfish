@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -28,7 +28,6 @@ end
 #####################################################################
 
 describe ThingFish::MetaStore do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )

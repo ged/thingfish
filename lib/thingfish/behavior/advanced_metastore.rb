@@ -1,35 +1,23 @@
 #!/usr/bin/env ruby
 
-BEGIN {
-	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
-
-	libdir = basedir + "lib"
-
-	$LOAD_PATH.unshift( basedir ) unless $LOAD_PATH.include?( basedir )
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
-}
-
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
-require 'spec/lib/metastore_behavior'
+require 'rspec'
 
 require 'thingfish'
+require 'thingfish/behavior/metastore'
 require 'thingfish/constants'
 require 'thingfish/metastore'
 
-include ThingFish::TestConstants
 
-describe "An advanced MetaStore", :shared => true do
-	include ThingFish::SpecHelpers
+share_examples_for "an advanced metastore" do
 
-	it_should_behave_like "A MetaStore"
+	it_should_behave_like "a metastore"
+
+	TEST_TITLE = 'Wearable the Walleye Goes It Alone'
 
 
-	describe "set-fetching API" do
+	context "set-fetching API" do
+
 		before( :each ) do
-			pending "Fixes in Redland to support DESCRIBE and/or CONSTRUCT with LIMIT/ORDER"
 
 			@uuids = []
 			@uuid_titles = {}
@@ -38,9 +26,9 @@ describe "An advanced MetaStore", :shared => true do
 				uuid = UUIDTools::UUID.timestamp_create
 				title = "%s (%s)" % [ TEST_TITLE, Digest::MD5.hexdigest(uuid) ]
 
-				@store.set_property( uuid,  :title, title )
-				@store.set_property( uuid,  :bitrate, '160' )
-				@store.set_property( uuid,  :namespace, 'devlibrary' )
+				metastore.set_property( uuid,  :title, title )
+				metastore.set_property( uuid,  :bitrate, '160' )
+				metastore.set_property( uuid,  :namespace, 'devlibrary' )
 
 				@uuids << uuid.to_s
 				@uuid_titles[ uuid.to_s ] = title
@@ -48,7 +36,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in natural order with no limit" do
-			results = @store.get_resource_set
+			results = metastore.get_resource_set
 
 			results.should have( 20 ).members
 
@@ -59,7 +47,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in natural order with a limit" do
-			results = @store.get_resource_set( [], 5 )
+			results = metastore.get_resource_set( [], 5 )
 
 			results.should have( 5 ).members
 
@@ -71,7 +59,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in natural order with a limit and offset" do
-			results = @store.get_resource_set( [], 5, 5 )
+			results = metastore.get_resource_set( [], 5, 5 )
 
 			results.should have( 5 ).members
 
@@ -83,7 +71,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in natural order with an offset, but no limit" do
-			results = @store.get_resource_set( [], 0, 5 )
+			results = metastore.get_resource_set( [], 0, 5 )
 
 			results.should have( 15 ).members
 
@@ -95,7 +83,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in sorted order with no limit" do
-			results = @store.get_resource_set( [:title] )
+			results = metastore.get_resource_set( [:title] )
 
 			results.should have( 20 ).members
 
@@ -106,7 +94,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in sorted order with a limit" do
-			results = @store.get_resource_set( [:title], 5 )
+			results = metastore.get_resource_set( [:title], 5 )
 
 			results.should have( 5 ).members
 
@@ -120,7 +108,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in sorted order with a limit and offset" do
-			results = @store.get_resource_set( [:title], 5, 5 )
+			results = metastore.get_resource_set( [:title], 5, 5 )
 
 			results.should have( 5 ).members
 
@@ -134,7 +122,7 @@ describe "An advanced MetaStore", :shared => true do
 		end
 
 		it "can fetch a set of resources in sorted order with an offset, but no limit" do
-			results = @store.get_resource_set( [:title], 0, 5 )
+			results = metastore.get_resource_set( [:title], 0, 5 )
 
 			results.should have( 15 ).members
 

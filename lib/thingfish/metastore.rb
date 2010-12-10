@@ -73,6 +73,7 @@ class ThingFish::MetaStore
 	include Enumerable,
 	        PluginFactory,
 	        ThingFish::Loggable,
+	        ThingFish::Constants,
 	        ThingFish::AbstractClass,
 	        ThingFish::HtmlInspectableObject
 

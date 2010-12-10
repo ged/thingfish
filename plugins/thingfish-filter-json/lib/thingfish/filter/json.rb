@@ -124,7 +124,7 @@ class ThingFish::JSONFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => JSON::VERSION_ARRAY,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => accepts,
 			'generates' => accepts,
 		  }

@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
-require 'spec/lib/constants'
+require 'thingfish/testconstants'
 
 require 'digest/md5'
 require 'net/http'
@@ -12,8 +12,6 @@ require 'thingfish/constants'
 require 'thingfish/utils'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 module ThingFish::SpecHelpers
 

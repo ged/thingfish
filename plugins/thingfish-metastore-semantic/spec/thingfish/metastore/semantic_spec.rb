@@ -15,15 +15,15 @@ BEGIN {
 
 $_load_error = nil
 
+require 'rspec'
+
 require 'rbconfig'
 require 'ipaddr'
 
-require 'spec'
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
-require 'spec/lib/advanced_metastore_behavior'
 
 require 'thingfish'
+require 'thingfish/behavior/advanced_metastore'
 require 'thingfish/metastore'
 
 begin
@@ -36,22 +36,29 @@ rescue LoadError => err
 	$_load_error = err
 end
 
+
 describe ThingFish::SemanticMetaStore do
 
 	before(:all) do
 		setup_logging( :fatal )
 	end
 
+	let( :metastore ) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent.parent + 'resources'
+		ThingFish::MetaStore.create( 'semantic', nil, nil, :label => nil, :resource_dir => resdir )
+	end
+
 	before( :each ) do
 		pending "couldn't load the semantic metastore: %s" % [ $_load_error ] if $_load_error
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent.parent + 'resources'
-		@store = ThingFish::MetaStore.create( 'semantic', nil, nil,
-			:label => nil, :resource_dir => resdir )
 	end
 
 	after( :all ) do
 		reset_logging()
 	end
+
+
+	### Shared behavior specification
+	it_should_behave_like "an advanced metastore"
 
 
 	it "registers IPAddr with Redleaf's node-conversion table" do
@@ -70,19 +77,14 @@ describe ThingFish::SemanticMetaStore do
 		lit_tuple[1].should == Redleaf::Constants::CommonNamespaces::XSD[:decimal]
 	end
 
-
-	### Shared behavior specification
-	it_should_behave_like "An advanced MetaStore"
-
-
 	it "converts 'nil' metadata values to empty strings" do
-		@store.set_property( TEST_UUID, 'dc:title', nil )
-		@store.get_property( TEST_UUID, 'dc:title' ).should == ''
+		metastore.set_property( TEST_UUID, 'dc:title', nil )
+		metastore.get_property( TEST_UUID, 'dc:title' ).should == ''
 	end
 
 	it "raises an exception when there is an unmapped qname" do
 		expect {
-			@store.set_property( TEST_UUID, 'meat:stinky', nil )
+			metastore.set_property( TEST_UUID, 'meat:stinky', nil )
 		}.to raise_error( ThingFish::MetaStoreError, /no vocab/ )
 	end
 

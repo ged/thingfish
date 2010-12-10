@@ -15,8 +15,8 @@ BEGIN {
 
 require 'pathname'
 require 'tmpdir'
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 require 'thingfish/constants'
 require 'thingfish/acceptparam'
@@ -70,7 +70,7 @@ describe ThingFish::MP3Filter do
 
 
 	### Shared behaviors
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 	it "ignores non-POST requests" do
 		@request.should_receive( :http_method ).
@@ -93,9 +93,9 @@ describe ThingFish::MP3Filter do
 			@request.stub!( :http_method ).and_return( :POST )
 			@request.stub!( :each_body ).and_yield( @io, @request_metadata )
 
-			@mp3info = mock( "MP3 info object", :null_object => true )
+			@mp3info = mock( "MP3 info object" ).as_null_object
 			Mp3Info.stub!( :new ).and_return( @mp3info )
-			@id3tag = mock( "ID3 tag object", :null_object => true )
+			@id3tag = mock( "ID3 tag object" ).as_null_object
 			@mp3info.stub!( :tag ).and_return( @id3tag )
 		end
 
@@ -120,7 +120,7 @@ describe ThingFish::MP3Filter do
 
 		it "extracts MP3 metadata from ID3v2 (v2.2.0) tags of uploaded MP3s" do
 			extracted_metadata = {}
-			v2tag = mock( "ID3v2 tag", :null_object => true )
+			v2tag = mock( "ID3v2 tag" ).as_null_object
 
 			@mp3info.should_receive( :samplerate ).and_return( 44000 )
 			@mp3info.should_receive( :bitrate ).and_return( 128 )

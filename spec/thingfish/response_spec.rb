@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -20,15 +20,12 @@ require 'thingfish/response'
 require 'thingfish/exceptions'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::Response do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )

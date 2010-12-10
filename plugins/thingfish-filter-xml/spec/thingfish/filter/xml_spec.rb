@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
 require 'rbconfig'
@@ -32,8 +32,6 @@ rescue LoadError => err
 end
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -91,7 +89,7 @@ describe ThingFish::XMLFilter do
 		end
 
 
-		it_should_behave_like "A Filter"
+		it_should_behave_like "a filter"
 
 
 		it "converts Ruby-object responses to XML if the client accepts it" do
@@ -230,7 +228,7 @@ describe ThingFish::XMLFilter do
 			Kernel.stub!( :require ).and_return( true )
 			File.should_receive( :exist? ).with( '/fakepath' ).and_return( true )
 			Tidy.should_receive( :path= ).with( '/fakepath' )
-			tidy = mock( "A Tidy object", :null_object => true )
+			tidy = mock( "A Tidy object" ).as_null_object
 			tidyoptions = stub( 'Tidy option object',
 							   :output_xml= => true,
 							   :input_xml=  => true,
@@ -242,7 +240,7 @@ describe ThingFish::XMLFilter do
 
 			Tidy.should_receive( :open ).and_yield( tidy )
 
-			body = mock( "Body content", :null_object => true )
+			body = mock( "Body content" ).as_null_object
 			body.should_receive( :to_xml ).and_return( :xml )
 			tidy.should_receive( :options ).at_least( :once ).and_return( tidyoptions )
 			tidy.should_receive( :clean ).with( :xml ).and_return( :clean_xml )

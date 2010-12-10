@@ -11,12 +11,13 @@ BEGIN {
 }
 
 
-require 'spec'
-require 'spec/lib/helpers'
-
 require 'pathname'
 require 'logger'
 require 'stringio'
+require 'fileutils'
+require 'rspec'
+
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/constants'
@@ -28,7 +29,6 @@ require 'thingfish/multipartmimeparser'
 #####################################################################
 
 describe ThingFish::MultipartMimeParser do
-	include ThingFish::SpecHelpers
 
 	BOUNDARY = 'sillyBoundary'
 	MIMEPARSER_SPECDIR = Pathname.new( __FILE__ ).dirname.parent
@@ -43,16 +43,16 @@ describe ThingFish::MultipartMimeParser do
 
 	before( :all ) do
 		setup_logging( :fatal )
+		@tmpdir = make_tempdir()
 	end
 
 	before( :each ) do
-		@tmpdir = make_tempdir()
 		@parser = ThingFish::MultipartMimeParser.new( @tmpdir )
 	end
 
 	after( :all ) do
-		@tmpdir.rmtree
-		ThingFish.reset_logger
+		FileUtils.rm_rf( @tmpdir )
+		reset_logging()
 	end
 
 
@@ -60,27 +60,27 @@ describe ThingFish::MultipartMimeParser do
 	it "should error if the initial boundary can't be found" do
 		socket = load_form( "testform_bad.form" )
 
-		lambda {
+		expect {
 			@parser.parse( socket, BOUNDARY )
-		}.should raise_error( ThingFish::RequestError, /^No initial boundary/ )
+		}.to raise_error( ThingFish::RequestError, /^No initial boundary/ )
 	end
 
 
 	it "should error if headers can't be found" do
 		socket = load_form( "testform_badheaders.form" )
 
-		lambda {
+		expect {
 			@parser.parse( socket, BOUNDARY )
-		}.should raise_error( ThingFish::RequestError, /^EOF while searching for headers/ )
+		}.to raise_error( ThingFish::RequestError, /^EOF while searching for headers/ )
 	end
 
 
 	it "raises an error when the document is truncated inside an extraneous form field" do
 		socket = load_form( "testform_truncated_metadata.form" )
 
-		lambda {
+		expect {
 			@parser.parse( socket, BOUNDARY )
-		}.should raise_error( ThingFish::RequestError, /^truncated MIME document/i )
+		}.to raise_error( ThingFish::RequestError, /^truncated MIME document/i )
 	end
 
 

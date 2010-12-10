@@ -10,16 +10,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+require 'spec/lib/helpers'
 
 require 'rbconfig'
 
 require 'thingfish'
 require 'thingfish/filter'
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 
 class TestFilter < ThingFish::Filter

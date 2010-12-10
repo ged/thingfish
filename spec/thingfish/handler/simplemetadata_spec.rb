@@ -10,39 +10,32 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
-require 'spec/lib/handler_behavior'
+require 'rspec'
 
-require 'time'
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/handler/simplemetadata'
-require 'thingfish/constants'
+require 'thingfish/behavior/handler'
 
 
-include ThingFish::Constants
-include ThingFish::TestConstants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::SimpleMetadataHandler do
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
 
-	after( :all ) do
-		reset_logging()
+	let( :handler ) do
+		ThingFish::SimpleMetadataHandler.new( '/metadata', {} )		
 	end
 
-	before(:each) do
-		@handler   = ThingFish::SimpleMetadataHandler.new( '/metadata', {} )
-		@metastore = mock( "metastore" )
-
-		@daemon.stub!( :metastore ).and_return( @metastore )
+	after( :all ) do
+		reset_logging()
 	end
 
 
@@ -53,7 +46,6 @@ describe ThingFish::SimpleMetadataHandler do
 		before(:each) do
 			@config = ThingFish::Config.new
 
-			@handler          = ThingFish::SimpleMetadataHandler.new( '/metadata', {} )
 			@request          = mock( "request" )
 			@request_headers  = mock( "request headers" )
 			@response         = mock( "response" )
@@ -77,12 +69,12 @@ describe ThingFish::SimpleMetadataHandler do
 			urimap = stub( "urimap", :register_first => nil )
 			@daemon.stub!( :urimap ).and_return( urimap )
 
-			@handler.on_startup( @daemon )
+			self.handler.on_startup( @daemon )
 		end
 
 
 		### Shared behaviors
-		it_should_behave_like "A Handler"
+		it_should_behave_like "a handler"
 
 
 		### Examples
@@ -98,7 +90,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( TESTING_KEYS )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_get_request( '', @request, @response )
+			self.handler.handle_get_request( '', @request, @response )
 		end
 
 
@@ -111,7 +103,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( TESTING_VALUES )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_get_request( 'invaders', @request, @response )
+			self.handler.handle_get_request( 'invaders', @request, @response )
 		end
 
 
@@ -124,7 +116,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( TESTING_VALUES )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_get_request( 'acky-acky-acky-ptang', @request, @response )
+			self.handler.handle_get_request( 'acky-acky-acky-ptang', @request, @response )
 		end
 
 
@@ -138,7 +130,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( TEST_RUBY_OBJECT )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_get_request( TEST_UUID, @request, @response )
+			self.handler.handle_get_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -148,13 +140,13 @@ describe ThingFish::SimpleMetadataHandler do
 				and_return( false )
 			@response.should_not_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_get_request( TEST_UUID, @request, @response )
+			self.handler.handle_get_request( TEST_UUID, @request, @response )
 		end
 
 
 		it "responds with a NOT_FOUND (404) response for a GET to an unknown URI" do
 			@response.should_not_receive( :status= ).with( HTTP::OK )			
-			@handler.handle_get_request( 'cheshire cat!', @request, @response )
+			self.handler.handle_get_request( 'cheshire cat!', @request, @response )
 		end
 
 
@@ -194,7 +186,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_put_request( '', @request, @response )
+			self.handler.handle_put_request( '', @request, @response )
 		end
 
 
@@ -220,7 +212,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with an_instance_of( Array )
 			@response.should_receive( :status= ).with( HTTP::CONFLICT )
 
-			@handler.handle_put_request( '', @request, @response )
+			self.handler.handle_put_request( '', @request, @response )
 		end
 
 
@@ -237,7 +229,7 @@ describe ThingFish::SimpleMetadataHandler do
 				with( %r{application/something-bizarre}i )
 			@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
-			@handler.handle_put_request( '', @request, @response )
+			self.handler.handle_put_request( '', @request, @response )
 		end
 
 
@@ -251,7 +243,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
 			@response.should_not_receive( :body= )
 
-			@handler.handle_put_request( TEST_UUID, @request, @response )
+			self.handler.handle_put_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -260,7 +252,7 @@ describe ThingFish::SimpleMetadataHandler do
 				TEST_PROP  => TEST_PROPVALUE,
 				TEST_PROP2 => TEST_PROPVALUE2
 			}
-			metadata = mock( "Updated metastore values", :null_object => true )
+			metadata = mock( "Updated metastore values" ).as_null_object
 
 			@request.should_receive( :http_method ).
 				at_least( :once ).
@@ -278,7 +270,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( metadata )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_put_request( TEST_UUID, @request, @response )
+			self.handler.handle_put_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -297,7 +289,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_put_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
+			self.handler.handle_put_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
 		end
 
 
@@ -316,7 +308,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::CREATED )
 
-			@handler.handle_put_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
+			self.handler.handle_put_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
 		end
 
 
@@ -336,13 +328,13 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /metastoreerror/i )
 			@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
 
-			@handler.handle_put_request( TEST_UUID + '/' +  'extent', @request, @response )
+			self.handler.handle_put_request( TEST_UUID + '/' +  'extent', @request, @response )
 		end
 
 
 		it "responds with a NOT_FOUND (404) response for a PUT to an unknown URI" do
 			@response.should_not_receive( :status= ).with( HTTP::OK )
-			@handler.handle_put_request( '/wicka-wicka-pow-pow', @request, @response )
+			self.handler.handle_put_request( '/wicka-wicka-pow-pow', @request, @response )
 		end
 
 
@@ -383,7 +375,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_post_request( '', @request, @response )
+			self.handler.handle_post_request( '', @request, @response )
 		end
 
 
@@ -409,7 +401,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with an_instance_of( Array )
 			@response.should_receive( :status= ).with( HTTP::CONFLICT )
 
-			@handler.handle_post_request( '', @request, @response )
+			self.handler.handle_post_request( '', @request, @response )
 		end
 
 
@@ -425,7 +417,7 @@ describe ThingFish::SimpleMetadataHandler do
 				with( %r{application/something-bizarre}i )
 			@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
-			@handler.handle_post_request( '', @request, @response )
+			self.handler.handle_post_request( '', @request, @response )
 		end
 
 
@@ -439,7 +431,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
 			@response.should_not_receive( :body= )
 
-			@handler.handle_post_request( TEST_UUID, @request, @response )
+			self.handler.handle_post_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -455,7 +447,7 @@ describe ThingFish::SimpleMetadataHandler do
 				with( %r{application/something-bizarre}i )
 			@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
-			@handler.handle_post_request( TEST_UUID, @request, @response )
+			self.handler.handle_post_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -480,7 +472,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_post_request( TEST_UUID, @request, @response )
+			self.handler.handle_post_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -499,7 +491,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_post_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
+			self.handler.handle_post_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
 		end
 
 
@@ -518,7 +510,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::CREATED )
 
-			@handler.handle_post_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
+			self.handler.handle_post_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
 		end
 
 
@@ -538,13 +530,13 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /metastoreerror/i )
 			@response.should_receive( :status= ).with( HTTP::FORBIDDEN )
 
-			@handler.handle_post_request( TEST_UUID + '/' +  'extent', @request, @response )
+			self.handler.handle_post_request( TEST_UUID + '/' +  'extent', @request, @response )
 		end
 
 
 		it "responds with a NOT_FOUND (404) response for a POST to an unknown URI" do
 			@response.should_not_receive( :status= ).with( HTTP::OK )
-			@handler.handle_post_request( '/wicka-wicka-pow-pow', @request, @response )
+			self.handler.handle_post_request( '/wicka-wicka-pow-pow', @request, @response )
 		end
 
 
@@ -579,7 +571,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_delete_request( '', @request, @response )
+			self.handler.handle_delete_request( '', @request, @response )
 		end
 
 
@@ -595,7 +587,7 @@ describe ThingFish::SimpleMetadataHandler do
 				with( %r{application/something-bizarre}i )
 			@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
-			@handler.handle_delete_request( '', @request, @response )
+			self.handler.handle_delete_request( '', @request, @response )
 		end
 
 
@@ -615,7 +607,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with an_instance_of( Array )
 			@response.should_receive( :status= ).with( HTTP::CONFLICT )
 
-			@handler.handle_delete_request( '', @request, @response )
+			self.handler.handle_delete_request( '', @request, @response )
 		end
 
 
@@ -628,7 +620,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@metastore.should_receive( :has_uuid? ).with( TEST_UUID ).and_return( false )
 			@response.should_not_receive( :body= )
 
-			@handler.handle_delete_request( TEST_UUID, @request, @response )
+			self.handler.handle_delete_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -650,7 +642,7 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_delete_request( TEST_UUID, @request, @response )
+			self.handler.handle_delete_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -666,7 +658,7 @@ describe ThingFish::SimpleMetadataHandler do
 				with( %r{application/something-bizarre}i )
 			@response.should_receive( :status= ).with( HTTP::UNSUPPORTED_MEDIA_TYPE )
 
-			@handler.handle_delete_request( TEST_UUID, @request, @response )
+			self.handler.handle_delete_request( TEST_UUID, @request, @response )
 		end
 
 
@@ -680,13 +672,13 @@ describe ThingFish::SimpleMetadataHandler do
 			@response.should_receive( :body= ).with( /success/i )
 			@response.should_receive( :status= ).with( HTTP::OK )
 
-			@handler.handle_delete_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
+			self.handler.handle_delete_request( TEST_UUID + '/' + TEST_PROP, @request, @response )
 		end
 
 
 		it "responds with a NOT_FOUND (404) response for a DELETE to an unknown URI" do
 			@response.should_not_receive( :status= ).with( HTTP::OK )
-			@handler.handle_delete_request( '/wicka-wicka-pow-pow', @request, @response )
+			self.handler.handle_delete_request( '/wicka-wicka-pow-pow', @request, @response )
 		end
 
 
@@ -700,10 +692,10 @@ describe ThingFish::SimpleMetadataHandler do
 			body = stub( "Body data structure" )
 
 			@response.should_receive( :data ).at_least( :once ).and_return( {} )
-			@handler.should_receive( :get_erb_resource ).and_return( template )
+			self.handler.should_receive( :get_erb_resource ).and_return( template )
 			template.should_receive( :result ).and_return( :rendered_output )
 
-			@handler.make_html_content( body, @request, @response ).should == :rendered_output
+			self.handler.make_html_content( body, @request, @response ).should == :rendered_output
 		end
 
 
@@ -712,10 +704,10 @@ describe ThingFish::SimpleMetadataHandler do
 			body = stub( "Body data structure" )
 
 			@response.should_receive( :data ).at_least( :once ).and_return( {} )
-			@handler.should_receive( :get_erb_resource ).and_return( template )
+			self.handler.should_receive( :get_erb_resource ).and_return( template )
 			template.should_receive( :result ).and_return( :rendered_output )
 
-			@handler.make_html_content( body, @request, @response ).should == :rendered_output
+			self.handler.make_html_content( body, @request, @response ).should == :rendered_output
 		end
 
 
@@ -724,10 +716,10 @@ describe ThingFish::SimpleMetadataHandler do
 			body = stub( "Body data structure" )
 
 			@response.should_receive( :data ).at_least( :once ).and_return( {} )
-			@handler.should_receive( :get_erb_resource ).and_return( template )
+			self.handler.should_receive( :get_erb_resource ).and_return( template )
 			template.should_receive( :result ).and_return( :rendered_output )
 
-			@handler.make_html_content( body, @request, @response ).should == :rendered_output
+			self.handler.make_html_content( body, @request, @response ).should == :rendered_output
 		end
 
 
@@ -738,9 +730,9 @@ describe ThingFish::SimpleMetadataHandler do
 			@request.stub!( :uri ).and_return( URI.parse('http://localhost:3474/metadata/i/like/danni/coffee') )
 			@response.should_receive( :data ).at_least( :once ).and_return( {} )
 
-			lambda {
-				@handler.make_html_content( body, @request, @response )
-			}.should raise_error( RuntimeError, /unable to build html/i )
+			expect {
+				self.handler.make_html_content( body, @request, @response )
+			}.to raise_error( RuntimeError, /unable to build html/i )
 		end
 
 
@@ -760,9 +752,9 @@ describe ThingFish::SimpleMetadataHandler do
 
 			@response.should_not_receive( :status= ).with( HTTP::OK )
 
-			lambda {
-				@handler.handle_put_request( TEST_UUID, @request, @response )
-			}.should raise_error( RuntimeError, /unknown method/i )
+			expect {
+				self.handler.handle_put_request( TEST_UUID, @request, @response )
+			}.to raise_error( RuntimeError, /unknown method/i )
 		end
 	end
 

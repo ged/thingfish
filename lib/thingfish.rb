@@ -83,7 +83,7 @@ module ThingFish
 	def self::version_string( include_buildnum=false )
 		vstring = "%s %s" % [ self.name, VERSION ]
 		if include_buildnum
-			build = VCSRev.match( /: (\w+)/ )[1] || 0
+			build = VCSRev[ /: (\w+)/, 1 ] || 0
 			vstring << " (build %s)" % [ build ]
 		end
 		return vstring

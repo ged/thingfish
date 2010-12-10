@@ -15,8 +15,8 @@ BEGIN {
 
 require 'pathname'
 require 'tmpdir'
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 require 'thingfish/constants'
@@ -25,8 +25,6 @@ require 'thingfish/acceptparam'
 require 'thingfish/filter/exif'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -59,7 +57,7 @@ describe ThingFish::ExifFilter do
 
 
 	### Shared behaviors
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	### Filter-specific tests

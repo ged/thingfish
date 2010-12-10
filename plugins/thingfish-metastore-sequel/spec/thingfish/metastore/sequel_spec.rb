@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/metastore_behavior'
 

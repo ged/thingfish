@@ -1,23 +1,4 @@
 #!/usr/bin/env ruby
-#
-# A collection of mixins shared between ThingFish classes
-#
-# == Version
-#
-#  $Id$
-#
-# == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
-# :include: LICENSE
-#
-#---
-#
-# Please see the file LICENSE in the top-level directory for licensing details.
-
-#
 
 require 'rbconfig'
 require 'erb'
@@ -25,8 +6,11 @@ require 'etc'
 
 require 'thingfish'
 
+#---
+# A collection of mixins shared between ThingFish classes
+#
 
-module ThingFish # :nodoc:
+module ThingFish
 
 
 	### Adds a #log method to the including class which can be used to access the global
@@ -69,7 +53,7 @@ module ThingFish # :nodoc:
 				sym = :debug if @force_debug
 				ThingFish.logger.add( LEVEL[sym], msg, @classname, &block )
 			end
-			
+
 		end # ClassNameProxy
 
 		#########
@@ -313,11 +297,11 @@ module ThingFish # :nodoc:
 			### NotImplementedErrors when called via a concrete subclass.
 			def virtual( *syms )
 				syms.each do |sym|
-					define_method( sym ) {|*args|
+					define_method( sym ) do |*args|
 						raise ::NotImplementedError,
 							"%p does not provide an implementation of #%s" % [ self.class, sym ],
 							caller(1)
-					}
+					end
 				end
 			end
 

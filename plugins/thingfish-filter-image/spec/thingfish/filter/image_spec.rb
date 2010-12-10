@@ -13,14 +13,14 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/filter_behavior'
+require 'rspec'
+require 'spec/lib/helpers'
 
 require 'rbconfig'
 
 require 'thingfish'
 require 'thingfish/filter'
+require 'thingfish/behavior/filter'
 
 begin
 	require 'thingfish/filter/image'
@@ -33,8 +33,6 @@ rescue LoadError
 	$have_imagefilter = false
 end
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 
 #####################################################################
@@ -46,15 +44,18 @@ describe ThingFish::ImageFilter do
 		setup_logging( :fatal )
 	end
 
+	let( :filter ) do
+		Magick.stub( :formats ).and_return({ 'PNG' => '*rw-', 'GIF' => '*rw+', 'JPG' => '*rw-' })
+		ThingFish::Filter.create( 'image', {} )
+	end
+
+	let( :testio ) do
+		stub( "image upload IO object", :read => :imagedata, :path => '/tmp/spooled_image' )
+	end
+
+
 	before( :each ) do
 		pending "image filter not loading correctly" unless $have_imagefilter
-
-		# Stub out some formats
-		Magick.stub!( :formats ).and_return({ 'PNG' => '*rw-', 'GIF' => '*rw+', 'JPG' => '*rw-' })
-
-		@filter = ThingFish::Filter.create( 'image', {} )
-
-		@io = stub( "image upload IO object", :read => :imagedata, :path => '/tmp/spooled_image' )
 
 		@request = mock( "request object" )
 		@response = mock( "response object" )
@@ -62,7 +63,7 @@ describe ThingFish::ImageFilter do
 		@response.stub!( :headers ).and_return( @response_headers )
 
 		@request_metadata = { :format => 'image/png' }
-		@request.stub!( :each_body ).and_yield( @io, @request_metadata )
+		@request.stub!( :each_body ).and_yield( self.testio, @request_metadata )
 
 		@extracted_metadata = {
 			:'image:height'       => :rows,
@@ -80,7 +81,7 @@ describe ThingFish::ImageFilter do
 
 
 
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	# Request (extraction) filtering
@@ -89,14 +90,14 @@ describe ThingFish::ImageFilter do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( :GET )
 		@request.should_not_receive( :each_body )
 
-		@filter.handle_request( @request, @response )
+		filter.handle_request( @request, @response )
 	end
 
 	it "doesn't attempt extraction on a DELETE" do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( :DELETE )
 		@request.should_not_receive( :each_body )
 
-		@filter.handle_request( @request, @response )
+		filter.handle_request( @request, @response )
 	end
 
 
@@ -106,7 +107,7 @@ describe ThingFish::ImageFilter do
 		Magick::Image.should_not_receive( :from_blob )
 		@request.should_not_receive( :metadata )
 
-		@filter.handle_request( @request, @response )
+		filter.handle_request( @request, @response )
 	end
 
 
@@ -125,7 +126,7 @@ describe ThingFish::ImageFilter do
 			expected_metadata[ magick_method ] = metadata_key.to_s
 		end
 
-		@request.should_receive( :append_metadata_for ).with( @io, expected_metadata )
+		@request.should_receive( :append_metadata_for ).with( self.testio, expected_metadata )
 
 		# Thumbnail
 		thumbnail = mock( "thumbnail image object" )
@@ -157,10 +158,10 @@ describe ThingFish::ImageFilter do
 		thumbnail.should_receive( :to_blob ).and_yield( thumb_blob ).and_return( "thumbnail_data" )
 		thumb_blob.should_receive( :format= ).with( 'JPG' )
 		StringIO.should_receive( :new ).with( "thumbnail_data" ).and_return( :thumbio )
-		@request.should_receive( :append_related_resource ).with( @io, :thumbio, thumb_metadata )
+		@request.should_receive( :append_related_resource ).with( self.testio, :thumbio, thumb_metadata )
 
 		# Run the request filter
-		@filter.handle_request( @request, @response )
+		filter.handle_request( @request, @response )
 	end
 
 
@@ -215,7 +216,7 @@ describe ThingFish::ImageFilter do
 		@request.should_receive( :append_related_resource ).with( io, :thumbio, thumb_metadata )
 
 		# Run the request filter
-		@filter.handle_request( @request, @response )
+		filter.handle_request( @request, @response )
 	end
 
 
@@ -225,7 +226,7 @@ describe ThingFish::ImageFilter do
 		@request.should_receive( :http_method ).at_least( :once ).and_return( :POST )
 		@response.should_not_receive( :body )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 
@@ -238,7 +239,7 @@ describe ThingFish::ImageFilter do
 
 		@response.should_not_receive( :body )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 
@@ -251,7 +252,7 @@ describe ThingFish::ImageFilter do
 
 		@response.should_not_receive( :body )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 
@@ -268,7 +269,7 @@ describe ThingFish::ImageFilter do
 
 		@response.should_not_receive( :body )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 	it "doesn't try to convert if the request doesn't explicitly accept any formats it knows about" do
@@ -286,7 +287,7 @@ describe ThingFish::ImageFilter do
 
 		@response.should_not_receive( :body )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 
@@ -303,14 +304,14 @@ describe ThingFish::ImageFilter do
 		acceptparam.should_receive( :subtype ).and_return( 'png' )
 		acceptparam.should_receive( :mediatype ).at_least( :once ).and_return( 'image/png' )
 
-		image = mock( "image object", :null_object => true )
+		image = mock( "image object" ).as_null_object
 		image_filehandle = stub( "image filehandle", :read => :image_data )
 		image_config = mock( "image config" )
 
 		@response.should_receive( :body ).and_return( image_filehandle )
 		Magick::Image.should_receive( :from_blob ).with( :image_data ).and_return( image )
 
-		new_image_data = mock( "new image data", :null_object => true )
+		new_image_data = mock( "new image data" ).as_null_object
 
 		image.should_receive( :to_blob ).
 			and_yield( image_config ).
@@ -322,7 +323,7 @@ describe ThingFish::ImageFilter do
 		@response_headers.should_receive( :[]= ).with( :content_length, 4096 )
 		@response.should_receive( :content_type= ).with( 'image/png' )
 
-		@filter.handle_response( @response, @request )
+		filter.handle_response( @response, @request )
 	end
 
 end

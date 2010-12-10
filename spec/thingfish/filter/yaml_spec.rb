@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -10,19 +10,15 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/filter_behavior'
+require 'rspec'
 
-require 'rbconfig'
+require 'spec/lib/helpers'
 
 require 'thingfish'
-require 'thingfish/filter'
+require 'thingfish/behavior/filter'
 require 'thingfish/filter/yaml'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -41,13 +37,14 @@ describe ThingFish::YAMLFilter do
 
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
+	end
+
+	let( :filter ) do
+		ThingFish::Filter.create( 'yaml', {} )
 	end
 
 	before( :each ) do
-		@filter = ThingFish::Filter.create( 'yaml', {} )
-
 		@request = mock( "request object" )
 		@response = mock( "response object" )
 		@response_headers = mock( "response headers" )
@@ -57,11 +54,11 @@ describe ThingFish::YAMLFilter do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	it "converts a request body into a Ruby object if the content-type indicates " +
@@ -78,7 +75,7 @@ describe ThingFish::YAMLFilter do
 		@request.should_receive( :body= ).with( TEST_UNYAMLIFIED_CONTENT )
 		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 
-		@filter.handle_request( @request, @response )
+		self.filter.handle_request( @request, @response )
 	end
 
 
@@ -97,7 +94,7 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :status= )
 		@response.should_receive( :content_type= ).with( 'text/x-yaml' )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -116,7 +113,7 @@ describe ThingFish::YAMLFilter do
 		@request.should_not_receive( :body= )
 		@request.should_not_receive( :content_type= )
 
-		@filter.handle_request( @request, @response )
+		self.filter.handle_request( @request, @response )
 	end
 
 
@@ -129,7 +126,7 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -145,7 +142,7 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -170,9 +167,9 @@ describe ThingFish::YAMLFilter do
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
 
-		lambda {
-			@filter.handle_response( @response, @request )
-		}.should raise_error()
+		expect {
+			self.filter.handle_response( @response, @request )
+		}.to raise_error( YAML::ParseError, "couldn't parse it!" )
 	end
 
 

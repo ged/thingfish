@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
@@ -32,7 +32,6 @@ require 'thingfish/filter/basicauth'
 include ThingFish::Constants
 
 describe ThingFish::BasicAuthFilter do
-	include ThingFish::SpecHelpers
 
 	AUTHENTICATE_HEADER = ThingFish::BasicAuthFilter::AUTHENTICATE_HEADER
 	AUTHORIZATION_HEADER = ThingFish::BasicAuthFilter::AUTHORIZATION_HEADER
@@ -67,7 +66,7 @@ describe ThingFish::BasicAuthFilter do
 
 
 	### Shared behaviors
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	### Implementation-specific Examples

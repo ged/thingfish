@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filestore_behavior'
 
@@ -303,7 +303,7 @@ describe ThingFish::FilesystemFileStore do
 		end
 
 		it "ensures any previously cached size files are destroyed" do
-			scache = mock( "A cached size file", :null_object => true )
+			scache = mock( "A cached size file" ).as_null_object
 			Pathname.should_receive( :glob ).
 				with( "#{@tmpdir}/*/.size" ).
 				once.

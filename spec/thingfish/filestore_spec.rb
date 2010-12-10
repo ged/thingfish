@@ -10,7 +10,9 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/filestore'
@@ -24,62 +26,65 @@ end
 ###	C O N T E X T S
 #####################################################################
 
-describe "An instance of a derivative filestore class" do
-
-	before(:each) do
-		@filestore = ThingFish::FileStore.create( 'test', nil, nil )
-	end
-
-	it "knows how to perform startup tasks" do
-		@filestore.should respond_to( :on_startup )
-	end
-
-	### Required derivative daemon interface specs
-
-	it "raises a NotImplementedError for write operations" do
-		lambda do
-			@filestore.store( :key, :value )
-		end.should raise_error( NotImplementedError, /#store/i)
-	end
-
-	it "raises a NotImplementedError for read operations" do
-		lambda do
-			@filestore.fetch( :key )
-		end.should raise_error( NotImplementedError, /#fetch/i)
-	end
-
-	it "raises a NotImplementedError for delete operations" do
-		lambda do
-			@filestore.delete( :key )
-		end.should raise_error( NotImplementedError, /#delete/i)
-	end
-
-	it "raises a NotImplementedError for size checks" do
-		lambda do
-			@filestore.size( :key )
-		end.should raise_error( NotImplementedError, /#size/i)
-	end
-
-	it "raises a NotImplementedError for file presence checks" do
-		lambda do
-			@filestore.has_file?( :key )
-		end.should raise_error( NotImplementedError, /#has_file\?/i)
-	end
-
-
-	### Admin API specs
-	it "raises a NotImplementedError for filestore total size diagnostic" do
-		lambda do
-			@filestore.total_size
-		end.should raise_error( NotImplementedError, /#total_size/i)
-	end
-end
-
-
-describe "The base filestore class" do
+describe ThingFish::FileStore do
 
 	it "registers subclasses as plugins" do
-		ThingFish::FileStore.get_subclass( 'test' ).should == TestFileStore
+		described_class.get_subclass( 'test' ).should == TestFileStore
+	end
+
+
+	context "a concrete subclass with no method overrides" do
+
+		before( :each ) do
+			@filestore = ThingFish::FileStore.create( 'test', nil, nil )
+		end
+
+		it "doesn't raise an exception when told to perform startup tasks" do
+			expect {
+				@filestore.on_startup
+			}.to_not raise_error()
+		end
+
+		### Required derivative daemon interface specs
+
+		it "raises a NotImplementedError for write operations" do
+			expect {
+				@filestore.store( :key, :value )
+			}.to raise_error( NotImplementedError, /#store/i)
+		end
+
+		it "raises a NotImplementedError for read operations" do
+			expect {
+				@filestore.fetch( :key )
+			}.to raise_error( NotImplementedError, /#fetch/i)
+		end
+
+		it "raises a NotImplementedError for delete operations" do
+			expect {
+				@filestore.delete( :key )
+			}.to raise_error( NotImplementedError, /#delete/i)
+		end
+
+		it "raises a NotImplementedError for size checks" do
+			expect {
+				@filestore.size( :key )
+			}.to raise_error( NotImplementedError, /#size/i)
+		end
+
+		it "raises a NotImplementedError for file presence checks" do
+			expect {
+				@filestore.has_file?( :key )
+			}.to raise_error( NotImplementedError, /#has_file\?/i)
+		end
+
+
+		### Admin API specs
+		it "raises a NotImplementedError for filestore total size diagnostic" do
+			expect {
+				@filestore.total_size
+			}.to raise_error( NotImplementedError, /#total_size/i)
+		end
+
 	end
 
 end

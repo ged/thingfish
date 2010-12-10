@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -21,7 +21,6 @@ require 'thingfish/filestore'
 
 describe "A FileStore", :shared => true do
 	include ThingFish::TestConstants
-	include ThingFish::SpecHelpers
 
 	it "returns nil for non-existant entry" do
 	    @fs.fetch( TEST_UUID ).should == nil

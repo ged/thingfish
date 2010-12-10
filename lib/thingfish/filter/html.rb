@@ -27,9 +27,11 @@
 
 
 require 'thingfish'
+
 require 'thingfish/mixins'
 require 'thingfish/constants'
 require 'thingfish/acceptparam'
+require 'thingfish/filter'
 
 
 ### An HTML-conversion filter for ThingFish. It converts Ruby objects in the body
@@ -81,7 +83,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		# Find the handlers that can make html
 		processor = response.handlers.last or raise "Oops! No processor for %s?!?" % [ request.uri.path ]
 		content = nil
-		
+
 		if processor.respond_to?( :make_html_content )
 			content = processor.make_html_content( response.body, request, response )
 		else
@@ -107,7 +109,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => [],
 			'generates' => [CONFIGURED_HTML_MIMETYPE],
 		  }

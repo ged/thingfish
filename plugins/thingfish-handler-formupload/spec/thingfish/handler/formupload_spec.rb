@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/handler_behavior'
 
@@ -50,12 +50,12 @@ describe ThingFish::FormUploadHandler do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'formupload', 'resource_dir' => resdir )
 
-		@request = mock( "request object", :null_object => true )
-		@response = mock( "response object", :null_object => true )
+		@request = mock( "request object" ).as_null_object
+		@response = mock( "response object" ).as_null_object
 
-		@request_headers = mock( "request headers", :null_object => true )
+		@request_headers = mock( "request headers" ).as_null_object
 		@request.stub!( :headers ).and_return( @request_headers )
-		@response_headers = mock( "response headers", :null_object => true )
+		@response_headers = mock( "response headers" ).as_null_object
 		@response.stub!( :headers ).and_return( @response_headers )
 	end
 
@@ -67,7 +67,7 @@ describe ThingFish::FormUploadHandler do
 
 
 	# Shared behaviors
-	it_should_behave_like "A Handler"
+	it_should_behave_like "a handler"
 
 
 	# Examples
@@ -87,7 +87,7 @@ describe ThingFish::FormUploadHandler do
 			"Some template that refers to <%= files %> and <%= uri %>"
 		  )
 
-		response_scratch = mock( "Response scratch space", :null_object => true )
+		response_scratch = mock( "Response scratch space" ).as_null_object
 		@response.stub!( :data ).and_return( response_scratch )
 		@request.should_receive( :uri ).and_return( stub("fake uri", :path => 'uripath') )
 
@@ -110,17 +110,17 @@ describe ThingFish::FormUploadHandler do
 	describe " (POST request)" do
 
 		it "inserts upload file content from request" do
-			mockfilestore = mock( "filestore", :null_object => true )
-			mockmetastore = mock( "metastore", :null_object => true )
+			mockfilestore = mock( "filestore" ).as_null_object
+			mockmetastore = mock( "metastore" ).as_null_object
 
-			mockdaemon = mock( "daemon", :null_object => true )
+			mockdaemon = mock( "daemon" ).as_null_object
 			mockdaemon.should_receive( :filestore ).and_return( mockfilestore )
 			mockdaemon.should_receive( :metastore ).and_return( mockmetastore )
 
 			@handler.on_startup( mockdaemon )
 
-			upload1 = mock( "upload tempfile 1", :null_object => true )
-			metadata = mock( "merged metadata hash", :null_object => true )
+			upload1 = mock( "upload tempfile 1" ).as_null_object
+			metadata = mock( "merged metadata hash" ).as_null_object
 			metadata.should_receive( :[]= ).
 				with( :uuid, TEST_UUID ).
 				at_least( :once )

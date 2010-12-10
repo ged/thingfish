@@ -10,22 +10,16 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
-require 'spec/lib/handler_behavior'
-
+require 'rspec'
 require 'time'
+require 'stringio'
+
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/handler/default'
-require 'thingfish/constants'
+require 'thingfish/behavior/handler'
 
-
-
-include ThingFish::Constants
-include ThingFish::TestConstants
-include ThingFish::SpecHelpers
 
 #####################################################################
 ###	C O N T E X T S
@@ -36,13 +30,12 @@ describe ThingFish::DefaultHandler do
 		setup_logging( :fatal )
 	end
 
-	after( :all ) do
-		reset_logging()
+	let( :handler ) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
+		ThingFish::DefaultHandler.new( '/', :resource_dir => resdir )
 	end
 
 	before(:each) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
-		@handler          = ThingFish::DefaultHandler.new( '/', :resource_dir => resdir )
 		@daemon           = mock( "thingfish daemon" )
 		@filestore        = mock( "thingfish filestore" )
 		@metastore        = mock( "thingfish metastore" )
@@ -59,8 +52,8 @@ describe ThingFish::DefaultHandler do
 
 		urimap = stub( "urimap", :register_first => nil )
 		@daemon.stub!( :urimap ).and_return( urimap )
-		
-		@handler.on_startup( @daemon )
+
+		self.handler.on_startup( @daemon )
 
 		@request          = mock( "request" )
 		@request_headers  = mock( "request headers" )
@@ -72,9 +65,13 @@ describe ThingFish::DefaultHandler do
 		@request.stub!( :has_multipart_body? ).and_return( false )
 	end
 
+	after( :all ) do
+		reset_logging()
+	end
+
 
 	### Shared behaviors
-	it_should_behave_like "A Handler"
+	it_should_behave_like "a handler"
 
 
 	### Index requests
@@ -88,7 +85,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :data ).at_least( :once ).and_return( {} )
 		@response.should_receive( :status= ).with( HTTP::OK )
 
-		@handler.handle_get_request( '', @request, @response )
+		self.handler.handle_get_request( '', @request, @response )
 	end
 
 
@@ -96,13 +93,13 @@ describe ThingFish::DefaultHandler do
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :content_type= )
 
-		@handler.handle_get_request( '/poke', @request, @response )
+		self.handler.handle_get_request( '/poke', @request, @response )
 	end
 
 
 	it "handles POST /" do
 		body = StringIO.new( TEST_CONTENT )
-		metadata = stub( "metadata hash from client" )
+		metadata = {}
 
 		full_metadata = mock( "metadata fetched from the store" )
 		@metastore.should_receive( :get_properties ).and_return( full_metadata )
@@ -121,22 +118,22 @@ describe ThingFish::DefaultHandler do
 		@daemon.should_receive( :store_related_resources ).
 			with( body, TEST_UUID, @request )
 
-		@handler.handle_post_request( '', @request, @response )
+		self.handler.handle_post_request( '', @request, @response )
 	end
 
 
 	it "raises a ThingFish::RequestEntityTooLargeError for an upload to / that exceeds quota" do
 		body = StringIO.new( TEST_CONTENT )
-		md = stub( "metadata hash" )
+		md = {}
 
 		@request.should_receive( :bodies ).twice.and_return({ body => md })
 		@daemon.should_receive( :store_resource ).
 			with( body, md ).
 			and_return { raise ThingFish::FileStoreQuotaError, "too NARROW, sucka!" }
 
-		lambda {
-			@handler.handle_post_request( '', @request, @response )
-		}.should raise_error( ThingFish::RequestEntityTooLargeError, /too NARROW/ )
+		expect {
+			self.handler.handle_post_request( '', @request, @response )
+		}.to raise_error( ThingFish::RequestEntityTooLargeError, /too NARROW/ )
 	end
 
 
@@ -147,7 +144,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :status= ).with( HTTP::METHOD_NOT_ALLOWED )
 		@response.should_receive( :body= ).with( /not allowed/i )
 
-		@handler.handle_put_request( '', @request, @response )
+		self.handler.handle_put_request( '', @request, @response )
 	end
 
 
@@ -158,7 +155,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :status= ).with( HTTP::METHOD_NOT_ALLOWED )
 		@response.should_receive( :body= ).with( /not allowed/i )
 
-		@handler.handle_delete_request( '', @request, @response )
+		self.handler.handle_delete_request( '', @request, @response )
 	end
 
 
@@ -166,7 +163,7 @@ describe ThingFish::DefaultHandler do
 		@request.should_receive( :bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
 
 		lambda {
-			@handler.handle_post_request( '', @request, @response )
+			self.handler.handle_post_request( '', @request, @response )
 		}.should raise_error( ThingFish::NotImplementedError, /not implemented/ )
 	end
 
@@ -198,8 +195,8 @@ describe ThingFish::DefaultHandler do
 		@response_headers.should_receive( :[]= ).with( :content_length, 888888 )
 
 		@request.stub!( :query_args ).and_return( {} )
-		
-		@handler.handle_get_request( TEST_UUID.upcase, @request, @response )
+
+		self.handler.handle_get_request( TEST_UUID.upcase, @request, @response )
 	end
 
 
@@ -228,8 +225,8 @@ describe ThingFish::DefaultHandler do
 
 		# No 'attach' query arg means no content-disposition set
 		@request.stub!( :query_args ).and_return( {} )
-		
-		@handler.handle_get_request( TEST_UUID, @request, @response )
+
+		self.handler.handle_get_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -269,10 +266,10 @@ describe ThingFish::DefaultHandler do
 				'attachment; ' +
 				'filename="potap.mp3"; ' +
 				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
-		
+
 		@mockmetadata.should_receive( :title ).and_return( 'potap.mp3' )
 
-		@handler.handle_get_request( TEST_UUID, @request, @response )
+		self.handler.handle_get_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -312,10 +309,10 @@ describe ThingFish::DefaultHandler do
 				'attachment; ' +
 				'filename="ukraine_rapper.mp3"; ' +
 				'modification-date="Wed, 29 Aug 2007 21:24:09 -0700"' )
-		
+
 		@mockmetadata.should_not_receive( :title )
 
-		@handler.handle_get_request( TEST_UUID, @request, @response )
+		self.handler.handle_get_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -328,7 +325,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :body= ).with( /not found/i )
 		@response.should_receive( :content_type= ).with( 'text/plain' )
 
-		@handler.handle_get_request( TEST_UUID, @request, @response )
+		self.handler.handle_get_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -340,7 +337,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :body= ).with( /not allowed/i )
 
 		@request.stub!( :http_method ).and_return( :POST )
-		@handler.handle_post_request( TEST_UUID, @request, @response )
+		self.handler.handle_post_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -363,7 +360,7 @@ describe ThingFish::DefaultHandler do
 		@response_headers.should_receive( :[]= ).with( :etag, etag )
 		@response_headers.should_receive( :[]= ).with( :expires, VALID_HTTPDATE )
 
-		@handler.handle_get_request( TEST_UUID, @request, @response )
+		self.handler.handle_get_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -390,18 +387,18 @@ describe ThingFish::DefaultHandler do
 		@metastore.should_receive( :get_properties ).
 			with( TEST_UUID_OBJ ).
 			and_return( :the_body )
-			
+
 		@response.should_receive( :body= ).with( :the_body )
-		
-		@handler.handle_put_request( TEST_UUID, @request, @response )
+
+		self.handler.handle_put_request( TEST_UUID, @request, @response )
 	end
 
 
-	it "raises a NOT_IMPLEMENTED exception for multipart PUT to /#{TEST_UUID}" do
+	it "raises a NOT_IMPLEMENTED exception for multipart PUT to /<uuid>" do
 		@request.should_receive( :bodies ).twice.and_return({ :body1 => :md1, :body2 => :md2 })
 
 		lambda {
-			@handler.handle_put_request( TEST_UUID, @request, @response )
+			self.handler.handle_put_request( TEST_UUID, @request, @response )
 		}.should raise_error( ThingFish::NotImplementedError, /not implemented/ )
 	end
 
@@ -430,15 +427,15 @@ describe ThingFish::DefaultHandler do
 		@metastore.should_receive( :get_properties ).
 			with( TEST_UUID_OBJ ).
 			and_return( :the_body )
-		
+
 		@response.should_receive( :body= ).with( :the_body )
-						
-		@handler.handle_put_request( TEST_UUID, @request, @response )
+
+		self.handler.handle_put_request( TEST_UUID, @request, @response )
 	end
 
 	it "raises a ThingFish::RequestEntityTooLargeError for a PUT to /{uuid} that exceeds quota" do
 		body = StringIO.new( "~~~" * 1024 )
-		md = stub( "metadata hash" )
+		md = {}
 
 		@request.should_receive( :bodies ).twice().and_return({ body => md })
 		@daemon.should_receive( :store_resource ).
@@ -446,9 +443,9 @@ describe ThingFish::DefaultHandler do
 			and_return { raise ThingFish::FileStoreQuotaError, "too large, sucka!" }
 		@filestore.should_receive( :has_file? ).with( TEST_UUID_OBJ ).and_return( true )
 
-		lambda {
-			@handler.handle_put_request( TEST_UUID, @request, @response )
-		}.should raise_error( ThingFish::RequestEntityTooLargeError, /too large/ )
+		expect {
+			self.handler.handle_put_request( TEST_UUID, @request, @response )
+		}.to raise_error( ThingFish::RequestEntityTooLargeError, /too large/ )
 	end
 
 
@@ -466,7 +463,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /resource '#{TEST_UUID}' deleted/i )
 
-		@handler.handle_delete_request( TEST_UUID, @request, @response )
+		self.handler.handle_delete_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -478,7 +475,7 @@ describe ThingFish::DefaultHandler do
 		@response.should_receive( :content_type= ).with( 'text/plain' )
 		@response.should_receive( :body= ).with( /not found/i )
 
-		@handler.handle_delete_request( TEST_UUID, @request, @response )
+		self.handler.handle_delete_request( TEST_UUID, @request, @response )
 	end
 
 
@@ -490,13 +487,13 @@ describe ThingFish::DefaultHandler do
 
 		handler1 = mock( 'A handler' )
 		handler2 = mock( 'Another handler' )
-		
+
 		urimap = ThingFish::UriMap.new
 		urimap.register( '/', handler1 )
 		urimap.register( '/runkagunk', handler2 )
 		@daemon.stub!( :urimap ).and_return( urimap )
-		
-		@handler.stub!( :get_erb_resource ).and_return( template )
+
+		self.handler.stub!( :get_erb_resource ).and_return( template )
 		template.should_receive( :result ).
 			with( an_instance_of(Binding) ).
 			and_return( :rendered_output )
@@ -507,8 +504,8 @@ describe ThingFish::DefaultHandler do
 		handler2.should_receive( :is_a? ).with( ThingFish::Handler ).and_return( true )
 		handler2.should_receive( :make_index_content ).with( '/runkagunk' ).
 			and_return( "handler2 stuff" )
-		
-		@handler.make_html_content( body, @request, @response ).
+
+		self.handler.make_html_content( body, @request, @response ).
 			should == :rendered_output
 	end
 

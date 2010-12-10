@@ -10,17 +10,14 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/handler_behavior'
-
-require 'rbconfig'
+require 'rspec'
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/handler'
+require 'thingfish/behavior/handler'
 
 
-include ThingFish::TestConstants
 
 # Expose some protected methods for testing
 class ThingFish::Handler
@@ -42,15 +39,12 @@ class GetDeleteTestHandler < ThingFish::Handler
 	end
 end
 
-include ThingFish::Constants
-
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::Handler do
-	include ThingFish::SpecHelpers
-	
+
 	before( :all ) do
 		setup_logging( :fatal )
 	end
@@ -59,7 +53,7 @@ describe ThingFish::Handler do
 		reset_logging()
 	end
 
-	
+
 	it "should register subclasses as plugins" do
 		ThingFish::Handler.get_subclass( 'test' ).should == TestHandler
 	end
@@ -67,10 +61,12 @@ describe ThingFish::Handler do
 
 	describe "concrete subclass instance mounted at /" do
 
+		let( :handler ) do
+		    ThingFish::Handler.create( 'test', '/' )
+		end
+
 		before( :each ) do
-		    @handler = ThingFish::Handler.create( 'test', '/' )
 			@datadir = Config::CONFIG['datadir']
-			
 			@request = mock( "request object" )
 			@response = mock( "response object" )
 		end
@@ -80,40 +76,43 @@ describe ThingFish::Handler do
 			uri = URI.parse( 'http://thingfish.example.com:3474/')
 			@request.should_receive( :uri ).at_least( :once ).and_return( uri )
 			lambda {
-				@handler.path_info( @request )
+				self.handler.path_info( @request )
 			}.should_not raise_error( ThingFish::DispatchError, %r{uri \S+ does not include}i )
 		end
-		
+
 
 		it "delegation defaults to yielding back to the caller" do
 			yielded = nil
-			
-			results = @handler.delegate( @request, @response ) do |*args|
+
+			results = self.handler.delegate( @request, @response ) do |*args|
 				yielded = args
 				[:other_request, :other_response]
 			end
-			
+
 			yielded.should == [ @request, @response ]
 			results.should == [ :other_request, :other_response ]
 		end
-	
+
 	end
 
 	describe "concrete subclass instance mounted at /test" do
 
+		let( :handler ) do
+		    ThingFish::Handler.create( 'test', '/test' )
+		end
+
 		before( :each ) do
-		    @handler = ThingFish::Handler.create( 'test', '/test' )
 			@datadir = Config::CONFIG['datadir']
 		end
 
 
 		### Shared behaviors
-		it_should_behave_like "A Handler"
+		it_should_behave_like "a handler"
 
 
 		### Specs
 		it "knows what its normalized name is" do
-			@handler.plugin_name.should == 'test'
+			self.handler.plugin_name.should == 'test'
 		end
 
 
@@ -121,7 +120,7 @@ describe ThingFish::Handler do
 			uri = URI.parse( 'http://thingfish.example.com:3474/test/cranglock')
 			request = mock( "request object" )
 			request.should_receive( :uri ).and_return( uri )
-			@handler.path_info( request ).should == 'cranglock'
+			self.handler.path_info( request ).should == 'cranglock'
 		end
 
 
@@ -129,7 +128,7 @@ describe ThingFish::Handler do
 			uri = URI.parse( 'http://thingfish.example.com:3474/test/cranglockin/around?plenty=true')
 			request = mock( "request object" )
 			request.should_receive( :uri ).and_return( uri )
-			@handler.path_info( request ).should == 'cranglockin/around'
+			self.handler.path_info( request ).should == 'cranglockin/around'
 		end
 
 
@@ -138,21 +137,21 @@ describe ThingFish::Handler do
 			uri = URI.parse( 'http://thingfish.example.com:3474/test')
 			request = mock( "request object" )
 			request.should_receive( :uri ).and_return( uri )
-			@handler.path_info( request ).should == ''
+			self.handler.path_info( request ).should == ''
 		end		
-		
-		
+
+
 		it "raises an exception when asked to create path_info for a request whose URI does not " +
 		   "include the handler's mountpoint" do
 			uri = URI.parse( 'http://thingfish.example.com:3474/crang/the/petite/weasel')
 			request = mock( "request object" )
 			request.should_receive( :uri ).at_least( :once ).and_return( uri )
 			lambda {
-				@handler.path_info( request )
+				self.handler.path_info( request )
 			}.should raise_error( ThingFish::DispatchError, %r{uri \S+ does not include}i )
 		end
-		
-		
+
+
 		it "outputs a consistent request log message" do
 			logfile = StringIO.new('')
 			ThingFish.logger = Logger.new( logfile )
@@ -181,29 +180,33 @@ describe ThingFish::Handler do
 			mockheaders.should_receive( :user_agent ).
 				and_return( "rspec/1.0" )
 
-			@handler.log_request( request )
+			self.handler.log_request( request )
 			logfile.rewind
 			logfile.read.should =~ %r<\S+: 127.0.0.1 POST /poon \{rspec/1.0\}>
 		end
 
 
 		it "gets references to the metastore and filestore from the daemon startup callback" do
-			mock_daemon = mock( "daemon", :null_object => true )
+			mock_daemon = mock( "daemon" ).as_null_object
 			mock_daemon.should_receive( :filestore ).and_return( :filestore_obj )
 			mock_daemon.should_receive( :metastore ).and_return( :metastore_obj )
 
-			@handler.on_startup( mock_daemon )
+			self.handler.on_startup( mock_daemon )
 		end
 
 
 		it "doesn't add to the index content by default" do
-			@handler.make_index_content( '/foo' ).should be_nil
+			self.handler.make_index_content( '/foo' ).should be_nil
 		end
 
 	end
 
 
 	describe "that handles GET and DELETE requests" do
+
+		let( :handler ) do
+		    ThingFish::Handler.create( 'getdeletetest', '/getdelete' )
+		end
 
 		before(:each) do
 			ThingFish.logger.level = Logger::FATAL
@@ -215,13 +218,12 @@ describe ThingFish::Handler do
 			@response_headers = mock( "response headers" )
 			@response.stub!( :headers ).and_return( @response_headers )
 
-		    @handler = ThingFish::Handler.create( 'getdeletetest', '/getdelete' )
 			@datadir = Config::CONFIG['datadir']
 		end
 
 
 		### Shared behaviors
-		it_should_behave_like "A Handler"
+		it_should_behave_like "a handler"
 
 
 		### Specs
@@ -232,7 +234,7 @@ describe ThingFish::Handler do
 				at_least(:once).
 				and_return( :GET )
 
-			@handler.process( @request, @response ).
+			self.handler.process( @request, @response ).
 				should == [:get_response, ['something', @request, @response ]]
 		end
 
@@ -243,7 +245,7 @@ describe ThingFish::Handler do
 				at_least(:once).
 				and_return( :HEAD )
 
-			@handler.process( @request, @response ).
+			self.handler.process( @request, @response ).
 				should == [:get_response, ['something', @request, @response ]]
 		end
 
@@ -252,7 +254,7 @@ describe ThingFish::Handler do
 			@request.should_receive( :http_method ).
 				at_least(:once).
 				and_return( :POST )
-			@handler.stub!( :methods ).
+			self.handler.stub!( :methods ).
 				and_return(['handle_get_request', 'handle_delete_request'])
 
 			@response.should_receive( :status= ).
@@ -262,7 +264,7 @@ describe ThingFish::Handler do
 			@response.should_receive( :body= ).
 				with( /POST.*not allowed/ )
 
-			@handler.process( @request, @response )
+			self.handler.process( @request, @response )
 		end
 
 
@@ -274,7 +276,7 @@ describe ThingFish::Handler do
 			@response.should_receive( :body= ).
 				with( /PUT.*not allowed/ )
 
-			@handler.build_method_not_allowed_response( @response, :PUT, %w{DELETE GET HEAD} )
+			self.handler.build_method_not_allowed_response( @response, :PUT, %w{DELETE GET HEAD} )
 		end
 
 
@@ -286,7 +288,7 @@ describe ThingFish::Handler do
 			@response.should_receive( :body= ).
 				with( /PUT.*not allowed/ )
 
-			@handler.build_method_not_allowed_response( @response, :PUT, %w{DELETE GET} )
+			self.handler.build_method_not_allowed_response( @response, :PUT, %w{DELETE GET} )
 		end
 	end
 end

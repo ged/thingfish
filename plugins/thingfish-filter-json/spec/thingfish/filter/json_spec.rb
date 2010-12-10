@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
 require 'rbconfig'
@@ -24,8 +24,6 @@ require 'thingfish/filter'
 require 'thingfish/filter/json'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -42,8 +40,7 @@ describe ThingFish::JSONFilter do
 	TEST_UNJSONIFIED_CONTENT = JSON.parse(TEST_JSON_CONTENT)
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
 	end
 
 	before( :each ) do
@@ -56,12 +53,12 @@ describe ThingFish::JSONFilter do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
 
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	it "converts a request body into a Ruby object if the content-type indicates " +

@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( pluglibdir ) unless $LOAD_PATH.include?( pluglibdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/handler_behavior'
 
@@ -44,28 +44,28 @@ describe "The inspection handler" do
 	before(:each) do
 		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent + 'resources'
 	    @handler  = ThingFish::Handler.create( 'inspect', 'resource_dir' => resdir )
-		@request  = mock( "request", :null_object => true )
-		@response = mock( "response", :null_object => true )
+		@request  = mock( "request" ).as_null_object
+		@response = mock( "response" ).as_null_object
 
-		@request_headers  = mock( "request headers", :null_object => true )
+		@request_headers  = mock( "request headers" ).as_null_object
 		@request.stub!( :headers ).and_return( @request_headers )
-		@response_headers  = mock( "response headers", :null_object => true )
+		@response_headers  = mock( "response headers" ).as_null_object
 		@response.stub!( :headers ).and_return( @response_headers )
-		@response_data  = mock( "response data", :null_object => true )
+		@response_data  = mock( "response data" ).as_null_object
 		@response.stub!( :data ).and_return( @response_data )
 
-		@daemon = mock( "daemon object", :null_object => true )
+		@daemon = mock( "daemon object" ).as_null_object
 		@handler.on_startup( @daemon )
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
 
 	# Shared behaviors
-	it_should_behave_like "A Handler"
+	it_should_behave_like "a handler"
 
 
 	# Examples
@@ -126,9 +126,9 @@ describe "The inspection handler" do
 
 
 	it "can make an HTML fragment out of the inspected object for the HTML filter" do
-		body = mock( "body", :null_object => true )
+		body = mock( "body" ).as_null_object
 
-		template = mock( "ERB template", :null_object => true )
+		template = mock( "ERB template" ).as_null_object
 		@handler.stub!( :get_erb_resource ).and_return( template )
 		template.should_receive( :result ).with( an_instance_of(Binding) ).and_return( :something )
 

@@ -1,6 +1,13 @@
 #!/usr/bin/env ruby
-#
-# A search handler for the thingfish daemon. This handler provides a REST
+
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/metastore/simple'
+require 'thingfish/mixins'
+
+
+# A search handler for the ThingFish daemon. This handler provides a REST
 # interface to searching for resources which match criteria concerning their
 # associated metadata in a ThingFish::SimpleMetastore.
 #
@@ -27,16 +34,6 @@
 # Please see the file LICENSE in the top-level directory for licensing details.
 #
 #
-
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/handler'
-require 'thingfish/metastore/simple'
-require 'thingfish/mixins'
-
-
-### The search handler for the thingfish daemon when it's using a
-### ThingFish::SimpleMetaStore.
 class ThingFish::SimpleSearchHandler < ThingFish::Handler
 
 	include ThingFish::Constants,

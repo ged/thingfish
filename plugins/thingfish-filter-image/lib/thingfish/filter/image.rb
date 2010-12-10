@@ -228,7 +228,7 @@ class ThingFish::ImageFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => supports,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => accepts,
 			'generates' => generates,
 		  }

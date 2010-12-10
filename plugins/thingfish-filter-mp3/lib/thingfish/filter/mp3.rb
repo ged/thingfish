@@ -135,7 +135,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => Mp3Info::VERSION.split('.'),
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }

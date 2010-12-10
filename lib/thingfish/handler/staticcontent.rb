@@ -1,5 +1,12 @@
 #!/usr/bin/env ruby
-#
+
+require 'pp'
+require 'thingfish'
+require 'thingfish/constants'
+require 'thingfish/handler'
+require 'thingfish/mixins'
+
+
 # The static resources handler -- serves static content from a directory. This is the
 # handler that's installed by the ThingFish::StaticResourcesHandler mixin ahead of
 # the including class in the URIspace.
@@ -18,17 +25,7 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'pp'
-require 'thingfish'
-require 'thingfish/constants'
-require 'thingfish/handler'
-require 'thingfish/mixins'
-
-
-### The default top-level handler for the thingfish daemon
 class ThingFish::StaticContentHandler < ThingFish::Handler
 
 	include ThingFish::Constants,

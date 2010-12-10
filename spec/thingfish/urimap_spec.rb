@@ -10,7 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -19,14 +20,10 @@ require 'thingfish/constants'
 require 'thingfish/urimap'
 
 
-include ThingFish::Constants
-include ThingFish::TestConstants
-
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::UriMap do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -59,8 +56,8 @@ describe ThingFish::UriMap do
 		@urimap.handlers_for( '/admin' ).should have( 1 ).members
 		@urimap.handlers_for( '/admin' ).should include( handler )
 	end
-	
-	
+
+
 	it "allows you to associate two handlers with a uri" do
 		handler = stub( "handler object" )
 		handler2 = stub( "second handler object" )
@@ -83,13 +80,13 @@ describe ThingFish::UriMap do
 		handler1 = stub( "a handler object" )
 		handler2 = stub( "another handler object" )
 		handler3 = stub( "another handler object" )
-		
+
 		@urimap.register( '/floppy', handler1 )
 		@urimap.register( '/floppy', handler2 )
 		@urimap.register( '/floppy/yes/they/are', handler3 )
-		
+
 		delegators, processor = @urimap[ '/floppy/yes/they/are/unfluffed' ]
-		
+
 		delegators.should == [ handler1, handler2 ]
 		processor.should == handler3
 	end
@@ -99,33 +96,33 @@ describe ThingFish::UriMap do
 		handler1 = stub( "a handler object" )
 		handler2 = stub( "another handler object" )
 		handler3 = stub( "another handler object" )
-		
+
 		@urimap.register( '/floppy', handler1 )
 		@urimap.register( '/floppy/yes/they/are', handler2 )
 		@urimap.register( '/floppy/yes/they/are', handler3 )
-		
+
 		delegators, processor = @urimap[ '/floppy/yes/they/are/unfluffed' ]
-		
+
 		delegators.should == [ handler1, handler2 ]
 		processor.should == handler3
 	end
 
 
-	describe "with three registered handlers for a specific URI" do
-		
+	context "with three registered handlers for a specific URI" do
+
 		before( :each ) do
-			@handler = stub( "handler object" )
+			@handler = Object.new
 			@urimap.register( '/admin', @handler )
 
-			@handler2 = stub( "second handler object" )
+			@handler2 = Object.new
 			@urimap.register( '/', @handler2 )
-		
-			@handler3 = stub( "third handler object" )
+
+			@handler3 = Object.new
 			@urimap.register( '/admin/file_quota', @handler3 )
-			
+
 			@uri = URI.parse( "/admin/file_quota" )
 		end
-		
+
 		it "knows what handlers are delegators for a given uri" do
 			@urimap.delegators_for( @uri ).should == [ @handler2, @handler ]
 		end
@@ -136,22 +133,22 @@ describe ThingFish::UriMap do
 
 		it "maps a uri to an Array of delegator handlers and a processor handler that are " +
 		   "responsible for handling it" do
-		
+
 			delegators, processor = @urimap[ @uri ]
 
 			processor.should equal( @handler3 )
-		
+
 			delegators.should have( 2 ).members
 			delegators.should == [ @handler2, @handler ]
 		end
-		
+
 		it "returns a flat list of mapped handlers" do
 			result = @urimap.handlers
-			
-			result.should have(3).members
+
+			result.should have( 3 ).members
 			result.should include( @handler, @handler2, @handler3 )
 		end
-		
+
 	end
 
 end

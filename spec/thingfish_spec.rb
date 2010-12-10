@@ -10,13 +10,12 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'logger'
 require 'thingfish'
 
-require 'spec/lib/constants'
-
-include ThingFish::TestConstants
+require 'spec/lib/helpers'
 
 
 #####################################################################
@@ -25,7 +24,7 @@ include ThingFish::TestConstants
 
 describe ThingFish do
 
-	it "should know if its default logger is replaced" do
+	it "knows if its default logger is replaced" do
 		ThingFish.reset_logger
 		ThingFish.should be_using_default_logger
 		ThingFish.logger = Logger.new( $stderr )
@@ -43,7 +42,7 @@ describe ThingFish do
 	end
 
 
-	describe " logging subsystem" do
+	context " logging subsystem" do
 		before(:each) do
 			ThingFish.reset_logger
 		end
@@ -64,7 +63,7 @@ describe ThingFish do
 	end
 
 
-	describe " logging subsystem with new defaults" do
+	context " logging subsystem with new defaults" do
 		before( :all ) do
 			@original_logger = ThingFish.default_logger
 			@original_log_formatter = ThingFish.default_log_formatter
@@ -77,8 +76,8 @@ describe ThingFish do
 
 
 		it "uses the new defaults when the logging subsystem is reset" do
-			logger = mock( "dummy logger", :null_object => true )
-			formatter = mock( "dummy logger" )
+			logger = mock( "logger" ).as_null_object
+			formatter = double( "log formatter" )
 
 			ThingFish.default_logger = logger
 			ThingFish.default_log_formatter = formatter

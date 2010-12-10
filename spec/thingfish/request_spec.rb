@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'ipaddr'
@@ -22,8 +22,6 @@ require 'thingfish/constants'
 require 'thingfish/request'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 include ThingFish::Constants::Patterns
 
 #####################################################################
@@ -31,7 +29,6 @@ include ThingFish::Constants::Patterns
 #####################################################################
 
 describe ThingFish::Request do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -609,7 +606,7 @@ describe ThingFish::Request do
 
 				resource1 = mock( "extracted body 1" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
 					io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
@@ -665,7 +662,7 @@ describe ThingFish::Request do
 				io1 = mock( "filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
 					io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
@@ -707,7 +704,7 @@ describe ThingFish::Request do
 				io1 = mock( "filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1",:format => "format1",:extent => 100292},
 					io2 => {:title  => "filename2",:format => "format2",:extent => 100234}
@@ -748,7 +745,7 @@ describe ThingFish::Request do
 				io1 = mock( "filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1", :extent => 100292},
 					io2 => {:title  => "filename2", :extent => 100234}
@@ -789,7 +786,7 @@ describe ThingFish::Request do
 				sub_io1 = mock( "extracted filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1", :extent => 100292},
 					io2 => {:title  => "filename2", :extent => 100234}
@@ -821,7 +818,7 @@ describe ThingFish::Request do
 				clone_sub_io1 = mock( "extracted filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1", :extent => 100292},
 					io2 => {:title  => "filename2", :extent => 100234}
@@ -859,7 +856,7 @@ describe ThingFish::Request do
 				clone_sub_io1 = mock( "extracted filehandle 1" )
 				io2 = mock( "filehandle 2" )
 
-				parser = mock( "multipart parser", :null_object => true )
+				parser = mock( "multipart parser" ).as_null_object
 				entity_bodies = {
 					io1 => {:title  => "filename1", :extent => 100292},
 					io2 => {:title  => "filename2", :extent => 100234}

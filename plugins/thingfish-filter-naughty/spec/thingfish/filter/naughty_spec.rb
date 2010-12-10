@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
@@ -33,7 +33,6 @@ require 'thingfish/filter/naughty'
 include ThingFish::Constants
 
 describe ThingFish::NaughtyFilter do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -65,7 +64,7 @@ describe ThingFish::NaughtyFilter do
 		end
 
 		### Shared behaviors
-		it_should_behave_like "A Filter"
+		it_should_behave_like "a filter"
 
 		it "poops all over the request body IO handles" do
 			body = mock( "A body object in the request" )

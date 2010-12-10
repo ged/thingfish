@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -20,15 +20,12 @@ require 'thingfish/client'
 require 'thingfish/resource'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
 describe ThingFish::Client do
-	include ThingFish::SpecHelpers
 
 	TEST_DATASTRUCTURE = { :some => 'marshalled', :data => 'in', :a => 'Hash' }
 	TEST_MARSHALLED_DATASTRUCTURE = Marshal.dump( TEST_DATASTRUCTURE )
@@ -149,9 +146,9 @@ describe ThingFish::Client do
 
 	describe " created with profiling enabled" do
 		before(:each) do
-			@response = mock( "response object", :null_object => true )
-			@request = mock( "request object", :null_object => true )
-			@conn = mock( "HTTP connection", :null_object => true )
+			@response = mock( "response object" ).as_null_object
+			@request = mock( "request object" ).as_null_object
+			@conn = mock( "HTTP connection" ).as_null_object
 
 			Net::HTTP.stub!( :start ).and_yield( @conn ).and_return( @response )
 
@@ -201,9 +198,9 @@ describe ThingFish::Client do
 	describe " created with valid connection information" do
 
 		before(:each) do
-			@response = mock( "response object", :null_object => true )
-			@request = mock( "request object", :null_object => true )
-			@conn = mock( "HTTP connection", :null_object => true )
+			@response = mock( "response object" ).as_null_object
+			@request = mock( "request object" ).as_null_object
+			@conn = mock( "HTTP connection" ).as_null_object
 
 			Net::HTTP.stub!( :start ).and_yield( @conn ).and_return( @response )
 

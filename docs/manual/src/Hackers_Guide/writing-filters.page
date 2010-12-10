@@ -76,7 +76,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		return {
 			'version'   => yaml_rb_version,
 			'supports'  => supported_yaml_version,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => [YAML_MIMETYPE],
 			'generates' => [YAML_MIMETYPE]
 		}
@@ -220,7 +220,7 @@ class ThingFish::MP3Filter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => Mp3Info::VERSION.split('.'),
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }
@@ -380,7 +380,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		return {
 			'version'   => ruby_version,
 			'supports'  => supported_marshal_version,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => mimetypes,
 			'generates' => mimetypes,
 		  }

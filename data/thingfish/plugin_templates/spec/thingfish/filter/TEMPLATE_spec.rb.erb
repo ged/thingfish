@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
@@ -32,7 +32,6 @@ require 'thingfish/filter/<%= @name %>'
 include ThingFish::Constants
 
 describe ThingFish::<%= @name.capitalize %><%= @type.capitalize %> do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -47,7 +46,7 @@ describe ThingFish::<%= @name.capitalize %><%= @type.capitalize %> do
 	end
 
 	### Shared behaviors
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 	### Implementation-specific Examples
 	it "is well tested"

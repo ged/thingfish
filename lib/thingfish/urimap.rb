@@ -94,7 +94,7 @@ class ThingFish::UriMap
 	def handlers
 		return @map.values.flatten
 	end
-	
+
 
 	### Return the Array of handlers that are registered for the specified +path+.
 	def handlers_for( path )

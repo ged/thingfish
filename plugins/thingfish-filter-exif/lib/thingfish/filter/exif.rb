@@ -126,7 +126,7 @@ class ThingFish::ExifFilter < ThingFish::Filter
 		return {
 			'version'   => [1,0],
 			'supports'  => [],
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => accepts,
 			'generates' => [],
 		  }

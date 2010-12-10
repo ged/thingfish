@@ -10,21 +10,15 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/helpers'
-require 'spec/lib/handler_behavior'
+require 'rspec'
 
-require 'time'
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/handler/simplesearch'
 require 'thingfish/metastore/simple'
-require 'thingfish/constants'
+require 'thingfish/behavior/handler'
 
-
-include ThingFish::Constants
-include ThingFish::TestConstants
 
 #####################################################################
 ###	C O N T E X T S
@@ -39,16 +33,13 @@ describe ThingFish::SimpleSearchHandler do
 		setup_logging( :fatal )
 	end
 
-	after( :all ) do
-		reset_logging()
+	let( :handler ) do
+		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
+		options = { :resource_dir => resdir }
+		ThingFish::SimpleSearchHandler.new( '/search', options )
 	end
 
 	before( :each ) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
-
-		options = { :resource_dir => resdir }
-
-		@handler   = ThingFish::SimpleSearchHandler.new( '/search', options )
 		@request   = mock( "request" )
 		@response  = mock( "response" )
 		@headers   = mock( "headers" )
@@ -62,6 +53,10 @@ describe ThingFish::SimpleSearchHandler do
 		@response.stub!( :headers ).and_return( @headers )
 	end
 
+	after( :all ) do
+		reset_logging()
+	end
+
 
 	describe " set up with a simple metastore" do
 
@@ -72,12 +67,12 @@ describe ThingFish::SimpleSearchHandler do
 			urimap = stub( "urimap", :register_first => nil )
 			@daemon.stub!( :urimap ).and_return( urimap )
 
-			@handler.on_startup( @daemon )
+			self.handler.on_startup( @daemon )
 		end
 
 
 		# Shared behaviors
-		it_should_behave_like "A Handler"
+		it_should_behave_like "a handler"
 
 		# Examples
 
@@ -95,7 +90,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID ])
 
-			@handler.handle_get_request( 'namespace=bangry', @request, @response )
+			self.handler.handle_get_request( 'namespace=bangry', @request, @response )
 		end
 
 
@@ -113,7 +108,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID ])
 
-			@handler.handle_get_request( 'path=production%2Fkate%26nate%2Fframe002_177.mov',
+			self.handler.handle_get_request( 'path=production%2Fkate%26nate%2Fframe002_177.mov',
 			 	@request, @response )
 		end
 
@@ -122,7 +117,7 @@ describe ThingFish::SimpleSearchHandler do
 			@metastore.should_not_receive( :find_by_matching_properties )
 
 			expect {
-				@handler.handle_get_request( 'key=/unescaped/path', @request, @response )
+				self.handler.handle_get_request( 'key=/unescaped/path', @request, @response )
 			}.to raise_error( ThingFish::RequestError, /extraneous path info/i )
 		end
 
@@ -142,7 +137,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
 
-			@handler.handle_get_request( 'namespace=bangry', @request, @response )
+			self.handler.handle_get_request( 'namespace=bangry', @request, @response )
 		end
 
 		it "finds resource UUIDs with equality matching multiple keys ANDed together" do
@@ -162,7 +157,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID, TEST_UUID2 ])
 
-			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
+			self.handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end
 
 		it "finds all resource properties with equality matching multiple keys ANDed together" do
@@ -184,7 +179,7 @@ describe ThingFish::SimpleSearchHandler do
 				[TEST_UUID2,  :a_second_properties_hash],
 			])
 
-			@handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
+			self.handler.handle_get_request( 'namespace=summer;filename=2-proof.jpg', @request, @response )
 		end
 
 
@@ -201,7 +196,7 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
 
-			@handler.handle_get_request( 'weapon=crepe*', @request, @response )
+			self.handler.handle_get_request( 'weapon=crepe*', @request, @response )
 		end
 
 
@@ -221,15 +216,15 @@ describe ThingFish::SimpleSearchHandler do
 			@response.should_receive( :status= ).with( HTTP::OK )
 			@response.should_receive( :body= ).with([ TEST_UUID, :a_properties_hash ])
 
-			@handler.handle_get_request( 'weapon=crepe*;target=vehicle', @request, @response )
+			self.handler.handle_get_request( 'weapon=crepe*;target=vehicle', @request, @response )
 		end
 
 
 		it "can build an HTML fragment for the HTML filter" do
 			erb_template = ERB.new( "A template that refers to <%= uri %>" )
-			@handler.stub!( :get_erb_resource ).and_return( erb_template )
+			self.handler.stub!( :get_erb_resource ).and_return( erb_template )
 
-			html = @handler.make_index_content( "/uri" )
+			html = self.handler.make_index_content( "/uri" )
 			html.should == "A template that refers to /uri"
 		end
 
@@ -243,8 +238,8 @@ describe ThingFish::SimpleSearchHandler do
 			@request.should_receive( :uri ).and_return( stub("fake uri", :path => 'uripath') )
 			@response.should_receive( :data ).at_least( :once ).and_return( {} )
 
-			@handler.stub!( :get_erb_resource ).and_return( erb_template )
-			@handler.make_html_content( "uuids", @request, @response ).
+			self.handler.stub!( :get_erb_resource ).and_return( erb_template )
+			self.handler.make_html_content( "uuids", @request, @response ).
 				should == "Some template that refers to uuids, args, and uripath"
 		end
 

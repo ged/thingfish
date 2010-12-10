@@ -15,7 +15,6 @@ BEGIN {
 
 require 'spec'
 require 'spec/lib/metastore_behavior'
-require 'spec/lib/constants'
 require 'spec/lib/helpers'
 
 require 'pathname'
@@ -68,7 +67,7 @@ describe "A SQLite3 MetaStore" do
 	end
 
 	it "knows when its schema is out of date" do
-		mock_db = mock( "db handle", :null_object => true )
+		mock_db = mock( "db handle" ).as_null_object
 		@store.metadata = mock_db
 
 		rev = @store.schema_rev

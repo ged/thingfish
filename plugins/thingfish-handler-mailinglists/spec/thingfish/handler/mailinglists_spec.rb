@@ -13,8 +13,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/handler_behavior'
 
@@ -47,7 +47,6 @@ LIST_NAMES = RFC822_DELIVERED_TO_LINES.
 #####################################################################
 
 describe ThingFish::MailinglistsHandler do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -56,20 +55,20 @@ describe ThingFish::MailinglistsHandler do
 	before(:each) do
 		# resdir = @basedir + 'resources'
 	    @handler  = ThingFish::Handler.create( 'mailinglists', '/ml' )
-		@request  = mock( "request", :null_object => true )
-		@response = mock( "response", :null_object => true )
+		@request  = mock( "request" ).as_null_object
+		@response = mock( "response" ).as_null_object
 
-		@request_headers  = mock( "request headers", :null_object => true )
+		@request_headers  = mock( "request headers" ).as_null_object
 		@request.stub!( :headers ).and_return( @request_headers )
-		@response_headers  = mock( "response headers", :null_object => true )
+		@response_headers  = mock( "response headers" ).as_null_object
 		@response.stub!( :headers ).and_return( @response_headers )
-		@response_data  = mock( "response data", :null_object => true )
+		@response_data  = mock( "response data" ).as_null_object
 		@response.stub!( :data ).and_return( @response_data )
 
 		@metastore = mock( "metastore" )
 		@metastore.stub!( :is_a? ).and_return( true )
 
-		@daemon = mock( "daemon object", :null_object => true )
+		@daemon = mock( "daemon object" ).as_null_object
 		@daemon.stub!( :metastore ).and_return( @metastore )
 
 		@handler.on_startup( @daemon )
@@ -81,7 +80,7 @@ describe ThingFish::MailinglistsHandler do
 
 
 	### Shared behaviors
-	it_should_behave_like "A Handler"
+	it_should_behave_like "a handler"
 
 
 	### Examples

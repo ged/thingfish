@@ -14,7 +14,8 @@ require 'tempfile'
 require 'logger'
 require 'fileutils'
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'thingfish'
@@ -25,14 +26,10 @@ require 'thingfish/metastore'
 require 'thingfish/handler'
 
 
-include ThingFish::Constants
-
-
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 describe ThingFish::Config do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :debug )
@@ -91,7 +88,7 @@ describe ThingFish::Config do
 		plugins = @config.plugins
 		ThingFish.logger.debug "@config.plugins is a %p: %p" % [ plugins.class, plugins ]
 		plugins.should respond_to( :urimap )
-		@config.respond_to?( :pork_sausage ).should == false
+		@config.should_not respond_to( :pork_sausage )
 	end
 
 

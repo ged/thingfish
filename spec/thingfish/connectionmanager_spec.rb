@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'timeout'
 
@@ -22,8 +22,6 @@ require 'thingfish/request'
 require 'thingfish/connectionmanager'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 include ThingFish::Constants::Patterns
 
 #####################################################################
@@ -31,7 +29,6 @@ include ThingFish::Constants::Patterns
 #####################################################################
 
 describe ThingFish::ConnectionManager do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )

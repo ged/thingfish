@@ -2,7 +2,7 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
+	basedir = Pathname.new( __FILE__ ).dirname.parent.parent.parent
 
 	libdir = basedir + "lib"
 
@@ -10,19 +10,13 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/filter_behavior'
+require 'rspec'
 
-require 'rbconfig'
+require 'spec/lib/helpers'
 
 require 'thingfish'
-require 'thingfish/filter'
+require 'thingfish/behavior/filter'
 require 'thingfish/filter/ruby'
-
-
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 
 #####################################################################
@@ -30,16 +24,17 @@ include ThingFish::Constants
 #####################################################################
 describe ThingFish::RubyFilter do
 
-	TEST_MARSHALLED_CONTENT = Marshal.dump( TEST_RUBY_OBJECT )
+	TEST_MARSHALLED_CONTENT = Marshal.dump( ThingFish::TestConstants::TEST_RUBY_OBJECT )
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
+	end
+
+	let( :filter ) do
+		ThingFish::Filter.create( 'ruby', {} )
 	end
 
 	before( :each ) do
-		@filter = ThingFish::Filter.create( 'ruby', {} )
-
 		@request = mock( "request object" )
 		@response = mock( "response object" )
 		@response_headers = mock( "response headers" )
@@ -49,11 +44,11 @@ describe ThingFish::RubyFilter do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	it "unmarshals Ruby-object requests if the content-type indicates it's a marshalled " +
@@ -69,8 +64,8 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :body= ).with( TEST_RUBY_OBJECT )
 		@request.should_receive( :content_type= ).with( RUBY_MIMETYPE )
 
-		@filter.handle_request( @request, @response )
-		end
+		self.filter.handle_request( @request, @response )
+	end
 
 	it "marshals Ruby-object responses if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
@@ -85,7 +80,7 @@ describe ThingFish::RubyFilter do
 		@response.should_receive( :body= ).with( TEST_MARSHALLED_CONTENT )
 		@response.should_receive( :content_type= ).with( RUBY_MARSHALLED_MIMETYPE )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -104,7 +99,7 @@ describe ThingFish::RubyFilter do
 		@request.should_not_receive( :body= )
 		@request.should_not_receive( :content_type= )
 
-		@filter.handle_request( @request, @response )
+		self.filter.handle_request( @request, @response )
 	end
 
 
@@ -116,7 +111,7 @@ describe ThingFish::RubyFilter do
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -129,7 +124,7 @@ describe ThingFish::RubyFilter do
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -141,20 +136,16 @@ describe ThingFish::RubyFilter do
 			at_least( :once ).
 			and_return( RUBY_MIMETYPE )
 
-		erroring_object = mock( "ruby object that raises an error when marshalled" )
 		@response.should_receive( :body ).
 			at_least( :once ).
-			and_return( erroring_object )
-
-		erroring_object.should_receive( :_dump ).
-			and_raise( ArgumentError.new("Can't dump mock object") )
+			and_return( Proc.new {} )
 
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )
 
-		lambda {
-			@filter.handle_response( @response, @request )
-		}.should raise_error()
+		expect {
+			self.filter.handle_response( @response, @request )
+		}.to raise_error( TypeError, /no marshal_dump/ )
 	end
 
 

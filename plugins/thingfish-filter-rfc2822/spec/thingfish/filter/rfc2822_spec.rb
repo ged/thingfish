@@ -15,8 +15,8 @@ BEGIN {
 
 require 'rbconfig'
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/filter_behavior'
 
@@ -40,7 +40,6 @@ end
 include ThingFish::Constants
 
 describe ThingFish::Rfc2822Filter do
-	include ThingFish::SpecHelpers
 
 	before( :all ) do
 		setup_logging( :fatal )
@@ -60,7 +59,7 @@ describe ThingFish::Rfc2822Filter do
 
 
 	### Shared behaviors
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 	describe " with a simple message body" do
 

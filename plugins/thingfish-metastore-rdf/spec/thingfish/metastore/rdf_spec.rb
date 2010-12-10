@@ -15,8 +15,8 @@ BEGIN {
 
 $rdfmetastore_load_error = nil
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 require 'spec/lib/metastore_behavior'
 

@@ -6,339 +6,355 @@ BEGIN {
 
 	libdir = basedir + "lib"
 
-	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir.to_s )
+	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
+	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
 }
 
-require 'spec'
-require 'spec/lib/helpers'
-require 'spec/lib/constants'
-
+require 'rspec'
 require 'stringio'
+
+require 'spec/lib/helpers'
 
 require 'thingfish/mixins'
 require 'thingfish/handler'
-
-
-include ThingFish::SpecHelpers
+require 'thingfish/testconstants'
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe ThingFish::Loggable, " (class)" do
-	before(:each) do
-		@logfile = StringIO.new('')
-		ThingFish.logger = Logger.new( @logfile )
+describe ThingFish::Loggable do
 
-		@test_class = Class.new do
-			include ThingFish::Loggable
+	context "including class" do
+		before(:each) do
+			@logfile = StringIO.new('')
+			ThingFish.logger = Logger.new( @logfile )
 
-			def log_test_message( level, msg )
-				self.log.send( level, msg )
+			@test_class = Class.new do
+				include ThingFish::Loggable
+
+				def log_test_message( level, msg )
+					self.log.send( level, msg )
+				end
+
+				def logdebug_test_message( msg )
+					self.log_debug.debug( msg )
+				end
 			end
-
-			def logdebug_test_message( msg )
-				self.log_debug.debug( msg )
-			end
+			@obj = @test_class.new
 		end
-		@obj = @test_class.new
+
+
+		it "is able to output to the log via its #log method" do
+			@obj.log_test_message( :debug, "debugging message" )
+			@logfile.rewind
+			@logfile.read.should =~ /debugging message/
+		end
+
+		it "is able to output to the log via its #log_debug method" do
+			@obj.logdebug_test_message( "sexydrownwatch" )
+			@logfile.rewind
+			@logfile.read.should =~ /sexydrownwatch/
+		end
 	end
 
 
-	it "is able to output to the log via its #log method" do
-		@obj.log_test_message( :debug, "debugging message" )
-		@logfile.rewind
-		@logfile.read.should =~ /debugging message/
+	context "including class with custom formats" do
+		before(:each) do
+			@logfile = StringIO.new('')
+			@logger = ThingFish.logger = Logger.new( @logfile )
+
+			formatter = ThingFish::LogFormatter.new( @logger, '%7$s', 'D: %7$s' )
+			@logger.formatter = formatter
+
+			@test_class = Class.new do
+				include ThingFish::Loggable
+
+				def log_test_message( level, msg )
+					self.log.send( level, msg )
+				end
+
+				def logdebug_test_message( msg )
+					self.log_debug.debug( msg )
+				end
+			end
+			@obj = @test_class.new
+		end
+
+
+		it "is able to output to the log via its #log method" do
+			@logger.should_receive( :level ).and_return( Logger::INFO )
+			@obj.log_test_message( :info, 'scoby pancakes' )
+			@logfile.rewind
+			@logfile.read.should == 'scoby pancakes'
+		end
+
+		it "is able to output to the log via its #log_debug method" do
+			@obj.logdebug_test_message( 'poop tubes' )
+			@logfile.rewind
+			@logfile.read.should == 'D: poop tubes'
+		end
 	end
 
-	it "is able to output to the log via its #log_debug method" do
-		@obj.logdebug_test_message( "sexydrownwatch" )
-		@logfile.rewind
-		@logfile.read.should =~ /sexydrownwatch/
-	end
 end
 
+describe ThingFish::StaticResourcesHandler do
 
-describe ThingFish::Loggable, " (class w custom formats)" do
-	before(:each) do
-		@logfile = StringIO.new('')
-		@logger = ThingFish.logger = Logger.new( @logfile )
-
-		formatter = ThingFish::LogFormatter.new( @logger, '%7$s', 'D: %7$s' )
-		@logger.formatter = formatter
-
-		@test_class = Class.new do
-			include ThingFish::Loggable
-
-			def log_test_message( level, msg )
-				self.log.send( level, msg )
-			end
-
-			def logdebug_test_message( msg )
-				self.log_debug.debug( msg )
+	context "mixed into a class" do
+		before(:each) do
+			@test_class = Class.new( ThingFish::Handler ) do
+				include ThingFish::StaticResourcesHandler
 			end
 		end
-		@obj = @test_class.new
-	end
 
 
-	it "is able to output to the log via its #log method" do
-		@logger.should_receive( :level ).and_return( Logger::INFO )
-		@obj.log_test_message( :info, 'scoby pancakes' )
-		@logfile.rewind
-		@logfile.read.should == 'scoby pancakes'
-	end
+		it "has a 'static_resources_dir' class method" do
+			@test_class.should respond_to( :static_resources_dir)
+		end
 
-	it "is able to output to the log via its #log_debug method" do
-		@obj.logdebug_test_message( 'poop tubes' )
-		@logfile.rewind
-		@logfile.read.should == 'D: poop tubes'
-	end
-end
-
-
-describe ThingFish::StaticResourcesHandler, " which has been mixed into a class" do
-	before(:each) do
-		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResourcesHandler
+		it "has a 'static_resources_dir' of 'static' by default" do
+			@test_class.static_resources_dir.should == 'static'
 		end
 	end
 
+	context "mixed into a handler class that has set the static resources dir" do
+		before(:each) do
+			@test_class = Class.new( ThingFish::Handler ) do
+				include ThingFish::StaticResourcesHandler
+				static_resources_dir "static-content"
+			end
+		end
 
-	it "has a 'static_resources_dir' class method" do
-		@test_class.should respond_to( :static_resources_dir)
-	end
 
-	it "has a 'static_resources_dir' of 'static' by default" do
-		@test_class.static_resources_dir.should == 'static'
-	end
-end
-
-describe ThingFish::StaticResourcesHandler,
-	" which has mixed into a handler class that has set the static resources dir" do
-	before(:each) do
-		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResourcesHandler
-			static_resources_dir "static-content"
+		it "should have the specified static_resources_dir" do
+			@test_class.static_resources_dir.should == 'static-content'
 		end
 	end
 
+	context "mixed into an instance of a handler class" do
 
-	it "should have the specified static_resources_dir" do
-		@test_class.static_resources_dir.should == 'static-content'
-	end
-end
-
-describe ThingFish::StaticResourcesHandler,
-	" which has been mixed into an instance of a handler class" do
-
-	before(:each) do
-		@test_class = Class.new( ThingFish::Handler ) do
-			include ThingFish::StaticResourcesHandler
-			static_resources_dir "static-content"
+		before(:each) do
+			@test_class = Class.new( ThingFish::Handler ) do
+				include ThingFish::StaticResourcesHandler
+				static_resources_dir "static-content"
+			end
+			@test_handler = @test_class.new( '/glah' )
 		end
-		@test_handler = @test_class.new( '/glah' )
+
+
+		it "registers another handler at its own location when registered" do
+			daemon = mock( "daemon" ).as_null_object
+			urimap = mock( "urimap" )
+			daemon.stub!( :urimap ).and_return( urimap )
+			urimap.should_receive( :register_first ).with( '/glah', duck_type(:on_startup, :process) )
+
+			@test_handler.on_startup( daemon )
+		end
 	end
 
-
-	it "registers another handler at its own location when registered" do
-		daemon = mock( "daemon" ).as_null_object
-		urimap = mock( "urimap" )
-		daemon.stub!( :urimap ).and_return( urimap )
-		urimap.should_receive( :register_first ).with( '/glah', duck_type(:on_startup, :process) )
-
-		@test_handler.on_startup( daemon )
-	end
 end
 
 describe ThingFish::ResourceLoader do
+
 	it "adds a #get_resource method to including classes" do
 		klass = Class.new { include ThingFish::ResourceLoader }
 		obj = klass.new
 		obj.should respond_to( :get_resource )
 	end
-end
 
-describe "A class which has mixed in ThingFish::ResourceLoader" do
 
-	before(:all) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+	context "mixed into a class" do
 
-		@resdir = make_tempdir()
-		@resdir.mkpath
+		before( :all ) do
+			ThingFish.reset_logger
+			ThingFish.logger.level = Logger::FATAL
 
-		@tmpfile = Tempfile.new( 'test.txt', @resdir )
-		@tmpfile.print( TEST_RESOURCE_CONTENT )
-		@tmpfile.close
-		@tmpname = Pathname.new( @tmpfile.path ).basename
+			@resdir = make_tempdir()
+			@resdir.mkpath
 
-		@klass = Class.new {
-			include ThingFish::ResourceLoader
-			public :get_resource, :resource_exists?, :resource_directory?
-			def initialize( resdir )
-				@resource_dir = resdir
-			end
-		}
-	end
+			@tmpfile = Tempfile.new( 'test.txt', @resdir )
+			@tmpfile.print( TEST_RESOURCE_CONTENT )
+			@tmpfile.close
+			@tmpname = Pathname.new( @tmpfile.path ).basename
 
-	after(:all) do
-		@resdir.rmtree
-		ThingFish.reset_logger
-	end
+			@klass = Class.new {
+				include ThingFish::ResourceLoader
+				public :get_resource, :resource_exists?, :resource_directory?
+				def initialize( resdir )
+					@resource_dir = resdir
+				end
+			}
+		end
 
-	before(:each) do
-		@obj = @klass.new( @resdir )
-	end
+		after( :all ) do
+			@resdir.rmtree
+			ThingFish.reset_logger
+		end
 
-	it "should know what its resource directory is" do
-		@obj.resource_dir.should == @resdir
-	end
+		before( :each ) do
+			@obj = @klass.new( @resdir )
+		end
 
-	it "is able to load stuff from its resources dir" do
-	    @obj.get_resource( @tmpname ).should == TEST_RESOURCE_CONTENT
-	end
+		it "should know what its resource directory is" do
+			@obj.resource_dir.should == @resdir
+		end
 
-	it "can test for the existance of a resource" do
-		@obj.resource_exists?( @tmpname ).should be_true()
-	end
+		it "is able to load stuff from its resources dir" do
+		    @obj.get_resource( @tmpname ).should == TEST_RESOURCE_CONTENT
+		end
 
-	it "can test for the existance of a resource directory" do
-		@obj.resource_directory?( @tmpname ).should be_false()
-		dir = (@resdir + 'testdirectory')
-		@obj.resource_directory?( dir.basename ).should be_false()
-		dir.mkpath
-		@obj.resource_directory?( dir.basename ).should be_true()
-	end
+		it "can test for the existance of a resource" do
+			@obj.resource_exists?( @tmpname ).should be_true()
+		end
 
-end
+		it "can test for the existance of a resource directory" do
+			@obj.resource_directory?( @tmpname ).should be_false()
+			dir = (@resdir + 'testdirectory')
+			@obj.resource_directory?( dir.basename ).should be_false()
+			dir.mkpath
+			@obj.resource_directory?( dir.basename ).should be_true()
+		end
 
-# Workaround for RSpec's stupid overridden 'include' magic tricks
-class AbstractTestClass < ::Object
-	include ThingFish::AbstractClass
-	virtual :test_method
-end
-class AbstractTestSubclass < AbstractTestClass
-end
-
-describe "ThingFish::AbstractClass mixed into a class" do
-	it "will cause the including class to hide its ::new method" do
-		lambda {
-			AbstractTestClass.new
-		}.should raise_error( NoMethodError, /private/ )
 	end
 
 end
 
 
-describe "ThingFish::AbstractClass mixed into a superclass" do
-	before(:each) do
-		@instance = AbstractTestSubclass.new
+describe ThingFish::AbstractClass do
+
+	context "mixed into a class" do
+		it "will cause the including class to hide its ::new method" do
+			testclass = Class.new { include ThingFish::AbstractClass }
+
+			expect {
+				testclass.new
+			}.to raise_error( NoMethodError, /private/ )
+		end
+
 	end
 
 
-	it "raises a NotImplementedError when unimplemented API methods are called" do
-		lambda {
-			@instance.test_method
-		}.should raise_error( NotImplementedError, /does not provide an implementation of/ )
-	end
+	context "mixed into a superclass" do
 
-	it "declares the virtual methods so that they can be used with arguments under Ruby 1.9" do
-		lambda {
-			@instance.test_method( :some, :arguments )
-		}.should raise_error( NotImplementedError, /does not provide an implementation of/ )
-	end
-	
-end
+		before(:each) do
+			testclass = Class.new {
+				include ThingFish::AbstractClass
+				virtual :test_method
+			}
+			subclass = Class.new( testclass )
+			@instance = subclass.new
+		end
 
 
-describe ThingFish::NumericConstantMethods, " after extending Numeric" do
+		it "raises a NotImplementedError when unimplemented API methods are called" do
+			expect {
+				@instance.test_method
+			}.to raise_error( NotImplementedError, /does not provide an implementation of/ )
+		end
 
-	SECONDS_IN_A_MINUTE    = 60
-	SECONDS_IN_AN_HOUR     = SECONDS_IN_A_MINUTE * 60
-	SECONDS_IN_A_DAY       = SECONDS_IN_AN_HOUR * 24
-	SECONDS_IN_A_WEEK      = SECONDS_IN_A_DAY * 7
-	SECONDS_IN_A_FORTNIGHT = SECONDS_IN_A_WEEK * 2
-	SECONDS_IN_A_MONTH     = SECONDS_IN_A_DAY * 30
-	SECONDS_IN_A_YEAR      = Integer( SECONDS_IN_A_DAY * 365.25 )
+		it "declares the virtual methods so that they can be used with arguments under Ruby 1.9" do
+			expect {
+				@instance.test_method( :some, :arguments )
+			}.to raise_error( NotImplementedError, /does not provide an implementation of/ )
+		end
 
-	it "can calculate the number of seconds for various units of time" do
-		1.second.should == 1
-		14.seconds.should == 14
-
-		1.minute.should == SECONDS_IN_A_MINUTE
-		18.minutes.should == SECONDS_IN_A_MINUTE * 18
-
-		1.hour.should == SECONDS_IN_AN_HOUR
-		723.hours.should == SECONDS_IN_AN_HOUR * 723
-
-		1.day.should == SECONDS_IN_A_DAY
-		3.days.should == SECONDS_IN_A_DAY * 3
-
-		1.week.should == SECONDS_IN_A_WEEK
-		28.weeks.should == SECONDS_IN_A_WEEK * 28
-
-		1.fortnight.should == SECONDS_IN_A_FORTNIGHT
-		31.fortnights.should == SECONDS_IN_A_FORTNIGHT * 31
-
-		1.month.should == SECONDS_IN_A_MONTH
-		67.months.should == SECONDS_IN_A_MONTH * 67
-
-		1.year.should == SECONDS_IN_A_YEAR
-		13.years.should == SECONDS_IN_A_YEAR * 13
-	end
-
-
-	it "can calulate various time offsets" do
-		starttime = Time.now
-
-		1.second.after( starttime ).should == starttime + 1
-		18.seconds.from_now.should be_close( starttime + 18, 10 )
-
-		1.second.before( starttime ).should == starttime - 1
-		3.hours.ago.should be_close( starttime - 10800, 10 )
-	end
-
-
-
-	BYTES_IN_A_KILOBYTE = 1024
-	BYTES_IN_A_MEGABYTE = BYTES_IN_A_KILOBYTE * 1024
-	BYTES_IN_A_GIGABYTE = BYTES_IN_A_MEGABYTE * 1024
-	BYTES_IN_A_TERABYTE = BYTES_IN_A_GIGABYTE * 1024
-	BYTES_IN_A_PETABYTE = BYTES_IN_A_TERABYTE * 1024
-	BYTES_IN_AN_EXABYTE = BYTES_IN_A_PETABYTE * 1024
-
-	it "can calulate the number of bytes for various data sizes" do
-		1.byte.should == 1
-		4.bytes.should == 4
-
-		1.kilobyte.should == BYTES_IN_A_KILOBYTE
-		22.kilobytes.should == BYTES_IN_A_KILOBYTE * 22
-
-		1.megabyte.should == BYTES_IN_A_MEGABYTE
-		116.megabytes.should == BYTES_IN_A_MEGABYTE * 116
-
-		1.gigabyte.should == BYTES_IN_A_GIGABYTE
-		14.gigabytes.should == BYTES_IN_A_GIGABYTE * 14
-
-		1.terabyte.should == BYTES_IN_A_TERABYTE
-		88.terabytes.should == BYTES_IN_A_TERABYTE * 88
-
-		1.petabyte.should == BYTES_IN_A_PETABYTE
-		34.petabytes.should == BYTES_IN_A_PETABYTE * 34
-
-		1.exabyte.should == BYTES_IN_AN_EXABYTE
-		6.exabytes.should == BYTES_IN_AN_EXABYTE * 6
-	end
-
-
-	it "can display integers as human readable filesize values" do
-		234.size_suffix.should == "234b"
-		3492.size_suffix.should == "3.4K"
-		3492425.size_suffix.should == "3.3M"
-		9833492425.size_suffix.should == "9.2G"
 	end
 
 end
+
+
+describe ThingFish::NumericConstantMethods do
+
+	context "mixed into Numerics" do
+
+		SECONDS_IN_A_MINUTE    = 60
+		SECONDS_IN_AN_HOUR     = SECONDS_IN_A_MINUTE * 60
+		SECONDS_IN_A_DAY       = SECONDS_IN_AN_HOUR * 24
+		SECONDS_IN_A_WEEK      = SECONDS_IN_A_DAY * 7
+		SECONDS_IN_A_FORTNIGHT = SECONDS_IN_A_WEEK * 2
+		SECONDS_IN_A_MONTH     = SECONDS_IN_A_DAY * 30
+		SECONDS_IN_A_YEAR      = Integer( SECONDS_IN_A_DAY * 365.25 )
+
+		it "can calculate the number of seconds for various units of time" do
+			1.second.should == 1
+			14.seconds.should == 14
+
+			1.minute.should == SECONDS_IN_A_MINUTE
+			18.minutes.should == SECONDS_IN_A_MINUTE * 18
+
+			1.hour.should == SECONDS_IN_AN_HOUR
+			723.hours.should == SECONDS_IN_AN_HOUR * 723
+
+			1.day.should == SECONDS_IN_A_DAY
+			3.days.should == SECONDS_IN_A_DAY * 3
+
+			1.week.should == SECONDS_IN_A_WEEK
+			28.weeks.should == SECONDS_IN_A_WEEK * 28
+
+			1.fortnight.should == SECONDS_IN_A_FORTNIGHT
+			31.fortnights.should == SECONDS_IN_A_FORTNIGHT * 31
+
+			1.month.should == SECONDS_IN_A_MONTH
+			67.months.should == SECONDS_IN_A_MONTH * 67
+
+			1.year.should == SECONDS_IN_A_YEAR
+			13.years.should == SECONDS_IN_A_YEAR * 13
+		end
+
+
+		it "can calulate various time offsets" do
+			starttime = Time.now
+
+			1.second.after( starttime ).should == starttime + 1
+			18.seconds.from_now.should be_within( 10.seconds ).of( starttime + 18 )
+
+			1.second.before( starttime ).should == starttime - 1
+			3.hours.ago.should be_within( 10.seconds ).of( starttime - 10800 )
+		end
+
+
+
+		BYTES_IN_A_KILOBYTE = 1024
+		BYTES_IN_A_MEGABYTE = BYTES_IN_A_KILOBYTE * 1024
+		BYTES_IN_A_GIGABYTE = BYTES_IN_A_MEGABYTE * 1024
+		BYTES_IN_A_TERABYTE = BYTES_IN_A_GIGABYTE * 1024
+		BYTES_IN_A_PETABYTE = BYTES_IN_A_TERABYTE * 1024
+		BYTES_IN_AN_EXABYTE = BYTES_IN_A_PETABYTE * 1024
+
+		it "can calulate the number of bytes for various data sizes" do
+			1.byte.should == 1
+			4.bytes.should == 4
+
+			1.kilobyte.should == BYTES_IN_A_KILOBYTE
+			22.kilobytes.should == BYTES_IN_A_KILOBYTE * 22
+
+			1.megabyte.should == BYTES_IN_A_MEGABYTE
+			116.megabytes.should == BYTES_IN_A_MEGABYTE * 116
+
+			1.gigabyte.should == BYTES_IN_A_GIGABYTE
+			14.gigabytes.should == BYTES_IN_A_GIGABYTE * 14
+
+			1.terabyte.should == BYTES_IN_A_TERABYTE
+			88.terabytes.should == BYTES_IN_A_TERABYTE * 88
+
+			1.petabyte.should == BYTES_IN_A_PETABYTE
+			34.petabytes.should == BYTES_IN_A_PETABYTE * 34
+
+			1.exabyte.should == BYTES_IN_AN_EXABYTE
+			6.exabytes.should == BYTES_IN_AN_EXABYTE * 6
+		end
+
+
+		it "can display integers as human readable filesize values" do
+			234.size_suffix.should == "234b"
+			3492.size_suffix.should == "3.4K"
+			3492425.size_suffix.should == "3.3M"
+			9833492425.size_suffix.should == "9.2G"
+		end
+
+	end
+
+end
+
 

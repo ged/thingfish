@@ -10,19 +10,15 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/filter_behavior'
+require 'rspec'
 
-require 'rbconfig'
+require 'spec/lib/helpers'
 
 require 'thingfish'
-require 'thingfish/filter'
+require 'thingfish/behavior/filter'
 require 'thingfish/filter/html'
 
 
-include ThingFish::TestConstants
-include ThingFish::Constants
 
 #####################################################################
 ###	C O N T E X T S
@@ -30,13 +26,14 @@ include ThingFish::Constants
 describe ThingFish::HtmlFilter do
 
 	before( :all ) do
-		ThingFish.reset_logger
-		ThingFish.logger.level = Logger::FATAL
+		setup_logging( :fatal )
+	end
+
+	let( :filter ) do
+		ThingFish::Filter.create( 'html', {} )
 	end
 
 	before( :each ) do
-		@filter = ThingFish::Filter.create( 'html', {} )
-
 		@request = mock( "request object" )
 		@response = mock( "response object" )
 
@@ -50,11 +47,11 @@ describe ThingFish::HtmlFilter do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
-	it_should_behave_like "A Filter"
+	it_should_behave_like "a filter"
 
 
 	it "uses handler HTML API to convert Ruby-object responses to HTML if the client accepts it" do
@@ -76,8 +73,8 @@ describe ThingFish::HtmlFilter do
 			with( body, @request, @response ).
 			and_return( 'last_html' )
 
-		erbtemplate = mock( "ERB wrapper template", :null_object => true )
-		@filter.stub!( :get_erb_resource ).and_return( erbtemplate )
+		erbtemplate = mock( "ERB wrapper template" ).as_null_object
+		self.filter.stub!( :get_erb_resource ).and_return( erbtemplate )
 		erbtemplate.should_receive( :result ).
 			with( an_instance_of(Binding) ).
 			and_return( :wrapped_html_content )
@@ -87,7 +84,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -112,8 +109,8 @@ describe ThingFish::HtmlFilter do
 
 		body.should_receive( :html_inspect ).and_return( "some html" )
 
-		erbtemplate = mock( "ERB wrapper template", :null_object => true )
-		@filter.stub!( :get_erb_resource ).and_return( erbtemplate )
+		erbtemplate = mock( "ERB wrapper template" ).as_null_object
+		self.filter.stub!( :get_erb_resource ).and_return( erbtemplate )
 		erbtemplate.should_receive( :result ).
 			with( an_instance_of(Binding) ).
 			and_return( :wrapped_html_content )
@@ -123,7 +120,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_not_receive( :status= ).with( HTTP::OK )
 		@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 
 
@@ -136,7 +133,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_not_receive( :status= )
 		@response_headers.should_not_receive( :[]= )
 
-		@filter.handle_response( @response, @request )
+		self.filter.handle_response( @response, @request )
 	end
 end
 

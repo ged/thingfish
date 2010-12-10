@@ -10,57 +10,54 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
-require 'spec/lib/filestore_behavior'
+require 'rspec'
 
-require 'stringio'
+require 'spec/lib/helpers'
 
 require 'thingfish'
 require 'thingfish/exceptions'
 require 'thingfish/filestore/memory'
+require 'thingfish/behavior/filestore'
 
-
-include ThingFish::TestConstants
 
 describe ThingFish::MemoryFileStore do
 
-	before(:each) do
-	    @fs = ThingFish::FileStore.create( 'memory' )
-		@io = StringIO.new( TEST_RESOURCE_CONTENT )
+	let( :filestore ) do
+		ThingFish::FileStore.create( 'memory' )
 	end
 
-	it_should_behave_like "A FileStore"
+	it_should_behave_like "a filestore"
 
-end
+ 	context " with a maxsize of 2k" do
 
-describe ThingFish::MemoryFileStore, " with a maxsize of 2k" do
+		let( :filestore ) do
+			ThingFish::FileStore.create( 'memory', nil, nil, :maxsize => 2_048 )
+		end
 
-	before(:each) do
-		@fs = ThingFish::FileStore.create( 'memory', nil, nil, :maxsize => 2_048 )
+
+		it "raises a FileStoreQuotaError when trying to store data > 3k" do
+			expect {
+				filestore.store( TEST_UUID, '8=D' * 1024 )
+			}.to raise_error( ThingFish::FileStoreQuotaError )
+		end
+
+
+		it "raises a FileStoreQuotaError when trying to store two things whose sum is > 2k" do
+			filestore.store( TEST_UUID, '!' * 1024 )
+			expect {
+				filestore.store( TEST_UUID2, '!' * 1025 )
+			}.to raise_error( ThingFish::FileStoreQuotaError )
+		end
+
+
+		it "is able to store a 1k chunk of data" do
+			expect {
+				filestore.store( TEST_UUID, '!' * 1024 )
+			}.to_not raise_error()
+		end
+
 	end
 
-
-	it "raises a FileStoreQuotaError when trying to store data > 3k" do
-		lambda {
-			@fs.store( TEST_UUID, '8=D' * 1024 )
-		}.should raise_error( ThingFish::FileStoreQuotaError )
-	end
-
-
-	it "raises a FileStoreQuotaError when trying to store two things whose sum is > 2k" do
-		@fs.store( TEST_UUID, '!' * 1024 )
-		lambda {
-			@fs.store( TEST_UUID2, '!' * 1025 )
-		}.should raise_error( ThingFish::FileStoreQuotaError )
-	end
-
-
-	it "is able to store a 1k chunk of data" do
-		lambda {
-			@fs.store( TEST_UUID, '!' * 1024 )
-		}.should_not raise_error
-	end
 end
 
 

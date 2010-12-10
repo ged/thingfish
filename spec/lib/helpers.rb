@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
-require 'spec/lib/constants'
+require 'rspec'
 
 require 'digest/md5'
 require 'net/http'
@@ -10,6 +10,7 @@ require 'net/protocol'
 require 'thingfish'
 require 'thingfish/constants'
 require 'thingfish/utils'
+require 'thingfish/testconstants'
 
 
 module ThingFish::SpecHelpers
@@ -41,6 +42,7 @@ module ThingFish::SpecHelpers
 			:fatal => Logger::FATAL,
 		  }
 	end
+
 
 	###############
 	module_function
@@ -130,5 +132,13 @@ module ThingFish::SpecHelpers
 	end
 
 
+end
+
+
+RSpec.configure do |config|
+	config.mock_with( :rspec )
+	config.include( ThingFish::Constants )
+	config.include( ThingFish::TestConstants )
+	config.include( ThingFish::SpecHelpers )
 end
 

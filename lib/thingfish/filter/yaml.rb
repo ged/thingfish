@@ -1,6 +1,16 @@
 #!/usr/bin/env ruby
-#
-# A YAML conversion filter for ThingFish
+
+require 'yaml'
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+require 'thingfish/filter'
+
+
+# A YAML-conversion filter for ThingFish. It converts Ruby objects in the body of responses
+# to YAML if the client accepts 'text/x-yaml'.
 #
 # == Synopsis
 #
@@ -22,22 +32,10 @@
 #---
 #
 # Please see the file LICENSE in the top-level directory for licensing details.
-
 #
-
-require 'yaml'
-
-require 'thingfish'
-require 'thingfish/mixins'
-require 'thingfish/constants'
-require 'thingfish/acceptparam'
-
-
-### A YAML-conversion filter for ThingFish. It converts Ruby objects in the body of responses
-### to YAML if the client accepts 'text/x-yaml'.
 class ThingFish::YAMLFilter < ThingFish::Filter
 	include ThingFish::Loggable,
-		ThingFish::Constants
+	        ThingFish::Constants
 
 	# VCS Revision
 	VCSRev = %q$Rev$
@@ -126,7 +124,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 		return {
 			'version'  => yaml_rb_version,
 			'supports' => supported_yaml_version,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => [YAML_MIMETYPE],
 			'generates' => [YAML_MIMETYPE],
 		}

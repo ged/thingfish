@@ -10,8 +10,8 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
-require 'spec/lib/constants'
+require 'rspec'
+
 require 'spec/lib/helpers'
 
 require 'socket'
@@ -51,7 +51,6 @@ end
 #####################################################################
 
 describe ThingFish::Daemon do
-	include ThingFish::SpecHelpers
 
 	before( :each ) do
 		# Have to set up logging each time, 'cause Daemon alters it in some examples
@@ -70,7 +69,7 @@ describe ThingFish::Daemon do
 	end
 
 	after( :all ) do
-		ThingFish.reset_logger
+		reset_logging()
 	end
 
 
@@ -144,9 +143,9 @@ describe ThingFish::Daemon do
 			it "starts its filestore, metastore, and listener thread on startup" do
 				Process.should_receive( :euid ).at_least( :once ).and_return( 266 )
 
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				filestore.should_receive( :on_startup )
@@ -302,8 +301,8 @@ describe ThingFish::Daemon do
 
 
 			it "iterates through its filters on incoming requests" do
-				filter_uno = mock( "request filter number one", :null_object => true )
-				filter_dos = mock( "request filter number two", :null_object => true )
+				filter_uno = mock( "request filter number one" ).as_null_object
+				filter_dos = mock( "request filter number two" ).as_null_object
 
 				@daemon.filters << filter_uno << filter_dos
 				@response.should_receive( :handled? ).
@@ -324,8 +323,8 @@ describe ThingFish::Daemon do
 
 
 			it "doesn't propagate exceptions raised from request filters" do
-				filter_uno = mock( "request filter number one", :null_object => true )
-				filter_dos = mock( "request filter number two", :null_object => true )
+				filter_uno = mock( "request filter number one" ).as_null_object
+				filter_dos = mock( "request filter number two" ).as_null_object
 
 				@daemon.filters << filter_uno << filter_dos
 				@response.should_receive( :handled? ).
@@ -349,9 +348,9 @@ describe ThingFish::Daemon do
 
 
 			it "filters the response through all the filters which saw the request" do
-				filter_uno  = mock( "request filter number one", :null_object => true )
-				filter_dos  = mock( "request filter number two", :null_object => true )
-				filter_tres = mock( "request filter number three", :null_object => true )
+				filter_uno  = mock( "request filter number one" ).as_null_object
+				filter_dos  = mock( "request filter number two" ).as_null_object
+				filter_tres = mock( "request filter number three" ).as_null_object
 
 				@response.should_receive( :filters ).and_return([ filter_uno, filter_dos ])
 
@@ -370,8 +369,8 @@ describe ThingFish::Daemon do
 			end
 
 			it "doesn't propagate exceptions raised from response filters" do
-				filter_uno = mock( "response filter number one", :null_object => true )
-				filter_dos = mock( "response filter number two", :null_object => true )
+				filter_uno = mock( "response filter number one" ).as_null_object
+				filter_dos = mock( "response filter number two" ).as_null_object
 
 				@response.should_receive( :filters ).and_return([ filter_uno, filter_dos ])
 
@@ -396,19 +395,19 @@ describe ThingFish::Daemon do
 			it "knows how to store a new resource" do
 				UUIDTools::UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
-				metadata = mock( "metadata hash", :null_object => true )
+				metadata = mock( "metadata hash" ).as_null_object
 
 				# Replace the filestore and metastore with mocks
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				filestore.should_receive( :store_io ).
 					with( TEST_UUID_OBJ, body ).
 					and_return( :a_checksum )
 
-				metadata_proxy = mock( "metadata proxy", :null_object => true )
+				metadata_proxy = mock( "metadata proxy" ).as_null_object
 				metastore.should_receive( :transaction ).and_yield
 				metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
 				metadata_proxy.should_receive( :update ).with( metadata )
@@ -446,9 +445,9 @@ describe ThingFish::Daemon do
 
 
 			it "knows how to purge specific related resources" do
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				results = [
@@ -525,10 +524,10 @@ describe ThingFish::Daemon do
 
 
 			it "removes spoolfiles on successful uploads" do
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
 
-				spool = mock( "spoolfile", :null_object => true )
+				spool = mock( "spoolfile" ).as_null_object
 				metadata = { :extent => '2100' }
 
 				spool.should_receive( :respond_to? ).
@@ -543,12 +542,12 @@ describe ThingFish::Daemon do
 
 			it "knows how to update the data and metadata for an existing resource" do
 				body = mock( "body IO" )
-				metadata = mock( "metadata hash", :null_object => true )
+				metadata = mock( "metadata hash" ).as_null_object
 
 				# Replace the filestore and metastore with mocks
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				filestore.should_receive( :store_io ).
@@ -556,7 +555,7 @@ describe ThingFish::Daemon do
 					and_return( :a_checksum )
 
 				metastore.should_receive( :transaction ).and_yield
-				metadata_proxy = mock( "metadata proxy", :null_object => true )
+				metadata_proxy = mock( "metadata proxy" ).as_null_object
 				metastore.should_receive( :[] ).with( TEST_UUID_OBJ ).and_return( metadata_proxy )
 				metadata_proxy.should_receive( :update ).with( metadata )
 
@@ -574,12 +573,12 @@ describe ThingFish::Daemon do
 			it "cleans up new resources if there's an error while storing the resource" do
 				UUIDTools::UUID.stub!( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
-				metadata = mock( "metadata hash", :null_object => true )
+				metadata = mock( "metadata hash" ).as_null_object
 
 				# Replace the filestore and metastore with mocks
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				filestore.should_receive( :store_io ).
@@ -596,10 +595,10 @@ describe ThingFish::Daemon do
 			it "cleans up new resources if there's an error while storing the metadata" do
 				UUIDTools::UUID.should_receive( :timestamp_create ).and_return( TEST_UUID_OBJ )
 				body = mock( "body IO" )
-				metadata = mock( "metadata hash", :null_object => true )
+				metadata = mock( "metadata hash" ).as_null_object
 
 				# Replace the filestore and metastore with mocks
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
 				metastore = mock( "metastore" )
 				@daemon.instance_variable_set( :@metastore, metastore )
@@ -619,12 +618,12 @@ describe ThingFish::Daemon do
 
 			it "does not delete the resource if there's an error while updating" do
 				body = mock( "body IO" )
-				metadata = mock( "metadata hash", :null_object => true )
+				metadata = mock( "metadata hash" ).as_null_object
 
 				# Replace the filestore and metastore with mocks
-				filestore = mock( "filestore", :null_object => true )
+				filestore = mock( "filestore" ).as_null_object
 				@daemon.instance_variable_set( :@filestore, filestore )
-				metastore = mock( "metastore", :null_object => true )
+				metastore = mock( "metastore" ).as_null_object
 				@daemon.instance_variable_set( :@metastore, metastore )
 
 				filestore.should_receive( :store_io ).

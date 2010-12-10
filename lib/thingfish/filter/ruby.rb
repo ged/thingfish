@@ -1,6 +1,17 @@
 #!/usr/bin/env ruby
+
+
+require 'thingfish'
+require 'thingfish/mixins'
+require 'thingfish/constants'
+require 'thingfish/acceptparam'
+require 'thingfish/filter'
+
+
 #
-# A Marshalled Ruby object filter for ThingFish
+# A Ruby marshalled-object filter for ThingFish. It marshals and unmarshals Ruby objects in the
+# body of responses if the client sends a request with an `Accept:` header that includes
+# ThingFish::RUBY_MARSHALLED_MIMETYPE.
 #
 # == Synopsis
 #
@@ -17,24 +28,6 @@
 # * Michael Granger <ged@FaerieMUD.org>
 # * Mahlon E. Smith <mahlon@martini.nu>
 #
-# :include: LICENSE
-#
-#---
-#
-# Please see the file LICENSE in the top-level directory for licensing details.
-
-#
-
-
-require 'thingfish'
-require 'thingfish/mixins'
-require 'thingfish/constants'
-require 'thingfish/acceptparam'
-
-
-### A Ruby marshalled-object filter for ThingFish. It marshals and unmarshals Ruby objects in the
-### body of responses if the client sends a request with an `Accept:` header that includes
-### ThingFish::RUBY_MARSHALLED_MIMETYPE.
 class ThingFish::RubyFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants
@@ -126,7 +119,7 @@ class ThingFish::RubyFilter < ThingFish::Filter
 		return {
 			'version'   => ruby_version,
 			'supports'  => supported_marshal_version,
-			'rev'       => VCSRev.match( /: (\w+)/ )[1] || 0,
+			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => mimetypes,
 			'generates' => mimetypes,
 		  }

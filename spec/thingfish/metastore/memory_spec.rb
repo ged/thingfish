@@ -10,28 +10,27 @@ BEGIN {
 	$LOAD_PATH.unshift( libdir ) unless $LOAD_PATH.include?( libdir )
 }
 
-require 'spec'
+require 'rspec'
+
 require 'spec/lib/helpers'
-require 'spec/lib/metastore_behavior'
 
 require 'thingfish'
 require 'thingfish/metastore/memory'
+require 'thingfish/behavior/metastore'
 
 
 #####################################################################
 ###	C O N T E X T S
 #####################################################################
 
-describe "An instance of MemoryMetaStore" do
-	include ThingFish::SpecHelpers
-	include ThingFish::TestConstants
+describe ThingFish::MemoryMetaStore do
 
 	TEST_MEMORY_METADATA = {
-		TEST_UUID => {
+		ThingFish::TestConstants::TEST_UUID => {
 			:title => 'Kangaroo Bombs the Title Company',
 			:author => 'K. Roo',
 		},
-		TEST_UUID2 => {
+		ThingFish::TestConstants::TEST_UUID2 => {
 			:title => 'Pinnochio was a Gigalo: The "Lie to Me Baby" Story',
 			:author => 'J. K. Rowling',
 		}
@@ -41,8 +40,8 @@ describe "An instance of MemoryMetaStore" do
 		setup_logging( :fatal )
 	end
 
-	before( :each ) do
-		@store = ThingFish::MetaStore.create( 'memory' )
+	let( :metastore ) do
+		ThingFish::MetaStore.create( 'memory' )
 	end
 
 	after( :all ) do
@@ -50,23 +49,23 @@ describe "An instance of MemoryMetaStore" do
 	end
 
 
-	it_should_behave_like "A MetaStore"
+	it_should_behave_like "a metastore"
 
 
 	it "searches its internal hash for exact matches by comparing values" do
 		TEST_MEMORY_METADATA.each do |uuid, properties|
-			@store.set_properties( uuid, properties )
+			self.metastore.set_properties( uuid, properties )
 		end
-		@store.find_exact_uuids( 'author', 'K. Roo' ).
+		self.metastore.find_exact_uuids( 'author', 'K. Roo' ).
 			should == { TEST_UUID => TEST_MEMORY_METADATA[TEST_UUID] }
 	end
 
 
 	it "searches its internal hash for pattern matches by comparing values" do
 		TEST_MEMORY_METADATA.each do |uuid, properties|
-			@store.set_properties( uuid, properties )
+			self.metastore.set_properties( uuid, properties )
 		end
-		@store.find_matching_uuids( 'title', '*giga*' ).
+		self.metastore.find_matching_uuids( 'title', '*giga*' ).
 			should == { TEST_UUID2 => TEST_MEMORY_METADATA[TEST_UUID2] }
 	end
 

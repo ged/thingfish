@@ -16,12 +16,12 @@ BEGIN {
 require 'rspec'
 
 require 'spec/lib/helpers'
-require 'spec/lib/filestore_behavior'
 
 require 'pathname'
 require 'tmpdir'
 require 'lockfile'
 require 'thingfish/filestore/filesystem'
+require 'thingfish/behavior/filestore'
 
 
 class Lockfile
@@ -74,7 +74,7 @@ describe ThingFish::FilesystemFileStore do
 
 
 		### Behaviors
-		it_should_behave_like "A FileStore"
+		it_should_behave_like "a filestore"
 
 
 		### Specs
@@ -198,7 +198,7 @@ describe ThingFish::FilesystemFileStore do
 		end
 
 		### Behaviors
-		it_should_behave_like "A FileStore"
+		it_should_behave_like "a filestore"
 
 	end
 
@@ -227,7 +227,7 @@ describe ThingFish::FilesystemFileStore do
 		end
 
 		### Behaviors
-		it_should_behave_like "A FileStore"
+		it_should_behave_like "a filestore"
 
 	end
 

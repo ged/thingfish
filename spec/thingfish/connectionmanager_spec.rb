@@ -384,7 +384,7 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :reset )
 			@response.should_receive( :status= ).with( HTTP::SERVER_ERROR )
 
-			@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).
+			@request.should_receive( :accepts? ).with( ThingFish.configured_html_mimetype ).
 				and_return( false )
 
 			@response.should_receive( :content_type= ).with( 'text/plain' )
@@ -401,10 +401,10 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :reset )
 			@response.should_receive( :status= ).with( HTTP::REQUEST_ENTITY_TOO_LARGE )
 
-			@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).
+			@request.should_receive( :accepts? ).with( ThingFish.configured_html_mimetype ).
 				and_return( true )
 
-			@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
+			@response.should_receive( :content_type= ).with( ThingFish.configured_html_mimetype )
 			@response.should_receive( :data ).at_least( :twice ).and_return({})
 
 			# Load the specific content template for the type of response
@@ -433,7 +433,7 @@ describe ThingFish::ConnectionManager do
 			@response.should_receive( :reset )
 			@response.should_receive( :status= ).with( HTTP::SERVER_ERROR )
 
-			@request.should_receive( :accepts? ).with( CONFIGURED_HTML_MIMETYPE ).
+			@request.should_receive( :accepts? ).with( ThingFish.configured_html_mimetype ).
 				and_return( false )
 
 			@response.should_receive( :content_type= ).with( 'text/plain' )

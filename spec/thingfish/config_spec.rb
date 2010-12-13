@@ -32,7 +32,7 @@ require 'thingfish/handler'
 describe ThingFish::Config do
 
 	before( :all ) do
-		setup_logging( :debug )
+		setup_logging( :fatal )
 
 		@test_config = %{
 		---
@@ -333,7 +333,7 @@ describe ThingFish::Config do
 
 		### Specifications
 		it "should report that it is changed" do
-			@config.changed?.should == true
+			@config.should be_changed()
 		end
 
 		it "should report that its internal struct was modified as the reason for the change" do
@@ -686,15 +686,23 @@ describe ThingFish::Config do
 		use_strict_html_mimetype: true
 		}.gsub( /^\t\t/, '' )
 
+		before( :all ) do
+			setup_logging( :fatal )
+			@orig_mimetype = ThingFish.configured_html_mimetype
+		end
+
 		before(:each) do
 		    @config = ThingFish::Config.new( STRICT_HTML_ENABLED_CONFIG )
 		end
 
+		after( :all ) do
+			ThingFish.configured_html_mimetype = @orig_mimetype
+			reset_logging()
+		end
 
-		it "redefines the CONFIGURED_HTML_MIMETYPE constant" do
-			ThingFish::Constants.should_receive( :const_set ).
-				with( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
+		it "sets the configured HTML mimetype" do
 			@config.install
+			ThingFish.configured_html_mimetype.should == XHTML_MIMETYPE
 		end
 	end
 

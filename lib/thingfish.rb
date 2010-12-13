@@ -48,9 +48,8 @@ module ThingFish
 
 	@logger = @default_logger
 
-	# PluginFactory::logger_callback = lambda do |lvl, msg|
-	#     @logger.debug "[%s] %s" % [ lvl.to_s, msg ]
-	# end
+	@configured_html_mimetype = ThingFish::Constants::HTML_MIMETYPE
+
 
 	class << self
 		# The log formatter that will be used when the logging subsystem is reset
@@ -61,6 +60,9 @@ module ThingFish
 
 		# The logger that's currently in effect
 		attr_accessor :logger
+
+		# Set the mimetype given to HTML by default
+		attr_accessor :configured_html_mimetype
 	end
 
 
@@ -88,6 +90,7 @@ module ThingFish
 		end
 		return vstring
 	end
+
 end # module ThingFish
 
 

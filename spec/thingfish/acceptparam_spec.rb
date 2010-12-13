@@ -141,11 +141,11 @@ describe ThingFish::AcceptParam do
 
 
 	it "can be compared against strings" do
-		specific_param = ThingFish::AcceptParam.parse( CONFIGURED_HTML_MIMETYPE )
+		specific_param = ThingFish::AcceptParam.parse( ThingFish.configured_html_mimetype )
 		type_wildcard_param = ThingFish::AcceptParam.parse( '*/*' )
 		subtype_wildcard_param = ThingFish::AcceptParam.parse( 'image/*' )
 
-		( specific_param =~ CONFIGURED_HTML_MIMETYPE ).should be_true()
+		( specific_param =~ ThingFish.configured_html_mimetype ).should be_true()
 		( specific_param =~ 'image/png' ).should be_false()
 
 		( subtype_wildcard_param =~ 'image/png' ).should be_true()

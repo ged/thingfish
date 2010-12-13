@@ -35,7 +35,7 @@ require 'thingfish/filter'
 
 
 ### An HTML-conversion filter for ThingFish. It converts Ruby objects in the body
-### of responses to HTML if the client accepts CONFIGURED_HTML_MIMETYPE.
+### of responses to HTML if the client accepts ThingFish.configured_html_mimetype.
 class ThingFish::HtmlFilter < ThingFish::Filter
 	include ThingFish::Loggable,
 		ThingFish::Constants,
@@ -74,14 +74,15 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 
 		# Only filter if the client wants what we can convert to, and the response
 		# body is something we know how to convert
-		return unless request.explicitly_accepts?( CONFIGURED_HTML_MIMETYPE ) &&
+		return unless request.explicitly_accepts?( ThingFish.configured_html_mimetype ) &&
 			self.accept?( response.content_type )
 
 		self.log.debug "Converting a %s response to %s" %
-			[ response.content_type, CONFIGURED_HTML_MIMETYPE ]
+			[ response.content_type, ThingFish.configured_html_mimetype ]
 
 		# Find the handlers that can make html
-		processor = response.handlers.last or raise "Oops! No processor for %s?!?" % [ request.uri.path ]
+		processor = response.handlers.last or
+			raise "Oops! No processor for %s?!?" % [ request.uri.path ]
 		content = nil
 
 		if processor.respond_to?( :make_html_content )
@@ -93,7 +94,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 		template = self.get_erb_resource( 'template.rhtml' )
 
 		response.body = template.result( binding() )
-		response.content_type = CONFIGURED_HTML_MIMETYPE
+		response.content_type = ThingFish.configured_html_mimetype
 	end
 
 
@@ -111,7 +112,7 @@ class ThingFish::HtmlFilter < ThingFish::Filter
 			'supports'  => [],
 			'rev'       => VCSRev[ /: (\w+)/, 1 ] || 0,
 			'accepts'   => [],
-			'generates' => [CONFIGURED_HTML_MIMETYPE],
+			'generates' => [ThingFish.configured_html_mimetype],
 		  }
 	end
 

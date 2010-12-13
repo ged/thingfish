@@ -119,7 +119,7 @@ describe ThingFish::RubyFilter do
 		@request.should_receive( :explicitly_accepts? ).
 			with( RUBY_MARSHALLED_MIMETYPE ).
 			and_return( true )
-		@response.should_receive( :content_type ).and_return( CONFIGURED_HTML_MIMETYPE )
+		@response.should_receive( :content_type ).and_return( ThingFish.configured_html_mimetype )
 
 		@response.should_not_receive( :body= )
 		@response_headers.should_not_receive( :[]= )

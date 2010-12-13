@@ -167,9 +167,6 @@ describe ThingFish::Daemon do
 
 				Thread.should_receive( :new ).and_yield.
 					and_return( @connection_thread, @listener_thread )
-				Thread.stub!( :current ).and_return( @connection_thread, @listener_thread )
-				@listener_thread.should_receive( :abort_on_exception= ).with( true )
-				@connection_thread.should_receive( :abort_on_exception= ).with( true )
 
 				socket = mock( "client socket" )
 				@listener.should_receive( :accept_nonblock ).and_return( socket )

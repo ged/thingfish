@@ -184,7 +184,7 @@ class ThingFish::Config
 
 		# Set the mimetype for HTML documents
 		if self.use_strict_html_mimetype
-			ThingFish::Constants.const_set( :CONFIGURED_HTML_MIMETYPE, XHTML_MIMETYPE )
+			ThingFish.configured_html_mimetype = XHTML_MIMETYPE
 		end
 	end
 
@@ -347,7 +347,7 @@ class ThingFish::Config
 			self.log.debug {"Creating %d configured handlers" % [urimap.length]}
 
 			urimap.each do |path, handlers|
-				path = path.to_s
+				path = path.to_s.dup
 				raise ThingFish::ConfigError, "key %p is not a path" % [ path ] unless
 					path[0] == ?/
 				path.sub!( %r{/$}, '' )
@@ -480,6 +480,7 @@ class ThingFish::Config
 
 	### Handle calls to struct-members
 	def method_missing( sym, *args )
+		self.log.debug "Proxy method for %p..." % [ sym ]
 		key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
 		return nil unless @struct.member?( key )
 
@@ -491,6 +492,7 @@ class ThingFish::Config
 		self.class.send( :define_method, "#{key}=", &writer )
 		self.class.send( :define_method, "${key}?", &predicate )
 
+		self.log.debug "  calling newly-created %p." % [ sym ]
 		return self.method( sym ).call( *args )
 	end
 
@@ -598,6 +600,33 @@ class ThingFish::Config
 		attr_writer :modified
 
 
+		### Fetch the value for the specified +key+.
+		### @param [Symbol, #to_sym] key  the key of the config value to return
+		### @return [Object] the value
+		def []( key )
+			key = key.to_sym
+
+			if !@hash.key?( key ) || @hash[ key ].is_a?( Hash )
+				val = @hash[ key ] || {}
+				@hash[ key ] = self.class.new( val )
+			end
+
+			return @hash[ key ]
+		end
+
+
+		### Set the value for the specified +key+ to +val+.
+		### @param [Symbol, #to_sym] key  the key to set
+		### @param [Object] val           the value to set
+		def []=( key, val )
+			key = key.to_sym
+			val = self.class.new( val ) if val.is_a?( Hash )
+
+			@dirty = true
+			@hash[ key ] = val
+		end
+
+
 		### Return a human-readable representation of the object suitable for
 		### debugging.
 		def inspect
@@ -645,7 +674,6 @@ class ThingFish::Config
 		### Return +true+ if the receiver responds to the given
 		### method. Overridden to grok autoloaded methods.
 		def respond_to?( sym, priv=false )
-			raise "Chumba!"
 			self.log.debug "Checking response to %p message..." % [ sym ]
 			key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
 			self.log.debug "  normalized key is: %p, hash keys are: %p" % [ key, @hash.keys ]
@@ -717,24 +745,22 @@ class ThingFish::Config
 
 		### Handle calls to key-methods
 		def method_missing( sym, *args )
+			self.log.debug "Proxy method for %p..." % [ sym ]
 			key = sym.to_s.sub( /(=|\?)$/, '' ).to_sym
 
-			self.class.class_eval {
-				define_method( key ) {
-					if !@hash[ key] || @hash[ key ].is_a?( Hash )
-						@hash[ key ] = ConfigStruct.new( @hash[key] )
-					end
+			self.log.debug "  building reader, writer, and predicate for %p" % [ key ]
+			reader    = lambda { self[key] }
+			writer    = lambda {|arg| self[key] = arg }
+			predicate = lambda { self[key] ? true : false }
 
-					@hash[ key ]
-				}
-				define_method( "#{key}?" ) {@hash[key] ? true : false}
-				define_method( "#{key}=" ) {|val|
-					@dirty = @hash[key] != val
-					@hash[key] = val
-				}
-			}
+			self.log.debug "  installing new concrete methods for %p" % [ key ]
+			eigenclass = ( class << self; self; end )
+			eigenclass.send( :define_method, key, &reader )
+			eigenclass.send( :define_method, "#{key}=", &writer )
+			eigenclass.send( :define_method, "#{key}?", &predicate )
 
-			self.method( sym ).call( *args )
+			self.log.debug "  calling new %p method..." % [ sym ]
+			return self.method( sym ).call( *args )
 		end
 	end # class ConfigStruct
 

@@ -56,7 +56,7 @@ describe ThingFish::HtmlFilter do
 
 	it "uses handler HTML API to convert Ruby-object responses to HTML if the client accepts it" do
 		@request.should_receive( :explicitly_accepts? ).
-			with( CONFIGURED_HTML_MIMETYPE ).
+			with( ThingFish.configured_html_mimetype ).
 			and_return( true )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
@@ -82,7 +82,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_receive( :body= ).with( :wrapped_html_content )
 		# Transform filters shouldn't change the status of the response
 		@response.should_not_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
+		@response.should_receive( :content_type= ).with( ThingFish.configured_html_mimetype )
 
 		self.filter.handle_response( @response, @request )
 	end
@@ -91,7 +91,7 @@ describe ThingFish::HtmlFilter do
 	it "uses the HtmlInspectableObject interface to convert responses to HTML if none of " +
 	   "the handlers implements the HTML filter API" do
 		@request.should_receive( :explicitly_accepts? ).
-			with( CONFIGURED_HTML_MIMETYPE ).
+			with( ThingFish.configured_html_mimetype ).
 			and_return( true )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
@@ -118,7 +118,7 @@ describe ThingFish::HtmlFilter do
 		@response.should_receive( :body= ).with( :wrapped_html_content )
 		# Transform filters shouldn't change the status of the response
 		@response.should_not_receive( :status= ).with( HTTP::OK )
-		@response.should_receive( :content_type= ).with( CONFIGURED_HTML_MIMETYPE )
+		@response.should_receive( :content_type= ).with( ThingFish.configured_html_mimetype )
 
 		self.filter.handle_response( @response, @request )
 	end
@@ -126,7 +126,7 @@ describe ThingFish::HtmlFilter do
 
 	it "does no conversion if the client doesn't accept HTML" do
 		@request.should_receive( :explicitly_accepts? ).
-			with( CONFIGURED_HTML_MIMETYPE ).
+			with( ThingFish.configured_html_mimetype ).
 			and_return( false )
 
 		@response.should_not_receive( :body= )

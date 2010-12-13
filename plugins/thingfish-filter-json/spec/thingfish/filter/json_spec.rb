@@ -135,7 +135,7 @@ describe ThingFish::JSONFilter do
 			and_return( true )
 		@response.should_receive( :content_type ).
 			at_least( :once ).
-			and_return( CONFIGURED_HTML_MIMETYPE )
+			and_return( ThingFish.configured_html_mimetype )
 
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )

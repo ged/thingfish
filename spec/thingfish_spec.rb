@@ -42,6 +42,11 @@ describe ThingFish do
 	end
 
 
+	it "knows what mimetype it uses by default for HTML content" do
+		ThingFish.configured_html_mimetype.should =~ %r{/x?html}i
+	end
+
+
 	context " logging subsystem" do
 		before(:each) do
 			ThingFish.reset_logger

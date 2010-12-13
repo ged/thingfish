@@ -340,14 +340,14 @@ class ThingFish::ConnectionManager
 		response.status = statuscode
 
 		# Build a pretty response if the client groks HTML
-		if ( request.accepts?(CONFIGURED_HTML_MIMETYPE) && 
+		if ( request.accepts?(ThingFish.configured_html_mimetype) && 
 			 template = self.get_error_response_template(statuscode) )
 
 			content = [ template.result( binding() ) ]
 
 			response.data[:tagline] = 'Oh, crap!'
 			response.data[:title] = "#{HTTP::STATUS_NAME[statuscode]} (#{statuscode})"
-			response.content_type = CONFIGURED_HTML_MIMETYPE
+			response.content_type = ThingFish.configured_html_mimetype
 
 			wrapper = self.get_erb_resource( 'template.rhtml' )
 

@@ -62,6 +62,8 @@ end
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
 
+task 'hg:precheckin' => :spec
+
 begin
 	include Hoe::MercurialHelpers
 

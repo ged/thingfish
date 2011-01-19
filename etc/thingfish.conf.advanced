@@ -23,7 +23,7 @@ ip: 127.0.0.1
 user: daemon
 datadir: /home/thingfish
 spooldir: /var/tmp
-resource_dir: var/www
+resource_dir: data/thingfish/web-interface
 bufsize: 16384
 daemon: true
 pidfile: thingfish.pid

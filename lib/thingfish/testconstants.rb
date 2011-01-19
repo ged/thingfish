@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
-require 'thingfish'
+require 'thingfish' unless defined?( ThingFish )
 require 'thingfish/constants'
 require 'digest/md5'
 require 'ipaddr'

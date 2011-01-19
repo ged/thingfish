@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require 'autotest/restart'
+require_relative 'loadpath'
+
+Autotest.add_hook( :initialize ) do |at|
+	at.extra_files << "loadpath.rb"
+
+	# at.add_mapping( /dependency.rb/ ) do |f, _|
+	# 	at.files_matching( /test_.*rb$/ )
+	# end
+	# 
+	# %w(TestA TestB).each do |klass|
+	# 	at.extra_class_map[klass] = "test/test_misc.rb"
+	# end
+end
+
+Autotest.add_hook( :run_command ) do |at|
+	system "rake build"
+end

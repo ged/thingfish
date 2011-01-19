@@ -34,7 +34,8 @@ describe ThingFish::SimpleSearchHandler do
 	end
 
 	let( :handler ) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
+		resdir = Pathname.new( __FILE__ ).expand_path.
+			dirname.parent.parent + 'data/thingfish/web-interface'
 		options = { :resource_dir => resdir }
 		ThingFish::SimpleSearchHandler.new( '/search', options )
 	end

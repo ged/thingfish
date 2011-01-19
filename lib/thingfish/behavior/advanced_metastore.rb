@@ -10,9 +10,11 @@ require 'thingfish/metastore'
 
 share_examples_for "an advanced metastore" do
 
-	it_should_behave_like "a metastore"
+	let( :metastore ) do
+		described_class
+	end
 
-	TEST_TITLE = 'Wearable the Walleye Goes It Alone'
+	it_should_behave_like "A MetaStore"
 
 
 	context "set-fetching API" do
@@ -26,9 +28,9 @@ share_examples_for "an advanced metastore" do
 				uuid = UUIDTools::UUID.timestamp_create
 				title = "%s (%s)" % [ TEST_TITLE, Digest::MD5.hexdigest(uuid) ]
 
-				metastore.set_property( uuid,  :title, title )
-				metastore.set_property( uuid,  :bitrate, '160' )
-				metastore.set_property( uuid,  :namespace, 'devlibrary' )
+				self.metastore.set_property( uuid,  :title, title )
+				@store.set_property( uuid,  :bitrate, '160' )
+				@store.set_property( uuid,  :namespace, 'devlibrary' )
 
 				@uuids << uuid.to_s
 				@uuid_titles[ uuid.to_s ] = title
@@ -36,7 +38,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in natural order with no limit" do
-			results = metastore.get_resource_set
+			results = @store.get_resource_set
 
 			results.should have( 20 ).members
 
@@ -47,7 +49,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in natural order with a limit" do
-			results = metastore.get_resource_set( [], 5 )
+			results = @store.get_resource_set( [], 5 )
 
 			results.should have( 5 ).members
 
@@ -59,7 +61,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in natural order with a limit and offset" do
-			results = metastore.get_resource_set( [], 5, 5 )
+			results = @store.get_resource_set( [], 5, 5 )
 
 			results.should have( 5 ).members
 
@@ -71,7 +73,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in natural order with an offset, but no limit" do
-			results = metastore.get_resource_set( [], 0, 5 )
+			results = @store.get_resource_set( [], 0, 5 )
 
 			results.should have( 15 ).members
 
@@ -83,7 +85,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in sorted order with no limit" do
-			results = metastore.get_resource_set( [:title] )
+			results = @store.get_resource_set( [:title] )
 
 			results.should have( 20 ).members
 
@@ -94,7 +96,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in sorted order with a limit" do
-			results = metastore.get_resource_set( [:title], 5 )
+			results = @store.get_resource_set( [:title], 5 )
 
 			results.should have( 5 ).members
 
@@ -108,7 +110,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in sorted order with a limit and offset" do
-			results = metastore.get_resource_set( [:title], 5, 5 )
+			results = @store.get_resource_set( [:title], 5, 5 )
 
 			results.should have( 5 ).members
 
@@ -122,7 +124,7 @@ share_examples_for "an advanced metastore" do
 		end
 
 		it "can fetch a set of resources in sorted order with an offset, but no limit" do
-			results = metastore.get_resource_set( [:title], 0, 5 )
+			results = @store.get_resource_set( [:title], 0, 5 )
 
 			results.should have( 15 ).members
 
@@ -136,6 +138,25 @@ share_examples_for "an advanced metastore" do
 		end
 
 	end
+
+
+	it "is extended with Configurability" do
+		Configurability.configurable_objects.should include( self.config )
+	end
+
+	it "has a Symbol config key" do
+		self.config.config_key.should be_a( Symbol )
+	end
+
+	it "has a config key that is a reasonable section name" do
+		self.config.config_key.to_s.should =~ /^[a-z][a-z0-9]*$/i
+	end
+
+end
+
+describe "An advanced MetaStore", :shared => true do
+
+
 
 end
 

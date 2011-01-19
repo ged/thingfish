@@ -96,7 +96,7 @@ describe ThingFish::Daemon do
 
 		before( :each ) do
 			@config = ThingFish::Config.new
-			@config.defaulthandler.resource_dir = 'var/www'
+			@config.defaulthandler.resource_dir = 'data/thingfish/web-interface'
 			@daemon = ThingFish::Daemon.new( @config )
 
 			@processor = mock( "processor handler" )

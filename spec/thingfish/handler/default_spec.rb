@@ -31,7 +31,8 @@ describe ThingFish::DefaultHandler do
 	end
 
 	let( :handler ) do
-		resdir = Pathname.new( __FILE__ ).expand_path.dirname.parent.parent + 'var/www'
+		resdir = Pathname.new( __FILE__ ).expand_path.
+			dirname.parent.parent + 'data/thingfish/web-interface'
 		ThingFish::DefaultHandler.new( '/', :resource_dir => resdir )
 	end
 

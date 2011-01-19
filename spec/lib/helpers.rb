@@ -3,14 +3,15 @@
 
 require 'rspec'
 
+
 require 'digest/md5'
 require 'net/http'
 require 'net/protocol'
 
 require 'thingfish'
+require 'thingfish/testconstants'
 require 'thingfish/constants'
 require 'thingfish/utils'
-require 'thingfish/testconstants'
 
 
 module ThingFish::SpecHelpers
@@ -42,7 +43,6 @@ module ThingFish::SpecHelpers
 			:fatal => Logger::FATAL,
 		  }
 	end
-
 
 	###############
 	module_function
@@ -137,7 +137,6 @@ end
 
 RSpec.configure do |config|
 	config.mock_with( :rspec )
-	config.include( ThingFish::Constants )
 	config.include( ThingFish::TestConstants )
 	config.include( ThingFish::SpecHelpers )
 end

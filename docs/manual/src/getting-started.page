@@ -104,7 +104,7 @@ minimalistic configuration should look something like this:
 <?example { language: yaml, caption: Example minimalistic config file } ?>
 ---
 defaulthandler:
-    resource_dir: var/www
+    resource_dir: data/thingfish/web-interface
 
 <?end?>
 
@@ -120,7 +120,7 @@ port: 80
 ip: 127.0.0.1
 datadir: /home/thingfish
 spooldir: /var/tmp
-resource_dir: var/www
+resource_dir: data/thingfish/web-interface
 bufsize: 16384
 user: daemon
 daemon: true

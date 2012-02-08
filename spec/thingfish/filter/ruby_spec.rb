@@ -145,7 +145,7 @@ describe ThingFish::RubyFilter do
 
 		expect {
 			self.filter.handle_response( @response, @request )
-		}.to raise_error( TypeError, /no marshal_dump/ )
+		}.to raise_error( TypeError, /no _dump_data/ )
 	end
 
 

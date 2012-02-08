@@ -6,3 +6,5 @@
 ^misc/junk
 ^tags
 
+doc/
+^ChangeLog$

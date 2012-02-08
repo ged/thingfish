@@ -26,7 +26,7 @@ require 'thingfish/filter/yaml'
 describe ThingFish::YAMLFilter do
 
 	TEST_YAML_CONTENT = <<-EO_YAML
-	--- 
+	---
 	- ip_address: 127.0.0.1
 	- pine_cone: sandwiches
 	- olive_oil: pudding
@@ -102,13 +102,11 @@ describe ThingFish::YAMLFilter do
 		@request.should_receive( :content_type ).
 			at_least( :once ).
 			and_return( 'text/x-yaml' )
-		bodyio = StringIO.new( TEST_YAML_CONTENT )
+		bodyio = StringIO.new( "---\n}" )
 		@request.should_receive( :body ).
 			at_least( :once ).
 			with( no_args() ).
 			and_return( bodyio )
-
-		YAML.stub!( :load ).and_raise( YAML::ParseError.new("error parsing") )
 
 		@request.should_not_receive( :body= )
 		@request.should_not_receive( :content_type= )
@@ -161,7 +159,7 @@ describe ThingFish::YAMLFilter do
 		# even more lame.
 		@response.should_receive( :body ).
 			once.
-			and_raise( YAML::ParseError.new("couldn't parse it!") )
+			and_raise( Psych::SyntaxError.new("couldn't parse it!") )
 
 		@response.should_not_receive( :body= )
 		@response.should_not_receive( :status= )
@@ -169,7 +167,7 @@ describe ThingFish::YAMLFilter do
 
 		expect {
 			self.filter.handle_response( @response, @request )
-		}.to raise_error( YAML::ParseError, "couldn't parse it!" )
+		}.to raise_error( Psych::SyntaxError, "couldn't parse it!" )
 	end
 
 

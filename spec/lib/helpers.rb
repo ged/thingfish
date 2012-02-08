@@ -136,7 +136,10 @@ end
 
 
 RSpec.configure do |config|
+	include ThingFish::TestConstants
+
 	config.mock_with( :rspec )
+
 	config.include( ThingFish::TestConstants )
 	config.include( ThingFish::SpecHelpers )
 end

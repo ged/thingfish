@@ -118,20 +118,10 @@ describe ThingFish::Config do
 
 
 	it "ensures the data and spool directories exist" do
-		datadir_pathname = mock( "mock datadir pathname" )
-		@config.datadir = :datadir
-		Pathname.should_receive( :new ).with( :datadir ).at_least(:once).
-			and_return( datadir_pathname )
-
-		spooldir_pathname = mock( "mock spooldir pathname" )
-		@config.spooldir = :spooldir
-		Pathname.should_receive( :new ).with( :spooldir ).and_return( spooldir_pathname )
-
-		datadir_pathname.should_receive( :mkpath )
-		spooldir_pathname.should_receive( :relative? ).and_return( false )
-		spooldir_pathname.should_receive( :mkpath )
-
 		@config.setup_data_directories
+
+		@config.datadir_path.should exist()
+		@config.spooldir_path.should exist()
 	end
 
 
@@ -657,23 +647,8 @@ describe ThingFish::Config do
 
 
 		it "ensures the profiling report directory exists" do
-			datadir_pathname = stub( "mock datadir pathname", :mkpath => false )
-			@config.datadir = :datadir
-			Pathname.should_receive( :new ).with( :datadir ).at_least(:once).
-				and_return( datadir_pathname )
-
-			spooldir_pathname = stub( "mock spooldir pathname", :mkpath => false )
-			@config.spooldir = :spooldir
-			Pathname.should_receive( :new ).with( :spooldir ).and_return( spooldir_pathname )
-			spooldir_pathname.stub!( :relative? ).and_return( false )
-
-			profiledir_pathname = mock( "profiledir pathname" )
-			Pathname.should_receive( :new ).with( 'profiles' ).and_return( profiledir_pathname )
-
-			profiledir_pathname.should_receive( :relative? ).and_return( false )
-			profiledir_pathname.should_receive( :mkpath )
-
 			@config.setup_data_directories
+			@config.profiledir_path.should exist()
 		end
 
 	end

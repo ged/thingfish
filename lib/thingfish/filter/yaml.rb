@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'yaml'
+require 'psych'
 
 require 'thingfish'
 require 'thingfish/mixins'
@@ -48,6 +48,11 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 	YAML_MIMETYPE = 'text/x-yaml'
 	YAML_MIMETYPE.freeze
 
+	# The versions of the YAML spec supported by Psych
+	# :TODO: This should probably be at least based on the LIBYAML_VERSION
+	SUPPORTED_YAML_VERSIONS = [ '1.1', '1.2' ]
+	SUPPORTED_YAML_VERSIONS.freeze
+
 
 	#################################################################
 	###	I N S T A N C E   M E T H O D S
@@ -75,7 +80,7 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 			self.log.debug "Converting a %s request to %s" %
 				[ YAML_MIMETYPE, RUBY_MIMETYPE ]
 			request.body = YAML.load( request.body.read )
-		rescue RuntimeError, YAML::ParseError => err
+		rescue RuntimeError, Psych::SyntaxError => err
 			self.log.error "%s while attempting to convert %p to a native ruby object: %s" %
 				[ err.class.name, request.body, err.message ]
 			self.log.debug err.backtrace.join("\n")
@@ -111,13 +116,13 @@ class ThingFish::YAMLFilter < ThingFish::Filter
 
 	### Returns a Hash of information about the filter; this is of the form:
 	###   {
-	###     'version'  => [ 0, 60 ],               # YAML.rb version
+	###     'version'  => [ 0, 60 ],               # Psych version
 	###     'supports' => [ [1,0], [1,1] ],        # Supported YAML versions
 	###     'rev'      => 460,                     # VCS rev of plugin
 	###   }
 	def info
-		yaml_rb_version = YAML::VERSION.split('.').collect {|i| Integer(i) }
-		supported_yaml_version = YAML::SUPPORTED_YAML_VERSIONS.collect do |v|
+		yaml_rb_version = Psych::VERSION.split('.').collect {|i| Integer(i) }
+		supported_yaml_version = SUPPORTED_YAML_VERSIONS.collect do |v|
 			v.split('.').collect {|i| Integer(i) }
 		end
 

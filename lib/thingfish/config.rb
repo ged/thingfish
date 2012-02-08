@@ -255,8 +255,8 @@ class ThingFish::Config
 	### Construct a fully-qualified Pathname object from the given +dir+, either as-is if it is
 	### already an absolute path, or relative to the configured +datadir+ if not.
 	def qualify_path( dir )
+		self.log.debug "Qualifying path %p with datadir %p" % [ dir, self.datadir ]
 		sp = Pathname( dir )
-		self.log.debug "Qualifying path %p with datadir %p" % [ sp, self.datadir ]
 		return sp unless sp.relative?
 		return Pathname( self.datadir ) + sp
 	end

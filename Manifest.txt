@@ -1,9 +1,11 @@
 ChangeLog
+History.rdoc
 LICENSE
-QUICKSTART.md
-README.md
+Manifest.txt
+QUICKSTART.rdoc
+README.rdoc
 Rakefile
-TEMPLATE.rb.tpl
+bin/ml_archiver.rb
 bin/tf_plugin
 bin/thingfish
 bin/thingfishd
@@ -160,3 +162,4 @@ spec/thingfish/response_spec.rb
 spec/thingfish/urimap_spec.rb
 spec/thingfish/utils_spec.rb
 spec/thingfish_spec.rb
+start

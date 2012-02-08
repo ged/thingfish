@@ -2,16 +2,18 @@
 
 require 'open3'
 require 'digest/md5'
+
 require 'rake/tasklib'
+
 require 'thingfish'
 require 'thingfish/client'
 require 'thingfish/config'
 require 'thingfish/daemon'
 
 
-# 
+#
 # Benchmarking Task library
-# 
+#
 # == Version
 #
 #  $Id$
@@ -375,6 +377,7 @@ module ThingFish::Benchmark
 
 	### A rake task for generating ThingFish benchmarks using 'ab'
 	class Task < Rake::Task
+		extend Rake::DSL
 
 		BENCHMARKS_DIR = Pathname.new( 'benchmarks' )
 		DEFAULT_OUTPUT_DIR = BENCHMARKS_DIR + Time.now.to_i.to_s( 16 )

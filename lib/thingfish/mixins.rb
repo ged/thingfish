@@ -1,293 +1,24 @@
-#!/usr/bin/env ruby
+# -*- ruby -*-
+# vim: set nosta noet ts=4 sw=4:
+# encoding: utf-8
 
-require 'rbconfig'
-require 'erb'
-require 'etc'
+require 'thingfish' unless defined?( ThingFish )
 
-require 'thingfish'
-
-#---
-# A collection of mixins shared between ThingFish classes
-#
 
 module ThingFish
 
-
-	### Adds a #log method to the including class which can be used to access the global
-	### logging facility.
-	###
-	###   require 'thingfish/mixins'
-	###
-	###   class MyClass
-	###       include ThingFish::Loggable
-	###
-	###       def foo
-	###           self.log.debug "something"
-	###       end
-	###   end
-	###
-	module Loggable
-
-		LEVEL = {
-			:debug => Logger::DEBUG,
-			:info  => Logger::INFO,
-			:warn  => Logger::WARN,
-			:error => Logger::ERROR,
-			:fatal => Logger::FATAL,
-		}
-
-		### A logging proxy class that wraps calls to the logger into calls that include
-		### the name of the calling class.
-		class ClassNameProxy
-
-			### Create a new proxy for the given +klass+.
-			def initialize( klass, force_debug=false )
-				@classname   = klass.name
-				@force_debug = force_debug
-			end
-
-			### Delegate calls the global logger with the class name as the 'progname'
-			### argument.
-			def method_missing( sym, msg=nil, &block )
-				return super unless LEVEL.key?( sym )
-				sym = :debug if @force_debug
-				ThingFish.logger.add( LEVEL[sym], msg, @classname, &block )
-			end
-
-		end # ClassNameProxy
-
-		#########
-		protected
-		#########
-
-		### Return the proxied logger.
-		def log
-			@log_proxy ||= ClassNameProxy.new( self.class )
-		end
-
-		### Return a proxied "debug" logger that ignores other level specification.
-		def log_debug
-			@log_debug_proxy ||= ClassNameProxy.new( self.class, true )
-		end
-	end # module Loggable
-
-
-	### Adds some methods that can be used to load content from files in a
-	### resources directory.
-	###
-	###   class MyMetastore < ThingFish::MetaStore
-	###       include ThingFish::ResourceLoader
-	###
-	###       def initialize( options )
-	###           @resource_dir = options['resource_dir']
-	###           unless schema_installed?
-	###               sql = self.get_resource( 'base_schema.sql' )
-	###               self.install_schema( sql )
-	###           end
-	###           ...
-	###       end
-	###   end
-	###
-	module ResourceLoader
-		include ThingFish::Loggable,
-		        ERB::Util
-
-		### Return a Pathname object that points at the resource directory
-		### for this handler
-		def resource_dir
-
-			# If a resource dir hasn't been specified, figure out a reasonable default
-			# using Ruby's datadir
-			unless @resource_dir
-				datadir = Pathname.new( ::Config::CONFIG['datadir'] )
-				@resource_dir = datadir + 'thingfish' + self.plugin_name
-			end
-
-			return Pathname.new( @resource_dir )
-		end
-
-
-		### Return the normalized name of the including class, which
-		### determines what the resources directory is named.
-		def plugin_name
-			classname = self.class.name or return 'anonymous'
-			return classname.
-				sub( /ThingFish::/, '' ).
-				sub( /handler$/i, '' ).
-				gsub( /\W+/, '-' ).
-				downcase
-		end
-
-
-		#########
-		protected
-		#########
-
-		### Return true if the specified resource exists
-		def resource_exists?( path )
-			resdir = self.resource_dir or
-				raise "No resource directory available"
-			resource = resdir + path
-			return resource.exist?
-		end
-
-
-		### Return true if the specified directory exists under the resource
-		### directory.
-		def resource_directory?( path )
-			resdir = self.resource_dir or
-				raise "No resource directory available"
-			resource = resdir + path
-			return resource.directory?
-		end
-
-
-		### Read the content from the file
-		def get_resource( path )
-			return self.get_resource_io( path ).read
-		end
-
-
-		### Load the specified +resource+ as an ERB template and return it.
-		def get_erb_resource( resource )
-			source = self.get_resource( resource )
-			self.log.debug "Making new ERB template from %p (%d bytes)" %
-				[resource, source.length]
-			return ERB.new( source )
-		end
-
-
-		### Return an IO object opened to the file specified by +path+
-		### relative to the plugin's resource directory.
-		def get_resource_io( path )
-			resdir = self.resource_dir or
-				raise "No resource directory available"
-			self.log.debug "Trying to open resource %p from %s" % [ path, resdir ]
-			( resdir + path ).open( File::RDONLY )
-		end
-
-	end # module ResourceLoader
-
-
-	### Adds the ability to a ThingFish::Handler to serve static content from its resources
-	### directory.
-	###
-	###   class MyHandler < ThingFish::Handler
-	###       include ThingFish::StaticResourcesHandler
-	###
-	###       static_resource_dir "static"
-	###
-	###       # ...
-	###   end
-	###
-	module StaticResourcesHandler
-
-		### Inclusion callback -- add class methods to the including module.
-		def self::included( mod )
-
-			# Add our class method and the resource loader mixin to including classes
-			mod.extend( ClassMethods )
-			mod.send( :include, ResourceLoader )
-			super
-		end
-
-		### Methods installed in including classes
-		module ClassMethods
-
-			### Set the directory which will be considered the root for all static
-			### content requests.
-			def static_resources_dir( dir=nil )
-				if dir
-					@static_resources_dir = dir
-				end
-				return defined?( @static_resources_dir ) ? @static_resources_dir : "static"
-			end
-		end
-
-
-		### Register the static handler as a fallback for the including handler when it
-		### is registered with the +daemon+.
-		def on_startup( daemon )
-			require 'thingfish/handler'
-			super
-
-			basedir = self.resource_dir + self.class.static_resources_dir
-			self.log.debug "Serving static resources for %s from %s" %
-				[self.class.name, basedir.to_s]
-
-			handler = ThingFish::Handler.create( 'staticcontent', @path, basedir )
-			self.log.debug "...registering fallback %s for a %s at %p" %
-			 	[ handler.class.name, self.class.name, @path ]
-			daemon.urimap.register_first( @path, handler )
-		end
-	end # module StaticResourcesHandler
-
-
-	### Add convenience methods for becoming a daemon and dropping privileges.
-	###
-	###   class MyNewServer
-	###       include Daemonizable
-	###
-	###       def run
-	###           self.become_user( 'daemon' )
-	###           self.daemonize( '/var/run/mynewserver.pid' )
-	###       end
-	###   end
-	module Daemonizable
-
-		private
-
-		### Become a daemon, doing all the things a good daemon does.
-		### TODO:  Not sure how to adequately test anything involving fork()...
-		def daemonize( pidfile=nil )
-			if ! pidfile.nil? && File.exists?( pidfile )
-				self.log.warn "Stale pidfile found (%s)" % [ pidfile ]
-			end
-
-			self.log.info "Detaching from terminal and daemonizing..."
-			fork and exit
-			Process.setsid
-
-			if ( pid = fork )
-				# parent, write pidfile if required
-				unless pidfile.nil?
-					File.open( pidfile, 'w' ) do |pidfile|
-						pidfile.puts pid
-					end
-				end
-				exit
-			end
-
-			at_exit do
-				File.delete( pidfile ) if File.exist?( pidfile )
-			end
-
-			Dir.chdir('/')
-			File.umask(0)
-			[ $stdin, $stdout, $stderr ].each {|io| io.send( :reopen, '/dev/null' ) }
-		end
-
-
-		### Attempt to set the effective +uid+ to +username+.
-		def become_user( username )
-			self.log.debug "Dropping privileges (user: %s)" % [ username ]
-			Process.euid = Etc.getpwnam( username ).uid
-		end
-	end
-
-
-	### Hides your class's ::new method and adds a method generator called 'virtual' for
-	### defining API methods. If subclasses of your class don't provide implementations of
-	### "virtual" methods, NotImplementedErrors will be raised if they are called.
-	###
-	###   # AbstractClass
-	###   class MyBaseClass
-	###       include ThingFish::AbstractClass
-	###
-	###       # Define a method that will raise a NotImplementedError if called
-	###       virtual :api_method
-	###   end
-	###
+	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
+	# defining API methods. If subclasses of your class don't provide implementations of
+	# "pure_virtual" methods, NotImplementedErrors will be raised if they are called.
+	#
+	#   # AbstractClass
+	#   class MyBaseClass
+	#       include ThingFish::AbstractClass
+	#
+	#       # Define a method that will raise a NotImplementedError if called
+	#       pure_virtual :api_method
+	#   end
+	#
 	module AbstractClass
 
 		### Methods to be added to including classes
@@ -295,7 +26,7 @@ module ThingFish
 
 			### Define one or more "virtual" methods which will raise
 			### NotImplementedErrors when called via a concrete subclass.
-			def virtual( *syms )
+			def pure_virtual( *syms )
 				syms.each do |sym|
 					define_method( sym ) do |*args|
 						raise ::NotImplementedError,
@@ -315,8 +46,6 @@ module ThingFish
 		end # module ClassMethods
 
 
-		extend ClassMethods
-
 		### Inclusion callback
 		def self::included( mod )
 			super
@@ -330,205 +59,66 @@ module ThingFish
 	end # module AbstractClass
 
 
-	### A collection of methods to add to Numeric for convenience (stolen from
-	### ActiveSupport), split into ThingFish::NumericConstantMethods::Time and
-	### ThingFish::NumericConstantMethods::Bytes.
-	###
-	### This module is added to Numeric in lib/thingfish/monkeypatches.rb
-	module NumericConstantMethods
+	# A collection of various delegation code-generators that can be used to define
+	# delegation through other methods, to instance variables, etc.
+	module Delegation
 
-		### A collection of convenience methods for calculating times using
-		### Numeric objects:
+		###############
+		module_function
+		###############
+
+		### Define the given +delegated_methods+ as delegators to the like-named method
+		### of the return value of the +delegate_method+.
+	###
+		###    class MyClass
+		###      extend ThingFish::Delegation
 		###
-		###   # Add convenience methods to Numeric objects
-		###   class Numeric
-		###       include ThingFish::NumericConstantMethods::Time
+		###      # Delegate the #bound?, #err, and #result2error methods to the connection
+		###      # object returned by the #connection method. This allows the connection
+		###      # to still be loaded on demand/overridden/etc.
+		###      def_method_delegators :connection, :bound?, :err, :result2error
+		###
+		###      def connection
+		###        @connection ||= self.connect
+		###      end
 		###   end
 		###
-		###   irb> 138.seconds.ago
-		###       ==> Fri Aug 08 08:41:40 -0700 2008
-		###   irb> 18.years.ago
-		###       ==> Wed Aug 08 20:45:08 -0700 1990
-		###   irb> 2.hours.before( 6.minutes.ago )
-		###       ==> Fri Aug 08 06:40:38 -0700 2008
+		def def_method_delegators( delegate_method, *delegated_methods )
+			delegated_methods.each do |name|
+				body = make_method_delegator( delegate_method, name )
+				define_method( name, &body )
+			end
+			end
+
+
+		### Define the given +delegated_methods+ as delegators to the like-named method
+		### of the specified +ivar+. This is pretty much identical with how 'Forwardable'
+		### from the stdlib does delegation, but it's reimplemented here for consistency.
 		###
-		module Time
-
-			### Number of seconds (returns receiver unmodified)
-			def seconds
-				return self
-			end
-			alias_method :second, :seconds
-
-			### Returns number of seconds in <receiver> minutes
-			def minutes
-				return self * 60
-			end
-			alias_method :minute, :minutes
-
-			### Returns the number of seconds in <receiver> hours
-			def hours
-				return self * 60.minutes
-			end
-			alias_method :hour, :hours
-
-			### Returns the number of seconds in <receiver> days
-			def days
-				return self * 24.hours
-			end
-			alias_method :day, :days
-
-			### Return the number of seconds in <receiver> weeks
-			def weeks
-				return self * 7.days
-			end
-			alias_method :week, :weeks
-
-			### Returns the number of seconds in <receiver> fortnights
-			def fortnights
-				return self * 2.weeks
-			end
-			alias_method :fortnight, :fortnights
-
-			### Returns the number of seconds in <receiver> months (approximate)
-			def months
-				return self * 30.days
-			end
-			alias_method :month, :months
-
-			### Returns the number of seconds in <receiver> years (approximate)
-			def years
-				return (self * 365.25.days).to_i
-			end
-			alias_method :year, :years
-
-
-			### Returns the Time <receiver> number of seconds before the
-			### specified +time+. E.g., 2.hours.before( header.expiration )
-			def before( time )
-				return time - self
-			end
-
-
-			### Returns the Time <receiver> number of seconds ago. (e.g.,
-			### expiration > 2.hours.ago )
-			def ago
-				return self.before( ::Time.now )
-			end
-
-
-			### Returns the Time <receiver> number of seconds after the given +time+.
-			### E.g., 10.minutes.after( header.expiration )
-			def after( time )
-				return time + self
-			end
-
-			# Reads best without arguments:  10.minutes.from_now
-			def from_now
-				return self.after( ::Time.now )
-			end
-		end # module Time
-
-
-		### A collection of convenience methods for calculating bytes using
-		### Numeric objects:
+		###    class MyClass
+		###      extend ThingFish::Delegation
 		###
-		###   # Add convenience methods to Numeric objects
-		###   class Numeric
-		###       include ThingFish::NumericConstantMethods::Bytes
-		###   end
+		###      # Delegate the #each method to the @collection ivar
+		###      def_ivar_delegators :@collection, :each
 		###
-		###   irb> 14.megabytes
-		###       ==> 14680064
-		###   irb> 188.gigabytes
-		###       ==> 201863462912
-		###   irb> 177263661663.size_suffix
-		###       ==> "165.1G"
+		###    end
 		###
-		module Bytes
-
-			# Bytes in a Kilobyte
-			KILOBYTE = 1024
-
-			# Bytes in a Megabyte
-			MEGABYTE = 1024 ** 2
-
-			# Bytes in a Gigabyte
-			GIGABYTE = 1024 ** 3
-
-
-			### Number of bytes (returns receiver unmodified)
-			def bytes
-				return self
+		def def_ivar_delegators( ivar, *delegated_methods )
+			delegated_methods.each do |name|
+				body = make_ivar_delegator( ivar, name )
+				define_method( name, &body )
 			end
-			alias_method :byte, :bytes
-
-			### Returns the number of bytes in <receiver> kilobytes
-			def kilobytes
-				return self * 1024
-			end
-			alias_method :kilobyte, :kilobytes
-
-			### Return the number of bytes in <receiver> megabytes
-			def megabytes
-				return self * 1024.kilobytes
-			end
-			alias_method :megabyte, :megabytes
-
-			### Return the number of bytes in <receiver> gigabytes
-			def gigabytes
-				return self * 1024.megabytes
-			end
-			alias_method :gigabyte, :gigabytes
-
-			### Return the number of bytes in <receiver> terabytes
-			def terabytes
-				return self * 1024.gigabytes
-			end
-			alias_method :terabyte, :terabytes
-
-			### Return the number of bytes in <receiver> petabytes
-			def petabytes
-				return self * 1024.terabytes
-			end
-			alias_method :petabyte, :petabytes
-
-			### Return the number of bytes in <receiver> exabytes
-			def exabytes
-				return self * 1024.petabytes
-			end
-			alias_method :exabyte, :exabytes
-
-			### Return a human readable file size.
-			def size_suffix
-				bytes = self.to_f
-				return case
-					when bytes >= GIGABYTE then sprintf( "%0.1fG", bytes / GIGABYTE )
-					when bytes >= MEGABYTE then sprintf( "%0.1fM", bytes / MEGABYTE )
-					when bytes >= KILOBYTE then sprintf( "%0.1fK", bytes / KILOBYTE )
-					else "%db" % [ self ]
-					end
 			end
 
-		end # module Bytes
 
-	end # module NumericConstantMethods
-
-
-	### Add a #to_html method to the including object that is capable of dumping its
-	### state as an HTML fragment.
-	###
-	###   class MyObject
-	###       include HtmlInspectableObject
-	###   end
-	###
-	###   irb> MyObject.new.html_inspect
-	###      ==> "<span class=\"immediate-object\">#&lt;MyObject:0x56e780&gt;</span>"
-	module HtmlInspectableObject
-
-		### Return the receiver as an HTML fragment.
-		def html_inspect
-			return make_html_for_object( self )
+		### Define the given +delegated_methods+ as delegators to the like-named class
+		### method.
+		def def_class_delegators( *delegated_methods )
+			delegated_methods.each do |name|
+				define_method( name ) do |*args|
+					self.class.__send__( name, *args )
+			end
+			end
 		end
 
 
@@ -536,121 +126,202 @@ module ThingFish
 		private
 		#######
 
-		THREAD_DUMP_KEY = :__to_html_cache__
+		### Make the body of a delegator method that will delegate to the +name+ method
+		### of the object returned by the +delegate+ method.
+		def make_method_delegator( delegate, name )
+			error_frame = caller(5)[0]
+			file, line = error_frame.split( ':', 2 )
 
-		HASH_HTML_CONTAINER = %{<div class="hash-members">%s</div>}
-		HASH_PAIR_HTML = %{<div class="hash-pair"><div class="key">%s</div>} +
-			%{<div class="value">%s</div></div>\n}
-		ARRAY_HTML_CONTAINER = %{<ol class="array-members"><li>%s</li></ol>}
-		IMMEDIATE_OBJECT_HTML_CONTAINER = %{<span class="immediate-object">%s</span>}
-
-
-		### Return an HTML fragment describing the specified +object+.
-		def make_html_for_object( object )
-			object_html = []
-
-			case object
-			when Hash
-				object_html << "\n<!-- Hash -->\n"
-				if object.empty?
-					object_html << '{}'
+			# Ruby can't parse obj.method=(*args), so we have to special-case setters...
+			if name.to_s =~ /(\w+)=$/
+				name = $1
+				code = <<-END_CODE
+				lambda {|*args| self.#{delegate}.#{name} = *args }
+				END_CODE
 				else
-					object_html << HASH_HTML_CONTAINER % [
-						object.collect {|k,v|
-							HASH_PAIR_HTML % [make_html_for_object(k), make_html_for_object(v)]
-						}
-					]
+				code = <<-END_CODE
+				lambda {|*args,&block| self.#{delegate}.#{name}(*args,&block) }
+				END_CODE
 				end
 
-			when Array
-				object_html << "\n<!-- Array -->\n"
-				if object.empty?
-					object_html << '[]'
-				else
-					object_html << ARRAY_HTML_CONTAINER % [
-						object.collect {|o| make_html_for_object(o) }.join('</li><li>')
-					]
+			return eval( code, nil, file, line.to_i )
 				end
+
+
+		### Make the body of a delegator method that will delegate calls to the +name+
+		### method to the given +ivar+.
+		def make_ivar_delegator( ivar, name )
+			error_frame = caller(5)[0]
+			file, line = error_frame.split( ':', 2 )
+
+			# Ruby can't parse obj.method=(*args), so we have to special-case setters...
+			if name.to_s =~ /(\w+)=$/
+				name = $1
+				code = <<-END_CODE
+				lambda {|*args| #{ivar}.#{name} = *args }
+				END_CODE
+			else
+				code = <<-END_CODE
+				lambda {|*args,&block| #{ivar}.#{name}(*args,&block) }
+				END_CODE
+			end
+
+			return eval( code, nil, file, line.to_i )
+		end
+
+	end # module Delegation
+
+
+	# A collection of miscellaneous functions that are useful for manipulating
+	# complex data structures.
+	#
+	#   include ThingFish::DataUtilities
+	#   newhash = deep_copy( oldhash )
+	#
+	module DataUtilities
+
+		###############
+		module_function
+		###############
+
+		### Recursively copy the specified +obj+ and return the result.
+		def deep_copy( obj )
+
+			# Handle mocks during testing
+			return obj if obj.class.name == 'RSpec::Mocks::Mock'
+
+			return case obj
+				when NilClass, Numeric, TrueClass, FalseClass, Symbol, Module
+					obj
+
+				when Array
+					obj.map {|o| deep_copy(o) }
+
+				when Hash
+					newhash = {}
+					newhash.default_proc = obj.default_proc if obj.default_proc
+					obj.each do |k,v|
+						newhash[ deep_copy(k) ] = deep_copy( v )
+					end
+					newhash
 
 			else
-				if object.instance_variables.empty?
-					return IMMEDIATE_OBJECT_HTML_CONTAINER % [ escape_html(object.inspect) ]
-				else
-					object_html << make_object_html_wrapper( object )
+					obj.clone
 				end
 			end
 
-			return object_html.join("\n")
+
+		### Create and return a Hash that will auto-vivify any values it is missing with
+		### another auto-vivifying Hash.
+		def autovivify( hash, key )
+			hash[ key ] = Hash.new( &ThingFish::DataUtilities.method(:autovivify) )
+			end
+
+
+		### Return a version of the given +hash+ with its keys transformed
+		### into Strings from whatever they were before.
+		def stringify_keys( hash )
+			newhash = {}
+
+			hash.each do |key,val|
+				if val.is_a?( Hash )
+					newhash[ key.to_s ] = stringify_keys( val )
+				else
+					newhash[ key.to_s ] = val
+				end
+			end
+
+			return newhash
 		end
 
 
-		OBJECT_HTML_CONTAINER = %{<div id="object-%d" class="object %s">%s</div>}
-		IVAR_HTML_FRAGMENT = %Q{
-		  <div class="instance-variable">
-			<div class="name">%s</div>
-			<div class="value">%s</div>
-		  </div>
-		}
+		### Return a duplicate of the given +hash+ with its identifier-like keys
+		### transformed into symbols from whatever they were before.
+		def symbolify_keys( hash )
+			newhash = {}
+
+			hash.each do |key,val|
+				keysym = key.to_s.dup.untaint.to_sym
+
+				if val.is_a?( Hash )
+					newhash[ keysym ] = symbolify_keys( val )
+				else
+					newhash[ keysym ] = val
+				end
+		end
+
+			return newhash
+		end
+		alias_method :internify_keys, :symbolify_keys
+
+	end # module DataUtilities
 
 
-		### Wrap up the various parts of a complex object in an HTML fragment. If the
-		### object has already been wrapped, returns a link to the previous rendering
-		### instead.
-		def make_object_html_wrapper( object )
+	# A collection of methods for declaring other methods.
+	#
+	#   class MyClass
+	#       extend ThingFish::MethodUtilities
+	#
+	#       singleton_attr_accessor :types
+	#       singleton_method_alias :kinds, :types
+	#   end
+	#
+	#   MyClass.types = [ :pheno, :proto, :stereo ]
+	#   MyClass.kinds # => [:pheno, :proto, :stereo]
+	#
+	module MethodUtilities
 
-			# If the object has been rendered already, just return a link to the previous
-			# HTML fragment
-			Thread.current[ THREAD_DUMP_KEY ] ||= {}
-			if Thread.current[ THREAD_DUMP_KEY ].key?( object.object_id )
-				return %Q{<a href="#object-%d" class="cache-link" title="jump to previous details">%s</a>} % [
-					object.object_id,
-					%{&rarr; %s #%d} % [ object.class.name, object.object_id ]
-				]
-			else
-				Thread.current[ THREAD_DUMP_KEY ][ object.object_id ] = true
+		### Creates instance variables and corresponding methods that return their
+		### values for each of the specified +symbols+ in the singleton of the
+		### declaring object (e.g., class instance variables and methods if declared
+		### in a Class).
+		def singleton_attr_reader( *symbols )
+			symbols.each do |sym|
+				singleton_class.__send__( :attr_reader, sym )
 			end
+		end
 
-			# Assemble the innards as an array of parts
-			parts = [
-				%{<div class="object-header">},
-				%{<span class="object-class">#{object.class.name}</span>},
-				%{<span class="object-id">##{object.object_id}</span>},
-				%{</div>},
-				%{<div class="object-body">},
-			]
-
-			object.instance_variables.each do |ivar|
-				html = make_html_for_object( object.instance_variable_get(ivar) )
-				parts << IVAR_HTML_FRAGMENT % [ ivar, html ]
+		### Creates methods that allow assignment to the attributes of the singleton
+		### of the declaring object that correspond to the specified +symbols+.
+		def singleton_attr_writer( *symbols )
+			symbols.each do |sym|
+				singleton_class.__send__( :attr_writer, sym )
 			end
+		end
 
-			parts << %{</div>}
-
-			# Make HTML class names out of the object's namespaces
-			namespaces = object.class.name.downcase.split(/::/)
-			classes = []
-			namespaces.each_index do |i|
-				classes << namespaces[0..i].join('-') + '-object'
+		### Creates readers and writers that allow assignment to the attributes of
+		### the singleton of the declaring object that correspond to the specified
+		### +symbols+.
+		def singleton_attr_accessor( *symbols )
+			symbols.each do |sym|
+				singleton_class.__send__( :attr_accessor, sym )
 			end
+		end
 
-			# Glue the whole thing together and return it
-			return OBJECT_HTML_CONTAINER % [
-				object.object_id,
-				classes.join(" "),
-				parts.join("\n")
-			]
+		### Creates an alias for the +original+ method named +newname+.
+		def singleton_method_alias( newname, original )
+			singleton_class.__send__( :alias_method, newname, original )
 		end
 
 
-		### Return the specifed +str+ with all HTML entities escaped.
-		def escape_html( str )
-			return str.
-				gsub( /&/, '&amp;' ).
-				gsub( /</, '&lt;' ).
-				gsub( />/, '&gt;' )
+		### Create a reader in the form of a predicate for the given +attrname+.
+		def attr_predicate( attrname )
+			attrname = attrname.to_s.chomp( '?' )
+			define_method( "#{attrname}?" ) do
+				instance_variable_get( "@#{attrname}" ) ? true : false
+			end
 		end
 
-	end # module HtmlInspectableObject
+
+		### Create a reader in the form of a predicate for the given +attrname+
+		### as well as a regular writer method.
+		def attr_predicate_accessor( attrname )
+			attrname = attrname.to_s.chomp( '?' )
+			attr_writer( attrname )
+			attr_predicate( attrname )
+		end
+
+	end # module MethodUtilities
 
 
 end # module ThingFish

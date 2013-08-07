@@ -1,16 +1,5 @@
-#!/usr/bin/env ruby
-#
-# thingfishd - start a ThingFish server
-#
-# == Synopsis
-#
-#   $ thingfishd
-#
-# == Version
-#
-#  $Id$
-#
-#
+#!/usr/bin/env ruby -wKU
+#encoding: utf-8
 
 require 'thingfish/daemon'
 

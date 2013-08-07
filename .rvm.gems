@@ -1,0 +1,10 @@
+# .rvm.gems generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator
+hoe-deveiate -v0.2.0
+pluggability -v0.2.0
+loggability -v0.6.1
+configurability -v2.0.2
+pg -v0.16.0
+sequel -v4.0.0
+sequel_pg -v1.6.7
+strelka -v0.6.0
+rspec -v2.14.1

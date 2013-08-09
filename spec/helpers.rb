@@ -27,6 +27,7 @@ end
 require 'loggability'
 require 'loggability/spechelpers'
 require 'configurability'
+require 'configurability/behavior'
 
 require 'rspec'
 require 'mongrel2'
@@ -43,12 +44,18 @@ Loggability.format_with( :color ) if $stdout.tty?
 
 ### RSpec helper functions.
 module ThingFish::SpecHelpers
+	TEST_APPID     = 'thingfish-test'
+	TEST_SEND_SPEC = 'tcp://127.0.0.1:9999'
+	TEST_RECV_SPEC = 'tcp://127.0.0.1:9998'
+
+	UUID_PATTERN = /(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})/i
 end
 
 
 ### Mock with RSpec
 RSpec.configure do |c|
 	include Strelka::Constants
+	include ThingFish::SpecHelpers
 
 	c.treat_symbols_as_metadata_keys_with_true_values = true
 	c.mock_with( :rspec ) do |config|
@@ -57,6 +64,7 @@ RSpec.configure do |c|
 
 	c.include( Loggability::SpecHelpers )
 	c.include( Mongrel2::SpecHelpers )
+	c.include( Mongrel2::Constants )
 	c.include( Strelka::Constants )
 	c.include( Strelka::Testing )
 	c.include( ThingFish::SpecHelpers )

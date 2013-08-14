@@ -17,7 +17,7 @@ require 'optparse'
 require 'ostruct'
 
 
-# thingfish - a command-line interface to ThingFish servers
+# thingfish - a command-line interface to Thingfish servers
 #
 # == Usage
 #
@@ -28,9 +28,9 @@ require 'ostruct'
 #  $Id$
 #
 #
-class ThingFish::CommandLineClient
-	include ThingFish::Constants,
-		ThingFish::Loggable
+class Thingfish::CommandLineClient
+	include Thingfish::Constants,
+		Thingfish::Loggable
 
 	#################################################################
 	###	C L A S S   M E T H O D S
@@ -100,8 +100,8 @@ class ThingFish::CommandLineClient
 	        end
 
 			# Another typical switch to print the version.
-			oparser.on_tail( '--version', '-V', "Show ThingFish version" ) do
-				$stderr.puts ThingFish.version_string( true )
+			oparser.on_tail( '--version', '-V', "Show Thingfish version" ) do
+				$stderr.puts Thingfish.version_string( true )
 				exit!
 			end
 		end
@@ -120,19 +120,19 @@ class ThingFish::CommandLineClient
 	###	I N S T A N C E   M E T H O D S
 	#################################################################
 
-	### Create a new ThingFish::CommandLineClient
+	### Create a new Thingfish::CommandLineClient
 	def initialize( options )
 		@options = options
 
 		uri = URI.parse( "http://%s:%d/" % [@options.host, @options.port] )
-		@client = ThingFish::Client.new( uri, :profile => @options.profilemode )
+		@client = Thingfish::Client.new( uri, :profile => @options.profilemode )
 
 		if @options.debugmode
-			ThingFish.reset_logger
-			ThingFish.logger.level = Logger::DEBUG
+			Thingfish.reset_logger
+			Thingfish.logger.level = Logger::DEBUG
 		elsif @options.verbosemode
-			ThingFish.reset_logger
-			ThingFish.logger.level = Logger::INFO
+			Thingfish.reset_logger
+			Thingfish.logger.level = Logger::INFO
 		end
 	end
 
@@ -234,11 +234,11 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Upload the contents of the specified +file+ to the ThingFish at the given +uri+.
+	### Upload the contents of the specified +file+ to the Thingfish at the given +uri+.
 	### If +file+ is nil, the content will be read from STDIN instead.
 	def do_upload( file=nil )
 		fh = get_reader_io( file )
-		resource = ThingFish::Resource.new( fh )
+		resource = Thingfish::Resource.new( fh )
 		resource.format = self.get_mimetype( file )
 
 		if file
@@ -258,7 +258,7 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Update the resource at the specified +uuid+ on the ThingFish at the given +uri+
+	### Update the resource at the specified +uuid+ on the Thingfish at the given +uri+
 	### with the content from the specified +file+. If +file+ is nil, the content will
 	### be read from STDIN instead.
 	def do_update( uuid, file=nil )
@@ -266,7 +266,7 @@ class ThingFish::CommandLineClient
 			raise "No such resource #{uuid}"
 
 		fh = get_reader_io( file )
-		resource = ThingFish::Resource.new( fh, :client => @client, :uuid => uuid )
+		resource = Thingfish::Resource.new( fh, :client => @client, :uuid => uuid )
 		resource.format = self.get_mimetype( file )
 
 		if file
@@ -286,7 +286,7 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Verify that a resource with the specified +uuid+ exists on the ThingFish at
+	### Verify that a resource with the specified +uuid+ exists on the Thingfish at
 	### the given +uri+.
 	def do_check( uuid )
 		if @client.has?( uuid )
@@ -303,7 +303,7 @@ class ThingFish::CommandLineClient
 	end
 
 
-	### Fetch the resource at the specified +uuid+ on the ThingFish at the given +uri+
+	### Fetch the resource at the specified +uuid+ on the Thingfish at the given +uri+
 	### and write it to the specified +file+. If +file+ is nil, the content will be
 	### written to STDOUT instead.
 	def do_download( uuid, file )
@@ -464,8 +464,8 @@ end
 
 
 begin
-	opts, verb, *args = ThingFish::CommandLineClient.parse_options( ARGV )
-	client = ThingFish::CommandLineClient.new( opts )
+	opts, verb, *args = Thingfish::CommandLineClient.parse_options( ARGV )
+	client = Thingfish::CommandLineClient.new( opts )
 
 	client.main( verb, *args )
 

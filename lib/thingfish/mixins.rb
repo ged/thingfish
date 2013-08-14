@@ -2,10 +2,10 @@
 # vim: set nosta noet ts=4 sw=4:
 # encoding: utf-8
 
-require 'thingfish' unless defined?( ThingFish )
+require 'thingfish' unless defined?( Thingfish )
 
 
-class ThingFish
+class Thingfish
 
 	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
 	# defining API methods. If subclasses of your class don't provide implementations of
@@ -13,7 +13,7 @@ class ThingFish
 	#
 	#   # AbstractClass
 	#   class MyBaseClass
-	#       include ThingFish::AbstractClass
+	#       extend Thingfish::AbstractClass
 	#
 	#       # Define a method that will raise a NotImplementedError if called
 	#       pure_virtual :api_method
@@ -28,24 +28,24 @@ class ThingFish
 		end
 
 
-			### Define one or more "virtual" methods which will raise
-			### NotImplementedErrors when called via a concrete subclass.
-			def pure_virtual( *syms )
-				syms.each do |sym|
-					define_method( sym ) do |*args|
-						raise ::NotImplementedError,
-							"%p does not provide an implementation of #%s" % [ self.class, sym ],
-							caller(1)
-					end
+		### Define one or more "virtual" methods which will raise
+		### NotImplementedErrors when called via a concrete subclass.
+		def pure_virtual( *syms )
+			syms.each do |sym|
+				define_method( sym ) do |*args|
+					raise ::NotImplementedError,
+					"%p does not provide an implementation of #%s" % [ self.class, sym ],
+					caller(1)
 				end
 			end
+		end
 
 
 		### Inheritance callback -- Turn subclasses' .new methods back to public.
-			def inherited( subclass )
-				subclass.module_eval { public_class_method :new }
-				super
-			end
+		def inherited( subclass )
+			subclass.module_eval { public_class_method :new }
+			super
+		end
 
 	end # module AbstractClass
 
@@ -53,7 +53,7 @@ class ThingFish
 	# A collection of methods for declaring other methods.
 	#
 	#   class MyClass
-	#       extend ThingFish::MethodUtilities
+	#       extend Thingfish::MethodUtilities
 	#
 	#       singleton_attr_accessor :types
 	#       singleton_method_alias :kinds, :types
@@ -117,7 +117,44 @@ class ThingFish
 	end # module MethodUtilities
 
 
-end # module ThingFish
+	# A collection of data-manipulation functions.
+	module DataUtilities
+
+		###############
+		module_function
+		###############
+
+		### Recursively copy the specified +obj+ and return the result.
+		def deep_copy( obj )
+
+			# Handle mocks during testing
+			return obj if obj.class.name == 'RSpec::Mocks::Mock'
+
+			return case obj
+				when NilClass, Numeric, TrueClass, FalseClass, Symbol, Module, Encoding
+					obj
+
+				when Array
+					obj.map {|o| deep_copy(o) }
+
+				when Hash
+					newhash = {}
+					newhash.default_proc = obj.default_proc if obj.default_proc
+					obj.each do |k,v|
+						newhash[ deep_copy(k) ] = deep_copy( v )
+					end
+					newhash
+
+				else
+					obj.clone
+				end
+		end
+
+	end # module DataUtilities
+
+
+
+end # module Thingfish
 
 # vim: set nosta noet ts=4 sw=4:
 

@@ -15,9 +15,9 @@ require 'strelka/app'
 # * Michael Granger <ged@FaerieMUD.org>
 # * Mahlon E. Smith <mahlon@martini.nu>
 #
-class ThingFish < Strelka::App
+class Thingfish < Strelka::App
 
-	# Loggability API -- log all ThingFish-related stuff to a separate logger
+	# Loggability API -- log all Thingfish-related stuff to a separate logger
 	log_as :thingfish
 
 
@@ -69,8 +69,8 @@ class ThingFish < Strelka::App
 	def initialize( * )
 		super
 
-		@datastore = ThingFish::Datastore.create( self.class.datastore )
-		# @metastore = ThingFish::Metastore.create( self.class.metastore )
+		@datastore = Thingfish::Datastore.create( self.class.datastore )
+		@metastore = Thingfish::Metastore.create( self.class.metastore )
 	end
 
 
@@ -80,6 +80,10 @@ class ThingFish < Strelka::App
 
 	# The datastore
 	attr_reader :datastore
+
+	# The metastore
+	attr_reader :metastore
+
 
 	#
 	# Global parmas
@@ -98,11 +102,13 @@ class ThingFish < Strelka::App
 	# Fetch an object by ID
 	get ':uuid' do |req|
 		uuid = req.params[:uuid]
-		object = self.datastore.fetch_object( uuid ) or
+		object = self.datastore.fetch( uuid ) or
 			finish_with HTTP::NOT_FOUND, "no such object"
+		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
 		res.body = object
+		res.content_type = metadata[:format]
 
 		return res
 	end
@@ -111,7 +117,16 @@ class ThingFish < Strelka::App
 	# POST /
 	# Upload a new object.
 	post do |req|
-		uuid = self.datastore.create_object( req.body )
+		metadata = {
+			:useragent     => req.headers.user_agent,
+			:extent        => req.headers.content_length,
+			:uploadaddress => req.remote_ip,
+			:format        => req.content_type
+		}
+
+		uuid = self.datastore.save( req.body )
+		self.metastore.save( uuid, metadata )
+
 		url = req.base_uri.dup
 		url.path += uuid
 
@@ -124,7 +139,8 @@ class ThingFish < Strelka::App
 
 
 	require 'thingfish/datastore'
+	require 'thingfish/metastore'
 
-end # class ThingFish
+end # class Thingfish
 
 # vim: set nosta noet ts=4 sw=4:

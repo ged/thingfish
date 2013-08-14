@@ -6,21 +6,18 @@ require 'rspec'
 require 'thingfish'
 
 
-describe ThingFish do
+describe Thingfish do
 
 	before( :all ) do
 		setup_logging()
-		ThingFish.configure
+		Thingfish.configure
 	end
 
 
 	let( :handler ) { described_class.new(TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC) }
 	let( :factory ) { Mongrel2::RequestFactory.new(:route => '/') }
 	let( :text_data ) { "Some stuff." }
-	let( :png_data ) do
-		("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMA" +
-		"AQAABQABDQottAAAAABJRU5ErkJggg==").unpack('m').first
-	end
+	let( :png_data ) { TEST_PNG_DATA }
 
 
 	#
@@ -35,12 +32,12 @@ describe ThingFish do
 	#
 
 	it "returns a version string if asked" do
-		ThingFish.version_string.should =~ /\w+ [\d.]+/
+		Thingfish.version_string.should =~ /\w+ [\d.]+/
 	end
 
 
 	it "returns a version string with a build number if asked" do
-		ThingFish.version_string(true).should =~ /\w+ [\d.]+ \(build [[:xdigit:]]+\)/
+		Thingfish.version_string(true).should =~ /\w+ [\d.]+ \(build [[:xdigit:]]+\)/
 	end
 
 

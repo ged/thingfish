@@ -1,4 +1,4 @@
-ThingFish API -- Desired
+Thingfish API -- Desired
 =================================================
 
 # introspection

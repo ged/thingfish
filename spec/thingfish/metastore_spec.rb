@@ -3,13 +3,13 @@
 require_relative '../helpers'
 
 require 'rspec'
-require 'thingfish/datastore'
+require 'thingfish/metastore'
 
-class TestingDatastore < Thingfish::Datastore
+class TestingMetastore < Thingfish::Metastore
 end
 
 
-describe Thingfish::Datastore do
+describe Thingfish::Metastore do
 
 	before( :all ) do
 		setup_logging()
@@ -22,7 +22,7 @@ describe Thingfish::Datastore do
 
 
 	it "acts as a factory for its concrete derivatives" do
-		expect( described_class.create('testing') ).to be_a( TestingDatastore )
+		expect( described_class.create('testing') ).to be_a( TestingMetastore )
 	end
 
 
@@ -30,16 +30,20 @@ describe Thingfish::Datastore do
 
 		let( :store ) { described_class.create('testing') }
 
-		it "raises an error if it doesn't implement #save" do
-			expect { store.save(TEST_PNG_DATA) }.to raise_error( NotImplementedError, /save/ )
-		end
-
 		it "raises an error if it doesn't implement #fetch" do
 			expect { store.fetch(TEST_UUID) }.to raise_error( NotImplementedError, /fetch/ )
 		end
 
-		it "raises an error if it doesn't implement #each" do
-			expect { store.each }.to raise_error( NotImplementedError, /each/ )
+		it "raises an error if it doesn't implement #save" do
+			expect {
+				store.save( TEST_UUID, {name: 'foo'} )
+			}.to raise_error( NotImplementedError, /save/ )
+		end
+
+		it "raises an error if it doesn't implement #merge" do
+			expect {
+				store.merge( TEST_UUID, {name: 'foo'} )
+			}.to raise_error( NotImplementedError, /merge/ )
 		end
 
 	end

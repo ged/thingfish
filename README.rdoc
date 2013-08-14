@@ -1,10 +1,10 @@
-= ThingFish
+= Thingfish
 
 * http://bitbucket.org/laika/thingfish
 
 == Description
 
-ThingFish is a extensible, web-based digital asset manager. It can be used to
+Thingfish is a extensible, web-based digital asset manager. It can be used to
 store chunks of data on the network in an application-independent way, link the
 chunks together with metadata, and then search for the chunk you need later and
 fetch it, all through a REST API.
@@ -26,7 +26,7 @@ fetch it, all through a REST API.
 
 === Requirements
 
-ThingFish is written in ruby, and is tested using version 1.9.3:
+Thingfish is written in ruby, and is tested using version 1.9.3:
 
   * Ruby (>= 1.9.3): http://www.ruby-lang.org/en/downloads/
 
@@ -34,7 +34,7 @@ Other versions may work, but are not tested.
 
 === Ruby Modules
 
-You can install ThingFish via the Rubygems package manager:
+You can install Thingfish via the Rubygems package manager:
 
   $ sudo gem install thingfish
 

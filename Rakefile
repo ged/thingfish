@@ -28,7 +28,7 @@ hoespec = Hoe.spec 'thingfish' do
 
 	self.dependency 'pluggability',    '~> 1.0'
 	self.dependency 'loggability',     '~> 1.0'
-	self.dependency 'configurability', '~> 1.0'
+	self.dependency 'configurability', '~> 2.1'
 	self.dependency 'pg',              '~> 0.16'
 	self.dependency 'strelka',         '~> 0.6'
 	self.dependency 'sequel',          '~> 4.0'

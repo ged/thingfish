@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby -wKU
 #encoding: utf-8
 
-require 'thingfish/daemon'
+require 'thingfish'
 
-ThingFish::Daemon.run( ARGV )
+Thingfish.run( ARGV )
 

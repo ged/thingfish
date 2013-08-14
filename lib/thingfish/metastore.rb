@@ -1,39 +1,27 @@
 # -*- ruby -*-
 #encoding: utf-8
 
-require 'securerandom'
 require 'pluggability'
-require 'stringio'
 
 require 'thingfish' unless defined?( Thingfish )
 require 'thingfish/mixins'
 
 # The base class for storage mechanisms used by Thingfish to store its data
 # blobs.
-class Thingfish::Datastore
+class Thingfish::Metastore
 	extend Pluggability,
 	       Thingfish::AbstractClass
-	include Enumerable
 
 
-	# Pluggability API -- set the prefix for implementations of Datastore
-	plugin_prefixes 'thingfish/datastore'
+	# Pluggability API -- set the prefix for implementations of Metastore
+	plugin_prefixes 'thingfish/metastore'
 
 	# AbstractClass API -- register some virtual methods that must be implemented
 	# in subclasses
 	pure_virtual :save,
 	             :fetch,
-	             :each
+				 :merge
 
 
-	#########
-	protected
-	#########
-
-	### Generate a new object ID.
-	def make_object_id
-		return SecureRandom.uuid
-	end
-
-end # class Thingfish::Datastore
+end # class Thingfish::Metastore
 

@@ -43,19 +43,32 @@ Loggability.format_with( :color ) if $stdout.tty?
 
 
 ### RSpec helper functions.
-module ThingFish::SpecHelpers
+module Thingfish::SpecHelpers
 	TEST_APPID     = 'thingfish-test'
 	TEST_SEND_SPEC = 'tcp://127.0.0.1:9999'
 	TEST_RECV_SPEC = 'tcp://127.0.0.1:9998'
 
-	UUID_PATTERN = /(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})/i
+	UUID_PATTERN   = /(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})/i
+
+	TEST_UUID      = 'E5DFEEAB-3525-4F14-B4DB-2772D0B9987F'
+
+	TEST_PNG_DATA  = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMA" +
+	                  "AQAABQABDQottAAAAABJRU5ErkJggg==").unpack('m').first
+
+
+	RSpec::Matchers.define :be_a_uuid do |expected|
+		match do |actual|
+			actual =~ UUID_PATTERN
+		end
+	end
+
 end
 
 
 ### Mock with RSpec
 RSpec.configure do |c|
 	include Strelka::Constants
-	include ThingFish::SpecHelpers
+	include Thingfish::SpecHelpers
 
 	c.treat_symbols_as_metadata_keys_with_true_values = true
 	c.mock_with( :rspec ) do |config|
@@ -67,7 +80,7 @@ RSpec.configure do |c|
 	c.include( Mongrel2::Constants )
 	c.include( Strelka::Constants )
 	c.include( Strelka::Testing )
-	c.include( ThingFish::SpecHelpers )
+	c.include( Thingfish::SpecHelpers )
 end
 
 # vim: set nosta noet ts=4 sw=4:

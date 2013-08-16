@@ -34,8 +34,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.dependency 'sequel',          '~> 4.0'
 	self.dependency 'sequel_pg',       '~> 1.6'
 
-	self.dependency 'hoe-deveiate',  '~> 0.0',  :development
-	self.dependency 'rspec',  '~> 2.14',  :development
+	self.dependency 'hoe-deveiate',  '~> 0.3',  :development
 
 	self.spec_extras[:licenses] = ["BSD"]
 	self.require_ruby_version( '>=2.0.0' )

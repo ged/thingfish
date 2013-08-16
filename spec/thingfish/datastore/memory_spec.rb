@@ -12,30 +12,44 @@ describe Thingfish::Datastore, "memory" do
 		setup_logging()
 	end
 
+	before( :each ) do
+		@png_io = StringIO.new( TEST_PNG_DATA.dup )
+		@text_io = StringIO.new( TEST_TEXT_DATA.dup )
+	end
 
 	let( :store ) { Thingfish::Datastore.create(:memory) }
-	let( :data  ) { StringIO.new(TEST_PNG_DATA) }
 
 
 	it "can save data" do
-		expect( store.save(data) ).to be_a_uuid()
+		expect( store.save(@png_io) ).to be_a_uuid()
 	end
 
 	it "restores the position of the IO after saving" do
-		begin
-			data.pos = 11
-			store.save( data )
-			expect( data.pos ).to eq( 11 )
-		ensure
-			data.rewind
-		end
+		@png_io.pos = 11
+		store.save( @png_io )
+		expect( @png_io.pos ).to eq( 11 )
 	end
+
+	it "can replace existing data" do
+		new_uuid = store.save( @text_io )
+		store.replace( new_uuid, @png_io )
+
+		rval = store.fetch( new_uuid )
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_PNG_DATA )
+	end
+
+	it "doesn't care about the case of the uuid when replacing"
 
 	it "can fetch saved data" do
-		oid = store.save( data )
-		expect( store.fetch(oid).read ).to eq( TEST_PNG_DATA )
+		oid = store.save( @text_io )
+		rval = store.fetch( oid )
+
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_TEXT_DATA )
 	end
 
+	it "doesn't care about the case of the uuid when fetching"
 
 end
 

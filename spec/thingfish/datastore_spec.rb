@@ -34,6 +34,10 @@ describe Thingfish::Datastore do
 			expect { store.save(TEST_PNG_DATA) }.to raise_error( NotImplementedError, /save/ )
 		end
 
+		it "raises an error if it doesn't implement #replace" do
+			expect { store.replace(TEST_UUID) }.to raise_error( NotImplementedError, /replace/ )
+		end
+
 		it "raises an error if it doesn't implement #fetch" do
 			expect { store.fetch(TEST_UUID) }.to raise_error( NotImplementedError, /fetch/ )
 		end

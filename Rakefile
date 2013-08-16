@@ -25,6 +25,7 @@ hoespec = Hoe.spec 'thingfish' do
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
+	self.license "BSD"
 
 	self.dependency 'pluggability',    '~> 1.0'
 	self.dependency 'loggability',     '~> 1.0'
@@ -36,7 +37,6 @@ hoespec = Hoe.spec 'thingfish' do
 
 	self.dependency 'hoe-deveiate',  '~> 0.3',  :development
 
-	self.spec_extras[:licenses] = ["BSD"]
 	self.require_ruby_version( '>=2.0.0' )
 
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )

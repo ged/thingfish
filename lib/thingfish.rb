@@ -117,12 +117,7 @@ class Thingfish < Strelka::App
 	# POST /
 	# Upload a new object.
 	post do |req|
-		metadata = {
-			:useragent     => req.headers.user_agent,
-			:extent        => req.headers.content_length,
-			:uploadaddress => req.remote_ip,
-			:format        => req.content_type
-		}
+		metadata = self.extract_default_metadata( req )
 
 		uuid = self.datastore.save( req.body )
 		self.metastore.save( uuid, metadata )
@@ -138,8 +133,42 @@ class Thingfish < Strelka::App
 	end
 
 
+	# PUT /
+	# Replace an existing object.
+	put ':uuid' do |req|
+		metadata = self.extract_default_metadata( req )
+
+		uuid = req.params[:uuid]
+		object = self.datastore.fetch( uuid ) or
+			finish_with HTTP::NOT_FOUND, "no such object"
+
+		self.datastore.replace( uuid, req.body )
+		self.metastore.merge( uuid, metadata )
+
+		res = req.response
+		res.status = HTTP::NO_CONTENT
+
+		return res
+	end
+
+
 	require 'thingfish/datastore'
 	require 'thingfish/metastore'
+
+
+	#########
+	protected
+	#########
+
+	### Return a Hash of default metadata extracted from the given +request+.
+	def extract_default_metadata( request )
+		return {
+			:useragent     => request.headers.user_agent,
+			:extent        => request.headers.content_length,
+			:uploadaddress => request.remote_ip,
+			:format        => request.content_type
+		}
+	end
 
 end # class Thingfish
 

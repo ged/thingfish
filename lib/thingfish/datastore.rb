@@ -22,6 +22,7 @@ class Thingfish::Datastore
 	# AbstractClass API -- register some virtual methods that must be implemented
 	# in subclasses
 	pure_virtual :save,
+	             :replace,
 	             :fetch,
 	             :each
 
@@ -34,6 +35,8 @@ class Thingfish::Datastore
 	def make_object_id
 		return SecureRandom.uuid
 	end
+
+	# def with_io( io ) ... end
 
 end # class Thingfish::Datastore
 

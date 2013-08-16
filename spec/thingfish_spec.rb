@@ -13,11 +13,13 @@ describe Thingfish do
 		Thingfish.configure
 	end
 
+	before( :each ) do
+		@png_io = StringIO.new( TEST_PNG_DATA.dup )
+		@text_io = StringIO.new( TEST_TEXT_DATA.dup )
+	end
 
-	let( :handler ) { described_class.new(TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC) }
-	let( :factory ) { Mongrel2::RequestFactory.new(:route => '/') }
-	let( :text_data ) { "Some stuff." }
-	let( :png_data ) { TEST_PNG_DATA }
+	let( :handler )      { described_class.new(TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC) }
+	let( :factory )      { Mongrel2::RequestFactory.new(:route => '/') }
 
 
 	#
@@ -42,25 +44,44 @@ describe Thingfish do
 
 
 	it 'accepts a POSTed upload' do
-		req = factory.post( '/', text_data, content_type: 'text/plain' )
+		req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 		res = handler.handle( req )
+
 		expect( res.status_line ).to match( /201 created/i )
 		expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
 	end
 
 
-	it "can fetch an uploaded chunk of data" do
-		upload = factory.post( '/', png_data, content_type: 'image/png' )
-		upload_res = handler.handle( upload )
+	it 'replaces content via PUT' do
+		uuid = handler.datastore.save( @text_io )
+		handler.metastore.save( uuid, {format: 'text/plain'} )
 
-		url = URI( upload_res.headers.location )
-		fetch = factory.get( url.path )
-		result = handler.handle( fetch )
+		req = factory.put( "/#{uuid}", @png_io, content_type: 'image/png' )
+		res = handler.handle( req )
+
+		expect( res.status ).to eq( HTTP::OK )
+		expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
+		expect( handler.metastore.fetch(uuid) ).to include( format: 'image/png' )
+	end
+
+
+	it "doesn't case about the case of the UUID when replacing content via PUT"
+
+
+	it "can fetch an uploaded chunk of data" do
+		uuid = handler.datastore.save( @png_io )
+		handler.metastore.save( uuid, {format: 'image/png'} )
+
+		req = factory.get( "/#{uuid}" )
+		result = handler.handle( req )
 
 		expect( result.status_line ).to match( /200 ok/i )
-		expect( result.body.read ).to eq( png_data )
+		expect( result.body.read ).to eq( @png_io )
 		expect( result.headers.content_type ).to eq( 'image/png' )
 	end
+
+
+	it "doesn't care about the case of the UUID when fetching uploaded data"
 
 
 end

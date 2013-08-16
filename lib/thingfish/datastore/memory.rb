@@ -36,6 +36,20 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 	end
 
 
+	### Replace the existing object associated with +oid+ with the data read from the
+	### given +io+.
+	def replace( oid, io )
+		offset = io.pos
+		data = io.read.dup
+
+		self.log.debug "Replacing data under OID %s with %d bytes" % [ oid, data.bytesize ]
+		@storage[ oid ] = data
+
+		io.pos = offset
+		return true
+	end
+
+
 	### Fetch the data corresponding to the given +oid+ as an IOish object.
 	def fetch( oid )
 		self.log.debug "Fetching data for OID %s" % [ oid ]

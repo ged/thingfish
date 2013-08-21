@@ -23,15 +23,30 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 	### Save the +metadata+ for the specified +oid+.
 	def save( oid, metadata )
+		oid = self.normalize_oid( oid )
 		self.log.debug "Saving %d metadata attributes for OID %s" % [ metadata.length, oid ]
 		@storage[ oid ] = metadata.dup
 	end
 
 
 	### Fetch the data corresponding to the given +oid+ as a Hash-ish object.
-	def fetch( oid )
-		self.log.debug "Fetching metadata for OID %s" % [ oid ]
-		return @storage[ oid ]
+	def fetch( oid, *keys )
+		oid = self.normalize_oid( oid )
+		if keys.empty?
+			self.log.debug "Fetching metadata for OID %s" % [ oid ]
+			return @storage[ oid ]
+		else
+			self.log.debug "Fetching metadata for %p for OID %s" % [ keys, oid ]
+			data = @storage[ oid ] or return []
+			return data.values_at( *keys )
+		end
+	end
+
+
+	### Update the metadata for the given +oid+ with the specified +values+ hash.
+	def merge( oid, values )
+		oid = self.normalize_oid( oid )
+		@storage[ oid ].merge!( values )
 	end
 
 end # class Thingfish::MemoryMetastore

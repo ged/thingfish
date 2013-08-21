@@ -153,6 +153,26 @@ class Thingfish
 	end # module DataUtilities
 
 
+	# A collection of functions for dealing with object IDs.
+	module OIDUtilities
+
+		#########
+		protected
+		#########
+
+		### Generate a new object ID.
+		def make_object_id
+			return normalize_oid( SecureRandom.uuid )
+		end
+
+
+		### Normalize the given +oid+.
+		def normalize_oid( oid )
+			return oid.to_s.downcase
+		end
+
+	end # module OIDUtilities
+
 
 end # module Thingfish
 

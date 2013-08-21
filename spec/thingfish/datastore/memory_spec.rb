@@ -39,7 +39,14 @@ describe Thingfish::Datastore, "memory" do
 		expect( rval.read ).to eq( TEST_PNG_DATA )
 	end
 
-	it "doesn't care about the case of the uuid when replacing"
+	it "doesn't care about the case of the uuid when replacing" do
+		new_uuid = store.save( @text_io )
+		store.replace( new_uuid.upcase, @png_io )
+
+		rval = store.fetch( new_uuid )
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_PNG_DATA )
+	end
 
 	it "can fetch saved data" do
 		oid = store.save( @text_io )
@@ -49,7 +56,13 @@ describe Thingfish::Datastore, "memory" do
 		expect( rval.read ).to eq( TEST_TEXT_DATA )
 	end
 
-	it "doesn't care about the case of the uuid when fetching"
+	it "doesn't care about the case of the uuid when fetching" do
+		oid = store.save( @text_io )
+		rval = store.fetch( oid.upcase )
+
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_TEXT_DATA )
+	end
 
 end
 

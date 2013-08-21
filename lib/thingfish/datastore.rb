@@ -13,7 +13,8 @@ require 'thingfish/mixins'
 class Thingfish::Datastore
 	extend Pluggability,
 	       Thingfish::AbstractClass
-	include Enumerable
+	include Enumerable,
+	        Thingfish::OIDUtilities
 
 
 	# Pluggability API -- set the prefix for implementations of Datastore
@@ -27,15 +28,8 @@ class Thingfish::Datastore
 	             :each
 
 
-	#########
-	protected
-	#########
-
-	### Generate a new object ID.
-	def make_object_id
-		return SecureRandom.uuid
-	end
-
+	# :TODO: Make a utility method that provides normalization for IO handling
+	#  (restore .pos, etc.)
 	# def with_io( io ) ... end
 
 end # class Thingfish::Datastore

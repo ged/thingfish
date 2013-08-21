@@ -7,9 +7,10 @@ README.rdoc
 Rakefile
 bin/thingfish
 bin/thingfishd
-etc/thingfish.conf
-etc/thingfish.conf.advanced
-etc/thingfish.conf.minimal
+example/.env
+example/Procfile
+example/m2-config.rb
+example/thingfish.conf
 lib/thingfish.rb
 lib/thingfish/datastore.rb
 lib/thingfish/datastore/memory.rb

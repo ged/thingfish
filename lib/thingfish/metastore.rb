@@ -11,6 +11,7 @@ require 'thingfish/mixins'
 class Thingfish::Metastore
 	extend Pluggability,
 	       Thingfish::AbstractClass
+	include Thingfish::OIDUtilities
 
 
 	# Pluggability API -- set the prefix for implementations of Metastore

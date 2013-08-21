@@ -59,13 +59,23 @@ describe Thingfish do
 		req = factory.put( "/#{uuid}", @png_io, content_type: 'image/png' )
 		res = handler.handle( req )
 
-		expect( res.status ).to eq( HTTP::OK )
+		expect( res.status ).to eq( HTTP::NO_CONTENT )
 		expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
 		expect( handler.metastore.fetch(uuid) ).to include( format: 'image/png' )
 	end
 
 
-	it "doesn't case about the case of the UUID when replacing content via PUT"
+	it "doesn't case about the case of the UUID when replacing content via PUT" do
+		uuid = handler.datastore.save( @text_io )
+		handler.metastore.save( uuid, {format: 'text/plain'} )
+
+		req = factory.put( "/#{uuid.upcase}", @png_io, content_type: 'image/png' )
+		res = handler.handle( req )
+
+		expect( res.status ).to eq( HTTP::NO_CONTENT )
+		expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
+		expect( handler.metastore.fetch(uuid) ).to include( format: 'image/png' )
+	end
 
 
 	it "can fetch an uploaded chunk of data" do
@@ -76,12 +86,22 @@ describe Thingfish do
 		result = handler.handle( req )
 
 		expect( result.status_line ).to match( /200 ok/i )
-		expect( result.body.read ).to eq( @png_io )
+		expect( result.body.read ).to eq( @png_io.string )
 		expect( result.headers.content_type ).to eq( 'image/png' )
 	end
 
 
-	it "doesn't care about the case of the UUID when fetching uploaded data"
+	it "doesn't care about the case of the UUID when fetching uploaded data" do
+		uuid = handler.datastore.save( @png_io )
+		handler.metastore.save( uuid, {format: 'image/png'} )
+
+		req = factory.get( "/#{uuid.upcase}" )
+		result = handler.handle( req )
+
+		expect( result.status_line ).to match( /200 ok/i )
+		expect( result.body.read ).to eq( @png_io.string )
+		expect( result.headers.content_type ).to eq( 'image/png' )
+	end
 
 
 end

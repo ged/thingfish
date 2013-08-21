@@ -1,6 +1,9 @@
 configurability -v2.1.0
-hoe -v3.7.0
+hoe -v3.7.1
 hoe-deveiate -v0.3.0
 hoe-highline -v0.1.0
 hoe-manualgen -v0.3.0
 hoe-mercurial -v1.4.0
+sequel -v4.1.1
+sequel_pg -v1.6.8
+

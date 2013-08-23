@@ -111,10 +111,17 @@ describe Thingfish do
 		req = factory.delete( "/#{uuid}" )
 		result = handler.handle( req )
 
-		expect( uuid ).to_not be_nil
 		expect( result.status_line ).to match( /200 ok/i )
 		expect( handler.metastore ).to_not include( uuid )
 		expect( handler.datastore ).to_not include( uuid )
+	end
+
+
+	it "doesn't error when asked to remove an object that doesn't exist" do
+		req = factory.delete( "/#{TEST_UUID}" )
+		result = handler.handle( req )
+
+		expect( result.status_line ).to match( /200 ok/i )
 	end
 
 end

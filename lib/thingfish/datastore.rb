@@ -25,12 +25,22 @@ class Thingfish::Datastore
 	pure_virtual :save,
 	             :replace,
 	             :fetch,
-	             :each
+	             :each,
+	             :include?,
+	             :remove
 
 
 	# :TODO: Make a utility method that provides normalization for IO handling
 	#  (restore .pos, etc.)
 	# def with_io( io ) ... end
+
+	### Return a representation of the object as a String suitable for debugging.
+	def inspect
+		return "#<%p:%#016x>" % [
+			self.class,
+			self.object_id * 2
+		]
+	end
 
 end # class Thingfish::Datastore
 

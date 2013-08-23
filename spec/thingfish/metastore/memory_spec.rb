@@ -63,6 +63,24 @@ describe Thingfish::Metastore, "memory" do
 		expect( @store.fetch(TEST_UUID, :format) ).to eq( ['image/jpeg'] )
 	end
 
+	it "can remove metadata for a UUID" do
+		@store.save( TEST_UUID, TEST_METADATA )
+		@store.remove( TEST_UUID )
+
+		expect( @store.fetch(TEST_UUID) ).to be_nil
+	end
+
+	it "knows if it has data for a given OID" do
+		@store.save( TEST_UUID, TEST_METADATA )
+		expect( @store ).to include( TEST_UUID )
+	end
+
+	it "knows how many objects it contains" do
+		expect( @store.size ).to eq( 0 )
+		@store.save( TEST_UUID, TEST_METADATA )
+		expect( @store.size ).to eq( 1 )
+	end
+
 end
 
 # vim: set nosta noet ts=4 sw=4 ft=rspec:

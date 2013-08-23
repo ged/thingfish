@@ -46,6 +46,18 @@ describe Thingfish::Metastore do
 			}.to raise_error( NotImplementedError, /merge/ )
 		end
 
+		it "raises an error if it doesn't implement #include?" do
+			expect { store.include?(TEST_UUID) }.to raise_error( NotImplementedError, /include\?/ )
+		end
+
+		it "raises an error if it doesn't implement #remove" do
+			expect { store.remove(TEST_UUID) }.to raise_error( NotImplementedError, /remove/ )
+		end
+
+		it "raises an error if it doesn't implement #size" do
+			expect { store.size }.to raise_error( NotImplementedError, /size/ )
+		end
+
 	end
 
 end

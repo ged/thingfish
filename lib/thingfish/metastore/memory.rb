@@ -49,5 +49,25 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 		@storage[ oid ].merge!( values )
 	end
 
+
+	### Remove all metadata associated with +oid+ from the Metastore.
+	def remove( oid )
+		oid = self.normalize_oid( oid )
+		@storage.delete( oid )
+	end
+
+
+	### Returns +true+ if the metastore has metadata associated with the specified +oid+.
+	def include?( oid )
+		oid = self.normalize_oid( oid )
+		return @storage.include?( oid )
+	end
+
+
+	### Returns the number of objects the store contains.
+	def size
+		return @storage.size
+	end
+
 end # class Thingfish::MemoryMetastore
 

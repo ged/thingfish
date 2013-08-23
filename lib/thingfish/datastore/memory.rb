@@ -60,5 +60,18 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 	end
 
 
+	### Remove the data associated with +oid+ from the Datastore.
+	def remove( oid )
+		oid = self.normalize_oid( oid )
+		@storage.delete( oid )
+	end
+
+
+	### Return +true+ if the datastore has data associated with the specified +oid+.
+	def include?( oid )
+		oid = self.normalize_oid( oid )
+		return @storage.include?( oid )
+	end
+
 end # class Thingfish::MemoryDatastore
 

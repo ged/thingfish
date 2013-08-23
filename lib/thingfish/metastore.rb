@@ -21,8 +21,19 @@ class Thingfish::Metastore
 	# in subclasses
 	pure_virtual :save,
 	             :fetch,
-				 :merge
+	             :merge,
+	             :include?,
+	             :remove,
+				 :size
 
+	### Return a representation of the object as a String suitable for debugging.
+	def inspect
+		return "#<%p:%#016x %d objects>" % [
+			self.class,
+			self.object_id * 2,
+			self.size
+		]
+	end
 
 end # class Thingfish::Metastore
 

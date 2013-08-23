@@ -133,8 +133,8 @@ class Thingfish < Strelka::App
 	end
 
 
-	# PUT /
-	# Replace an existing object.
+	# PUT /«uuid»
+	# Replace the data associated with +uuid+.
 	put ':uuid' do |req|
 		metadata = self.extract_default_metadata( req )
 
@@ -147,6 +147,21 @@ class Thingfish < Strelka::App
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
+
+		return res
+	end
+
+
+	# DELETE /«uuid»
+	# Remove the object associated with +uuid+.
+	delete ':uuid' do |req|
+		uuid = req.params[:uuid]
+
+		self.datastore.remove( uuid )
+		self.metastore.remove( uuid )
+
+		res = req.response
+		res.status = HTTP::OK
 
 		return res
 	end

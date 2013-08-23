@@ -8,13 +8,13 @@ OPTIONS /v1
 GET /v1
 
 # fetch an asset body
-GET /v1/«uuid»
+GET /v1/«uuid» *
 
 # create a new asset
-POST /v1
+POST /v1 *
 
 # update (replace) an asset body
-PUT /v1/«uuid»
+PUT /v1/«uuid» *
 
 # remove an asset and its metadata
 DELETE /v1/«uuid»

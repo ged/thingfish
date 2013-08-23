@@ -46,6 +46,14 @@ describe Thingfish::Datastore do
 			expect { store.each }.to raise_error( NotImplementedError, /each/ )
 		end
 
+		it "raises an error if it doesn't implement #include?" do
+			expect { store.include?(TEST_UUID) }.to raise_error( NotImplementedError, /include\?/ )
+		end
+
+		it "raises an error if it doesn't implement #remove" do
+			expect { store.remove(TEST_UUID) }.to raise_error( NotImplementedError, /remove/ )
+		end
+
 	end
 
 end

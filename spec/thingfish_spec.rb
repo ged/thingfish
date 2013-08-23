@@ -104,6 +104,19 @@ describe Thingfish do
 	end
 
 
+	it "can remove everything associated with an object id" do
+		uuid = handler.datastore.save( @png_io )
+		handler.metastore.save( uuid, {format: 'image/png'} )
+
+		req = factory.delete( "/#{uuid}" )
+		result = handler.handle( req )
+
+		expect( uuid ).to_not be_nil
+		expect( result.status_line ).to match( /200 ok/i )
+		expect( handler.metastore ).to_not include( uuid )
+		expect( handler.datastore ).to_not include( uuid )
+	end
+
 end
 
 # vim: set nosta noet ts=4 sw=4 ft=rspec:

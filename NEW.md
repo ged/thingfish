@@ -26,7 +26,7 @@ GET /v1/«uuid»/metadata *
 GET /v1/«uuid»/metadata/«key» *
 
 # append additional metadata for an asset
-POST /v1/«uuid»/metadata
+POST /v1/«uuid»/metadata *
 
 # add a value for an asset's specific metadata key
 POST /v1/«uuid»/metadata/«key»

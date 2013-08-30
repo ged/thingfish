@@ -33,6 +33,13 @@ class Thingfish < Strelka::App
 		metastore: 'memory'
 	}
 
+	# Metadata keys which aren't directly modifiable via the REST API
+	PROTECTED_METADATA_KEYS = %w[
+		format
+		extent
+	]
+
+
 	require 'thingfish/mixins'
 	require 'thingfish/datastore'
 	require 'thingfish/metastore'
@@ -236,9 +243,7 @@ class Thingfish < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
-		new_metadata = req.params.fields.dup
-		new_metadata.delete( :uuid )
-
+		new_metadata = self.extract_metadata( req )
 		self.metastore.merge( uuid, new_metadata )
 
 		res = req.response
@@ -260,6 +265,21 @@ class Thingfish < Strelka::App
 			'uploadaddress' => request.remote_ip,
 			'format'        => request.content_type
 		}
+	end
+
+	### Extract and validate supplied metadata from the +request+.
+	def extract_metadata( req )
+		new_metadata = req.params.fields.dup
+		new_metadata.delete( :uuid )
+
+		protected_keys = PROTECTED_METADATA_KEYS & new_metadata.keys
+
+		unless protected_keys.empty?
+			finish_with HTTP::FORBIDDEN,
+				"Unable to alter protected metadata. (%s)" % [ protected_keys.join(', ') ]
+		end
+
+		return new_metadata
 	end
 
 end # class Thingfish

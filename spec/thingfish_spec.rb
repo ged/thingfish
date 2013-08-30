@@ -232,6 +232,25 @@ describe Thingfish do
 			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'Ignore me!' )
 		end
 
+
+		it "doesn't clobber protected metadata when merging metadata" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format' => 'image/png',
+				'extent' => 288,
+			})
+
+			body_json = Yajl.dump({ 'format' => 'text/plain', 'comment' => 'Ignore me!' })
+			req = factory.post( "/#{uuid}/metadata", body_json, 'Content-type' => 'application/json' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::FORBIDDEN )
+			expect( result.body.string ).to match( /unable to alter protected metadata/i )
+			expect( result.body.string ).to match( /format/i )
+			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+		end
+
 	end
 end
 

@@ -35,9 +35,12 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 		if keys.empty?
 			self.log.debug "Fetching metadata for OID %s" % [ oid ]
 			return @storage[ oid ]
+		elsif keys.length == 1
+			data = @storage[ oid ] or return nil
+			return data[ keys.first ]
 		else
 			self.log.debug "Fetching metadata for %p for OID %s" % [ keys, oid ]
-			data = @storage[ oid ] or return []
+			data = @storage[ oid ] or return nil
 			return data.values_at( *keys )
 		end
 	end

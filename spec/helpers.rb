@@ -3,13 +3,12 @@
 
 BEGIN {
 	require 'pathname'
-	basedir = Pathname.new( __FILE__ ).dirname.parent.parent
 
-	srcdir = basedir.parent
-	libdir = basedir + "lib"
+	basedir = Pathname.new( __FILE__ ).dirname.parent
+	strelkadir = basedir.parent + 'Strelka'
+	strelkalibdir = strelkadir + 'lib'
 
-	$LOAD_PATH.unshift( basedir.to_s ) unless $LOAD_PATH.include?( basedir.to_s )
-	$LOAD_PATH.unshift( libdir.to_s ) unless $LOAD_PATH.include?( libdir.to_s )
+	$LOAD_PATH.unshift( strelkalibdir.to_s ) unless $LOAD_PATH.include?( strelkalibdir.to_s )
 }
 
 # SimpleCov test coverage reporting; enable this using the :coverage rake task

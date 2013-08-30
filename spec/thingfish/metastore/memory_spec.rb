@@ -30,22 +30,39 @@ describe Thingfish::Metastore, "memory" do
 	end
 
 
+	it "returns nil when fetching metadata for an object that doesn't exist" do
+		expect( @store.fetch(TEST_UUID) ).to be_nil
+	end
+
+
 	it "doesn't care about the case of the UUID when saving and fetching data" do
 		@store.save( TEST_UUID.downcase, TEST_METADATA )
 		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA )
 	end
 
 
+	it "can fetch a single metadata value for a given oid" do
+		@store.save( TEST_UUID, TEST_METADATA )
+		expect( @store.fetch(TEST_UUID, :format) ).to eq( TEST_METADATA[:format] )
+		expect( @store.fetch(TEST_UUID, :extent) ).to eq( TEST_METADATA[:extent] )
+	end
+
+
 	it "can fetch a slice of data for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( [TEST_METADATA[:format]] )
-		expect( @store.fetch(TEST_UUID, :extent) ).to eq( [TEST_METADATA[:extent]] )
+		expect( @store.fetch(TEST_UUID, :format, :extent) )
+			.to eq( TEST_METADATA.values_at(:format, :extent) )
+	end
+
+
+	it "returns nil when fetching a slice of data for an object that doesn't exist" do
+		expect( @store.fetch(TEST_UUID, :format) ).to be_nil
 	end
 
 
 	it "doesn't care about the case of the UUID when fetching data" do
 		@store.save( TEST_UUID, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID.downcase, :format) ).to eq( [TEST_METADATA[:format]] )
+		expect( @store.fetch(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA[:format] )
 	end
 
 
@@ -53,14 +70,14 @@ describe Thingfish::Metastore, "memory" do
 		@store.save( TEST_UUID, TEST_METADATA )
 		@store.merge( TEST_UUID, format: 'image/jpeg' )
 
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( ['image/jpeg'] )
+		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
 	it "doesn't care about the case of the UUID when updating data" do
 		@store.save( TEST_UUID, TEST_METADATA )
 		@store.merge( TEST_UUID.downcase, format: 'image/jpeg' )
 
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( ['image/jpeg'] )
+		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
 	it "can remove metadata for a UUID" do

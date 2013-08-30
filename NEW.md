@@ -17,13 +17,13 @@ POST /v1 *
 PUT /v1/«uuid» *
 
 # remove an asset and its metadata
-DELETE /v1/«uuid»
+DELETE /v1/«uuid» *
 
 # retrieve all metadata associated with an asset
-GET /v1/«uuid»/metadata
+GET /v1/«uuid»/metadata *
 
 # retrieve values for an asset's metadata key
-GET /v1/«uuid»/metadata/«key»
+GET /v1/«uuid»/metadata/«key» *
 
 # append additional metadata for an asset
 POST /v1/«uuid»/metadata

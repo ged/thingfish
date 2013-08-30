@@ -34,6 +34,8 @@ class Thingfish < Strelka::App
 	}
 
 	require 'thingfish/mixins'
+	require 'thingfish/datastore'
+	require 'thingfish/metastore'
 	extend MethodUtilities
 
 
@@ -85,11 +87,22 @@ class Thingfish < Strelka::App
 	attr_reader :metastore
 
 
+	########################################################################
+	### P L U G I N S
+	########################################################################
+
 	#
 	# Global parmas
 	#
 	plugin :parameters
 	param :uuid
+	param :key, :word
+
+
+	#
+	# Content negotiation
+	#
+	plugin :negotiation
 
 
 	#
@@ -97,6 +110,11 @@ class Thingfish < Strelka::App
 	#
 	plugin :routing
 	router :exclusive
+
+
+	#
+	# Datastore routes
+	#
 
 	# GET /«uuid»
 	# Fetch an object by ID
@@ -108,7 +126,7 @@ class Thingfish < Strelka::App
 
 		res = req.response
 		res.body = object
-		res.content_type = metadata[:format]
+		res.content_type = metadata['format']
 
 		return res
 	end
@@ -128,6 +146,8 @@ class Thingfish < Strelka::App
 		res = req.response
 		res.headers.location = url
 		res.status = HTTP::CREATED
+
+		res.for( :text, :json, :yaml ) { metadata }
 
 		return res
 	end
@@ -157,18 +177,75 @@ class Thingfish < Strelka::App
 	delete ':uuid' do |req|
 		uuid = req.params[:uuid]
 
-		self.datastore.remove( uuid )
-		self.metastore.remove( uuid )
+		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
+		metadata = self.metastore.remove( uuid )
 
 		res = req.response
 		res.status = HTTP::OK
+
+		# TODO: Remove in favor of default metadata when the metastore
+		# knows what that is.
+		res.for( :text ) do
+			"%d bytes for %s deleted." % [ metadata['extent'], uuid ]
+		end
+		res.for( :json, :yaml ) {{ uuid: uuid, extent: metadata['extent'] }}
 
 		return res
 	end
 
 
-	require 'thingfish/datastore'
-	require 'thingfish/metastore'
+	#
+	# Metastore routes
+	#
+
+	# GET /«uuid»/metadata
+	# Fetch all metadata for «uuid».
+	get ':uuid/metadata' do |req|
+		uuid = req.params[:uuid]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		res = req.response
+		res.status = HTTP::OK
+		res.for( :json, :yaml ) { self.metastore.fetch( uuid ) }
+
+		return res
+	end
+
+
+	# GET /«uuid»/metadata/«key»
+	# Fetch metadata value associated with «key» for «uuid».
+	get ':uuid/metadata/:key' do |req|
+		uuid = req.params[:uuid]
+		key  = req.params[:key]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		res = req.response
+		res.status = HTTP::OK
+		res.for( :json, :yaml ) { self.metastore.fetch( uuid, key ) }
+
+		return res
+	end
+
+
+	# POST /«uuid»/metadata
+	# Merge new metadata into the existing metadata for «uuid».
+	post ':uuid/metadata' do |req|
+		uuid = req.params[:uuid]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		new_metadata = req.params.fields.dup
+		new_metadata.delete( :uuid )
+
+		self.metastore.merge( uuid, new_metadata )
+
+		res = req.response
+		res.status = HTTP::NO_CONTENT
+
+		return res
+	end
 
 
 	#########
@@ -178,10 +255,10 @@ class Thingfish < Strelka::App
 	### Return a Hash of default metadata extracted from the given +request+.
 	def extract_default_metadata( request )
 		return {
-			:useragent     => request.headers.user_agent,
-			:extent        => request.headers.content_length,
-			:uploadaddress => request.remote_ip,
-			:format        => request.content_type
+			'useragent'     => request.headers.user_agent,
+			'extent'        => request.headers.content_length,
+			'uploadaddress' => request.remote_ip,
+			'format'        => request.content_type
 		}
 	end
 

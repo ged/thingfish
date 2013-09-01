@@ -118,6 +118,32 @@ class Thingfish < Strelka::App
 	plugin :routing
 	router :exclusive
 
+	#
+	# Filters
+	#
+	plugin :filters
+
+	### Modify outgoing headers on all responses to include version info.
+	###
+	filter :response do |res|
+		res.headers.x_thingfish = Thingfish.version_string( true )
+	end
+
+
+	# GET /
+	# Return various information about the handler configuration.
+	get do |req|
+		res  = req.response
+		info = {
+			:version   => Thingfish.version_string( true ),
+			:metastore => self.metastore.class.name,
+			:datastore => self.datastore.class.name
+		}
+
+		res.for( :text, :json, :yaml ) { info }
+		return res
+	end
+
 
 	#
 	# Datastore routes

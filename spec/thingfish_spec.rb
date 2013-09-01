@@ -42,6 +42,24 @@ describe Thingfish do
 	end
 
 
+	context "misc api" do
+
+		let( :factory ) {
+			Mongrel2::RequestFactory.new(
+				:route => '/',
+				:headers => {:accept => '*/*'})
+		}
+
+		it 'returns interesting configuration info' do
+			req = factory.get( '/',  content_type: 'text/plain' )
+			res = handler.handle( req )
+
+			expect( res.status_line ).to match( /200 ok/i )
+			expect( res.headers ).to include( 'x-thingfish' )
+		end
+	end
+
+
 	context "datastore api" do
 
 		let( :factory ) {

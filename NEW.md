@@ -7,6 +7,36 @@ OPTIONS /v1
 # Search (via params), fetch all assets
 GET /v1
 
+GET /v1?
+	filter=title:Mahl*%20Smith,(format:(image/jpeg|image/png),extent:<100|format:image/icns)&
+	limit=5&
+	offset=100&
+	order=title&
+	casefold=true&
+	direction=desc
+
+	DEFAULT_FLAGS = {
+		:casefold  => false,
+		:order     => nil,
+		:limit     => nil,
+		:offset    => 0,
+		:direction => :asc
+	}
+	
+  metastore.search( sexp, flags={} )
+	[
+		['title', 'Mahl* Smith' ],
+		[:or,
+			['format', [:or, [
+					'image/jpeg',
+					'image/png'
+				]],
+			 'extent', '<100'
+			],
+			['format', 'image/icns']
+		]
+	]
+
 # fetch an asset body
 GET /v1/«uuid» *
 

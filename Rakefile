@@ -36,6 +36,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.dependency 'sequel_pg',       '~> 1.6'
 
 	self.dependency 'hoe-deveiate',  '~> 0.3',  :development
+	self.dependency 'simplecov',     '~> 0.7',  :development
 
 	self.require_ruby_version( '>=2.0.0' )
 
@@ -47,4 +48,10 @@ ENV['VERSION'] ||= hoespec.spec.version.to_s
 
 task 'hg:precheckin' => [ 'ChangeLog', :check_manifest, :check_history, :spec ]
 
+
+desc "Build a coverage report"
+task :coverage do
+	ENV["COVERAGE"] = 'yes'
+	Rake::Task[:spec].invoke
+end
 

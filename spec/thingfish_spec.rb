@@ -44,14 +44,14 @@ describe Thingfish do
 
 	context "misc api" do
 
-		let( :factory ) {
+		let( :factory ) do
 			Mongrel2::RequestFactory.new(
 				:route => '/',
 				:headers => {:accept => '*/*'})
-		}
+		end
 
 		it 'returns interesting configuration info' do
-			req = factory.get( '/',  content_type: 'text/plain' )
+			req = factory.get( '/serverinfo',  content_type: 'text/plain' )
 			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /200 ok/i )
@@ -62,11 +62,11 @@ describe Thingfish do
 
 	context "datastore api" do
 
-		let( :factory ) {
+		let( :factory ) do
 			Mongrel2::RequestFactory.new(
 				:route => '/',
 				:headers => {:accept => '*/*'})
-		}
+		end
 
 		it 'accepts a POSTed upload' do
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
@@ -100,6 +100,36 @@ describe Thingfish do
 			expect( res.status ).to eq( HTTP::NO_CONTENT )
 			expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
 			expect( handler.metastore.fetch(uuid) ).to include( 'format' => 'image/png' )
+		end
+
+
+		it 'can fetch all uploaded data' do
+			text_uuid = handler.datastore.save( @text_io )
+			handler.metastore.save( text_uuid, {
+				'format' => 'text/plain',
+				'extent' => @text_io.string.bytesize
+			})
+			png_uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( png_uuid, {
+				'format' => 'image/png',
+				'extent' => @png_io.string.bytesize
+			})
+
+			req = factory.get( '/' )
+			res = handler.handle( req )
+			content = Yajl::Parser.parse( res.body.read )
+
+			expect( res.status_line ).to match( /200 ok/i )
+			expect( res.headers.content_type ).to eq( 'application/json' )
+			expect( content ).to be_a( Array )
+			expect( content[0] ).to be_a( Hash )
+			expect( content[0]['url'] ).to eq( "#{req.base_uri}/#{text_uuid}" )
+			expect( content[0]['format'] ).to eq( "text/plain" )
+			expect( content[0]['extent'] ).to eq( @text_io.string.bytesize )
+			expect( content[1] ).to be_a( Hash )
+			expect( content[1]['url'] ).to eq( "#{req.base_uri}/#{png_uuid}" )
+			expect( content[1]['format'] ).to eq( 'image/png' )
+			expect( content[1]['extent'] ).to eq( @png_io.string.bytesize )
 		end
 
 
@@ -157,11 +187,11 @@ describe Thingfish do
 
 	context "metastore api" do
 
-		let( :factory ) {
+		let( :factory ) do
 			Mongrel2::RequestFactory.new(
 				:route => '/',
 				:headers => {:accept => 'application/json'})
-		}
+		end
 
 		it "can fetch the metadata associated with uploaded data" do
 			uuid = handler.datastore.save( @png_io )

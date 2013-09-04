@@ -113,12 +113,6 @@ class Thingfish < Strelka::App
 
 
 	#
-	# Routing
-	#
-	plugin :routing
-	router :exclusive
-
-	#
 	# Filters
 	#
 	plugin :filters
@@ -130,9 +124,15 @@ class Thingfish < Strelka::App
 	end
 
 
-	# GET /
+	#
+	# Routing
+	#
+	plugin :routing
+	router :exclusive
+
+	# GET /serverinfo
 	# Return various information about the handler configuration.
-	get do |req|
+	get '/serverinfo' do |req|
 		res  = req.response
 		info = {
 			:version   => Thingfish.version_string( true ),
@@ -148,6 +148,29 @@ class Thingfish < Strelka::App
 	#
 	# Datastore routes
 	#
+
+	# GET /
+	# Fetch a list of all objects
+	get do |req|
+		list = []
+		self.datastore.each_uuid do |uuid|
+			obj = { :url => req.base_uri.to_s + '/' + uuid }
+			format, extent = self.metastore.fetch( uuid, 'format', 'extent' )
+			obj.merge!( 'format' => format, 'extent' => extent )
+			list << obj
+		end
+
+		self.log.debug "List is: %p" % [ list ]
+
+		res = req.response
+		res.for( :json, :yaml ) { list }
+		res.for( :text ) do
+			list.collect {|entry| "%s [%s, %0.2fB]" % entry.values_at(:url, :format, :extent) }
+		end
+
+		return res
+	end
+
 
 	# GET /«uuid»
 	# Fetch an object by ID

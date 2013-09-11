@@ -23,6 +23,8 @@ if ENV['COVERAGE']
 	end
 end
 
+require_relative 'constants'
+
 require 'loggability'
 require 'loggability/spechelpers'
 require 'configurability'
@@ -43,20 +45,7 @@ Loggability.format_with( :color ) if $stdout.tty?
 
 ### RSpec helper functions.
 module Thingfish::SpecHelpers
-	TEST_APPID        = 'thingfish-test'
-	TEST_SEND_SPEC    = 'tcp://127.0.0.1:9999'
-	TEST_RECV_SPEC    = 'tcp://127.0.0.1:9998'
-
-	UUID_PATTERN      = /(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})/i
-
-	TEST_UUID         = 'E5DFEEAB-3525-4F14-B4DB-2772D0B9987F'
-
-	TEST_TEXT_DATA    = "Pork sausage. Pork! Sausage!"
-	TEST_TEXT_DATA_IO = StringIO.new( TEST_TEXT_DATA )
-	TEST_PNG_DATA     = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMA" +
-	                     "AQAABQABDQottAAAAABJRU5ErkJggg==").unpack('m').first
-	TEST_PNG_DATA_IO  = StringIO.new( TEST_PNG_DATA )
-
+	include Thingfish::SpecConstants
 
 	RSpec::Matchers.define :be_a_uuid do |expected|
 		match do |actual|

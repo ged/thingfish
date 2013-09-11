@@ -21,10 +21,29 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	end
 
 
+	##
+	# The raw Hash of metadata
+	attr_reader :storage
+
+
+	### Return an Array of all of the store's keys.
+	def keys
+		return @storage.keys
+	end
+
+
+	### Iterate over each of the store's keys, yielding to the block if one is given
+	### or returning an Enumerator if one is not.
+	def each_key( &block )
+		return @storage.each_key( &block )
+	end
+
+
 	### Save the +metadata+ for the specified +oid+.
 	def save( oid, metadata )
 		oid = self.normalize_oid( oid )
-		self.log.debug "Saving %d metadata attributes for OID %s" % [ metadata.length, oid ]
+		self.log.debug "Saving %d metadata attributes for OID %s: %s" %
+			[ metadata.length, oid, metadata.keys.join(',') ]
 		@storage[ oid ] = metadata.dup
 	end
 
@@ -43,6 +62,27 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 			data = @storage[ oid ] or return nil
 			return data.values_at( *keys )
 		end
+	end
+
+
+	### Search the metastore for UUIDs which match the specified +criteria+ and
+	### return them as an iterator.
+	def search( criteria={} )
+		ds = @storage.each_key
+
+		if order_fields = criteria[:order]
+			fields = order_fields.split( /\s*,\s*/ )
+			ds = ds.order_by {|uuid| @storage[uuid].values_at(*fields) }
+		end
+
+		ds = ds.reverse if criteria[:direction] && criteria[:direction] == 'desc'
+
+		if (( limit = criteria[:limit] ))
+			offset = criteria[:offset] || 0
+			ds = ds.to_a.slice( offset, limit )
+		end
+
+		return ds.to_a
 	end
 
 

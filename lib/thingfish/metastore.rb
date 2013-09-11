@@ -19,7 +19,10 @@ class Thingfish::Metastore
 
 	# AbstractClass API -- register some virtual methods that must be implemented
 	# in subclasses
-	pure_virtual :save,
+	pure_virtual :keys,
+	             :each_key,
+	             :save,
+	             :search,
 	             :fetch,
 	             :merge,
 	             :include?,

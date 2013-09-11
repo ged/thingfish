@@ -8,25 +8,18 @@ require 'thingfish/metastore'
 
 describe Thingfish::Metastore, "memory" do
 
-	TEST_METADATA = {
-		format: 'image/png',
-		extent: 14417
-	}.freeze
-
-
 	before( :all ) do
 		setup_logging()
 	end
 
 	before( :each ) do
-		@store = Thingfish::Metastore.create(:memory)
+		@store = Thingfish::Metastore.create( :memory )
 	end
 
-
 	it "can save and fetch data" do
-		@store.save( TEST_UUID, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA )
-		expect( @store.fetch(TEST_UUID) ).to_not be( TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
+		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA.first )
+		expect( @store.fetch(TEST_UUID) ).to_not be( TEST_METADATA.first )
 	end
 
 
@@ -36,22 +29,22 @@ describe Thingfish::Metastore, "memory" do
 
 
 	it "doesn't care about the case of the UUID when saving and fetching data" do
-		@store.save( TEST_UUID.downcase, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA )
+		@store.save( TEST_UUID.downcase, TEST_METADATA.first )
+		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA.first )
 	end
 
 
 	it "can fetch a single metadata value for a given oid" do
-		@store.save( TEST_UUID, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( TEST_METADATA[:format] )
-		expect( @store.fetch(TEST_UUID, :extent) ).to eq( TEST_METADATA[:extent] )
+		@store.save( TEST_UUID, TEST_METADATA.first )
+		expect( @store.fetch(TEST_UUID, :format) ).to eq( TEST_METADATA.first[:format] )
+		expect( @store.fetch(TEST_UUID, :extent) ).to eq( TEST_METADATA.first[:extent] )
 	end
 
 
 	it "can fetch a slice of data for a given oid" do
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store.fetch(TEST_UUID, :format, :extent) )
-			.to eq( TEST_METADATA.values_at(:format, :extent) )
+			.to eq( TEST_METADATA.first.values_at(:format, :extent) )
 	end
 
 
@@ -61,41 +54,83 @@ describe Thingfish::Metastore, "memory" do
 
 
 	it "doesn't care about the case of the UUID when fetching data" do
-		@store.save( TEST_UUID, TEST_METADATA )
-		expect( @store.fetch(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA[:format] )
+		@store.save( TEST_UUID, TEST_METADATA.first )
+		expect( @store.fetch(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA.first[:format] )
 	end
 
 
 	it "can update data" do
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.merge( TEST_UUID, format: 'image/jpeg' )
 
 		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
+
 	it "doesn't care about the case of the UUID when updating data" do
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.merge( TEST_UUID.downcase, format: 'image/jpeg' )
 
 		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
+
 	it "can remove metadata for a UUID" do
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.remove( TEST_UUID )
 
 		expect( @store.fetch(TEST_UUID) ).to be_nil
 	end
 
+
 	it "knows if it has data for a given OID" do
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store ).to include( TEST_UUID )
 	end
 
+
 	it "knows how many objects it contains" do
 		expect( @store.size ).to eq( 0 )
-		@store.save( TEST_UUID, TEST_METADATA )
+		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store.size ).to eq( 1 )
+	end
+
+
+	context "with some uploaded metadata" do
+
+		before( :each ) do
+			@uuids = []
+			TEST_METADATA.each do |file|
+				uuid = SecureRandom.uuid
+				@uuids << uuid
+				@store.save( uuid, file )
+			end
+		end
+
+
+		it "can fetch an array of all of its keys" do
+			expect( @store.keys ).to eq( @uuids )
+		end
+
+		it "can iterate over each of the store's keys" do
+			uuids = []
+			@store.each_key {|u| uuids << u }
+
+			expect( uuids ).to eq( @uuids )
+		end
+
+		it "can provide an enumerator over each of the store's keys" do
+			expect( @store.each_key.to_a ).to eq( @uuids )
+		end
+
+		it "can search for uuids" do
+			expect( @store.search.to_a ).to eq( @store.keys )
+		end
+
+		it "can limit the number of results returned from a search" do
+			expect( @store.search( limit: 2 ).to_a ).to eq( @store.keys[0,2] )
+		end
+
 	end
 
 end

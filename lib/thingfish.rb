@@ -37,6 +37,7 @@ class Thingfish < Strelka::App
 	PROTECTED_METADATA_KEYS = %w[
 		format
 		extent
+		created
 	]
 
 
@@ -104,6 +105,12 @@ class Thingfish < Strelka::App
 	plugin :parameters
 	param :uuid
 	param :key, :word
+	param :limit, :integer, "The maximum number of records to return."
+	param :offset, :integer, "The offset into the result set to use as the first result."
+	param :order, /^(?<fields>[[:word:]]+(?:,[[:word:]]+)*)/,
+		"The name(s) of the fields to order results by."
+	param :direction, /^(asc|desc)$/i, "The order direction (ascending or descending)"
+	param :casefold, :boolean, "Whether or not to convert to lowercase before matching"
 
 
 	#
@@ -152,15 +159,22 @@ class Thingfish < Strelka::App
 	# GET /
 	# Fetch a list of all objects
 	get do |req|
-		list = []
-		self.datastore.each_uuid do |uuid|
-			obj = { :url => req.base_uri.to_s + '/' + uuid }
-			format, extent = self.metastore.fetch( uuid, 'format', 'extent' )
-			obj.merge!( 'format' => format, 'extent' => extent )
-			list << obj
-		end
+		finish_with HTTP::BAD_REQUEST, req.params.error_messages.join(', ') unless req.params.okay?
 
-		self.log.debug "List is: %p" % [ list ]
+		uuids = self.metastore.search( req.params.valid )
+		self.log.debug "UUIDs are: %p" % [ uuids ]
+
+		base_uri = req.base_uri
+		list = uuids.collect do |uuid|
+			uri = base_uri.dup
+			uri.path += uuid
+
+			protected_values = self.metastore.fetch( uuid, *PROTECTED_METADATA_KEYS )
+			metadata = Hash[ [PROTECTED_METADATA_KEYS, protected_values].transpose ]
+			metadata['uri'] = uri.to_s
+
+			metadata
+		end
 
 		res = req.response
 		res.for( :json, :yaml ) { list }
@@ -191,7 +205,8 @@ class Thingfish < Strelka::App
 	# POST /
 	# Upload a new object.
 	post do |req|
-		metadata = self.extract_default_metadata( req )
+		metadata = self.extract_header_metadata( req )
+		metadata.merge!( self.extract_default_metadata(req) )
 
 		uuid = self.datastore.save( req.body )
 		self.metastore.save( uuid, metadata )
@@ -312,9 +327,11 @@ class Thingfish < Strelka::App
 			'useragent'     => request.headers.user_agent,
 			'extent'        => request.headers.content_length,
 			'uploadaddress' => request.remote_ip,
-			'format'        => request.content_type
+			'format'        => request.content_type,
+			'created'       => Time.now.getgm,
 		}
 	end
+
 
 	### Extract and validate supplied metadata from the +request+.
 	def extract_metadata( req )
@@ -329,6 +346,21 @@ class Thingfish < Strelka::App
 		end
 
 		return new_metadata
+	end
+
+
+	### Extract metadata from X-ThingFish-* headers from the given +request+ and return
+	### them as a Hash.
+	def extract_header_metadata( request )
+		self.log.debug "Extracting metadata from headers: %p" % [ request.headers ]
+		metadata = {}
+		request.headers.each do |header, value|
+			name = header.downcase[ /^x_thingfish_(?<name>[[:alnum:]\-]+)$/i, :name ] or next
+			self.log.debug "Found metadata header %p" % [ header ]
+			metadata[ name ] = value
+		end
+
+		return metadata
 	end
 
 end # class Thingfish

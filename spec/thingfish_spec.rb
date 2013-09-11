@@ -77,6 +77,23 @@ describe Thingfish do
 		end
 
 
+		it "allows additional metadata to be attached to uploads via X-Thingfish-* headers" do
+			headers = {
+				content_type: 'text/plain',
+				x_thingfish_title: 'Muffin the Panda Goes To School',
+				x_thingfish_tags: 'rapper,ukraine,potap',
+			}
+			req = factory.post( '/', TEST_TEXT_DATA, headers )
+			res = handler.handle( req )
+
+			expect( res.status_line ).to match( /201 created/i )
+			expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
+
+			uuid = res.headers.location.to_s[ %r:/(?<uuid>#{UUID_PATTERN})$:, :uuid ]
+			expect( handler.metastore.fetch(uuid, 'title') ).to eq( 'Muffin the Panda Goes To School' )
+			expect( handler.metastore.fetch(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
+		end
+
 		it 'replaces content via PUT' do
 			uuid = handler.datastore.save( @text_io )
 			handler.metastore.save( uuid, {'format' => 'text/plain'} )
@@ -123,11 +140,11 @@ describe Thingfish do
 			expect( res.headers.content_type ).to eq( 'application/json' )
 			expect( content ).to be_a( Array )
 			expect( content[0] ).to be_a( Hash )
-			expect( content[0]['url'] ).to eq( "#{req.base_uri}/#{text_uuid}" )
+			expect( content[0]['uri'] ).to eq( "#{req.base_uri}#{text_uuid}" )
 			expect( content[0]['format'] ).to eq( "text/plain" )
 			expect( content[0]['extent'] ).to eq( @text_io.string.bytesize )
 			expect( content[1] ).to be_a( Hash )
-			expect( content[1]['url'] ).to eq( "#{req.base_uri}/#{png_uuid}" )
+			expect( content[1]['uri'] ).to eq( "#{req.base_uri}#{png_uuid}" )
 			expect( content[1]['format'] ).to eq( 'image/png' )
 			expect( content[1]['extent'] ).to eq( @png_io.string.bytesize )
 		end
@@ -196,8 +213,9 @@ describe Thingfish do
 		it "can fetch the metadata associated with uploaded data" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
-				'format' => 'image/png',
-				'extent' => 288,
+				'format'  => 'image/png',
+				'extent'  => 288,
+				'created' => Time.at(1378313840),
 			})
 
 			req = factory.get( "/#{uuid}/metadata" )
@@ -210,6 +228,7 @@ describe Thingfish do
 			expect( result.headers.content_type ).to eq( 'application/json' )
 			expect( content_hash ).to be_a( Hash )
 			expect( content_hash['extent'] ).to eq( 288 )
+			expect( content_hash['created'] ).to eq( Time.at(1378313840).to_s )
 		end
 
 

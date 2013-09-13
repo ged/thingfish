@@ -34,6 +34,13 @@ describe Thingfish::Metastore, "memory" do
 	end
 
 
+	it "can save a single metadata value for a given oid" do
+		test_val = TEST_METADATA.first['useragent']
+		@store.save( TEST_UUID, 'useragent', test_val )
+		expect( @store.fetch(TEST_UUID, :useragent) ).to eq( TEST_METADATA.first[:useragent] )
+	end
+
+
 	it "can fetch a single metadata value for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store.fetch(TEST_UUID, :format) ).to eq( TEST_METADATA.first[:format] )

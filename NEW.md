@@ -59,13 +59,13 @@ GET /v1/«uuid»/metadata/«key» *
 POST /v1/«uuid»/metadata *
 
 # add a value for an asset's specific metadata key
-POST /v1/«uuid»/metadata/«key»
+POST /v1/«uuid»/metadata/«key» *
 
 # replace metadata for an asset
 PUT /v1/«uuid»/metadata
 
 # update an asset's specific metadata key
-PUT /v1/«uuid»/metadata/«key»
+PUT /v1/«uuid»/metadata/«key» *
 
 # remove all user metadata for an asset
 DELETE /v1/«uuid»/metadata

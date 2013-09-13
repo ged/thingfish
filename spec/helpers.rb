@@ -7,8 +7,11 @@ BEGIN {
 	basedir = Pathname.new( __FILE__ ).dirname.parent
 	strelkadir = basedir.parent + 'Strelka'
 	strelkalibdir = strelkadir + 'lib'
+	mongrel2dir = basedir.parent + 'Mongrel2'
+	mongrel2libdir = mongrel2dir + 'lib'
 
 	$LOAD_PATH.unshift( strelkalibdir.to_s ) unless $LOAD_PATH.include?( strelkalibdir.to_s )
+	$LOAD_PATH.unshift( mongrel2libdir.to_s ) unless $LOAD_PATH.include?( mongrel2libdir.to_s )
 }
 
 # SimpleCov test coverage reporting; enable this using the :coverage rake task

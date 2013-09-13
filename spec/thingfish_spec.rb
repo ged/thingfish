@@ -240,7 +240,7 @@ describe Thingfish do
 		end
 
 
-		it "can fetch a value for a specific metadata key" do
+		it "can fetch a value for a single metadata key" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format' => 'image/png',
@@ -257,7 +257,7 @@ describe Thingfish do
 		end
 
 
-		it "returns a 404 Not Found when fetching a specific metadata value for a uuid that doesn't exist" do
+		it "returns a 404 Not Found when fetching a single metadata value for a uuid that doesn't exist" do
 			req = factory.get( "/#{TEST_UUID}/metadata/extent" )
 			result = handler.handle( req )
 
@@ -265,7 +265,7 @@ describe Thingfish do
 		end
 
 
-		it "doesn't error when fetching a nonexistent metadata value" do
+		it "doesn't error when fetching a non-existent metadata value" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format' => 'image/png',
@@ -284,7 +284,7 @@ describe Thingfish do
 		end
 
 
-		it "can merge in new metadata for an existing resource" do
+		it "can merge in new metadata for an existing resource with a POST" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format' => 'image/png',
@@ -300,7 +300,7 @@ describe Thingfish do
 		end
 
 
-		it "doesn't clobber protected metadata when merging metadata" do
+		it "returns FORBIDDEN when attempting to merge metadata with protected keys" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format' => 'image/png',
@@ -318,6 +318,96 @@ describe Thingfish do
 			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
 		end
 
+
+		it "can create single metadata values with a POST" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format' => 'image/png',
+				'extent' => 288,
+			})
+
+			req = factory.post( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::CREATED )
+			expect( result.headers.location ).to match( %r|#{uuid}/metadata/comment$| )
+			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+		end
+
+
+		it "returns NOT_FOUND when attempting to create metadata for a non-existent object" do
+			req = factory.post( "/#{TEST_UUID}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::NOT_FOUND )
+			expect( result.body.string ).to match( /no such object/i )
+		end
+
+
+		it "returns CONFLICT when attempting to create a single metadata value if it already exists" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'  => 'image/png',
+				'extent'  => 288,
+				'comment' => 'nill bill'
+			})
+
+			req = factory.post( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::CONFLICT )
+			expect( result.body.string ).to match( /already exists/i )
+			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'nill bill' )
+		end
+
+
+		it "can create single metadata values with a PUT" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format' => 'image/png',
+				'extent' => 288,
+			})
+
+			req = factory.put( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::CREATED )
+			expect( result.headers.location ).to match( %r|#{uuid}/metadata/comment$| )
+			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+		end
+
+
+		it "can replace a single metadata value with a PUT" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'  => 'image/png',
+				'extent'  => 288,
+				'comment' => 'nill bill'
+			})
+
+			req = factory.put( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::NO_CONTENT )
+			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+		end
+
+
+		it "returns FORBIDDEN when attempting to replace a protected metadata value with a PUT" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'  => 'image/png',
+				'extent'  => 288,
+				'comment' => 'nill bill'
+			})
+
+			req = factory.put( "/#{uuid}/metadata/format", "image/gif", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::FORBIDDEN )
+			expect( result.body.string ).to match( /protected metadata/i )
+			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+		end
 	end
 end
 

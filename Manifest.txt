@@ -17,6 +17,7 @@ lib/thingfish/datastore/memory.rb
 lib/thingfish/metastore.rb
 lib/thingfish/metastore/memory.rb
 lib/thingfish/mixins.rb
+spec/constants.rb
 spec/helpers.rb
 spec/spec.opts
 spec/thingfish/datastore/memory_spec.rb

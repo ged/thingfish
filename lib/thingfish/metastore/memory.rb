@@ -39,12 +39,23 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	end
 
 
-	### Save the +metadata+ for the specified +oid+.
-	def save( oid, metadata )
+	### Save the metadata for the specified +oid+.
+	### +args+ can ether be a Hash of metadata pairs, or a single key and value.
+	###
+	###     save( oid, {} )
+	###     save( oid, key, value )
+	###
+	def save( oid, *args )
 		oid = self.normalize_oid( oid )
-		self.log.debug "Saving %d metadata attributes for OID %s: %s" %
-			[ metadata.length, oid, metadata.keys.join(',') ]
-		@storage[ oid ] = metadata.dup
+
+		metadata = args.shift
+
+		if metadata.is_a?( Hash )
+			@storage[ oid ] = metadata.dup
+		else
+			@storage[ oid ] ||= {}
+			@storage[ oid ][ metadata.to_s ] = args.shift
+		end
 	end
 
 

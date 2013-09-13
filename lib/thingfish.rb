@@ -191,7 +191,7 @@ class Thingfish < Strelka::App
 	get ':uuid' do |req|
 		uuid = req.params[:uuid]
 		object = self.datastore.fetch( uuid ) or
-			finish_with HTTP::NOT_FOUND, "no such object"
+			finish_with HTTP::NOT_FOUND, "No such object."
 		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
@@ -231,7 +231,7 @@ class Thingfish < Strelka::App
 
 		uuid = req.params[:uuid]
 		object = self.datastore.fetch( uuid ) or
-			finish_with HTTP::NOT_FOUND, "no such object"
+			finish_with HTTP::NOT_FOUND, "No such object."
 
 		self.datastore.replace( uuid, req.body )
 		self.metastore.merge( uuid, metadata )
@@ -295,6 +295,53 @@ class Thingfish < Strelka::App
 		res = req.response
 		res.status = HTTP::OK
 		res.for( :json, :yaml ) { self.metastore.fetch( uuid, key ) }
+
+		return res
+	end
+
+
+	# POST /«uuid»/metadata/«key»
+	# Create a metadata value associated with «key» for «uuid».
+	post ':uuid/metadata/:key' do |req|
+		uuid = req.params[:uuid]
+		key  = req.params[:key]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+		finish_with( HTTP::CONFLICT, "Key already exists." ) unless
+			self.metastore.fetch( uuid, key ).nil?
+
+		self.metastore.save( uuid, key, req.body.read )
+
+		res = req.response
+		res.headers.location = req.uri.to_s
+		res.body = nil
+		res.status = HTTP::CREATED
+
+		return res
+	end
+
+
+	# PUT /«uuid»/metadata/«key»
+	# Replace or create a metadata value associated with «key» for «uuid».
+	put ':uuid/metadata/:key' do |req|
+		uuid = req.params[:uuid]
+		key  = req.params[:key]
+
+		finish_with( HTTP::FORBIDDEN, "Protected metadata." ) if PROTECTED_METADATA_KEYS.include?( key )
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+		previous_value = self.metastore.fetch( uuid, key )
+
+		self.metastore.save( uuid, key, req.body.read )
+
+		res = req.response
+		res.body = nil
+
+		if previous_value
+			res.status = HTTP::NO_CONTENT
+		else
+			res.headers.location = req.uri.to_s
+			res.status = HTTP::CREATED
+		end
 
 		return res
 	end

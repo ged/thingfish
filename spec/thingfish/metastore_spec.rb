@@ -66,6 +66,11 @@ describe Thingfish::Metastore do
 			expect { store.remove(TEST_UUID) }.to raise_error( NotImplementedError, /remove/ )
 		end
 
+		it "raises an error if it doesn't implement #remove_except" do
+			expect { store.remove_except(TEST_UUID, :format) }.
+				to raise_error( NotImplementedError, /remove_except/ )
+		end
+
 		it "raises an error if it doesn't implement #size" do
 			expect { store.size }.to raise_error( NotImplementedError, /size/ )
 		end

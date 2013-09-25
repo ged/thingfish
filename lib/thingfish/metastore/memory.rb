@@ -105,9 +105,22 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 
 	### Remove all metadata associated with +oid+ from the Metastore.
-	def remove( oid )
+	def remove( oid, *keys )
 		oid = self.normalize_oid( oid )
-		@storage.delete( oid )
+		if keys.empty?
+			@storage.delete( oid )
+		else
+			keys = keys.map( &:to_s )
+			@storage[ oid ].delete_if {|key, _| keys.include?(key) }
+		end
+	end
+
+
+	### Remove all metadata associated with +oid+ except for the specified +keys+.
+	def remove_except( oid, *keys )
+		oid = self.normalize_oid( oid )
+		keys = keys.map( &:to_s )
+		@storage[ oid ].keep_if {|key,_| keys.include?(key) }
 	end
 
 

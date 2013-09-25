@@ -34,10 +34,11 @@ class Thingfish < Strelka::App
 	}
 
 	# Metadata keys which aren't directly modifiable via the REST API
-	PROTECTED_METADATA_KEYS = %w[
+	OPERATIONAL_METADATA_KEYS = %w[
 		format
 		extent
 		created
+		uploadaddress
 	]
 
 
@@ -169,8 +170,8 @@ class Thingfish < Strelka::App
 			uri = base_uri.dup
 			uri.path += uuid
 
-			protected_values = self.metastore.fetch( uuid, *PROTECTED_METADATA_KEYS )
-			metadata = Hash[ [PROTECTED_METADATA_KEYS, protected_values].transpose ]
+			protected_values = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
+			metadata = Hash[ [OPERATIONAL_METADATA_KEYS, protected_values].transpose ]
 			metadata['uri'] = uri.to_s
 
 			metadata
@@ -327,7 +328,8 @@ class Thingfish < Strelka::App
 		uuid = req.params[:uuid]
 		key  = req.params[:key]
 
-		finish_with( HTTP::FORBIDDEN, "Protected metadata." ) if PROTECTED_METADATA_KEYS.include?( key )
+		finish_with( HTTP::FORBIDDEN, "Protected metadata." ) if
+			OPERATIONAL_METADATA_KEYS.include?( key )
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		previous_value = self.metastore.fetch( uuid, key )
 
@@ -364,6 +366,41 @@ class Thingfish < Strelka::App
 	end
 
 
+	# DELETE /«uuid»/metadata
+	# Remove all (but operational) metadata associated with «uuid».
+	delete ':uuid/metadata' do |req|
+		uuid = req.params[:uuid]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		self.metastore.remove_except( uuid, *OPERATIONAL_METADATA_KEYS )
+
+		res = req.response
+		res.status = HTTP::NO_CONTENT
+
+		return res
+	end
+
+
+	# DELETE /«uuid»/metadata
+	# Remove the metadata associated with «key» for the given «uuid».
+	delete ':uuid/metadata/:key' do |req|
+		uuid = req.params[:uuid]
+		key = req.params[:key]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+		finish_with( HTTP::FORBIDDEN, "Protected metadata." ) if
+			OPERATIONAL_METADATA_KEYS.include?( key )
+
+		self.metastore.remove( uuid, key )
+
+		res = req.response
+		res.status = HTTP::NO_CONTENT
+
+		return res
+	end
+
+
 	#########
 	protected
 	#########
@@ -385,7 +422,7 @@ class Thingfish < Strelka::App
 		new_metadata = req.params.fields.dup
 		new_metadata.delete( :uuid )
 
-		protected_keys = PROTECTED_METADATA_KEYS & new_metadata.keys
+		protected_keys = OPERATIONAL_METADATA_KEYS & new_metadata.keys
 
 		unless protected_keys.empty?
 			finish_with HTTP::FORBIDDEN,

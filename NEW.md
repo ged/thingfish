@@ -68,9 +68,9 @@ PUT /v1/«uuid»/metadata
 PUT /v1/«uuid»/metadata/«key» *
 
 # remove all user metadata for an asset
-DELETE /v1/«uuid»/metadata
+DELETE /v1/«uuid»/metadata *
 
 # delete an asset's specific metadata key
-DELETE /v1/«uuid»/metadata/«key»
+DELETE /v1/«uuid»/metadata/«key» *
 
 

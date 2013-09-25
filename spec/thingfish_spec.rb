@@ -300,7 +300,7 @@ describe Thingfish do
 		end
 
 
-		it "returns FORBIDDEN when attempting to merge metadata with protected keys" do
+		it "returns FORBIDDEN when attempting to merge metadata with operational keys" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format' => 'image/png',
@@ -393,7 +393,7 @@ describe Thingfish do
 		end
 
 
-		it "returns FORBIDDEN when attempting to replace a protected metadata value with a PUT" do
+		it "returns FORBIDDEN when attempting to replace a operational metadata value with a PUT" do
 			uuid = handler.datastore.save( @png_io )
 			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
@@ -402,6 +402,65 @@ describe Thingfish do
 			})
 
 			req = factory.put( "/#{uuid}/metadata/format", "image/gif", 'Content-type' => 'text/plain' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::FORBIDDEN )
+			expect( result.body.string ).to match( /protected metadata/i )
+			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+		end
+
+
+		it "can remove all non-default metadata with a DELETE" do
+			timestamp = Time.now.getgm
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'        => 'image/png',
+				'extent'        => 288,
+				'comment'       => 'nill bill',
+				'useragent'     => 'Inky/2.0',
+				'uploadaddress' => '127.0.0.1',
+				'created'       => timestamp,
+			})
+
+			req = factory.delete( "/#{uuid}/metadata" )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::NO_CONTENT )
+			expect( result.body.string ).to be_empty
+			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch(uuid, 'extent') ).to eq( 288 )
+			expect( handler.metastore.fetch(uuid, 'uploadaddress') ).to eq( '127.0.0.1' )
+			expect( handler.metastore.fetch(uuid, 'created') ).to eq( timestamp )
+
+			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch(uuid, 'useragent') ).to be_nil
+		end
+
+
+		it "can remove a single metadata value with DELETE" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'  => 'image/png',
+				'comment' => 'nill bill'
+			})
+
+			req = factory.delete( "/#{uuid}/metadata/comment" )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::NO_CONTENT )
+			expect( result.body.string ).to be_empty
+			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+		end
+
+
+		it "returns FORBIDDEN when attempting to remove a operational metadata value with a DELETE" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'  => 'image/png'
+			})
+
+			req = factory.delete( "/#{uuid}/metadata/format" )
 			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::FORBIDDEN )

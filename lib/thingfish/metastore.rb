@@ -27,6 +27,7 @@ class Thingfish::Metastore
 	             :merge,
 	             :include?,
 	             :remove,
+	             :remove_except,
 				 :size
 
 	### Return a representation of the object as a String suitable for debugging.

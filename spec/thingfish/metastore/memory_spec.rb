@@ -90,6 +90,24 @@ describe Thingfish::Metastore, "memory" do
 	end
 
 
+	it "can remove a single key/value pair from the metadata for a UUID" do
+		@store.save( TEST_UUID, TEST_METADATA.first )
+		@store.remove( TEST_UUID, :useragent )
+
+		expect( @store.fetch(TEST_UUID, :useragent) ).to be_nil
+	end
+
+
+	it "can truncate metadata not in a list of keys for a UUID" do
+		@store.save( TEST_UUID, TEST_METADATA.first )
+		@store.remove_except( TEST_UUID, :format, :extent )
+
+		metadata = @store.fetch( TEST_UUID )
+		expect( metadata ).to have( 2 ).members
+		expect( metadata.keys ).to include( 'format', 'extent' )
+	end
+
+
 	it "knows if it has data for a given OID" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store ).to include( TEST_UUID )

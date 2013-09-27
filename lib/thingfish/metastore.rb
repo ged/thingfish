@@ -24,6 +24,7 @@ class Thingfish::Metastore
 	             :save,
 	             :search,
 	             :fetch,
+	             :fetch_value,
 	             :merge,
 	             :include?,
 	             :remove,
@@ -38,6 +39,14 @@ class Thingfish::Metastore
 			self.size
 		]
 	end
+
+
+	### Provide transactional consistency to the provided block. Concrete metastores should
+	### override this if they can implement it. By default it's a no-op.
+	def transaction
+		yield
+	end
+
 
 end # class Thingfish::Metastore
 

@@ -43,5 +43,12 @@ class Thingfish::Datastore
 		]
 	end
 
+
+	### Provide transactional consistency to the provided block. Concrete datastores should
+	### override this if they can implement it. By default it's a no-op.
+	def transaction
+		yield
+	end
+
 end # class Thingfish::Datastore
 

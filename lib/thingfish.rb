@@ -170,8 +170,7 @@ class Thingfish < Strelka::App
 			uri = base_uri.dup
 			uri.path += uuid
 
-			protected_values = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
-			metadata = Hash[ [OPERATIONAL_METADATA_KEYS, protected_values].transpose ]
+			metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
 			metadata['uri'] = uri.to_s
 
 			metadata
@@ -295,7 +294,7 @@ class Thingfish < Strelka::App
 
 		res = req.response
 		res.status = HTTP::OK
-		res.for( :json, :yaml ) { self.metastore.fetch( uuid, key ) }
+		res.for( :json, :yaml ) { self.metastore.fetch_value( uuid, key ) }
 
 		return res
 	end
@@ -309,9 +308,9 @@ class Thingfish < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		finish_with( HTTP::CONFLICT, "Key already exists." ) unless
-			self.metastore.fetch( uuid, key ).nil?
+			self.metastore.fetch_value( uuid, key ).nil?
 
-		self.metastore.save( uuid, key, req.body.read )
+		self.metastore.merge( uuid, key => req.body.read )
 
 		res = req.response
 		res.headers.location = req.uri.to_s
@@ -333,7 +332,7 @@ class Thingfish < Strelka::App
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		previous_value = self.metastore.fetch( uuid, key )
 
-		self.metastore.save( uuid, key, req.body.read )
+		self.metastore.merge( uuid, key => req.body.read )
 
 		res = req.response
 		res.body = nil
@@ -344,6 +343,24 @@ class Thingfish < Strelka::App
 			res.headers.location = req.uri.to_s
 			res.status = HTTP::CREATED
 		end
+
+		return res
+	end
+
+
+	# PUT /«uuid»/metadata
+	# Replace user metadata for «uuid».
+	put ':uuid/metadata' do |req|
+		uuid = req.params[:uuid]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		op_metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
+		new_metadata = self.extract_metadata( req )
+		self.metastore.save( uuid, new_metadata.merge(op_metadata) )
+
+		res = req.response
+		res.status = HTTP::NO_CONTENT
 
 		return res
 	end

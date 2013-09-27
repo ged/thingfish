@@ -58,6 +58,12 @@ describe Thingfish::Datastore do
 			expect { store.remove(TEST_UUID) }.to raise_error( NotImplementedError, /remove/ )
 		end
 
+		it "provides a transactional block method" do
+			val = nil
+			store.transaction { val = :yielded }
+			expect( val ).to eq( :yielded )
+		end
+
 	end
 
 end

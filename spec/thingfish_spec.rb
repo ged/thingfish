@@ -90,8 +90,9 @@ describe Thingfish do
 			expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
 
 			uuid = res.headers.location.to_s[ %r:/(?<uuid>#{UUID_PATTERN})$:, :uuid ]
-			expect( handler.metastore.fetch(uuid, 'title') ).to eq( 'Muffin the Panda Goes To School' )
-			expect( handler.metastore.fetch(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
+			expect( handler.metastore.fetch_value(uuid, 'title') ).
+				to eq( 'Muffin the Panda Goes To School' )
+			expect( handler.metastore.fetch_value(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
 		end
 
 		it 'replaces content via PUT' do
@@ -296,7 +297,7 @@ describe Thingfish do
 			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'Ignore me!' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Ignore me!' )
 		end
 
 
@@ -314,8 +315,8 @@ describe Thingfish do
 			expect( result.status ).to eq( HTTP::FORBIDDEN )
 			expect( result.body.string ).to match( /unable to alter protected metadata/i )
 			expect( result.body.string ).to match( /format/i )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
-			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 
 
@@ -331,7 +332,7 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::CREATED )
 			expect( result.headers.location ).to match( %r|#{uuid}/metadata/comment$| )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
@@ -357,7 +358,7 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::CONFLICT )
 			expect( result.body.string ).to match( /already exists/i )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'nill bill' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'nill bill' )
 		end
 
 
@@ -371,9 +372,8 @@ describe Thingfish do
 			req = factory.put( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
 			result = handler.handle( req )
 
-			expect( result.status ).to eq( HTTP::CREATED )
-			expect( result.headers.location ).to match( %r|#{uuid}/metadata/comment$| )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( result.status ).to eq( HTTP::NO_CONTENT )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
@@ -389,7 +389,7 @@ describe Thingfish do
 			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
-			expect( handler.metastore.fetch(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
@@ -406,7 +406,27 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::FORBIDDEN )
 			expect( result.body.string ).to match( /protected metadata/i )
-			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+		end
+
+
+		it "can replace all metadata with a PUT" do
+			uuid = handler.datastore.save( @png_io )
+			handler.metastore.save( uuid, {
+				'format'    => 'image/png',
+				'extent'    => 288,
+				'comment'   => 'nill bill',
+				'ephemeral' => 'butterflies',
+			})
+
+			req = factory.put( "/#{uuid}/metadata", %[{"comment":"Yeah."}],
+			                   'Content-type' => 'application/json' )
+			result = handler.handle( req )
+
+			expect( result.status ).to eq( HTTP::NO_CONTENT )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Yeah.' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore ).to_not include( 'ephemeral' )
 		end
 
 
@@ -427,13 +447,13 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
 			expect( result.body.string ).to be_empty
-			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
-			expect( handler.metastore.fetch(uuid, 'extent') ).to eq( 288 )
-			expect( handler.metastore.fetch(uuid, 'uploadaddress') ).to eq( '127.0.0.1' )
-			expect( handler.metastore.fetch(uuid, 'created') ).to eq( timestamp )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'extent') ).to eq( 288 )
+			expect( handler.metastore.fetch_value(uuid, 'uploadaddress') ).to eq( '127.0.0.1' )
+			expect( handler.metastore.fetch_value(uuid, 'created') ).to eq( timestamp )
 
-			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
-			expect( handler.metastore.fetch(uuid, 'useragent') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'useragent') ).to be_nil
 		end
 
 
@@ -449,8 +469,8 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
 			expect( result.body.string ).to be_empty
-			expect( handler.metastore.fetch(uuid, 'comment') ).to be_nil
-			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 
 
@@ -465,7 +485,7 @@ describe Thingfish do
 
 			expect( result.status ).to eq( HTTP::FORBIDDEN )
 			expect( result.body.string ).to match( /protected metadata/i )
-			expect( handler.metastore.fetch(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 	end
 end

@@ -39,40 +39,36 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	end
 
 
-	### Save the metadata for the specified +oid+.
-	### +args+ can ether be a Hash of metadata pairs, or a single key and value.
-	###
-	###     save( oid, {} )
-	###     save( oid, key, value )
-	###
-	def save( oid, *args )
+	### Save the +metadata+ Hash for the specified +oid+.
+	def save( oid, metadata )
 		oid = self.normalize_oid( oid )
-
-		metadata = args.shift
-
-		if metadata.is_a?( Hash )
-			@storage[ oid ] = metadata.dup
-		else
-			@storage[ oid ] ||= {}
-			@storage[ oid ][ metadata.to_s ] = args.shift
-		end
+		@storage[ oid ] = metadata.dup
 	end
 
 
 	### Fetch the data corresponding to the given +oid+ as a Hash-ish object.
 	def fetch( oid, *keys )
 		oid = self.normalize_oid( oid )
+		metadata = @storage[ oid ] or return nil
+
 		if keys.empty?
 			self.log.debug "Fetching metadata for OID %s" % [ oid ]
-			return @storage[ oid ]
-		elsif keys.length == 1
-			data = @storage[ oid ] or return nil
-			return data[ keys.first ]
+			return metadata.dup
 		else
 			self.log.debug "Fetching metadata for %p for OID %s" % [ keys, oid ]
-			data = @storage[ oid ] or return nil
-			return data.values_at( *keys )
+			values = metadata.values_at( *keys )
+			return Hash[ [keys, values].transpose ]
 		end
+	end
+
+
+	### Fetch the value of the metadata associated with the given +key+ for the
+	### specified +oid+.
+	def fetch_value( oid, key )
+		oid = self.normalize_oid( oid )
+		data = @storage[ oid ] or return nil
+
+		return data[ key ]
 	end
 
 

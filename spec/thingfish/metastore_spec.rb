@@ -42,6 +42,11 @@ describe Thingfish::Metastore do
 			expect { store.fetch(TEST_UUID) }.to raise_error( NotImplementedError, /fetch/ )
 		end
 
+		it "raises an error if it doesn't implement #fetch_value" do
+			expect { store.fetch_value(TEST_UUID, :format) }.
+				to raise_error( NotImplementedError, /fetch_value/ )
+		end
+
 		it "raises an error if it doesn't implement #search" do
 			expect { store.search(limit: 100) }.to raise_error( NotImplementedError, /search/ )
 		end
@@ -75,6 +80,11 @@ describe Thingfish::Metastore do
 			expect { store.size }.to raise_error( NotImplementedError, /size/ )
 		end
 
+		it "provides a transactional block method" do
+			val = nil
+			store.transaction { val = :yielded }
+			expect( val ).to eq( :yielded )
+		end
 	end
 
 end

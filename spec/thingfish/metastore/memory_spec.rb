@@ -16,6 +16,7 @@ describe Thingfish::Metastore, "memory" do
 		@store = Thingfish::Metastore.create( :memory )
 	end
 
+
 	it "can save and fetch data" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store.fetch(TEST_UUID) ).to eq( TEST_METADATA.first )
@@ -34,35 +35,30 @@ describe Thingfish::Metastore, "memory" do
 	end
 
 
-	it "can save a single metadata value for a given oid" do
-		test_val = TEST_METADATA.first['useragent']
-		@store.save( TEST_UUID, 'useragent', test_val )
-		expect( @store.fetch(TEST_UUID, :useragent) ).to eq( TEST_METADATA.first[:useragent] )
-	end
-
-
 	it "can fetch a single metadata value for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( TEST_METADATA.first[:format] )
-		expect( @store.fetch(TEST_UUID, :extent) ).to eq( TEST_METADATA.first[:extent] )
+		expect( @store.fetch_value(TEST_UUID, :format) ).to eq( TEST_METADATA.first[:format] )
+		expect( @store.fetch_value(TEST_UUID, :extent) ).to eq( TEST_METADATA.first[:extent] )
 	end
 
 
 	it "can fetch a slice of data for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
-		expect( @store.fetch(TEST_UUID, :format, :extent) )
-			.to eq( TEST_METADATA.first.values_at(:format, :extent) )
+		expect( @store.fetch(TEST_UUID, :format, :extent) ).to eq({
+			:format => TEST_METADATA.first[:format],
+			:extent => TEST_METADATA.first[:extent],
+		})
 	end
 
 
 	it "returns nil when fetching a slice of data for an object that doesn't exist" do
-		expect( @store.fetch(TEST_UUID, :format) ).to be_nil
+		expect( @store.fetch_value(TEST_UUID, :format) ).to be_nil
 	end
 
 
 	it "doesn't care about the case of the UUID when fetching data" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
-		expect( @store.fetch(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA.first[:format] )
+		expect( @store.fetch_value(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA.first[:format] )
 	end
 
 
@@ -70,7 +66,7 @@ describe Thingfish::Metastore, "memory" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.merge( TEST_UUID, format: 'image/jpeg' )
 
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
+		expect( @store.fetch_value(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
 
@@ -78,7 +74,7 @@ describe Thingfish::Metastore, "memory" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.merge( TEST_UUID.downcase, format: 'image/jpeg' )
 
-		expect( @store.fetch(TEST_UUID, :format) ).to eq( 'image/jpeg' )
+		expect( @store.fetch_value(TEST_UUID, :format) ).to eq( 'image/jpeg' )
 	end
 
 
@@ -94,7 +90,7 @@ describe Thingfish::Metastore, "memory" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		@store.remove( TEST_UUID, :useragent )
 
-		expect( @store.fetch(TEST_UUID, :useragent) ).to be_nil
+		expect( @store.fetch_value(TEST_UUID, :useragent) ).to be_nil
 	end
 
 

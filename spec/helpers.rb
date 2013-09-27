@@ -65,8 +65,11 @@ RSpec.configure do |c|
 	include Thingfish::SpecHelpers
 
 	c.treat_symbols_as_metadata_keys_with_true_values = true
-	c.mock_with( :rspec ) do |config|
-		config.syntax = :expect
+	c.run_all_when_everything_filtered = true
+	c.filter_run :focus
+	c.order = 'random'
+	c.mock_with( :rspec ) do |mock|
+		mock.syntax = :expect
 	end
 
 	c.include( Loggability::SpecHelpers )

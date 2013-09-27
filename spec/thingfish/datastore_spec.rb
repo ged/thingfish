@@ -59,9 +59,7 @@ describe Thingfish::Datastore do
 		end
 
 		it "provides a transactional block method" do
-			val = nil
-			store.transaction { val = :yielded }
-			expect( val ).to eq( :yielded )
+			expect {|block| store.transaction(&block) }.to yield_with_no_args
 		end
 
 	end

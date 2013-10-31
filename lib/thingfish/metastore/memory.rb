@@ -14,7 +14,7 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	log_to :thingfish
 
 
-	### Create a new MemoryDatastore, using the given +storage+ object to store
+	### Create a new MemoryMetastore, using the given +storage+ object to store
 	### data in. The +storage+ should quack like a Hash.
 	def initialize( storage={} )
 		@storage = storage

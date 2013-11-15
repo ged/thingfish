@@ -27,11 +27,11 @@ hoespec = Hoe.spec 'thingfish' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.license "BSD"
 
-	self.dependency 'pluggability',    '~> 1.0'
-	self.dependency 'loggability',     '~> 1.0'
+	self.dependency 'pluggability',    '~> 0.3'
+	self.dependency 'loggability',     '~> 0.8'
 	self.dependency 'configurability', '~> 2.1'
 	self.dependency 'pg',              '~> 0.16'
-	self.dependency 'strelka',         '~> 0.6'
+	self.dependency 'strelka',         '~> 0.7.pre'
 	self.dependency 'sequel',          '~> 4.1'
 	self.dependency 'sequel_pg',       '~> 1.6'
 

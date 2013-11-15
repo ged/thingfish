@@ -8,7 +8,7 @@ module Thingfish::SpecConstants
 	TEST_SEND_SPEC    = 'tcp://127.0.0.1:9999'
 	TEST_RECV_SPEC    = 'tcp://127.0.0.1:9998'
 
-	UUID_PATTERN      = /(?<uuid>[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12})/i
+	UUID_PATTERN      = /[[:xdigit:]]{8}(?:-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}/i
 
 	TEST_UUID         = 'E5DFEEAB-3525-4F14-B4DB-2772D0B9987F'
 

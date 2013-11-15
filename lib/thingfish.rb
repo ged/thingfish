@@ -170,8 +170,9 @@ class Thingfish < Strelka::App
 			uri = base_uri.dup
 			uri.path += uuid
 
-			metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
+			metadata = self.metastore.fetch( uuid )
 			metadata['uri'] = uri.to_s
+			metadata['uuid'] = uuid
 
 			metadata
 		end
@@ -421,6 +422,14 @@ class Thingfish < Strelka::App
 	#########
 	protected
 	#########
+
+
+	### Overridden from the base handler class to allow spooled uploads.
+	def handle_async_upload_start( request )
+		self.log.info "Starting asynchronous upload: %s" %
+			[ request.headers.x_mongrel2_upload_start ]
+	end
+
 
 	### Return a Hash of default metadata extracted from the given +request+.
 	def extract_default_metadata( request )

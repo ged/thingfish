@@ -79,7 +79,7 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 		if order_fields = criteria[:order]
 			fields = order_fields.split( /\s*,\s*/ )
-			ds = ds.order_by {|uuid| @storage[uuid].values_at(*fields) }
+			ds = ds.to_a.sort_by {|uuid| @storage[uuid].values_at(*fields) }
 		end
 
 		ds = ds.reverse if criteria[:direction] && criteria[:direction] == 'desc'

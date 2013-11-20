@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require 'thingfish/processordaemon'
+
+Thingfish::ProcessorDaemon.run( ARGV )
+

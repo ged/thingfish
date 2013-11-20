@@ -9,3 +9,4 @@
 doc/
 ^ChangeLog$
 integration/
+logs/

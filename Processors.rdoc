@@ -1,0 +1,103 @@
+= ThingFish Processors
+
+== Processor Objects
+
+Processors are programs that modify or enhance uploaded assets in one or more of three ways:
+
+1. Modify uploaded assets synchronously before they're saved
+2. Modify assets synchronously on the fly when they're downloaded
+3. Modify uploaded assets asynchronously after they're saved
+
+
+The basic Processor interface is:
+
+  class Thingfish::Processor
+  
+    def process_request( request )
+      # No-op by default
+    end
+  
+    def process_response( response )
+      # No-op by default
+    end
+  
+    def process( io )
+      # No-op by default
+    end
+  
+  end
+
+
+The first two cases run inside the Thingfish daemon, and the third runs inside an asynchronous
+processor daemon. Thingfish writes the UUID of every newly-uploaded asset to a PUB zeromq endpoint,
+so asynchronous processing systems need only SUBscribe to that endpoint, and dispatch processing
+jobs to one or more daemons when a new uuid is read.
+
+
+=== Request (Synchronous) Processor
+
+An example of a synchronous upload processor adds metadata extracted from the ID3 tags of uploaded
+MP3 files:
+
+  class Thingfish::ID3Processor < Thingfish::Processor
+  
+    def handle_request( request )
+      return unless request.content_type == 'audio/mp3'
+  
+      mp3 = request.body.read
+      metadata = extract_some_id3_shit( mp3 )
+      request.add_metadata( metadata )
+    end
+  
+  end
+
+
+=== Request/Response (Synchronous) Processor
+
+An example of a processor that adds two watermarks to images:
+
+* when an image is uploaded, it adds an invisible watermark to the image data, which then becomes a
+  permanent part of the asset.
+* when an image is downloaded, it adds a visible watermark to the image if it's being downloaded
+  from an external site.
+
+  class Thingfish::WaterMarker < Thingfish::Processor
+  
+    def handle_request( request )
+      return unless request.content_type =~ /^image/
+  
+      image = request.body.read
+      watermarked_image = add_invisible_watermark( image )
+      request.body.rewind
+      request.body.write( watermarked_image )
+    end
+  
+    def handle_response( response )
+      return unless response.content_type =~ /^image/ &&
+        !from_internal_network( response )
+  
+      image = response.body.read
+      watermarked_image = add_visible_watermark( image )
+      response.body.rewind
+      response.body.write( watermarked_image )
+    end
+  
+  end
+
+
+=== Asynchronous-only Processor
+
+This is an example of a processor that adds a thumbnail to videos that have been uploaded
+based on the video's keyframes. It doesn't touch uploads or downloads, but since it's 
+time-consuming, it can be run asynchronously at any point after the upload.
+
+  class Thingfish::VideoProcessor < Thingfish::Processor
+  
+    def process_async( asset )
+      asset.metadata[:thumbnail] = extract_keyframe( asset.data )
+    end
+  
+  end
+
+
+

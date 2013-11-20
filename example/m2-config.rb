@@ -17,10 +17,10 @@ server 'thingfish' do
 	name         'Thingfish Examples'
 	default_host 'localhost'
 
-	access_log   '/logs/access.log'
-	error_log    '/logs/error.log'
-	chroot       '.'
-	pid_file     '/run/mongrel2.pid'
+	access_log   'logs/access.log'
+	error_log    'logs/error.log'
+	chroot       ''
+	pid_file     'run/mongrel2.pid'
 
 	bind_addr    '0.0.0.0'
 	port         3474
@@ -34,6 +34,7 @@ end
 setting "zeromq.threads", 1
 
 setting 'limits.content_length', 100 * 1024 * 1024
+setting 'server.daemonize', false
 setting 'upload.temp_store', 'var/uploads/mongrel2.upload.XXXXXX'
 
 mkdir_p 'var/uploads'

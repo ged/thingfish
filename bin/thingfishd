@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 #encoding: utf-8
 
-require 'thingfish'
+require 'strelka'
+require 'thingfish/handler'
 
 configpath = ARGV.shift || 'etc/thingfish.conf'
 
 Strelka.load_config( configpath )
-Thingfish.run
+Thingfish::Handler.run

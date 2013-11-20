@@ -5,7 +5,7 @@
 require 'thingfish' unless defined?( Thingfish )
 
 
-class Thingfish
+module Thingfish
 
 	# Hides your class's ::new method and adds a +pure_virtual+ method generator for
 	# defining API methods. If subclasses of your class don't provide implementations of

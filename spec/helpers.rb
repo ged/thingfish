@@ -78,6 +78,8 @@ RSpec.configure do |c|
 	c.include( Strelka::Constants )
 	c.include( Strelka::Testing )
 	c.include( Thingfish::SpecHelpers )
+
+	c.before( :all ) { setup_logging() }
 end
 
 # vim: set nosta noet ts=4 sw=4:

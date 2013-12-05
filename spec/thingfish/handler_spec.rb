@@ -515,7 +515,7 @@ describe Thingfish::Handler do
 					self.responses << response
 				end
 			end
-			# Re-call inherited so it associates it with its name
+			# Re-call inherited so it associates the processor plugin with its name
 			Thingfish::Processor.inherited( klass )
 			klass
 		end

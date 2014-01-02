@@ -50,13 +50,24 @@ Loggability.format_with( :color ) if $stdout.tty?
 module Thingfish::SpecHelpers
 	include Thingfish::SpecConstants
 
+
+	FIXTURE_DIR = Pathname( __FILE__ ).dirname + 'data'
+
+
 	RSpec::Matchers.define :be_a_uuid do |expected|
 		match do |actual|
 			actual =~ UUID_PATTERN
 		end
 	end
 
-end
+
+	### Load and return the data from the fixture with the specified +filename+.
+	def fixture_data( filename )
+		fixture = FIXTURE_DIR + filename
+		return fixture.open( 'r', encoding: 'binary' )
+	end
+
+end # Thingfish::SpecHelpers
 
 
 ### Mock with RSpec

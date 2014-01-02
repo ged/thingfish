@@ -1,4 +1,0 @@
-# Foreman procfile
-mongrel: m2sh.rb -c mongrel2.sqlite start
-thingfish: ruby -I../lib ../bin/thingfishd thingfish.conf
-

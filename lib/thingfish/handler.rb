@@ -150,6 +150,12 @@ class Thingfish::Handler < Strelka::App
 	########################################################################
 
 	#
+	# Strelka plugin for Thingfish metadata
+	#
+	plugin :thingfish
+
+
+	#
 	# Global parmas
 	#
 	plugin :parameters

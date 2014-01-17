@@ -12,9 +12,9 @@ require 'thingfish/mixins'
 # blobs.
 class Thingfish::Datastore
 	extend Pluggability,
-	       Thingfish::AbstractClass
+	       Strelka::AbstractClass
 	include Enumerable,
-	        Thingfish::OIDUtilities
+	        Thingfish::Normalization
 
 
 	# Pluggability API -- set the prefix for implementations of Datastore

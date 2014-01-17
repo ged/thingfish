@@ -2,6 +2,7 @@
 
 require_relative '../../helpers'
 
+require 'securerandom'
 require 'rspec'
 require 'thingfish/metastore'
 
@@ -37,16 +38,16 @@ describe Thingfish::Metastore, "memory" do
 
 	it "can fetch a single metadata value for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
-		expect( @store.fetch_value(TEST_UUID, :format) ).to eq( TEST_METADATA.first[:format] )
-		expect( @store.fetch_value(TEST_UUID, :extent) ).to eq( TEST_METADATA.first[:extent] )
+		expect( @store.fetch_value(TEST_UUID, :format) ).to eq( TEST_METADATA.first['format'] )
+		expect( @store.fetch_value(TEST_UUID, :extent) ).to eq( TEST_METADATA.first['extent'] )
 	end
 
 
 	it "can fetch a slice of data for a given oid" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
 		expect( @store.fetch(TEST_UUID, :format, :extent) ).to eq({
-			:format => TEST_METADATA.first[:format],
-			:extent => TEST_METADATA.first[:extent],
+			'format' => TEST_METADATA.first['format'],
+			'extent' => TEST_METADATA.first['extent'],
 		})
 	end
 
@@ -58,7 +59,7 @@ describe Thingfish::Metastore, "memory" do
 
 	it "doesn't care about the case of the UUID when fetching data" do
 		@store.save( TEST_UUID, TEST_METADATA.first )
-		expect( @store.fetch_value(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA.first[:format] )
+		expect( @store.fetch_value(TEST_UUID.downcase, :format) ).to eq( TEST_METADATA.first['format'] )
 	end
 
 
@@ -117,6 +118,22 @@ describe Thingfish::Metastore, "memory" do
 	end
 
 
+	it "knows how to fetch UUIDs for related resources" do
+		rel_uuid1 = SecureRandom.uuid
+		rel_uuid2 = SecureRandom.uuid
+		unrel_uuid = SecureRandom.uuid
+
+		@store.save( rel_uuid1, TEST_METADATA[0].merge('relation' => TEST_UUID.downcase) )
+		@store.save( rel_uuid2, TEST_METADATA[1].merge('relation' => TEST_UUID.downcase) )
+		@store.save( unrel_uuid, TEST_METADATA[2] )
+
+		uuids = @store.fetch_related_uuids( TEST_UUID )
+
+		expect( uuids ).to include( rel_uuid1, rel_uuid2 )
+		expect( uuids ).to_not include( unrel_uuid )
+	end
+
+
 	context "with some uploaded metadata" do
 
 		before( :each ) do
@@ -146,6 +163,14 @@ describe Thingfish::Metastore, "memory" do
 
 		it "can search for uuids" do
 			expect( @store.search.to_a ).to eq( @store.keys )
+		end
+
+		it "can apply criteria to searches" do
+			results = @store.search( :criteria => {'format' => 'audio/mp3'} )
+			expect( results ).to have( 2 ).matches
+			results.each do |uuid|
+				expect( @store.fetch_value(uuid, 'format') ).to eq( 'audio/mp3' )
+			end
 		end
 
 		it "can limit the number of results returned from a search" do

@@ -11,6 +11,11 @@ begin
 	require 'thingfish'
 	require 'thingfish/handler'
 
+	if File.exist?( 'etc/thingfish.conf' )
+		$stderr.puts 'Installing the config in etc/thingfish.conf...'
+		Strelka.load_config( 'etc/thingfish.conf' )
+	end
+
 	Loggability.level = :debug
 	Loggability.format_with( :color )
 

@@ -10,8 +10,8 @@ require 'thingfish/mixins'
 # blobs.
 class Thingfish::Metastore
 	extend Pluggability,
-	       Thingfish::AbstractClass
-	include Thingfish::OIDUtilities
+	       Strelka::AbstractClass
+	include Thingfish::Normalization
 
 
 	# Pluggability API -- set the prefix for implementations of Metastore
@@ -25,11 +25,12 @@ class Thingfish::Metastore
 	             :search,
 	             :fetch,
 	             :fetch_value,
+	             :fetch_related_uuids,
 	             :merge,
 	             :include?,
 	             :remove,
 	             :remove_except,
-				 :size
+	             :size
 
 	### Return a representation of the object as a String suitable for debugging.
 	def inspect

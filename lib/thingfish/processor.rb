@@ -17,7 +17,9 @@ class Thingfish::Processor
 
 	### Get/set the list of media types this processor can handle.
 	def self::handled_types( *mediatypes )
-		unless mediatypes.empty?
+		if mediatypes.empty?
+			@handled_types ||= []
+		else
 			@handled_types = mediatypes.collect {|type| Strelka::HTTPRequest::MediaType.parse(type) }
 		end
 

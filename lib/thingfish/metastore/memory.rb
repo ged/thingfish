@@ -9,6 +9,7 @@ require 'thingfish/metastore' unless defined?( Thingfish::Metastore )
 # An in-memory metastore for testing and tryout purposes.
 class Thingfish::MemoryMetastore < Thingfish::Metastore
 	extend Loggability
+	include Thingfish::Normalization
 
 	# Loggability API -- log to the :thingfish logger
 	log_to :thingfish
@@ -41,14 +42,14 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 	### Save the +metadata+ Hash for the specified +oid+.
 	def save( oid, metadata )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		@storage[ oid ] = metadata.dup
 	end
 
 
 	### Fetch the data corresponding to the given +oid+ as a Hash-ish object.
 	def fetch( oid, *keys )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		metadata = @storage[ oid ] or return nil
 
 		if keys.empty?
@@ -56,6 +57,7 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 			return metadata.dup
 		else
 			self.log.debug "Fetching metadata for %p for OID %s" % [ keys, oid ]
+			keys = normalize_keys( keys )
 			values = metadata.values_at( *keys )
 			return Hash[ [keys, values].transpose ]
 		end
@@ -65,27 +67,46 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	### Fetch the value of the metadata associated with the given +key+ for the
 	### specified +oid+.
 	def fetch_value( oid, key )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
+		key = normalize_key( key )
 		data = @storage[ oid ] or return nil
 
 		return data[ key ]
 	end
 
 
+	### Fetch UUIDs related to the given +oid+.
+	def fetch_related_uuids( oid )
+		oid = normalize_oid( oid )
+		self.log.debug "Fetching UUIDs of resources related to %s" % [ oid ]
+		return self.search( :criteria => {:relation => oid} )
+	end
+
+
 	### Search the metastore for UUIDs which match the specified +criteria+ and
 	### return them as an iterator.
-	def search( criteria={} )
+	def search( options={} )
 		ds = @storage.each_key
+		self.log.debug "Starting search with %p" % [ ds ]
 
-		if order_fields = criteria[:order]
+		if criteria = options[:criteria]
+			criteria.each do |field, value|
+				self.log.debug "  applying criteria: %p => %p" % [ field.to_s, value ]
+				ds = ds.select {|uuid| @storage[uuid][field.to_s] == value }
+			end
+		end
+
+		if order_fields = options[:order]
 			fields = order_fields.split( /\s*,\s*/ )
+			self.log.debug "  applying order by fields: %p" % [ fields ]
 			ds = ds.to_a.sort_by {|uuid| @storage[uuid].values_at(*fields) }
 		end
 
-		ds = ds.reverse if criteria[:direction] && criteria[:direction] == 'desc'
+		ds = ds.reverse if options[:direction] && options[:direction] == 'desc'
 
-		if (( limit = criteria[:limit] ))
-			offset = criteria[:offset] || 0
+		if (( limit = options[:limit] ))
+			self.log.debug "  limiting to %s results" % [ limit ]
+			offset = options[:offset] || 0
 			ds = ds.to_a.slice( offset, limit )
 		end
 
@@ -95,18 +116,19 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 	### Update the metadata for the given +oid+ with the specified +values+ hash.
 	def merge( oid, values )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
+		values = normalize_keys( values )
 		@storage[ oid ].merge!( values )
 	end
 
 
 	### Remove all metadata associated with +oid+ from the Metastore.
 	def remove( oid, *keys )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		if keys.empty?
 			@storage.delete( oid )
 		else
-			keys = keys.map( &:to_s )
+			keys = normalize_keys( keys )
 			@storage[ oid ].delete_if {|key, _| keys.include?(key) }
 		end
 	end
@@ -114,15 +136,15 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 
 	### Remove all metadata associated with +oid+ except for the specified +keys+.
 	def remove_except( oid, *keys )
-		oid = self.normalize_oid( oid )
-		keys = keys.map( &:to_s )
+		oid = normalize_oid( oid )
+		keys = normalize_keys( keys )
 		@storage[ oid ].keep_if {|key,_| keys.include?(key) }
 	end
 
 
 	### Returns +true+ if the metastore has metadata associated with the specified +oid+.
 	def include?( oid )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		return @storage.include?( oid )
 	end
 

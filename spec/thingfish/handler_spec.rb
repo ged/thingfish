@@ -10,8 +10,8 @@ require 'thingfish/processor'
 describe Thingfish::Handler do
 
 	before( :all ) do
-		setup_logging()
 		Thingfish::Handler.configure
+		Thingfish::Handler.install_plugins
 	end
 
 	before( :each ) do
@@ -87,7 +87,7 @@ describe Thingfish::Handler do
 			expect( res.status_line ).to match( /201 created/i )
 			expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
 
-			uuid = res.headers.location.to_s[ %r:/(?<uuid>#{UUID_PATTERN})$:, :uuid ]
+			uuid = res.headers.x_thingfish_uuid
 			expect( @handler.metastore.fetch_value(uuid, 'title') ).
 				to eq( 'Muffin the Panda Goes To School' )
 			expect( @handler.metastore.fetch_value(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
@@ -106,7 +106,7 @@ describe Thingfish::Handler do
 		end
 
 
-		it "doesn't case about the case of the UUID when replacing content via PUT" do
+		it "doesn't care about the case of the UUID when replacing content via PUT" do
 			uuid = @handler.datastore.save( @text_io )
 			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
@@ -490,9 +490,20 @@ describe Thingfish::Handler do
 
 	context "processors" do
 
-		after( :each ) do
-			described_class.processors.clear
+		before( :all ) do
+			@original_filters = described_class.filters.dup
+			described_class.filters.replace({ :request => [], :response => [], :both => [] })
 		end
+
+		after( :all ) do
+			described_class.filters.replace( @original_filters )
+		end
+
+		before( :each ) do
+			described_class.processors.clear
+			described_class.filters.values.each( &:clear )
+		end
+
 
 		let( :factory ) do
 			Mongrel2::RequestFactory.new(
@@ -500,19 +511,27 @@ describe Thingfish::Handler do
 				:headers => {:accept => '*/*'})
 		end
 
-		let!( :test_filter ) do
+		let!( :test_processor ) do
 			klass = Class.new( Thingfish::Processor ) do
+				extend Loggability
+				log_to :thingfish
+
+				handled_types 'text/plain'
+
 				def self::name; 'Thingfish::Processor::Test'; end
-				def initialize
-					@requests = []
-					@responses = []
+				def on_request( request )
+					self.log.debug "Adding a comment to a request."
+					request.add_metadata( 'test:comment' => "Yo, it totally worked." )
+
+					io = StringIO.new( "Chunkers!" )
+					io.rewind
+					related_metadata = { 'format' => 'text/plain', 'relationship' => 'comment' }
+					request.add_related_resource( io, related_metadata )
 				end
-				attr_accessor :requests, :responses
-				def process_request( request )
-					self.requests << request
-				end
-				def process_response( response )
-					self.responses << response
+				def on_response( response )
+					content = response.body.read
+					response.body.rewind
+					response.body.print( content.reverse )
 				end
 			end
 			# Re-call inherited so it associates the processor plugin with its name
@@ -522,24 +541,40 @@ describe Thingfish::Handler do
 
 
 		it "loads configured processors when it is instantiated" do
+			logger = Loggability[ described_class ]
+			logger.debug( "*** %p" % described_class.filters )
+			logger.debug( "*** %p" % @original_filters )
+
 			described_class.configure( :processors => %w[test] )
 
 			expect( described_class.processors ).to be_an( Array )
 
 			processor = described_class.processors.first
-			expect( processor ).to be_an_instance_of( test_filter )
+			expect( processor ).to be_an_instance_of( test_processor )
 		end
 
 
-		it "processes requests and responses" do
+		it "processes requests", :logging => :debug do
 			described_class.configure( :processors => %w[test] )
 
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 			res = @handler.handle( req )
+			uuid = res.headers.x_thingfish_uuid
 
-			processor = described_class.processors.first
-			expect( processor.requests ).to eq([ req ])
-			expect( processor.responses ).to eq([ res ])
+			Thingfish.logger.debug "Metastore contains: %p" % [ @handler.metastore.storage ]
+
+			expect( @handler.metastore.fetch(uuid) ).
+				to include( 'test:comment' => 'Yo, it totally worked.')
+			related_uuids = @handler.metastore.fetch_related_uuids( uuid )
+			expect( related_uuids ).to have( 1 ).member
+
+			r_uuid = related_uuids.first.downcase
+			expect( @handler.metastore.fetch_value(r_uuid, 'relation') ).to eq( uuid )
+			expect( @handler.metastore.fetch_value(r_uuid, 'format') ).to eq( 'text/plain' )
+			expect( @handler.metastore.fetch_value(r_uuid, 'extent') ).to eq( 9 )
+			expect( @handler.metastore.fetch_value(r_uuid, 'relationship') ).to eq( 'comment' )
+
+			expect( @handler.datastore.fetch(r_uuid).read ).to eq( 'Chunkers!' )
 		end
 
 	end

@@ -10,7 +10,7 @@ require 'thingfish'
 
 # A Strelka plugin for setting up requests to be able to carry Thingfish metadata
 # with it.
-module Strelka::App::Thingfish
+module Strelka::App::Metadata
 	extend Strelka::Plugin
 
 
@@ -34,5 +34,5 @@ module Strelka::App::Thingfish
 	end
 
 
-end # module Strelka::App::Thingfish
+end # module Strelka::App::Metadata
 

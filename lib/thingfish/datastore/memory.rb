@@ -24,7 +24,7 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 	### Save the +data+ read from the specified +io+ and return an ID that can be
 	### used to fetch it later.
 	def save( io )
-		oid = self.make_object_id
+		oid = make_object_id()
 		offset = io.pos
 		data = io.read.dup
 
@@ -41,7 +41,7 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 	def replace( oid, io )
 		offset = io.pos
 		data = io.read.dup
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 
 		self.log.debug "Replacing data under OID %s with %d bytes" % [ oid, data.bytesize ]
 		@storage[ oid ] = data
@@ -53,7 +53,7 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 
 	### Fetch the data corresponding to the given +oid+ as an IOish object.
 	def fetch( oid )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		self.log.debug "Fetching data for OID %s" % [ oid ]
 		data = @storage[ oid ] or return nil
 		return StringIO.new( data )
@@ -62,14 +62,14 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 
 	### Remove the data associated with +oid+ from the Datastore.
 	def remove( oid )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		@storage.delete( oid )
 	end
 
 
 	### Return +true+ if the datastore has data associated with the specified +oid+.
 	def include?( oid )
-		oid = self.normalize_oid( oid )
+		oid = normalize_oid( oid )
 		return @storage.include?( oid )
 	end
 

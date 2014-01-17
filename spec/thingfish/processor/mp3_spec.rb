@@ -39,9 +39,9 @@ describe Thingfish::Processor, "MP3" do
 		processor.process_request( req )
 
 		related = req.related_resources
-		expect( related ).to have( 1 ).image
+		expect( related.size ).to eq( 1 )
 		expect( related.values.first ).
-			to include( :format => 'image/jpeg', :extent => 7369, :relation => 'album-art' )
+			to include( 'format' => 'image/jpeg', 'extent' => 7369, 'relationship' => 'album-art' )
 		expect( related.keys.first ).to respond_to( :read )
 	end
 

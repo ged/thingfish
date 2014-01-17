@@ -42,11 +42,17 @@ class Thingfish::Handler < Strelka::App
 		uploadaddress
 	]
 
+	# Metadata keys that must be provided by plugins for related resources
+	REQUIRED_RELATED_METADATA_KEYS = %w[
+		relationship
+		format
+	]
+
 
 	require 'thingfish/mixins'
 	require 'thingfish/datastore'
 	require 'thingfish/metastore'
-	extend Thingfish::MethodUtilities
+	extend Strelka::MethodUtilities
 
 
 	##
@@ -84,11 +90,13 @@ class Thingfish::Handler < Strelka::App
 	### Load the Thingfish::Processors in the given +processor_list+ and return an instance
 	### of each one.
 	def self::load_processors( processor_list )
+		self.log.info "Loading processors"
 		processors = []
 
 		processor_list.each do |processor_type|
 			begin
 				processors << Thingfish::Processor.create( processor_type )
+				self.log.debug "  loaded %s: %p" % [ processor_type, processors.last ]
 			rescue LoadError => err
 				self.log.error "%p: %s while loading the %s processor" %
 					[ err.class, err.message, processor_type ]
@@ -152,11 +160,11 @@ class Thingfish::Handler < Strelka::App
 	#
 	# Strelka plugin for Thingfish metadata
 	#
-	plugin :thingfish
+	plugin :metadata
 
 
 	#
-	# Global parmas
+	# Global params
 	#
 	plugin :parameters
 	param :uuid
@@ -261,11 +269,7 @@ class Thingfish::Handler < Strelka::App
 	# POST /
 	# Upload a new object.
 	post do |req|
-		metadata = self.extract_header_metadata( req )
-		metadata.merge!( self.extract_default_metadata(req) )
-
-		uuid = self.datastore.save( req.body )
-		self.metastore.save( uuid, metadata )
+		uuid, metadata = self.save_resource( req )
 		self.send_event( :created, :uuid => uuid )
 
 		url = req.base_uri.dup
@@ -273,6 +277,7 @@ class Thingfish::Handler < Strelka::App
 
 		res = req.response
 		res.headers.location = url
+		res.headers.x_thingfish_uuid = uuid
 		res.status = HTTP::CREATED
 
 		res.for( :text, :json, :yaml ) { metadata }
@@ -284,14 +289,13 @@ class Thingfish::Handler < Strelka::App
 	# PUT /«uuid»
 	# Replace the data associated with +uuid+.
 	put ':uuid' do |req|
-		metadata = self.extract_default_metadata( req )
-
 		uuid = req.params[:uuid]
-		object = self.datastore.fetch( uuid ) or
+		self.datastore.include?( uuid ) or
 			finish_with HTTP::NOT_FOUND, "No such object."
 
-		self.datastore.replace( uuid, req.body )
-		self.metastore.merge( uuid, metadata )
+		self.remove_related_resources( uuid )
+		self.save_resource( req, uuid )
+		self.send_event( :replaced, :uuid => uuid )
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
@@ -307,6 +311,8 @@ class Thingfish::Handler < Strelka::App
 
 		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
 		metadata = self.metastore.remove( uuid )
+		self.remove_related_resources( uuid )
+		self.send_event( :deleted, :uuid => uuid )
 
 		res = req.response
 		res.status = HTTP::OK
@@ -368,6 +374,7 @@ class Thingfish::Handler < Strelka::App
 			self.metastore.fetch_value( uuid, key ).nil?
 
 		self.metastore.merge( uuid, key => req.body.read )
+		self.send_event( :metadata_updated, :uuid => uuid, :key => key )
 
 		res = req.response
 		res.headers.location = req.uri.to_s
@@ -390,6 +397,7 @@ class Thingfish::Handler < Strelka::App
 		previous_value = self.metastore.fetch( uuid, key )
 
 		self.metastore.merge( uuid, key => req.body.read )
+		self.send_event( :metadata_replaced, :uuid => uuid, :key => key )
 
 		res = req.response
 		res.body = nil
@@ -415,6 +423,7 @@ class Thingfish::Handler < Strelka::App
 		op_metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
 		new_metadata = self.extract_metadata( req )
 		self.metastore.save( uuid, new_metadata.merge(op_metadata) )
+		self.send_event( :metadata_replaced, :uuid => uuid )
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
@@ -432,6 +441,7 @@ class Thingfish::Handler < Strelka::App
 
 		new_metadata = self.extract_metadata( req )
 		self.metastore.merge( uuid, new_metadata )
+		self.send_event( :metadata_updated, :uuid => uuid )
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
@@ -448,6 +458,7 @@ class Thingfish::Handler < Strelka::App
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
 		self.metastore.remove_except( uuid, *OPERATIONAL_METADATA_KEYS )
+		self.send_event( :metadata_deleted, :uuid => uuid )
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
@@ -467,6 +478,7 @@ class Thingfish::Handler < Strelka::App
 			OPERATIONAL_METADATA_KEYS.include?( key )
 
 		self.metastore.remove( uuid, key )
+		self.send_event( :metadata_deleted, :uuid => uuid, :key => key )
 
 		res = req.response
 		res.status = HTTP::NO_CONTENT
@@ -478,6 +490,66 @@ class Thingfish::Handler < Strelka::App
 	#########
 	protected
 	#########
+
+
+	### Save the resource in the given +request+'s body and any associated metadata
+	### or additional resources.
+	def save_resource( request, uuid=nil )
+		metadata = request.metadata
+		metadata.merge!( self.extract_header_metadata(request) )
+		metadata.merge!( self.extract_default_metadata(request) )
+
+		if uuid
+			self.log.info "Replacing resource %s" % [ uuid ]
+			self.datastore.replace( uuid, request.body )
+			self.metastore.merge( uuid, metadata )
+		else
+			self.log.info "Saving new resource."
+			uuid = self.datastore.save( request.body )
+			self.metastore.save( uuid, metadata )
+		end
+
+		self.save_related_resources( request, uuid )
+
+		return uuid, metadata
+	end
+
+
+	### Save any related resources in the given +request+ with a relationship to the
+	### resource with the given +uuid+.
+	def save_related_resources( request, uuid )
+		request.related_resources.each do |io, metadata|
+			self.log.debug "Saving a resource related to %s: %p" % [ uuid, metadata ]
+			next unless self.check_related_metadata( metadata )
+			self.log.debug "  related metadata checks passed; storing it."
+			r_uuid = self.datastore.save( io )
+			metadata['relation'] = uuid
+			self.metastore.save( r_uuid, metadata )
+		end
+	end
+
+
+	### Remove any resources that are related to the one with the specified +uuid+.
+	def remove_related_resources( uuid )
+		self.metastore.search( :criteria => {'related' => uuid} ).each do |r_uuid|
+			self.datastore.remove( r_uuid )
+			self.metastore.remove( r_uuid )
+			self.log.info "Removed related resource %s for %s." % [ r_uuid, uuid ]
+		end
+	end
+
+
+	### Do some consistency checks on the given +metadata+ for a related resource,
+	### returning +true+ if it meets the requirements.
+	def check_related_metadata( metadata )
+		REQUIRED_RELATED_METADATA_KEYS.each do |attribute|
+			unless metadata[ attribute ]
+				self.log.error "Metadata for required resource must include '#{attribute}' attribute!"
+				return false
+			end
+		end
+		return true
+	end
 
 
 	### Overridden from the base handler class to allow spooled uploads.

@@ -117,9 +117,9 @@ class Thingfish::Processor::MP3 < Thingfish::Processor
 			images.each do |img|
 				blob, mime = img.unpack( APIC_FORMAT ).values_at( 4, 1 )
 				yield( StringIO.new(blob),
-					:format   => mime,
-					:extent   => blob.length,
-					:relation => 'album-art' )
+					:format       => mime,
+					:extent       => blob.length,
+					:relationship => 'album-art' )
 			end
 
 		elsif mp3info.tag2.PIC
@@ -130,9 +130,9 @@ class Thingfish::Processor::MP3 < Thingfish::Processor
 				blob, type = img.unpack( PIC_FORMAT ).values_at( 4, 1 )
 				mime = Mongrel2::Config.mimetypes[ ".#{type.downcase}" ] or next
 				yield( StringIO.new(blob),
-					:format   => mime,
-					:extent   => blob.length,
-					:relation => 'album-art' )
+					:format       => mime,
+					:extent       => blob.length,
+					:relationship => 'album-art' )
 			end
 
 		else

@@ -20,7 +20,9 @@ class Thingfish::Processor
 		if mediatypes.empty?
 			@handled_types ||= []
 		else
-			@handled_types = mediatypes.collect {|type| Strelka::HTTPRequest::MediaType.parse(type) }
+			@handled_types = mediatypes.collect do |type|
+				Strelka::HTTPRequest::MediaType.parse(type)
+			end
 		end
 
 		return @handled_types

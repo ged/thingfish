@@ -89,28 +89,68 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 		ds = @storage.each_key
 		self.log.debug "Starting search with %p" % [ ds ]
 
-		if criteria = options[:criteria]
+		ds = self.apply_search_criteria( ds, options )
+		ds = self.apply_search_order( ds, options )
+		ds = self.apply_search_direction( ds, options )
+		ds = self.apply_search_limit( ds, options )
+
+		return ds.to_a
+	end
+
+
+	### Apply the search :criteria from the specified +options+ to the collection
+	### in +ds+ and return the modified dataset.
+	def apply_search_criteria( ds, options )
+		if (( criteria = options[:criteria] ))
 			criteria.each do |field, value|
 				self.log.debug "  applying criteria: %p => %p" % [ field.to_s, value ]
 				ds = ds.select {|uuid| @storage[uuid][field.to_s] == value }
 			end
 		end
 
-		if order_fields = options[:order]
-			fields = order_fields.split( /\s*,\s*/ )
-			self.log.debug "  applying order by fields: %p" % [ fields ]
-			ds = ds.to_a.sort_by {|uuid| @storage[uuid].values_at(*fields) }
-		end
+		return ds
+	end
 
-		ds = ds.reverse if options[:direction] && options[:direction] == 'desc'
 
+	### Apply the search :order from the specified +options+ to the collection in
+	### +ds+ and return the modified dataset.
+	def apply_search_order( ds, options )
+
+		# :FIXME: I can't think of a way to handle the case where one of the sort fields
+		# is nil in a non-gross way. So instead, just turn ordering off.
+
+		# if (( order_fields = options[:order] ))
+		#	fields = order_fields.split( /\s*,\s*/ )
+		#	self.log.debug "  applying order by fields: %p" % [ fields ]
+		#	ds = ds.to_a.sort_by do |uuid|
+		#		sortvals = @storage[uuid].values_at(*fields).map {|val| val || ''}
+		#		self.log.debug "    sortvals: %p" % [ sortvals ]
+		#		sortvals
+		#	end
+		# end
+
+		return ds
+	end
+
+
+	### Apply the search :direction from the specified +options+ to the collection
+	### in +ds+ and return the modified dataset.
+	def apply_search_direction( ds, options )
+		ds.reverse! if options[:direction] && options[:direction] == 'desc'
+		return ds
+	end
+
+
+	### Apply the search :limit from the specified +options+ to the collection in
+	### +ds+ and return the modified dataset.
+	def apply_search_limit( ds, options )
 		if (( limit = options[:limit] ))
 			self.log.debug "  limiting to %s results" % [ limit ]
 			offset = options[:offset] || 0
 			ds = ds.to_a.slice( offset, limit )
 		end
 
-		return ds.to_a
+		return ds
 	end
 
 

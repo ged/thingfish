@@ -9,8 +9,10 @@ require 'thingfish/processor'
 
 describe Thingfish::Handler do
 
+	EVENT_SOCKET_URI = 'tcp://127.0.0.1:0'
+
 	before( :all ) do
-		Thingfish::Handler.configure
+		Thingfish::Handler.configure( :event_socket_uri => EVENT_SOCKET_URI )
 		Thingfish::Handler.install_plugins
 	end
 
@@ -554,7 +556,7 @@ describe Thingfish::Handler do
 		end
 
 
-		it "processes requests", :logging => :debug do
+		it "processes requests" do
 			described_class.configure( :processors => %w[test] )
 
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
@@ -589,10 +591,12 @@ describe Thingfish::Handler do
 		end
 
 		before( :each ) do
-			@subsock = Mongrel2.zmq_context.socket( ZMQ::SUB )
-			@subsock.setsockopt( ZMQ::LINGER, 0 )
-			@subsock.setsockopt( ZMQ::SUBSCRIBE, '' )
-			@subsock.connect( @handler.class.event_socket_uri )
+			@handler.setup_event_socket
+
+			@subsock = Mongrel2.zmq_context.socket( :SUB )
+			@subsock.linger = 0
+			@subsock.subscribe( '' )
+			@subsock.connect( @handler.event_socket.endpoint )
 		end
 
 		after( :each ) do
@@ -610,11 +614,11 @@ describe Thingfish::Handler do
 			expect( handles[0].first ).to be( @subsock )
 
 			event = @subsock.recv
-			expect( @subsock.getsockopt( ZMQ::RCVMORE ) ).to be_true
+			expect( @subsock.rcvmore? ).to be_truthy
 			expect( event ).to eq( 'created' )
 
 			resource = @subsock.recv
-			expect( @subsock.getsockopt( ZMQ::RCVMORE ) ).to be_false
+			expect( @subsock.rcvmore? ).to be_falsey
 			expect( resource ).to match( /^\{"uuid":"#{UUID_PATTERN}"\}$/ )
 		end
 

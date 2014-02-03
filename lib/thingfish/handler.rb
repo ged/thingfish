@@ -74,10 +74,11 @@ class Thingfish::Handler < Strelka::App
 
 	### Configurability API -- install the configuration
 	def self::configure( config=nil )
-		config ||= self.defaults
-		self.datastore = config[:datastore] || self.defaults[:datastore]
-		self.metastore = config[:metastore] || self.defaults[:metastore]
-		self.event_socket_uri = config[:event_socket_uri] || self.defaults[:event_socket_uri]
+		config = self.defaults.merge( config || {} )
+
+		self.datastore        = config[:datastore]
+		self.metastore        = config[:metastore]
+		self.event_socket_uri = config[:event_socket_uri]
 
 		self.processors = self.load_processors( config[:processors] )
 		self.processors.each do |processor|
@@ -114,9 +115,7 @@ class Thingfish::Handler < Strelka::App
 
 		@datastore = Thingfish::Datastore.create( self.class.datastore )
 		@metastore = Thingfish::Metastore.create( self.class.metastore )
-		@event_socket = Mongrel2.zmq_context.socket( ZMQ::PUB )
-		@event_socket.setsockopt( ZMQ::LINGER, 0 )
-		@event_socket.bind( self.class.event_socket_uri )
+		@event_socket = nil
 	end
 
 
@@ -132,6 +131,23 @@ class Thingfish::Handler < Strelka::App
 
 	# The PUB socket on which resource events are published
 	attr_reader :event_socket
+
+
+	### Run the handler -- overridden to set up the event socket on startup.
+	def run
+		self.setup_event_socket
+		super
+	end
+
+
+	### Set up the event socket.
+	def setup_event_socket
+		unless @event_socket
+			@event_socket = Mongrel2.zmq_context.socket( :PUB )
+			@event_socket.linger = 0
+			@event_socket.bind( self.class.event_socket_uri )
+		end
+	end
 
 
 	### Shutdown handler hook.
@@ -525,6 +541,8 @@ class Thingfish::Handler < Strelka::App
 			r_uuid = self.datastore.save( io )
 			metadata['relation'] = uuid
 			self.metastore.save( r_uuid, metadata )
+			self.log.debug "  %s for %s saved as %s" %
+				[ metadata['relationship'], uuid, r_uuid ]
 		end
 	end
 
@@ -604,8 +622,10 @@ class Thingfish::Handler < Strelka::App
 
 	### Send an event of +type+ with the given +msg+ over the zmq event socket.
 	def send_event( type, msg )
-		self.event_socket.send( type.to_s, ZMQ::SNDMORE )
-		self.event_socket.send( Yajl.dump(msg) )
+		esock = self.event_socket or return
+		self.log.debug "Publishing %p event: %p" % [ type, msg ]
+		esock.sendm( type.to_s )
+		esock.send( Yajl.dump(msg) )
 	end
 
 

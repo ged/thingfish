@@ -79,7 +79,7 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 	def fetch_related_uuids( oid )
 		oid = normalize_oid( oid )
 		self.log.debug "Fetching UUIDs of resources related to %s" % [ oid ]
-		return self.search( :criteria => {:relation => oid} )
+		return self.search( :criteria => {:relation => oid}, :include_related => true )
 	end
 
 
@@ -89,12 +89,23 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 		ds = @storage.each_key
 		self.log.debug "Starting search with %p" % [ ds ]
 
+		ds = self.omit_related_resources( ds, options )
 		ds = self.apply_search_criteria( ds, options )
 		ds = self.apply_search_order( ds, options )
 		ds = self.apply_search_direction( ds, options )
 		ds = self.apply_search_limit( ds, options )
 
 		return ds.to_a
+	end
+
+
+	### Omit related resources from the search dataset +ds+ unless the given
+	### +options+ specify otherwise.
+	def omit_related_resources( ds, options )
+		unless options[:include_related]
+			ds = ds.reject {|uuid| @storage[uuid]['relationship'] }
+		end
+		return ds
 	end
 
 

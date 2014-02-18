@@ -6,6 +6,7 @@ require 'strelka/constants'
 require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )
 
 require 'thingfish'
+require 'thingfish/mixins'
 
 
 # The mixin that adds methods to Strelka::HTTPRequest for Thingfish metadata.

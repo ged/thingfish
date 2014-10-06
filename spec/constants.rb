@@ -3,6 +3,7 @@
 
 require 'thingfish' unless defined?( Thingfish )
 
+
 module Thingfish::SpecConstants
 	TEST_APPID        = 'thingfish-test'
 	TEST_SEND_SPEC    = 'tcp://127.0.0.1:9999'

@@ -18,6 +18,7 @@ BEGIN {
 require 'simplecov' if ENV['COVERAGE']
 
 require 'stringio'
+require 'time'
 
 require_relative 'constants'
 
@@ -64,7 +65,6 @@ RSpec.configure do |c|
 	include Strelka::Constants
 	include Thingfish::SpecHelpers
 
-	c.treat_symbols_as_metadata_keys_with_true_values = true
 	c.run_all_when_everything_filtered = true
 	c.filter_run :focus
 	c.order = 'random'

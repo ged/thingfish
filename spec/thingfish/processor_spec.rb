@@ -38,7 +38,7 @@ describe Thingfish::Processor do
 
 		it "can declare a list of media types it handles" do
 			subclass.handled_types( 'image/*', 'video/*' )
-			expect( subclass.handled_types ).to have( 2 ).handled_types
+			expect( subclass.handled_types.size ).to be( 2 )
 			expect( subclass.handled_types[0] ).to be_a( Strelka::HTTPRequest::MediaType )
 		end
 

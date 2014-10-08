@@ -4,7 +4,7 @@
 
 # The Mongrel config used by the examples. Load it with:
 #
-#   m2sh.rb -c examples/mongrel2.sqlite load examples/gen-config.rb
+#   m2sh.rb -c mongrel2.sqlite load examples/m2-config.rb
 #
 
 require 'mongrel2'

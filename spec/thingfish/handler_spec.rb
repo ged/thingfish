@@ -17,7 +17,7 @@ describe Thingfish::Handler do
 	end
 
 	before( :each ) do
-		@png_io = StringIO.new( TEST_PNG_DATA.dup )
+		@png_io  = StringIO.new( TEST_PNG_DATA.dup )
 		@text_io = StringIO.new( TEST_TEXT_DATA.dup )
 		@handler = described_class.new( TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC )
 	end
@@ -568,7 +568,7 @@ describe Thingfish::Handler do
 			expect( @handler.metastore.fetch(uuid) ).
 				to include( 'test:comment' => 'Yo, it totally worked.')
 			related_uuids = @handler.metastore.fetch_related_uuids( uuid )
-			expect( related_uuids ).to have( 1 ).member
+			expect( related_uuids.size ).to be( 1 )
 
 			r_uuid = related_uuids.first.downcase
 			expect( @handler.metastore.fetch_value(r_uuid, 'relation') ).to eq( uuid )
@@ -610,7 +610,7 @@ describe Thingfish::Handler do
 
 			handles = ZMQ.select( [@subsock], nil, nil, 0 )
 			expect( handles ).to be_an( Array )
-			expect( handles[0] ).to have( 1 ).socket
+			expect( handles[0].size ).to be( 1 )
 			expect( handles[0].first ).to be( @subsock )
 
 			event = @subsock.recv

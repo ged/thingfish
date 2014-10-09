@@ -3,6 +3,6 @@ loggability -v0.11.0
 hoe-deveiate -v0.3.0
 sequel -v4.3.0
 sequel_pg -v1.6.8
-strelka -v0.8.0
+strelka -v0.9.0
 ruby-mp3info -v0.8.2
 rspec -v3.1.0

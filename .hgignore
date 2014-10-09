@@ -1,14 +1,5 @@
-^etc/thingfish\.conf-.*
-^docs/manual/output
-^docs/api
 ^pkg/
-^junk/^docs/asset\-vocabulary\.xml$
-^misc/junk
 ^tags
-
-doc/
 ^ChangeLog$
-integration/
-logs/
 etc/thingfish.conf$
 tmp/

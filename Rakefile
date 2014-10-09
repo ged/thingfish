@@ -4,19 +4,12 @@
 require 'pathname'
 require 'hoe'
 
-# Directory to keep benchmarks around in
 BASEDIR      = Pathname( __FILE__ ).dirname
-BENCHMARKDIR = BASEDIR + 'benchmarks'
-MISCDIR      = BASEDIR + 'misc'
-TESTIMAGE    = MISCDIR + 'testimage.jpg'
-
 
 Hoe.plugin :mercurial
 Hoe.plugin :signing
-Hoe.plugin :manualgen
 
 Hoe.plugins.delete :rubyforge
-
 
 hoespec = Hoe.spec 'thingfish' do
 	self.readme_file = 'README.rdoc'
@@ -27,13 +20,9 @@ hoespec = Hoe.spec 'thingfish' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.license "BSD"
 
-	self.dependency 'strelka',         '~> 0.8'
-
+	self.dependency 'strelka',         '~> 0.9'
 	self.dependency 'hoe-deveiate',    '~> 0.3',  :development
 	self.dependency 'simplecov',       '~> 0.7',  :development
-	self.dependency 'pg',              '~> 0.16', :development
-	self.dependency 'sequel_pg',       '~> 1.6',  :development
-	self.dependency 'ruby-mp3info',    '~> 0.8',  :development
 
 	self.require_ruby_version( '>=2.0.0' )
 

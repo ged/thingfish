@@ -1,5 +1,5 @@
-configurability -v2.1.0
-loggability -v0.10.0
+configurability -v2.2.0
+loggability -v0.11.0
 hoe-deveiate -v0.3.0
 strelka -v0.9.0
 ruby-mp3info -v0.8.5

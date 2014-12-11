@@ -1,6 +1,0 @@
-POST / HTTP/1.0
-Content-Type: text/plain
-Content-Length: 8
-
-12345678
-

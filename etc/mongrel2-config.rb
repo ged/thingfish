@@ -2,19 +2,33 @@
 # vim: set nosta noet ts=4 sw=4:
 #encoding: utf-8
 
-# The Mongrel config used by the examples. Load it with:
 #
-#   m2sh.rb -c examples/mongrel2.sqlite load examples/gen-config.rb
+# This script generates a Mongrel2 configuration database suitable for
+# getting a Thingfish handler running.
+#
+# Load it with:
+#
+#     $ m2sh.rb -c mongrel2.sqlite load examples/mongrel2-config.rb
+#
+# Afterwards, ensure the path to the mongrel2.sqlite file is in your
+# thingfish.conf:
+#
+#     mongrel2:
+#       configdb: /path/to/mongrel2.sqlite
+#
+# ... and start the mongrel2 daemon:
+#
+#     $ mongrel2 /path/to/mongrel2.sqlite thingfish
+#
+# In production use, you'll likely want to mount the Thingfish handler
+# within the URI space of an existing Mongrel2 environment.
 #
 
 require 'mongrel2'
 require 'mongrel2/config/dsl'
 
-
-# samples server
 server 'thingfish' do
-
-	name         'Thingfish Examples'
+	name         'Thingfish'
 	default_host 'localhost'
 
 	access_log   'logs/access.log'
@@ -30,11 +44,9 @@ server 'thingfish' do
 	host 'localhost' do
 		route '/', handler( 'tcp://127.0.0.1:9900', 'thingfish' )
 	end
-
 end
 
-setting "zeromq.threads", 1
-
+setting 'zeromq.threads', 1
 setting 'limits.content_length', 250_000
 setting 'server.daemonize', false
 setting 'upload.temp_store', 'var/uploads/mongrel2.upload.XXXXXX'

@@ -100,7 +100,7 @@ describe Thingfish::Metastore, "memory" do
 		@store.remove_except( TEST_UUID, :format, :extent )
 
 		metadata = @store.fetch( TEST_UUID )
-		expect( metadata ).to have( 2 ).members
+		expect( metadata.size ).to be( 2 )
 		expect( metadata.keys ).to include( 'format', 'extent' )
 	end
 
@@ -167,7 +167,7 @@ describe Thingfish::Metastore, "memory" do
 
 		it "can apply criteria to searches" do
 			results = @store.search( :criteria => {'format' => 'audio/mp3'} )
-			expect( results ).to have( 2 ).matches
+			expect( results.size ).to be( 2 )
 			results.each do |uuid|
 				expect( @store.fetch_value(uuid, 'format') ).to eq( 'audio/mp3' )
 			end

@@ -17,7 +17,7 @@ describe Thingfish::Handler do
 	end
 
 	before( :each ) do
-		@png_io = StringIO.new( TEST_PNG_DATA.dup )
+		@png_io  = StringIO.new( TEST_PNG_DATA.dup )
 		@text_io = StringIO.new( TEST_TEXT_DATA.dup )
 		@handler = described_class.new( TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC )
 	end

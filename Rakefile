@@ -31,8 +31,6 @@ hoespec = Hoe.spec 'thingfish' do
 
 	self.dependency 'hoe-deveiate',    '~> 0.3',  :development
 	self.dependency 'simplecov',       '~> 0.7',  :development
-	self.dependency 'pg',              '~> 0.16', :development
-	self.dependency 'sequel_pg',       '~> 1.6',  :development
 	self.dependency 'ruby-mp3info',    '~> 0.8',  :development
 
 	self.require_ruby_version( '>=2.0.0' )

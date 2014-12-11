@@ -25,6 +25,8 @@ server 'thingfish' do
 	bind_addr    '0.0.0.0'
 	port         3474
 
+	xrequest     '/usr/local/lib/mongrel2/filters/sendfile.so'
+
 	host 'localhost' do
 		route '/', handler( 'tcp://127.0.0.1:9900', 'thingfish' )
 	end
@@ -33,7 +35,7 @@ end
 
 setting "zeromq.threads", 1
 
-setting 'limits.content_length', 100 * 1024 * 1024
+setting 'limits.content_length', 250_000
 setting 'server.daemonize', false
 setting 'upload.temp_store', 'var/uploads/mongrel2.upload.XXXXXX'
 

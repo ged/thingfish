@@ -275,8 +275,15 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
-		res.body = object
 		res.content_type = metadata['format']
+
+		if object.respond_to?( :path )
+			res.extend_reply_with( :sendfile )
+			res.headers.content_length = object.size
+			res.extended_reply_data << object.path.to_s
+		else
+			res.body = object
+		end
 
 		return res
 	end
@@ -516,11 +523,13 @@ class Thingfish::Handler < Strelka::App
 		metadata.merge!( self.extract_default_metadata(request) )
 
 		if uuid
-			self.log.info "Replacing resource %s" % [ uuid ]
+			self.log.info "Replacing resource %s (encoding: %p)" %
+				[ uuid, request.headers.content_encoding ]
 			self.datastore.replace( uuid, request.body )
 			self.metastore.merge( uuid, metadata )
 		else
-			self.log.info "Saving new resource."
+			self.log.info "Saving new resource (encoding: %p)." %
+				[ request.headers.content_encoding ]
 			uuid = self.datastore.save( request.body )
 			self.metastore.save( uuid, metadata )
 		end
@@ -574,6 +583,7 @@ class Thingfish::Handler < Strelka::App
 	def handle_async_upload_start( request )
 		self.log.info "Starting asynchronous upload: %s" %
 			[ request.headers.x_mongrel2_upload_start ]
+		return nil
 	end
 
 

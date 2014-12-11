@@ -3,7 +3,6 @@
 # encoding: utf-8
 
 require 'securerandom'
-require 'strelka/mixins'
 
 require 'thingfish' unless defined?( Thingfish )
 

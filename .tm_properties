@@ -5,6 +5,10 @@ excludeInFileChooser = "{$exclude,.hg}"
 
 TM_RUBY = "$HOME/.rvm/bin/rvm-auto-ruby"
 
+RUBYLIB              = "/Users/ged/source/ruby/rspec-formatter-webkit/lib"
+TM_RSPEC_OPTS        = '-rrspec/core/formatters/webkit'
+TM_RSPEC_FORMATTER   = 'RSpec::Core::Formatters::WebKit'
+
 [ source.ruby ]
 softTabs         = false
 tabSize          = 4

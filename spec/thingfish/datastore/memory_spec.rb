@@ -55,6 +55,7 @@ describe Thingfish::Datastore, "memory" do
 		rval = @store.fetch( oid )
 
 		expect( rval ).to respond_to( :read )
+		expect( rval.external_encoding ).to eq( Encoding::ASCII_8BIT )
 		expect( rval.read ).to eq( TEST_TEXT_DATA )
 	end
 

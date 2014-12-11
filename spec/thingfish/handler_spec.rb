@@ -77,6 +77,46 @@ describe Thingfish::Handler do
 		end
 
 
+		it "accepts an upload POSTED via Mongrel's async API'" do
+			# Need the config to look up the async upload path relative to the server's chroot
+			Mongrel2::Config.db = Mongrel2::Config.in_memory_db
+			Mongrel2::Config.init_database
+			server( 'thingfish' ) do
+				chroot    ''
+				host 'localhost' do
+					route '/', handler( 'tcp://127.0.0.1:9900', 'thingfish' )
+				end
+			end
+
+			spool_path = 'var/spool/uploadfile.672'
+			upload_size = 645_000
+			fh = instance_double( "File", size: upload_size, rewind: 0, pos: 0, :pos= => nil,
+				read: TEST_TEXT_DATA )
+			expect( FileTest ).to receive( :exist? ).with( spool_path ).and_return( true )
+			expect( File ).to receive( :open ).
+				with( spool_path, 'r', encoding: Encoding::ASCII_8BIT ).
+				and_return( fh )
+
+			start_req = factory.post( '/', nil,
+				x_mongrel2_upload_start: spool_path,
+				content_length: upload_size,
+				content_type: 'text/plain' )
+			upload_req = factory.post( '/', nil,
+				x_mongrel2_upload_start: spool_path,
+				x_mongrel2_upload_done: spool_path,
+				content_length: upload_size,
+				content_type: 'text/plain' )
+
+			start_res = @handler.dispatch_request( start_req )
+			upload_res = @handler.dispatch_request( upload_req )
+
+			expect( start_res ).to be_nil
+
+			expect( upload_res.status_line ).to match( /201 created/i )
+			expect( upload_res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
+		end
+
+
 		it "allows additional metadata to be attached to uploads via X-Thingfish-* headers" do
 			headers = {
 				content_type: 'text/plain',
@@ -188,8 +228,8 @@ describe Thingfish::Handler do
 			result = @handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
-			expect( @handler.metastore ).to_not include( uuid )
-			expect( @handler.datastore ).to_not include( uuid )
+			expect( @handler.metastore.include?(uuid) ).to be_falsey
+			expect( @handler.datastore.include?(uuid) ).to be_falsey
 		end
 
 
@@ -568,7 +608,7 @@ describe Thingfish::Handler do
 			expect( @handler.metastore.fetch(uuid) ).
 				to include( 'test:comment' => 'Yo, it totally worked.')
 			related_uuids = @handler.metastore.fetch_related_uuids( uuid )
-			expect( related_uuids ).to have( 1 ).member
+			expect( related_uuids.size ).to eq( 1 )
 
 			r_uuid = related_uuids.first.downcase
 			expect( @handler.metastore.fetch_value(r_uuid, 'relation') ).to eq( uuid )
@@ -610,7 +650,7 @@ describe Thingfish::Handler do
 
 			handles = ZMQ.select( [@subsock], nil, nil, 0 )
 			expect( handles ).to be_an( Array )
-			expect( handles[0] ).to have( 1 ).socket
+			expect( handles[0].size ).to eq( 1 )
 			expect( handles[0].first ).to be( @subsock )
 
 			event = @subsock.recv

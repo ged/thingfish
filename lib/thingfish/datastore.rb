@@ -4,6 +4,7 @@
 require 'securerandom'
 require 'pluggability'
 require 'stringio'
+require 'strelka'
 
 require 'thingfish' unless defined?( Thingfish )
 require 'thingfish/mixins'

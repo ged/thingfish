@@ -1,6 +1,0 @@
-PUT /metadata/ee7a060e-d01a-11dc-bd59-0016cba18fb9/title HTTP/1.0
-Accept: */*
-Content-Type: application/json
-Content-Length: 14
-
-["poooop.txt"]

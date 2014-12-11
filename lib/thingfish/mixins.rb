@@ -8,7 +8,6 @@ require 'thingfish' unless defined?( Thingfish )
 
 module Thingfish
 
-
 	# A collection of functions for dealing with object IDs.
 	module Normalization
 

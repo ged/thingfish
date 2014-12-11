@@ -1,8 +1,21 @@
 ---
 logging:
   __default__: debug STDERR
+  thingfish: info (color)
+
+# Thingfish specific configuration.
+#
+thingfish:
+  datastore: memory
+  metastore: memory
+
+# The path to the Mongrel2 config database.
+#
 mongrel2:
   configdb: example/mongrel2.sqlite
+
+# Strelka configuration knobs that influence Thingfish's handler.
+#
 app:
   devmode: false
   app_glob_pattern: '{apps,handlers}/**/*'
@@ -10,6 +23,4 @@ app:
 multipartparser:
   bufsize: 524288
   spooldir: /var/folders/1f/6ymhh79s0n3gjdw16fj7tp480000gp/T/strelka-mimeparts
-thingfish:
-  datastore: memory
-  metastore: memory
+

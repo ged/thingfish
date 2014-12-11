@@ -15,16 +15,10 @@ BEGIN {
 }
 
 # SimpleCov test coverage reporting; enable this using the :coverage rake task
-if ENV['COVERAGE']
-	$stderr.puts "\n\n>>> Enabling coverage report.\n\n"
-	require 'simplecov'
-	SimpleCov.start do
-		add_filter 'spec'
-		add_group "Needing tests" do |file|
-			file.covered_percent < 90
-		end
-	end
-end
+require 'simplecov' if ENV['COVERAGE']
+
+require 'stringio'
+require 'time'
 
 
 require 'loggability'
@@ -53,7 +47,6 @@ RSpec.configure do |c|
 	include Thingfish::SpecHelpers
 	include Thingfish::SpecHelpers::Constants
 
-	c.treat_symbols_as_metadata_keys_with_true_values = true
 	c.run_all_when_everything_filtered = true
 	c.filter_run :focus
 	c.order = 'random'

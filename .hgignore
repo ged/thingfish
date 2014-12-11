@@ -11,3 +11,6 @@ doc/
 integration/
 logs/
 etc/thingfish.conf$
+var/
+run/
+\.sqlite$

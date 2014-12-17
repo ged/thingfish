@@ -88,7 +88,7 @@ describe Thingfish::Handler do
 				end
 			end
 
-			spool_path = 'var/spool/uploadfile.672'
+			spool_path = '/var/spool/uploadfile.672'
 			upload_size = 645_000
 			fh = instance_double( "File", size: upload_size, rewind: 0, pos: 0, :pos= => nil,
 				read: TEST_TEXT_DATA )
@@ -134,6 +134,7 @@ describe Thingfish::Handler do
 				to eq( 'Muffin the Panda Goes To School' )
 			expect( @handler.metastore.fetch_value(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
 		end
+
 
 		it 'replaces content via PUT' do
 			uuid = @handler.datastore.save( @text_io )
@@ -204,6 +205,24 @@ describe Thingfish::Handler do
 		end
 
 
+		it "returns a 404 Not Found when asked to fetch an object that doesn't exist" do
+			req = factory.get( "/#{TEST_UUID}" )
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /404 not found/i )
+		end
+
+
+		it "returns a 404 Not Found when asked to fetch an object that doesn't exist in the metastore" do
+			uuid = @handler.datastore.save( @png_io )
+
+			req = factory.get( "/#{uuid}" )
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /404 not found/i )
+		end
+
+
 		it "doesn't care about the case of the UUID when fetching uploaded data" do
 			uuid = @handler.datastore.save( @png_io )
 			@handler.metastore.save( uuid, {'format' => 'image/png'} )
@@ -239,7 +258,6 @@ describe Thingfish::Handler do
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
-
 	end
 
 

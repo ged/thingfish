@@ -21,6 +21,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.license "BSD"
 
 	self.dependency 'strelka',         '~> 0.9'
+	self.dependency 'mongrel2',        '~> 0.43'
 
 	self.dependency 'hoe-deveiate',    '~> 0.3',  :development
 	self.dependency 'simplecov',       '~> 0.7',  :development

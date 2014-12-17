@@ -6,3 +6,4 @@ var/
 run/
 tmp/
 \.sqlite$
+logs/

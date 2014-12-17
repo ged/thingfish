@@ -270,17 +270,20 @@ class Thingfish::Handler < Strelka::App
 	# Fetch an object by ID
 	get ':uuid' do |req|
 		uuid = req.params[:uuid]
-		object = self.datastore.fetch( uuid ) or
-			finish_with HTTP::NOT_FOUND, "No such object."
+		object = self.datastore.fetch( uuid )
 		metadata = self.metastore.fetch( uuid )
+
+		finish_with HTTP::NOT_FOUND, "No such object." unless object && metadata
 
 		res = req.response
 		res.content_type = metadata['format']
 
 		if object.respond_to?( :path )
+			path = Pathname( object.path )
+			chroot_path = path.relative_path_from( req.server_chroot )
 			res.extend_reply_with( :sendfile )
 			res.headers.content_length = object.size
-			res.extended_reply_data << object.path.to_s
+			res.extended_reply_data << File::SEPARATOR + chroot_path.to_s
 		else
 			res.body = object
 		end

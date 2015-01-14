@@ -7,7 +7,7 @@ require 'thingfish/datastore' unless defined?( Thingfish::Datastore )
 
 
 # An in-memory datastore for testing and tryout purposes.
-class Thingfish::MemoryDatastore < Thingfish::Datastore
+class Thingfish::Datastore::Memory < Thingfish::Datastore
 	extend Loggability
 
 	# Loggability API -- log to the :thingfish logger
@@ -88,5 +88,5 @@ class Thingfish::MemoryDatastore < Thingfish::Datastore
 		return @storage.each( &block )
 	end
 
-end # class Thingfish::MemoryDatastore
+end # class Thingfish::Datastore::Memory
 

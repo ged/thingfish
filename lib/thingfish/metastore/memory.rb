@@ -7,7 +7,7 @@ require 'thingfish/metastore' unless defined?( Thingfish::Metastore )
 
 
 # An in-memory metastore for testing and tryout purposes.
-class Thingfish::MemoryMetastore < Thingfish::Metastore
+class Thingfish::Metastore::Memory < Thingfish::Metastore
 	extend Loggability
 	include Thingfish::Normalization
 
@@ -205,5 +205,5 @@ class Thingfish::MemoryMetastore < Thingfish::Metastore
 		return @storage.size
 	end
 
-end # class Thingfish::MemoryMetastore
+end # class Thingfish::Metastore::Memory
 

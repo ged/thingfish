@@ -14,6 +14,7 @@ etc/thingfish.conf.example
 lib/strelka/app/metadata.rb
 lib/strelka/httprequest/metadata.rb
 lib/thingfish.rb
+lib/thingfish/behaviors.rb
 lib/thingfish/datastore.rb
 lib/thingfish/datastore/memory.rb
 lib/thingfish/handler.rb

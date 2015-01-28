@@ -19,7 +19,7 @@ module Thingfish::SpecHelpers
 
 		TEST_UUID         = 'E5DFEEAB-3525-4F14-B4DB-2772D0B9987F'
 
-		TEST_TEXT_DATA    = "Pork sausage. Pork! Sausage!"
+		TEST_TEXT_DATA    = "Pork sausage. Pork! Sausage!".b
 		TEST_TEXT_DATA_IO = StringIO.new( TEST_TEXT_DATA )
 		TEST_PNG_DATA     = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMA" +
 		                     "AQAABQABDQottAAAAABJRU5ErkJggg==").unpack('m').first

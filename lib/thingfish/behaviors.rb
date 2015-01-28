@@ -88,7 +88,7 @@ RSpec.shared_examples "a Thingfish metastore" do
 	end
 
 
-	it "can truncate metadata not in a list of keys for a UUID" do
+	it "can truncate metadata not in a list of OIDs for a UUID" do
 		metastore.save( TEST_UUID, TEST_METADATA.first )
 		metastore.remove_except( TEST_UUID, :format, :extent )
 
@@ -139,23 +139,23 @@ RSpec.shared_examples "a Thingfish metastore" do
 		end
 
 
-		it "can fetch an array of all of its keys" do
-			expect( metastore.keys ).to eq( @uuids )
+		it "can fetch an array of all of its OIDs" do
+			expect( metastore.oids ).to eq( @uuids )
 		end
 
-		it "can iterate over each of the store's keys" do
+		it "can iterate over each of the store's oids" do
 			uuids = []
-			metastore.each_key {|u| uuids << u }
+			metastore.each_oid {|u| uuids << u }
 
 			expect( uuids ).to eq( @uuids )
 		end
 
-		it "can provide an enumerator over each of the store's keys" do
-			expect( metastore.each_key.to_a ).to eq( @uuids )
+		it "can provide an enumerator over each of the store's oids" do
+			expect( metastore.each_oid.to_a ).to eq( @uuids )
 		end
 
 		it "can search for uuids" do
-			expect( metastore.search.to_a ).to eq( metastore.keys )
+			expect( metastore.search.to_a ).to eq( metastore.oids )
 		end
 
 		it "can apply criteria to searches" do
@@ -167,10 +167,83 @@ RSpec.shared_examples "a Thingfish metastore" do
 		end
 
 		it "can limit the number of results returned from a search" do
-			expect( metastore.search( limit: 2 ).to_a ).to eq( metastore.keys[0,2] )
+			expect( metastore.search( limit: 2 ).to_a ).to eq( metastore.oids[0,2] )
 		end
 
 	end
 
+
+end
+
+
+RSpec.shared_examples "a Thingfish datastore" do
+
+	let( :png_io ) { StringIO.new(TEST_PNG_DATA.dup) }
+	let( :text_io ) { StringIO.new(TEST_TEXT_DATA.dup) }
+
+
+	it "returns a UUID when saving" do
+		expect( store.save(png_io) ).to be_a_uuid()
+	end
+
+
+	it "restores the position of the IO after saving" do
+		png_io.pos = 11
+		store.save( png_io )
+		expect( png_io.pos ).to eq( 11 )
+	end
+
+
+	it "can replace existing data" do
+		new_uuid = store.save( text_io )
+		store.replace( new_uuid, png_io )
+
+		rval = store.fetch( new_uuid )
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_PNG_DATA )
+	end
+
+
+	it "doesn't care about the case of the uuid when replacing" do
+		new_uuid = store.save( text_io )
+		store.replace( new_uuid.upcase, png_io )
+
+		rval = store.fetch( new_uuid )
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_PNG_DATA )
+	end
+
+
+	it "can fetch saved data" do
+		oid = store.save( text_io )
+		rval = store.fetch( oid )
+
+		expect( rval ).to respond_to( :read )
+		expect( rval.external_encoding ).to eq( Encoding::ASCII_8BIT )
+		expect( rval.read ).to eq( TEST_TEXT_DATA )
+	end
+
+
+	it "doesn't care about the case of the uuid when fetching" do
+		oid = store.save( text_io )
+		rval = store.fetch( oid.upcase )
+
+		expect( rval ).to respond_to( :read )
+		expect( rval.read ).to eq( TEST_TEXT_DATA )
+	end
+
+
+	it "can remove data" do
+		oid = store.save( text_io )
+		store.remove( oid )
+
+		expect( store.fetch(oid) ).to be_nil
+	end
+
+
+	it "knows if it has data for a given OID" do
+		oid = store.save( text_io )
+		expect( store ).to include( oid )
+	end
 
 end

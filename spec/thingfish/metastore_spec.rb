@@ -30,12 +30,12 @@ describe Thingfish::Metastore do
 
 		let( :store ) { described_class.create('testing') }
 
-		it "raises an error if it doesn't implement #keys" do
-			expect { store.keys }.to raise_error( NotImplementedError, /keys/ )
+		it "raises an error if it doesn't implement #oids" do
+			expect { store.oids }.to raise_error( NotImplementedError, /oids/ )
 		end
 
-		it "raises an error if it doesn't implement #each_key" do
-			expect { store.each_key }.to raise_error( NotImplementedError, /each_key/ )
+		it "raises an error if it doesn't implement #each_oid" do
+			expect { store.each_oid }.to raise_error( NotImplementedError, /each_oid/ )
 		end
 
 		it "raises an error if it doesn't implement #fetch" do

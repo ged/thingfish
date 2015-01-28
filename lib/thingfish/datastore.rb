@@ -28,7 +28,7 @@ class Thingfish::Datastore
 	             :fetch,
 	             :each,
 	             :include?,
-				 :each_uuid,
+				 :each_oid,
 	             :remove
 
 

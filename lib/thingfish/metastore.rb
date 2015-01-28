@@ -2,6 +2,8 @@
 #encoding: utf-8
 
 require 'pluggability'
+require 'strelka'
+require 'strelka/mixins'
 
 require 'thingfish' unless defined?( Thingfish )
 require 'thingfish/mixins'
@@ -19,8 +21,8 @@ class Thingfish::Metastore
 
 	# AbstractClass API -- register some virtual methods that must be implemented
 	# in subclasses
-	pure_virtual :keys,
-	             :each_key,
+	pure_virtual :oids,
+	             :each_oid,
 	             :save,
 	             :search,
 	             :fetch,

@@ -76,9 +76,10 @@ class Thingfish::Datastore::Memory < Thingfish::Datastore
 
 	### Iterator -- yield the UUID of each object in the datastore to the block, or
 	### return an Enumerator for each UUID if called without a block.
-	def each_uuid( &block )
+	def each_oid( &block )
 		return @storage.each_key( &block )
 	end
+
 
 	### Iterator -- yield a pair:
 	###    UUID => datablob

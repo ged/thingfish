@@ -27,15 +27,15 @@ class Thingfish::Metastore::Memory < Thingfish::Metastore
 	attr_reader :storage
 
 
-	### Return an Array of all of the store's keys.
-	def keys
+	### Return an Array of all stored OIDs.
+	def oids
 		return @storage.keys
 	end
 
 
-	### Iterate over each of the store's keys, yielding to the block if one is given
+	### Iterate over the OID of each entry in the store, yielding to the block if one is given
 	### or returning an Enumerator if one is not.
-	def each_key( &block )
+	def each_oid( &block )
 		return @storage.each_key( &block )
 	end
 

@@ -35,6 +35,8 @@ class Thingfish::Handler < Strelka::App
 	}
 
 	# Metadata keys which aren't directly modifiable via the REST API
+	# :TODO: Consider making either all of these or a subset of them
+	#        be immutable.
 	OPERATIONAL_METADATA_KEYS = %w[
 		format
 		extent
@@ -493,7 +495,7 @@ class Thingfish::Handler < Strelka::App
 	end
 
 
-	# DELETE /«uuid»/metadata
+	# DELETE /«uuid»/metadata/«key»
 	# Remove the metadata associated with «key» for the given «uuid».
 	delete ':uuid/metadata/:key' do |req|
 		uuid = req.params[:uuid]
@@ -549,9 +551,14 @@ class Thingfish::Handler < Strelka::App
 		request.related_resources.each do |io, metadata|
 			self.log.debug "Saving a resource related to %s: %p" % [ uuid, metadata ]
 			next unless self.check_related_metadata( metadata )
+
 			self.log.debug "  related metadata checks passed; storing it."
+			metadata = self.extract_connection_metadata( request ).merge( metadata )
+			self.log.debug "  metadata is: %p" % [ metadata ]
 			r_uuid = self.datastore.save( io )
+			metadata['created']  = Time.now.getgm
 			metadata['relation'] = uuid
+
 			self.metastore.save( r_uuid, metadata )
 			self.log.debug "  %s for %s saved as %s" %
 				[ metadata['relationship'], uuid, r_uuid ]
@@ -592,12 +599,20 @@ class Thingfish::Handler < Strelka::App
 
 	### Return a Hash of default metadata extracted from the given +request+.
 	def extract_default_metadata( request )
+		return self.extract_connection_metadata( request ).merge(
+			'extent'        => request.headers.content_length,
+			'format'        => request.content_type,
+			'created'       => Time.now.getgm
+		)
+	end
+
+
+	### Return a Hash of metadata extracted from the connection information
+	### of the given +request+.
+	def extract_connection_metadata( request )
 		return {
 			'useragent'     => request.headers.user_agent,
-			'extent'        => request.headers.content_length,
 			'uploadaddress' => request.remote_ip,
-			'format'        => request.content_type,
-			'created'       => Time.now.getgm,
 		}
 	end
 

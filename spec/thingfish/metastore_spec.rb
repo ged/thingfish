@@ -80,10 +80,10 @@ describe Thingfish::Metastore do
 			expect { store.size }.to raise_error( NotImplementedError, /size/ )
 		end
 
-		it "raises an error if it doesn't implement #fetch_related_uuids" do
+		it "raises an error if it doesn't implement #fetch_related_oids" do
 			expect {
-				store.fetch_related_uuids( TEST_UUID )
-			}.to raise_error( NotImplementedError, /fetch_related_uuids/i )
+				store.fetch_related_oids( TEST_UUID )
+			}.to raise_error( NotImplementedError, /fetch_related_oids/i )
 		end
 
 		it "provides a transactional block method" do

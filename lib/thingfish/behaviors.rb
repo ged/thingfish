@@ -3,6 +3,8 @@
 
 require 'rspec'
 
+require 'thingfish/handler'
+
 
 RSpec.shared_examples "a Thingfish metastore" do
 
@@ -24,7 +26,7 @@ RSpec.shared_examples "a Thingfish metastore" do
 
 
 	it "doesn't care about the case of the UUID when saving and fetching data" do
-		metastore.save( TEST_UUID.downcase, TEST_METADATA.first )
+		metastore.save( TEST_UUID.downcase, TEST_METADATA.first.freeze )
 		expect( metastore.fetch(TEST_UUID) ).to eq( TEST_METADATA.first )
 	end
 
@@ -89,12 +91,13 @@ RSpec.shared_examples "a Thingfish metastore" do
 
 
 	it "can truncate metadata not in a list of OIDs for a UUID" do
+		keys = Thingfish::Handler::OPERATIONAL_METADATA_KEYS
 		metastore.save( TEST_UUID, TEST_METADATA.first )
-		metastore.remove_except( TEST_UUID, :format, :extent )
+		metastore.remove_except( TEST_UUID, *keys )
 
 		metadata = metastore.fetch( TEST_UUID )
-		expect( metadata.size ).to be( 2 )
-		expect( metadata.keys ).to include( 'format', 'extent' )
+		expect( metadata.size ).to eq( keys.size )
+		expect( metadata.keys ).to include( *keys.map(&:to_s) )
 	end
 
 
@@ -120,7 +123,7 @@ RSpec.shared_examples "a Thingfish metastore" do
 		metastore.save( rel_uuid2, TEST_METADATA[1].merge('relation' => TEST_UUID.downcase) )
 		metastore.save( unrel_uuid, TEST_METADATA[2] )
 
-		uuids = metastore.fetch_related_uuids( TEST_UUID )
+		uuids = metastore.fetch_related_oids( TEST_UUID )
 
 		expect( uuids ).to include( rel_uuid1, rel_uuid2 )
 		expect( uuids ).to_not include( unrel_uuid )
@@ -159,8 +162,8 @@ RSpec.shared_examples "a Thingfish metastore" do
 		end
 
 		it "can apply criteria to searches" do
-			results = metastore.search( :criteria => {'format' => 'audio/mp3'} )
-			expect( results.size ).to be( 2 )
+			results = metastore.search( criteria: {format: 'audio/mp3'} )
+			expect( results.size ).to eq( 2 )
 			results.each do |uuid|
 				expect( metastore.fetch_value(uuid, 'format') ).to eq( 'audio/mp3' )
 			end

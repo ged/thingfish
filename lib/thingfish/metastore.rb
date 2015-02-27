@@ -27,7 +27,7 @@ class Thingfish::Metastore
 	             :search,
 	             :fetch,
 	             :fetch_value,
-	             :fetch_related_uuids,
+	             :fetch_related_oids,
 	             :merge,
 	             :include?,
 	             :remove,

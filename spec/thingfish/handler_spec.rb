@@ -117,6 +117,33 @@ describe Thingfish::Handler do
 		end
 
 
+		it "accepts resources added to a POSTed resource by processors" do
+			imageio = StringIO.new( TEST_PNG_DATA )
+
+			subclass = Class.new( described_class )
+			subclass.filter( :request ) do |req|
+				req.add_related_resource( imageio,
+					relationship: 'thumbnail',
+					format: 'image/png',
+					extent: TEST_PNG_DATA.bytesize )
+			end
+			subclass.metastore = 'memory'
+			subclass.datastore = 'memory'
+			handler = subclass.new( TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC )
+
+			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
+			res = handler.handle( req )
+
+			metastore = handler.metastore
+			oid = res.headers.x_thingfish_uuid
+			related_oid = metastore.fetch_related_oids( oid ).first
+
+			expect(
+				metastore.fetch_value(related_oid, 'uploadaddress')
+			).to eq( metastore.fetch_value(oid, 'uploadaddress') )
+		end
+
+
 		it "allows additional metadata to be attached to uploads via X-Thingfish-* headers" do
 			headers = {
 				content_type: 'text/plain',
@@ -258,6 +285,8 @@ describe Thingfish::Handler do
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
+
+
 	end
 
 
@@ -625,7 +654,7 @@ describe Thingfish::Handler do
 
 			expect( @handler.metastore.fetch(uuid) ).
 				to include( 'test:comment' => 'Yo, it totally worked.')
-			related_uuids = @handler.metastore.fetch_related_uuids( uuid )
+			related_uuids = @handler.metastore.fetch_related_oids( uuid )
 			expect( related_uuids.size ).to eq( 1 )
 
 			r_uuid = related_uuids.first.downcase

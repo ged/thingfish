@@ -135,6 +135,8 @@ module Thingfish::SpecHelpers
 			 "created"       => Time.parse('2013-01-15 19:15:35 UTC'),
 			 "title"         => "trusttom.GIF"}
 		].freeze
+		TEST_METADATA.each {|hash| hash.freeze }
+
 
 	end # module Constants
 

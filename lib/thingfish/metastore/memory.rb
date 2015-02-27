@@ -75,10 +75,10 @@ class Thingfish::Metastore::Memory < Thingfish::Metastore
 	end
 
 
-	### Fetch UUIDs related to the given +oid+.
-	def fetch_related_uuids( oid )
+	### Fetch OIDs related to the given +oid+.
+	def fetch_related_oids( oid )
 		oid = normalize_oid( oid )
-		self.log.debug "Fetching UUIDs of resources related to %s" % [ oid ]
+		self.log.debug "Fetching OIDs of resources related to %s" % [ oid ]
 		return self.search( :criteria => {:relation => oid}, :include_related => true )
 	end
 

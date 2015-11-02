@@ -249,6 +249,7 @@ class Thingfish::Handler < Strelka::App
 		base_uri = req.base_uri
 		list = uuids.collect do |uuid|
 			uri = base_uri.dup
+			uri.path += '/' unless uri.path[-1] == '/'
 			uri.path += uuid
 
 			metadata = self.metastore.fetch( uuid )
@@ -300,11 +301,12 @@ class Thingfish::Handler < Strelka::App
 		uuid, metadata = self.save_resource( req )
 		self.send_event( :created, :uuid => uuid )
 
-		url = req.base_uri.dup
-		url.path += uuid
+		uri = req.base_uri.dup
+		uri.path += '/' unless uri.path[-1] == '/'
+		uri.path += uuid
 
 		res = req.response
-		res.headers.location = url
+		res.headers.location = uri
 		res.headers.x_thingfish_uuid = uuid
 		res.status = HTTP::CREATED
 

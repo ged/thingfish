@@ -1,5 +1,4 @@
 .simplecov
-ChangeLog
 History.rdoc
 LICENSE
 Manifest.txt
@@ -8,8 +7,6 @@ README.rdoc
 Rakefile
 bin/tfprocessord
 bin/thingfish
-etc/mongrel2-config.rb
-etc/thingfish.conf
 etc/thingfish.conf.example
 lib/strelka/app/metadata.rb
 lib/strelka/httprequest/metadata.rb
@@ -40,4 +37,3 @@ spec/thingfish/mixins_spec.rb
 spec/thingfish/processor/mp3_spec.rb
 spec/thingfish/processor_spec.rb
 spec/thingfish_spec.rb
-tmtags

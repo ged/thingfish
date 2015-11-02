@@ -44,11 +44,11 @@ class Thingfish::Processor::MP3 < Thingfish::Processor
 	def on_request( request )
 		mp3info = Mp3Info.new( request.body )
 
-		metadata = self.extract_id3_metadata( mp3info )
-		request.add_metadata( metadata )
+		mp3_metadata = self.extract_id3_metadata( mp3info )
+		request.add_metadata( mp3_metadata )
 
 		self.extract_images( mp3info ) do |imageio, metadata|
-			metadata[:title] = "Album art for %s - %s" % metadata.values_at( 'mp3:artist', 'mp3:title' )
+			metadata[:title] = "Album art for %s - %s" % mp3_metadata.values_at( 'mp3:artist', 'mp3:title' )
 			request.add_related_resource( imageio, metadata )
 		end
 	end

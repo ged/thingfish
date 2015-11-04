@@ -115,13 +115,14 @@ RSpec.shared_examples "a Thingfish metastore" do
 
 
 	it "knows how to fetch UUIDs for related resources" do
-		rel_uuid1 = SecureRandom.uuid
-		rel_uuid2 = SecureRandom.uuid
+		rel_uuid1  = SecureRandom.uuid
+		rel_uuid2  = SecureRandom.uuid
 		unrel_uuid = SecureRandom.uuid
 
-		metastore.save( rel_uuid1, TEST_METADATA[0].merge('relation' => TEST_UUID.downcase) )
-		metastore.save( rel_uuid2, TEST_METADATA[1].merge('relation' => TEST_UUID.downcase) )
-		metastore.save( unrel_uuid, TEST_METADATA[2] )
+		metastore.save( TEST_UUID, TEST_METADATA.first )
+		metastore.save( rel_uuid1, TEST_METADATA[1].merge('relation' => TEST_UUID.downcase) )
+		metastore.save( rel_uuid2, TEST_METADATA[2].merge('relation' => TEST_UUID.downcase) )
+		metastore.save( unrel_uuid, TEST_METADATA[3] )
 
 		uuids = metastore.fetch_related_oids( TEST_UUID )
 

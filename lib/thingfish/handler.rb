@@ -570,7 +570,7 @@ class Thingfish::Handler < Strelka::App
 
 	### Remove any resources that are related to the one with the specified +uuid+.
 	def remove_related_resources( uuid )
-		self.metastore.search( :criteria => {'related' => uuid} ).each do |r_uuid|
+		self.metastore.fetch_related_oids( oid ).each do |r_uuid|
 			self.datastore.remove( r_uuid )
 			self.metastore.remove( r_uuid )
 			self.log.info "Removed related resource %s for %s." % [ r_uuid, uuid ]

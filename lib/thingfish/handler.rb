@@ -144,7 +144,7 @@ class Thingfish::Handler < Strelka::App
 
 	### Set up the event socket.
 	def setup_event_socket
-		unless @event_socket
+		if self.class.event_socket_uri && ! @event_socket
 			@event_socket = Mongrel2.zmq_context.socket( :PUB )
 			@event_socket.linger = 0
 			@event_socket.bind( self.class.event_socket_uri )
@@ -570,7 +570,7 @@ class Thingfish::Handler < Strelka::App
 
 	### Remove any resources that are related to the one with the specified +uuid+.
 	def remove_related_resources( uuid )
-		self.metastore.fetch_related_oids( oid ).each do |r_uuid|
+		self.metastore.fetch_related_oids( uuid ).each do |r_uuid|
 			self.datastore.remove( r_uuid )
 			self.metastore.remove( r_uuid )
 			self.log.info "Removed related resource %s for %s." % [ r_uuid, uuid ]

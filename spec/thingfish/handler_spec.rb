@@ -690,7 +690,6 @@ describe Thingfish::Handler do
 			@subsock.close
 		end
 
-
 		it "publishes notifications about uploaded assets to a PUBSUB socket" do
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 			res = @handler.handle( req )
@@ -708,7 +707,6 @@ describe Thingfish::Handler do
 			expect( @subsock.rcvmore? ).to be_falsey
 			expect( resource ).to match( /^\{"uuid":"#{UUID_PATTERN}"\}$/ )
 		end
-
 	end
 
 end

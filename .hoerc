@@ -1,2 +1,2 @@
 --- 
-exclude: !ruby/regexp /tmp$|\.(hg|hoerc|DS_Store|rvm(rc|\.gems)|irbrc|pryrc|tm_.*)|(logs|docs|coverage|experiments|integration|manual|plugins|misc|features|tmp\w*|wiki|\w+-\d+\.\d+\.\d+)\/|\.(bundle|sqlite|ru|graffle|ldif|log|sublime-\w+|pid|pem)|etc/config\.yml$/
+exclude: !ruby/regexp /tmp$|\.(hg|gems|hoerc|DS_Store|rvmrc|irbrc|pryrc|tm_.*)|(logs|docs|coverage|experiments|integration|manual|plugins|misc|features|tmp\w*|wiki|\w+-\d+\.\d+\.\d+)\/|\.(bundle|sqlite|ru|graffle|ldif|log|sublime-\w+|pid|pem)|tmtags|etc/.*\.(sqlite|conf)$/

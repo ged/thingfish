@@ -7,7 +7,7 @@ require 'thingfish' unless defined?( Thingfish )
 require 'thingfish/processor' unless defined?( Thingfish::Processor )
 
 
-# An in-memory metastore for testing and tryout purposes.
+# Attach ID3 data to an mp3, along with any embedded album art as a related resource.
 class Thingfish::Processor::MP3 < Thingfish::Processor
 	extend Loggability
 

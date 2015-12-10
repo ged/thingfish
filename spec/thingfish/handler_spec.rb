@@ -68,6 +68,7 @@ describe Thingfish::Handler do
 				:headers => {:accept => '*/*'})
 		end
 
+
 		it 'accepts a POSTed upload' do
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 			res = @handler.handle( req )
@@ -216,6 +217,81 @@ describe Thingfish::Handler do
 			expect( content[1]['uri'] ).to eq( "#{req.base_uri}#{png_uuid}" )
 			expect( content[1]['format'] ).to eq( 'image/png' )
 			expect( content[1]['extent'] ).to eq( @png_io.string.bytesize )
+		end
+
+
+		it 'can fetch all related data for a single resource' do
+			main_uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( main_uuid, {
+				'format' => 'image/png',
+				'extent' => @png_io.string.bytesize
+			})
+			related_uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( related_uuid, {
+				'format'       => 'image/png',
+				'extent'       => @png_io.string.bytesize,
+				'relation'     => main_uuid,
+				'relationship' => "twinsies"
+			})
+
+			req = factory.get( "/#{main_uuid}/related" )
+			res = @handler.handle( req )
+			content = Yajl::Parser.parse( res.body.read )
+
+			expect( res.status_line ).to match( /200 ok/i )
+			expect( res.headers.content_type ).to eq( 'application/json' )
+			expect( content ).to be_a( Array )
+			expect( content[0] ).to be_a( Hash )
+			expect( content[0]['uri'] ).to eq( "#{req.base_uri}#{related_uuid}" )
+			expect( content[0]['format'] ).to eq( "image/png" )
+			expect( content[0]['extent'] ).to eq( @png_io.string.bytesize )
+			expect( content[0]['uuid'] ).to eq( related_uuid )
+			expect( content[0]['relation'] ).to eq( main_uuid )
+		end
+
+
+		it 'can fetch a related resource by name' do
+			main_uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( main_uuid, {
+				'format' => 'image/png',
+				'extent' => @png_io.string.bytesize
+			})
+			related_uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( related_uuid, {
+				'format'       => 'image/png',
+				'extent'       => @png_io.string.bytesize,
+				'relation'     => main_uuid,
+				'relationship' => "twinsies"
+			})
+
+			req = factory.get( "/#{main_uuid}/related/twinsies" )
+			res = @handler.handle( req )
+
+			expect( res.status_line ).to match( /200 ok/i )
+			expect( res.headers.content_type ).to eq( 'image/png' )
+			expect( res.body.read ).to eq( TEST_PNG_DATA )
+		end
+
+
+		it "404s when attempting to fetch a resource related to a non-existant resource" do
+			req = factory.get( "/#{TEST_UUID}/related/twinsies" )
+			res = @handler.handle( req )
+
+			expect( res.status_line ).to match( /404 not found/i )
+		end
+
+
+		it "404s when attempting to fetch a related resource that doesn't exist" do
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, {
+				'format' => 'image/png',
+				'extent' => @png_io.string.bytesize
+			})
+
+			req = factory.get( "/#{uuid}/related/twinsies" )
+			res = @handler.handle( req )
+
+			expect( res.status_line ).to match( /404 not found/i )
 		end
 
 

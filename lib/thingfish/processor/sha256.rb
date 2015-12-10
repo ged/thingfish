@@ -11,6 +11,9 @@ require 'thingfish/processor' unless defined?( Thingfish::Processor )
 class Thingfish::Processor::SHA256 < Thingfish::Processor
 	extend Loggability
 
+	# The chunk size to read
+	CHUNK_SIZE = 32 * 1024
+
 	# Loggability API -- log to the :thingfish logger
 	log_to :thingfish
 
@@ -20,8 +23,15 @@ class Thingfish::Processor::SHA256 < Thingfish::Processor
 
 	### Synchronous processor API -- generate a checksum during upload.
 	def on_request( request )
-		digest = Digest::SHA256.file( request.body.path ).hexdigest
-		request.add_metadata( :checksum => digest )
+		digest = Digest::SHA256.new
+		buf = ''
+
+		while request.body.read( CHUNK_SIZE, buf )
+			digest.update( buf )
+		end
+
+		request.body.rewind
+		request.add_metadata( :checksum => digest.hexdigest )
 	end
 
 end # class Thingfish::Processor::SHA256

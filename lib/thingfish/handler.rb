@@ -193,6 +193,7 @@ class Thingfish::Handler < Strelka::App
 		"The name(s) of the fields to order results by."
 	param :direction, /^(asc|desc)$/i, "The order direction (ascending or descending)"
 	param :casefold, :boolean, "Whether or not to convert to lowercase before matching"
+	param :relationship, :word, "The name of the relationship between two resources"
 
 
 	#
@@ -264,6 +265,68 @@ class Thingfish::Handler < Strelka::App
 		res.for( :text ) do
 			list.collect {|entry| "%s [%s, %0.2fB]" % entry.values_at(:url, :format, :extent) }
 		end
+
+		return res
+	end
+
+
+	# GET /«uuid»/related
+	# Fetch a list of all objects related to «uuid»
+	get ':uuid/related' do |req|
+		finish_with HTTP::BAD_REQUEST, req.params.error_messages.join(', ') unless req.params.okay?
+
+		uuid = req.params[ :uuid ]
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		uuids = self.metastore.fetch_related_oids( uuid )
+		self.log.debug "Related UUIDs are: %p" % [ uuids ]
+
+		base_uri = req.base_uri
+		list = uuids.collect do |uuid|
+			uri = base_uri.dup
+			uri.path += '/' unless uri.path[-1] == '/'
+			uri.path += uuid
+
+			metadata = self.metastore.fetch( uuid )
+			metadata['uri'] = uri.to_s
+			metadata['uuid'] = uuid
+
+			metadata
+		end
+
+		res = req.response
+		res.for( :json, :yaml ) { list }
+		res.for( :text ) do
+			list.collect {|entry| "%s [%s, %0.2fB]" % entry.values_at(:url, :format, :extent) }
+		end
+
+		return res
+	end
+
+
+	# GET /«uuid»/related/«relationship»
+	# Get the data for the resource related to the one to the given +uuid+ via the
+	# specified +relationship+.
+	get ':uuid/related/:relationship' do |req|
+		uuid = req.params[:uuid]
+		rel = req.params[:relationship]
+
+		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		criteria = {
+			'relation' => uuid,
+			'relationship' => rel,
+		}
+		uuid = self.metastore.search( criteria: criteria, include_related: true ).first or
+			finish_with( HTTP::NOT_FOUND, "No such related resource." )
+
+		object = self.datastore.fetch( uuid ) or
+			raise "Metadata for non-existant resource %p" % [ uuid ]
+		metadata = self.metastore.fetch( uuid )
+
+		res = req.response
+		res.body = object
+		res.content_type = metadata['format']
 
 		return res
 	end

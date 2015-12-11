@@ -411,13 +411,14 @@ describe Thingfish::Handler do
 				'extent' => 288,
 			})
 
-			req = factory.get( "/#{uuid}/metadata/extent" )
-			result = @handler.handle( req )
-			content = Yajl::Parser.parse( result.body.read )
+			req     = factory.get( "/#{uuid}/metadata/extent" )
+			result  = @handler.handle( req )
+			result.body.rewind
+			content = result.body.read
 
 			expect( result.status ).to eq( 200 )
 			expect( result.headers.content_type ).to eq( 'application/json' )
-			expect( content ).to be( 288 )
+			expect( content ).to eq( "288" )
 		end
 
 
@@ -683,8 +684,15 @@ describe Thingfish::Handler do
 
 				handled_types 'text/plain'
 
+				def initialize( * )
+					super
+					@was_called = false
+				end
+				attr_reader :was_called
+
 				def self::name; 'Thingfish::Processor::Test'; end
 				def on_request( request )
+					@was_called = true
 					self.log.debug "Adding a comment to a request."
 					request.add_metadata( 'test:comment' => "Yo, it totally worked." )
 
@@ -694,9 +702,11 @@ describe Thingfish::Handler do
 					request.add_related_resource( io, related_metadata )
 				end
 				def on_response( response )
+					@was_called = true
 					content = response.body.read
 					response.body.rewind
 					response.body.print( content.reverse )
+					response.body.rewind
 				end
 			end
 			# Re-call inherited so it associates the processor plugin with its name
@@ -742,6 +752,44 @@ describe Thingfish::Handler do
 			expect( @handler.datastore.fetch(r_uuid).read ).to eq( 'Chunkers!' )
 		end
 
+
+		it "doesn't process requests for paths under the metadata uri-space" do
+			described_class.configure( :processors => %w[test] )
+			processor = described_class.processors.first
+
+			req = factory.post( "/#{TEST_UUID}/metadata", TEST_TEXT_DATA, content_type: 'text/plain' )
+			@handler.handle( req )
+
+			expect( processor.was_called ).to be_falsey
+		end
+
+
+		it "processes responses" do
+			described_class.configure( :processors => %w[test] )
+
+			uuid = @handler.datastore.save( @text_io )
+			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+
+			req = factory.get( "/#{uuid}" )
+			res = @handler.handle( req )
+
+			res.body.rewind
+			expect( res.body.read ).to eq( TEST_TEXT_DATA.reverse )
+		end
+
+
+		it "doesn't process responses for paths under the metadata uri-space" do
+			described_class.configure( :processors => %w[test] )
+			processor = described_class.processors.first
+
+			uuid = @handler.datastore.save( @text_io )
+			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+
+			req = factory.get( "/#{uuid}/metadata" )
+			@handler.handle( req )
+
+			expect( processor.was_called ).to be_falsey
+		end
 	end
 
 

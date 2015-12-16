@@ -126,19 +126,11 @@ class Thingfish::Metastore::Memory < Thingfish::Metastore
 	### Apply the search :order from the specified +options+ to the collection in
 	### +ds+ and return the modified dataset.
 	def apply_search_order( ds, options )
-
-		# :FIXME: I can't think of a way to handle the case where one of the sort fields
-		# is nil in a non-gross way. So instead, just turn ordering off.
-
-		# if (( order_fields = options[:order] ))
-		#	fields = order_fields.split( /\s*,\s*/ )
-		#	self.log.debug "  applying order by fields: %p" % [ fields ]
-		#	ds = ds.to_a.sort_by do |uuid|
-		#		sortvals = @storage[uuid].values_at(*fields).map {|val| val || ''}
-		#		self.log.debug "    sortvals: %p" % [ sortvals ]
-		#		sortvals
-		#	end
-		# end
+		if (( fields = options[:order] ))
+			ds = ds.to_a.sort_by do |uuid|
+				@storage[ uuid ].values_at( *fields.compact ).map {|val| val || ''}
+			end
+		end
 
 		return ds
 	end

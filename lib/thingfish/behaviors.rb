@@ -174,6 +174,16 @@ RSpec.shared_examples "a Thingfish metastore" do
 			expect( metastore.search( limit: 2 ).to_a ).to eq( metastore.oids[0,2] )
 		end
 
+		it "can order the results returned from a search" do
+			results = metastore.search( order: %w[title created] ).to_a
+			sorted_uuids = metastore.each_oid.
+				map {|oid| metastore.fetch(oid, :title, :created).merge(oid: oid) }.
+				sort_by {|tuple| tuple.values_at('title', 'created') }.
+				map {|tuple| tuple[:oid] }
+
+			expect( results ).to eq( sorted_uuids )
+		end
+
 	end
 
 

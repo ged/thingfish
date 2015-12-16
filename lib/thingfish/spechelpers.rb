@@ -109,7 +109,7 @@ module Thingfish::SpecHelpers
 			 "uploadaddress" => "127.0.0.1",
 			 "format"        => "image/jpeg",
 			 "created"       => Time.parse('2011-09-06 20:10:57 UTC'),
-			 "title"         => "grass2.jpg"},
+			 "title"         => "aaaaaaaa"},
 			{"useragent"     => "ChunkersTheClown v2.0",
 			 "extent"        => 1104950,
 			 "uploadaddress" => "127.0.0.1",

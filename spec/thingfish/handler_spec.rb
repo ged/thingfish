@@ -339,6 +339,32 @@ describe Thingfish::Handler do
 		end
 
 
+		it "adds browser cache headers to resources with a checksum attribute" do
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
+
+			req = factory.get( "/#{uuid}" )
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /200 ok/i )
+			expect( result.headers.etag ).to eq( '123456' )
+		end
+
+
+		it "returns a 304 not modified for unchanged client cache requests" do
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
+
+			req = factory.get( "/#{uuid}" )
+			req.headers[ :if_none_match ] = '123456'
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /304 not modified/i )
+			expect( result.body.read ).to be_empty
+		end
+
+
+
 		it "can remove everything associated with an object id" do
 			uuid = @handler.datastore.save( @png_io )
 			@handler.metastore.save( uuid, {

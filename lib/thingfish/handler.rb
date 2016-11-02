@@ -348,6 +348,8 @@ class Thingfish::Handler < Strelka::App
 		res = req.response
 		res.content_type = metadata['format']
 
+		self.add_etag_headers( req, metadata )
+
 		if object.respond_to?( :path )
 			path = Pathname( object.path )
 			chroot_path = path.relative_path_from( req.server_chroot )
@@ -622,6 +624,7 @@ class Thingfish::Handler < Strelka::App
 		metadata = request.metadata
 		metadata.merge!( self.extract_header_metadata(request) )
 		metadata.merge!( self.extract_default_metadata(request) )
+
 		self.check_resource_permissions( request, uuid, metadata )
 
 		if uuid
@@ -751,6 +754,23 @@ class Thingfish::Handler < Strelka::App
 		self.log.debug "Publishing %p event: %p" % [ type, msg ]
 		esock.sendm( type.to_s )
 		esock.send( Yajl.dump(msg) )
+	end
+
+
+	### Add browser cache headers for resources.  This requires the sha256
+	### processor plugin to be enabled for stored resources.
+	def add_etag_headers( request, metadata )
+		response = request.response
+		checksum = metadata[ 'checksum' ]
+		return unless checksum
+
+		if (( match = request.headers[ :if_none_match ] ))
+			match = match.gsub( '"', '' ).split( /,\s*/ )
+			finish_with( HTTP::NOT_MODIFIED ) if match.include?( checksum )
+		end
+
+		response.headers[ :etag ] = checksum
+		return
 	end
 
 

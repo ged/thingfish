@@ -230,6 +230,7 @@ class Thingfish::Handler < Strelka::App
 			:datastore => self.datastore.class.name
 		}
 
+		self.check_resource_permissions( req )
 		res.for( :text, :json, :yaml ) { info }
 		return res
 	end
@@ -243,6 +244,8 @@ class Thingfish::Handler < Strelka::App
 	# Fetch a list of all objects
 	get do |req|
 		finish_with HTTP::BAD_REQUEST, req.params.error_messages.join(', ') unless req.params.okay?
+
+		self.check_resource_permissions( req )
 
 		uuids = self.metastore.search( req.params.valid )
 		self.log.debug "UUIDs are: %p" % [ uuids ]
@@ -340,6 +343,7 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 
 		finish_with HTTP::NOT_FOUND, "No such object." unless object && metadata
+		self.check_resource_permissions( req, nil, metadata )
 
 		res = req.response
 		res.content_type = metadata['format']
@@ -386,6 +390,7 @@ class Thingfish::Handler < Strelka::App
 		self.datastore.include?( uuid ) or
 			finish_with HTTP::NOT_FOUND, "No such object."
 
+		self.check_resource_permissions( req, uuid )
 		self.remove_related_resources( uuid )
 		self.save_resource( req, uuid )
 		self.send_event( :replaced, :uuid => uuid )
@@ -401,6 +406,8 @@ class Thingfish::Handler < Strelka::App
 	# Remove the object associated with +uuid+.
 	delete ':uuid' do |req|
 		uuid = req.params[:uuid]
+
+		self.check_resource_permissions( req, uuid )
 
 		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
 		metadata = self.metastore.remove( uuid )
@@ -432,9 +439,12 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
+
 		res = req.response
 		res.status = HTTP::OK
-		res.for( :json, :yaml ) { self.metastore.fetch( uuid ) }
+		res.for( :json, :yaml ) { metadata }
 
 		return res
 	end
@@ -448,9 +458,12 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
+
 		res = req.response
 		res.status = HTTP::OK
-		res.for( :json, :yaml ) { self.metastore.fetch_value( uuid, key ) }
+		res.for( :json, :yaml ) { metadata[key] }
 
 		return res
 	end
@@ -465,6 +478,9 @@ class Thingfish::Handler < Strelka::App
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		finish_with( HTTP::CONFLICT, "Key already exists." ) unless
 			self.metastore.fetch_value( uuid, key ).nil?
+
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
 
 		self.metastore.merge( uuid, key => req.body.read )
 		self.send_event( :metadata_updated, :uuid => uuid, :key => key )
@@ -488,6 +504,9 @@ class Thingfish::Handler < Strelka::App
 			OPERATIONAL_METADATA_KEYS.include?( key )
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		previous_value = self.metastore.fetch( uuid, key )
+
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
 
 		self.metastore.merge( uuid, key => req.body.read )
 		self.send_event( :metadata_replaced, :uuid => uuid, :key => key )
@@ -513,6 +532,9 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
+
 		op_metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
 		new_metadata = self.extract_metadata( req )
 		self.metastore.save( uuid, new_metadata.merge(op_metadata) )
@@ -532,6 +554,9 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
+
 		new_metadata = self.extract_metadata( req )
 		self.metastore.merge( uuid, new_metadata )
 		self.send_event( :metadata_updated, :uuid => uuid )
@@ -549,6 +574,9 @@ class Thingfish::Handler < Strelka::App
 		uuid = req.params[:uuid]
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
+
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
 
 		self.metastore.remove_except( uuid, *OPERATIONAL_METADATA_KEYS )
 		self.send_event( :metadata_deleted, :uuid => uuid )
@@ -569,6 +597,9 @@ class Thingfish::Handler < Strelka::App
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 		finish_with( HTTP::FORBIDDEN, "Protected metadata." ) if
 			OPERATIONAL_METADATA_KEYS.include?( key )
+
+		metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, metadata )
 
 		self.metastore.remove( uuid, key )
 		self.send_event( :metadata_deleted, :uuid => uuid, :key => key )
@@ -591,6 +622,7 @@ class Thingfish::Handler < Strelka::App
 		metadata = request.metadata
 		metadata.merge!( self.extract_header_metadata(request) )
 		metadata.merge!( self.extract_default_metadata(request) )
+		self.check_resource_permissions( request, uuid, metadata )
 
 		if uuid
 			self.log.info "Replacing resource %s (encoding: %p)" %
@@ -720,6 +752,13 @@ class Thingfish::Handler < Strelka::App
 		esock.sendm( type.to_s )
 		esock.send( Yajl.dump(msg) )
 	end
+
+
+	### Supply a method that child handlers can override.  The regular auth
+	### plugin runs too early (but can also be used), this hook allows
+	### child handlers to make access decisions based on the +request+
+	### object, +uuid+ of the resource, or +metadata+ of the fetched resource.
+	def check_resource_permissions( request, uuid=nil, metadata=nil ); end
 
 
 end # class Thingfish::Handler

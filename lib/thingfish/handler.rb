@@ -625,6 +625,7 @@ class Thingfish::Handler < Strelka::App
 		metadata.merge!( self.extract_header_metadata(request) )
 		metadata.merge!( self.extract_default_metadata(request) )
 
+		self.verify_operational_metadata( metadata )
 		self.check_resource_permissions( request, uuid, metadata )
 
 		if uuid
@@ -745,6 +746,15 @@ class Thingfish::Handler < Strelka::App
 		end
 
 		return metadata
+	end
+
+
+	### Check that the metadata provided contains valid values for
+	### the operational keys, before saving a resource to disk.
+	def verify_operational_metadata( metadata )
+		if metadata.values_at( *OPERATIONAL_METADATA_KEYS ).any?( &:nil? )
+			finish_with( HTTP::BAD_REQUEST, "Missing operational attribute." )
+		end
 	end
 
 

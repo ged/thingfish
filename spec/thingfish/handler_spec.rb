@@ -70,7 +70,9 @@ describe Thingfish::Handler do
 
 
 		it 'accepts a POSTed upload' do
-			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
+			req = factory.post( '/', TEST_TEXT_DATA )
+			req.content_type = 'text/plain'
+			req.headers.content_length = TEST_TEXT_DATA.bytesize
 			res = @handler.handle( req )
 
 			expect( res.status_line ).to match( /201 created/i )
@@ -145,6 +147,17 @@ describe Thingfish::Handler do
 		end
 
 
+		it 'returns a BAD_REQUEST if unable to extract operational metadata' do
+			req = factory.post( '/', TEST_TEXT_DATA )
+			req.content_type = 'text/plain'
+
+			res = @handler.handle( req )
+			res.body.rewind
+			expect( res.status ).to be( HTTP::BAD_REQUEST )
+			expect( res.body.read ).to match( /missing operational attribute/i )
+		end
+
+
 		it "allows additional metadata to be attached to uploads via X-Thingfish-* headers" do
 			headers = {
 				content_type: 'text/plain',
@@ -152,6 +165,7 @@ describe Thingfish::Handler do
 				x_thingfish_tags: 'rapper,ukraine,potap',
 			}
 			req = factory.post( '/', TEST_TEXT_DATA, headers )
+			req.headers.content_length = TEST_TEXT_DATA.bytesize
 			res = @handler.handle( req )
 
 			expect( res.status_line ).to match( /201 created/i )
@@ -169,6 +183,7 @@ describe Thingfish::Handler do
 			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
 			req = factory.put( "/#{uuid}", @png_io, content_type: 'image/png' )
+			req.headers.content_length = @png_io.read.bytesize
 			res = @handler.handle( req )
 
 			expect( res.status ).to eq( HTTP::NO_CONTENT )
@@ -182,6 +197,7 @@ describe Thingfish::Handler do
 			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
 			req = factory.put( "/#{uuid.upcase}", @png_io, content_type: 'image/png' )
+			req.headers.content_length = @png_io.read.bytesize
 			res = @handler.handle( req )
 
 			expect( res.status ).to eq( HTTP::NO_CONTENT )
@@ -759,6 +775,7 @@ describe Thingfish::Handler do
 			described_class.configure( :processors => %w[test] )
 
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
+			req.headers.content_length = TEST_TEXT_DATA.bytesize
 			res = @handler.handle( req )
 			uuid = res.headers.x_thingfish_uuid
 
@@ -842,6 +859,7 @@ describe Thingfish::Handler do
 
 		it "publishes notifications about uploaded assets to a PUBSUB socket" do
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
+			req.headers.content_length = TEST_TEXT_DATA.bytesize
 			res = @handler.handle( req )
 
 			handles = ZMQ.select( [@subsock], nil, nil, 0 )

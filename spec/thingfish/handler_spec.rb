@@ -433,6 +433,7 @@ describe Thingfish::Handler do
 			expect( result.status ).to eq( 200 )
 			expect( result.headers.content_type ).to eq( 'application/json' )
 			expect( content_hash ).to be_a( Hash )
+			expect( content_hash['oid'] ).to eq( uuid )
 			expect( content_hash['extent'] ).to eq( 288 )
 			expect( content_hash['created'] ).to eq( Time.at(1378313840).to_s )
 		end

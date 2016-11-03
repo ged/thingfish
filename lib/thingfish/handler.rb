@@ -442,6 +442,7 @@ class Thingfish::Handler < Strelka::App
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
 		metadata = self.metastore.fetch( uuid )
+		metadata[ 'oid' ] = uuid
 		self.check_resource_permissions( req, uuid, metadata )
 
 		res = req.response

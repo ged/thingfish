@@ -1,4 +1,6 @@
 .simplecov
+ChangeLog
+Gemfile
 History.rdoc
 LICENSE
 Manifest.txt
@@ -7,6 +9,7 @@ README.rdoc
 Rakefile
 bin/tfprocessord
 bin/thingfish
+etc/mongrel2-config.rb
 etc/thingfish.conf.example
 lib/strelka/app/metadata.rb
 lib/strelka/httprequest/metadata.rb
@@ -20,6 +23,7 @@ lib/thingfish/metastore/memory.rb
 lib/thingfish/mixins.rb
 lib/thingfish/processor.rb
 lib/thingfish/processor/mp3.rb
+lib/thingfish/processor/sha256.rb
 lib/thingfish/processordaemon.rb
 lib/thingfish/spechelpers.rb
 spec/data/APIC-1-image.mp3
@@ -35,5 +39,6 @@ spec/thingfish/metastore/memory_spec.rb
 spec/thingfish/metastore_spec.rb
 spec/thingfish/mixins_spec.rb
 spec/thingfish/processor/mp3_spec.rb
+spec/thingfish/processor/sha256_spec.rb
 spec/thingfish/processor_spec.rb
 spec/thingfish_spec.rb

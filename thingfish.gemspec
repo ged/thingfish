@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
-# stub: thingfish 0.5.0.pre20151103172840 ruby lib
+# stub: thingfish 0.5.0.pre20161103181816 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "thingfish"
-  s.version = "0.5.0.pre20151103172840"
+  s.version = "0.5.0.pre20161103181816"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Michael Granger", "Mahlon E. Smith"]
   s.cert_chain = ["certs/ged.pem"]
-  s.date = "2015-11-04"
+  s.date = "2016-11-04"
   s.description = "Thingfish is a extensible, web-based digital asset manager. It can be used to\nstore chunks of data on the network in an application-independent way, link the\nchunks together with metadata, and then search for the chunk you need later and\nfetch it, all through a REST API."
   s.email = ["ged@FaerieMUD.org", "mahlon@martini.nu"]
   s.executables = ["tfprocessord", "thingfish"]
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.licenses = ["BSD", "BSD"]
   s.rdoc_options = ["--main", "README.rdoc"]
   s.required_ruby_version = Gem::Requirement.new(">= 2.0.0")
-  s.rubygems_version = "2.4.5"
+  s.rubygems_version = "2.5.1"
   s.summary = "Thingfish is a extensible, web-based digital asset manager"
 
   if s.respond_to? :specification_version then
@@ -29,32 +29,32 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<strelka>, ["~> 0.9"])
       s.add_runtime_dependency(%q<mongrel2>, ["~> 0.43"])
       s.add_development_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-      s.add_development_dependency(%q<hoe-deveiate>, ["~> 0.6"])
+      s.add_development_dependency(%q<hoe-deveiate>, ["~> 0.8"])
       s.add_development_dependency(%q<hoe-highline>, ["~> 0.2"])
-      s.add_development_dependency(%q<rdoc>, ["~> 4.0"])
       s.add_development_dependency(%q<simplecov>, ["~> 0.7"])
       s.add_development_dependency(%q<ruby-mp3info>, ["~> 0.8"])
-      s.add_development_dependency(%q<hoe>, ["~> 3.13"])
+      s.add_development_dependency(%q<rdoc>, ["~> 4.0"])
+      s.add_development_dependency(%q<hoe>, ["~> 3.15"])
     else
       s.add_dependency(%q<strelka>, ["~> 0.9"])
       s.add_dependency(%q<mongrel2>, ["~> 0.43"])
       s.add_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-      s.add_dependency(%q<hoe-deveiate>, ["~> 0.6"])
+      s.add_dependency(%q<hoe-deveiate>, ["~> 0.8"])
       s.add_dependency(%q<hoe-highline>, ["~> 0.2"])
-      s.add_dependency(%q<rdoc>, ["~> 4.0"])
       s.add_dependency(%q<simplecov>, ["~> 0.7"])
       s.add_dependency(%q<ruby-mp3info>, ["~> 0.8"])
-      s.add_dependency(%q<hoe>, ["~> 3.13"])
+      s.add_dependency(%q<rdoc>, ["~> 4.0"])
+      s.add_dependency(%q<hoe>, ["~> 3.15"])
     end
   else
     s.add_dependency(%q<strelka>, ["~> 0.9"])
     s.add_dependency(%q<mongrel2>, ["~> 0.43"])
     s.add_dependency(%q<hoe-mercurial>, ["~> 1.4"])
-    s.add_dependency(%q<hoe-deveiate>, ["~> 0.6"])
+    s.add_dependency(%q<hoe-deveiate>, ["~> 0.8"])
     s.add_dependency(%q<hoe-highline>, ["~> 0.2"])
-    s.add_dependency(%q<rdoc>, ["~> 4.0"])
     s.add_dependency(%q<simplecov>, ["~> 0.7"])
     s.add_dependency(%q<ruby-mp3info>, ["~> 0.8"])
-    s.add_dependency(%q<hoe>, ["~> 3.13"])
+    s.add_dependency(%q<rdoc>, ["~> 4.0"])
+    s.add_dependency(%q<hoe>, ["~> 3.15"])
   end
 end

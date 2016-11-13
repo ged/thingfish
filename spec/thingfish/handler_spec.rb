@@ -277,7 +277,9 @@ describe Thingfish::Handler do
 				'format'       => 'image/png',
 				'extent'       => @png_io.string.bytesize,
 				'relation'     => main_uuid,
-				'relationship' => "twinsies"
+				'relationship' => "twinsies",
+				'title'        => 'Make America Smart Again.png',
+				'checksum'     => '123456'
 			})
 
 			req = factory.get( "/#{main_uuid}/related/twinsies" )
@@ -285,6 +287,8 @@ describe Thingfish::Handler do
 
 			expect( res.status_line ).to match( /200 ok/i )
 			expect( res.headers.content_type ).to eq( 'image/png' )
+			expect( res.headers.etag ).to eq( '123456' )
+			expect( res.headers.content_disposition ).to eq( 'filename="Make America Smart Again.png"' )
 			expect( res.body.read ).to eq( TEST_PNG_DATA )
 		end
 

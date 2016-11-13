@@ -316,6 +316,9 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		primary_metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, primary_metadata )
+
 		criteria = {
 			'relation' => uuid,
 			'relationship' => rel,
@@ -328,6 +331,9 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
+		self.add_etag_headers( req, metadata )
+		self.add_content_disposition( res, metadata )
+
 		res.body = object
 		res.content_type = metadata['format']
 
@@ -348,8 +354,8 @@ class Thingfish::Handler < Strelka::App
 		res = req.response
 		res.content_type = metadata['format']
 
-		self.add_content_disposition( res, metadata )
 		self.add_etag_headers( req, metadata )
+		self.add_content_disposition( res, metadata )
 
 		if object.respond_to?( :path )
 			path = Pathname( object.path )

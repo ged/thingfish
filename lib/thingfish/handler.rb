@@ -412,9 +412,9 @@ class Thingfish::Handler < Strelka::App
 
 		self.check_resource_permissions( req, uuid )
 
-		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
-		metadata = self.metastore.remove( uuid )
 		self.remove_related_resources( uuid )
+		metadata = self.metastore.remove( uuid )
+		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
 		self.send_event( :deleted, :uuid => uuid )
 
 		res = req.response

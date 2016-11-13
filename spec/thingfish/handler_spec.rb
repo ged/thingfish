@@ -367,6 +367,20 @@ describe Thingfish::Handler do
 		end
 
 
+		it "adds content disposition filename, if the resource has a title" do
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, {'format' => 'image/png', 'title' => 'spょler"py.txt'} )
+
+			req = factory.get( "/#{uuid}" )
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /200 ok/i )
+			expect( result.body.read ).to eq( @png_io.string )
+			expect( result.headers.content_type ).to eq( 'image/png' )
+			expect( result.headers.content_disposition ).to eq( 'filename="sp?ler\"py.txt"' )
+		end
+
+
 		it "returns a 304 not modified for unchanged client cache requests" do
 			uuid = @handler.datastore.save( @png_io )
 			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )

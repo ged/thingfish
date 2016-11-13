@@ -348,6 +348,7 @@ class Thingfish::Handler < Strelka::App
 		res = req.response
 		res.content_type = metadata['format']
 
+		self.add_content_disposition( res, metadata )
 		self.add_etag_headers( req, metadata )
 
 		if object.respond_to?( :path )
@@ -793,6 +794,15 @@ class Thingfish::Handler < Strelka::App
 
 		response.headers[ :etag ] = checksum
 		return
+	end
+
+
+	### Add a filename "hint" for browsers, if the resource being fetched
+	### has a 'title' attribute.
+	def add_content_disposition( res, metadata )
+		return unless metadata[ 'title' ]
+		title = metadata[ 'title' ].encode( 'us-ascii', :undef => :replace )
+		res.headers[ :content_disposition ] = "filename=%p" % [ title ]
 	end
 
 

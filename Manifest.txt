@@ -11,6 +11,7 @@ bin/thingfish
 etc/mongrel2-config.rb
 etc/thingfish.conf.example
 lib/strelka/app/metadata.rb
+lib/strelka/apps.rb
 lib/strelka/httprequest/metadata.rb
 lib/thingfish.rb
 lib/thingfish/behaviors.rb

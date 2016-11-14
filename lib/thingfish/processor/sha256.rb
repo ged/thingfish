@@ -23,15 +23,28 @@ class Thingfish::Processor::SHA256 < Thingfish::Processor
 
 	### Synchronous processor API -- generate a checksum during upload.
 	def on_request( request )
+		request.add_metadata( :checksum => self.checksum(request.body) )
+		request.related_resources.each_pair do |io, metadata|
+			metadata[ :checksum ] = self.checksum( io )
+		end
+	end
+
+
+	#########
+	protected
+	#########
+
+	### Given an +io+, return a sha256 checksum of it's contents.
+	def checksum( io )
 		digest = Digest::SHA256.new
 		buf = ''
 
-		while request.body.read( CHUNK_SIZE, buf )
+		while io.read( CHUNK_SIZE, buf )
 			digest.update( buf )
 		end
 
-		request.body.rewind
-		request.add_metadata( :checksum => digest.hexdigest )
+		io.rewind
+		return digest.hexdigest
 	end
 
 end # class Thingfish::Processor::SHA256

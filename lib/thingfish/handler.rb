@@ -193,7 +193,7 @@ class Thingfish::Handler < Strelka::App
 		"The name(s) of the fields to order results by."
 	param :direction, /^(asc|desc)$/i, "The order direction (ascending or descending)"
 	param :casefold, :boolean, "Whether or not to convert to lowercase before matching"
-	param :relationship, :word, "The name of the relationship between two resources"
+	param :relationship, /^[\w\-]+$/, "The name of the relationship between two resources"
 
 
 	#
@@ -316,6 +316,9 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
+		primary_metadata = self.metastore.fetch( uuid )
+		self.check_resource_permissions( req, uuid, primary_metadata )
+
 		criteria = {
 			'relation' => uuid,
 			'relationship' => rel,
@@ -328,6 +331,9 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
+		self.add_etag_headers( req, metadata )
+		self.add_content_disposition( res, metadata )
+
 		res.body = object
 		res.content_type = metadata['format']
 
@@ -349,6 +355,7 @@ class Thingfish::Handler < Strelka::App
 		res.content_type = metadata['format']
 
 		self.add_etag_headers( req, metadata )
+		self.add_content_disposition( res, metadata )
 
 		if object.respond_to?( :path )
 			path = Pathname( object.path )
@@ -411,9 +418,9 @@ class Thingfish::Handler < Strelka::App
 
 		self.check_resource_permissions( req, uuid )
 
-		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
-		metadata = self.metastore.remove( uuid )
 		self.remove_related_resources( uuid )
+		metadata = self.metastore.remove( uuid )
+		self.datastore.remove( uuid ) or finish_with( HTTP::NOT_FOUND, "No such object." )
 		self.send_event( :deleted, :uuid => uuid )
 
 		res = req.response
@@ -441,8 +448,7 @@ class Thingfish::Handler < Strelka::App
 
 		finish_with( HTTP::NOT_FOUND, "No such object." ) unless self.metastore.include?( uuid )
 
-		metadata = self.metastore.fetch( uuid )
-		metadata[ 'oid' ] = uuid
+		metadata = self.normalized_metadata_for( uuid )
 		self.check_resource_permissions( req, uuid, metadata )
 
 		res = req.response
@@ -538,13 +544,17 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 		self.check_resource_permissions( req, uuid, metadata )
 
-		op_metadata = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
+		op_metadata  = self.metastore.fetch( uuid, *OPERATIONAL_METADATA_KEYS )
 		new_metadata = self.extract_metadata( req )
-		self.metastore.save( uuid, new_metadata.merge(op_metadata) )
+		self.metastore.transaction do
+			self.metastore.remove_except( uuid, *OPERATIONAL_METADATA_KEYS )
+			self.metastore.merge( uuid, new_metadata.merge(op_metadata) )
+		end
 		self.send_event( :metadata_replaced, :uuid => uuid )
 
 		res = req.response
-		res.status = HTTP::NO_CONTENT
+		res.status = HTTP::OK
+		res.for( :json, :yaml ) { self.normalized_metadata_for(uuid) }
 
 		return res
 	end
@@ -565,7 +575,8 @@ class Thingfish::Handler < Strelka::App
 		self.send_event( :metadata_updated, :uuid => uuid )
 
 		res = req.response
-		res.status = HTTP::NO_CONTENT
+		res.status = HTTP::OK
+		res.for( :json, :yaml ) { self.normalized_metadata_for(uuid) }
 
 		return res
 	end
@@ -585,7 +596,8 @@ class Thingfish::Handler < Strelka::App
 		self.send_event( :metadata_deleted, :uuid => uuid )
 
 		res = req.response
-		res.status = HTTP::NO_CONTENT
+		res.status = HTTP::OK
+		res.for( :json, :yaml ) { self.normalized_metadata_for(uuid) }
 
 		return res
 	end
@@ -626,8 +638,8 @@ class Thingfish::Handler < Strelka::App
 		metadata.merge!( self.extract_header_metadata(request) )
 		metadata.merge!( self.extract_default_metadata(request) )
 
-		self.verify_operational_metadata( metadata )
 		self.check_resource_permissions( request, uuid, metadata )
+		self.verify_operational_metadata( metadata )
 
 		if uuid
 			self.log.info "Replacing resource %s (encoding: %p)" %
@@ -722,15 +734,7 @@ class Thingfish::Handler < Strelka::App
 	### Extract and validate supplied metadata from the +request+.
 	def extract_metadata( req )
 		new_metadata = req.params.fields.dup
-		new_metadata.delete( :uuid )
-
-		protected_keys = OPERATIONAL_METADATA_KEYS & new_metadata.keys
-
-		unless protected_keys.empty?
-			finish_with HTTP::FORBIDDEN,
-				"Unable to alter protected metadata. (%s)" % [ protected_keys.join(', ') ]
-		end
-
+		new_metadata = self.remove_operational_metadata( new_metadata )
 		return new_metadata
 	end
 
@@ -750,12 +754,26 @@ class Thingfish::Handler < Strelka::App
 	end
 
 
+	### Fetch the current metadata for +uuid+, altering it for easier
+	### round trips with REST.
+	def normalized_metadata_for( uuid )
+		return self.metastore.fetch(uuid).merge( 'uuid' => uuid )
+	end
+
+
 	### Check that the metadata provided contains valid values for
 	### the operational keys, before saving a resource to disk.
 	def verify_operational_metadata( metadata )
 		if metadata.values_at( *OPERATIONAL_METADATA_KEYS ).any?( &:nil? )
 			finish_with( HTTP::BAD_REQUEST, "Missing operational attribute." )
 		end
+	end
+
+
+	### Prune operational +metadata+ from the provided hash.
+	def remove_operational_metadata( metadata )
+		operationals = OPERATIONAL_METADATA_KEYS + [ 'uuid' ]
+		return metadata.reject{|key, _| operationals.include?(key) }
 	end
 
 
@@ -782,6 +800,15 @@ class Thingfish::Handler < Strelka::App
 
 		response.headers[ :etag ] = checksum
 		return
+	end
+
+
+	### Add a filename "hint" for browsers, if the resource being fetched
+	### has a 'title' attribute.
+	def add_content_disposition( res, metadata )
+		return unless metadata[ 'title' ]
+		title = metadata[ 'title' ].encode( 'us-ascii', :undef => :replace )
+		res.headers[ :content_disposition ] = "filename=%p" % [ title ]
 	end
 
 

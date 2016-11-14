@@ -26,12 +26,11 @@ hoespec = Hoe.spec 'thingfish' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.license "BSD"
 
-	self.dependency 'strelka',         '~> 0.9'
-	self.dependency 'mongrel2',        '~> 0.43'
+	self.dependency 'strelka',      '~> 0.9'
+	self.dependency 'mongrel2',     '~> 0.46'
 
-	self.dependency 'hoe-deveiate',    '~> 0.3',  :development
-	self.dependency 'simplecov',       '~> 0.7',  :development
-	self.dependency 'ruby-mp3info',    '~> 0.8',  :development
+	self.dependency 'hoe-deveiate', '~> 0.3',  :development
+	self.dependency 'simplecov',    '~> 0.7',  :development
 
 	self.require_ruby_version( '>=2.0.0' )
 

@@ -2,18 +2,7 @@
 
 require 'loggability'
 
-#
 # Network-accessable datastore service
-#
-# == Version
-#
-#  $Id$
-#
-# == Authors
-#
-# * Michael Granger <ged@FaerieMUD.org>
-# * Mahlon E. Smith <mahlon@martini.nu>
-#
 module Thingfish
 	extend Loggability
 

@@ -1,5 +1,7 @@
-== v0.5.0 [2011-01-18] Michael Granger <ged@FaerieMUD.org>
+== v0.5.0 [2016-11-14] Michael Granger <ged@FaerieMUD.org>
 
-Rewritten to use Strelka.
+First public release.
+
+
 
 

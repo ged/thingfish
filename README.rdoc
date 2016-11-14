@@ -1,6 +1,6 @@
 = Thingfish
 
-* http://bitbucket.org/ged/thingfish
+* https://thing.fish/
 
 == Description
 

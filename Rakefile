@@ -20,7 +20,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.readme_file = 'README.rdoc'
 	self.history_file = 'History.rdoc'
 	self.extra_rdoc_files = Rake::FileList[ '*.rdoc' ]
-	self.license 'BSD'
+	self.license 'BSD-3-Clause'
 
 	self.developer 'Michael Granger', 'ged@FaerieMUD.org'
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'

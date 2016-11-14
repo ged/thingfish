@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
-# stub: thingfish 0.5.0.pre20161114092147 ruby lib
+# stub: thingfish 0.5.0.pre20161114092630 ruby lib
 
 Gem::Specification.new do |s|
   s.name = "thingfish"
-  s.version = "0.5.0.pre20161114092147"
+  s.version = "0.5.0.pre20161114092630"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
@@ -12,11 +12,11 @@ Gem::Specification.new do |s|
   s.date = "2016-11-14"
   s.description = "Thingfish is a extensible, web-based digital asset manager. It can be used to\nstore chunks of data on the network in an application-independent way, link the\nchunks together with metadata, and then search for the chunk you need later and\nfetch it, all through a REST API."
   s.email = ["ged@FaerieMUD.org", "mahlon@martini.nu"]
-  s.executables = ["tfprocessord", "thingfish"]
+  s.executables = ["thingfish"]
   s.extra_rdoc_files = ["History.rdoc", "Manifest.txt", "README.rdoc", "History.rdoc", "README.rdoc"]
-  s.files = [".simplecov", "ChangeLog", "Gemfile", "History.rdoc", "LICENSE", "Manifest.txt", "Procfile", "README.rdoc", "Rakefile", "bin/tfprocessord", "bin/thingfish", "etc/mongrel2-config.rb", "etc/thingfish.conf.example", "lib/strelka/app/metadata.rb", "lib/strelka/httprequest/metadata.rb", "lib/thingfish.rb", "lib/thingfish/behaviors.rb", "lib/thingfish/datastore.rb", "lib/thingfish/datastore/memory.rb", "lib/thingfish/handler.rb", "lib/thingfish/metastore.rb", "lib/thingfish/metastore/memory.rb", "lib/thingfish/mixins.rb", "lib/thingfish/processor.rb", "lib/thingfish/processor/sha256.rb", "lib/thingfish/processordaemon.rb", "lib/thingfish/spechelpers.rb", "spec/data/APIC-1-image.mp3", "spec/data/APIC-2-images.mp3", "spec/data/PIC-1-image.mp3", "spec/data/PIC-2-images.mp3", "spec/helpers.rb", "spec/spec.opts", "spec/thingfish/datastore/memory_spec.rb", "spec/thingfish/datastore_spec.rb", "spec/thingfish/handler_spec.rb", "spec/thingfish/metastore/memory_spec.rb", "spec/thingfish/metastore_spec.rb", "spec/thingfish/mixins_spec.rb", "spec/thingfish/processor/sha256_spec.rb", "spec/thingfish/processor_spec.rb", "spec/thingfish_spec.rb"]
-  s.homepage = "http://bitbucket.org/ged/thingfish"
-  s.licenses = ["BSD", "BSD"]
+  s.files = [".simplecov", "ChangeLog", "Gemfile", "History.rdoc", "LICENSE", "Manifest.txt", "Procfile", "README.rdoc", "Rakefile", "bin/thingfish", "etc/mongrel2-config.rb", "etc/thingfish.conf.example", "lib/strelka/app/metadata.rb", "lib/strelka/httprequest/metadata.rb", "lib/thingfish.rb", "lib/thingfish/behaviors.rb", "lib/thingfish/datastore.rb", "lib/thingfish/datastore/memory.rb", "lib/thingfish/handler.rb", "lib/thingfish/metastore.rb", "lib/thingfish/metastore/memory.rb", "lib/thingfish/mixins.rb", "lib/thingfish/processor.rb", "lib/thingfish/processor/sha256.rb", "lib/thingfish/spechelpers.rb", "spec/data/APIC-1-image.mp3", "spec/data/APIC-2-images.mp3", "spec/data/PIC-1-image.mp3", "spec/data/PIC-2-images.mp3", "spec/helpers.rb", "spec/spec.opts", "spec/thingfish/datastore/memory_spec.rb", "spec/thingfish/datastore_spec.rb", "spec/thingfish/handler_spec.rb", "spec/thingfish/metastore/memory_spec.rb", "spec/thingfish/metastore_spec.rb", "spec/thingfish/mixins_spec.rb", "spec/thingfish/processor/sha256_spec.rb", "spec/thingfish/processor_spec.rb", "spec/thingfish_spec.rb"]
+  s.homepage = "https://thing.fish/"
+  s.licenses = ["BSD-3-Clause", "BSD"]
   s.rdoc_options = ["--main", "README.rdoc"]
   s.required_ruby_version = Gem::Requirement.new(">= 2.0.0")
   s.rubygems_version = "2.5.1"

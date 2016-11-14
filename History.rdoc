@@ -1,3 +1,15 @@
+== v0.5.1 [2016-11-14] Michael Granger <ged@FaerieMUD.org>
+
+Enhancements:
+
+- Add support for Strelka app discovery.
+
+Bugfixes:
+
+- Remove the processor daemon for now
+- Documentation fixes
+
+
 == v0.5.0 [2016-11-14] Michael Granger <ged@FaerieMUD.org>
 
 First public release.

@@ -1,3 +1,11 @@
+== v0.6.0 [2017-01-16] Mahlon E. Smith <mahlon@martini.nu>
+
+Housekeeping:
+
+- Bump Configurability dependency.
+- Migrate away from .rvmrc.
+
+
 == v0.5.1 [2016-11-14] Michael Granger <ged@FaerieMUD.org>
 
 Enhancements:

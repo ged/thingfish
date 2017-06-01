@@ -9,7 +9,7 @@ require 'thingfish/processor'
 
 describe Thingfish::Handler do
 
-	EVENT_SOCKET_URI = 'tcp://127.0.0.1:0'
+	EVENT_SOCKET_URI = 'tcp://127.0.0.1:*'
 
 	before( :all ) do
 		Thingfish::Handler.configure( :event_socket_uri => EVENT_SOCKET_URI )
@@ -865,10 +865,10 @@ describe Thingfish::Handler do
 		before( :each ) do
 			@handler.setup_event_socket
 
-			@subsock = Mongrel2.zmq_context.socket( :SUB )
-			@subsock.linger = 0
+			@subsock = CZTop::Socket::SUB.new
+			@subsock.options.linger = 0
 			@subsock.subscribe( '' )
-			@subsock.connect( @handler.event_socket.endpoint )
+			@subsock.connect( @handler.event_socket.last_endpoint )
 		end
 
 		after( :each ) do
@@ -878,20 +878,20 @@ describe Thingfish::Handler do
 		it "publishes notifications about uploaded assets to a PUBSUB socket" do
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 			req.headers.content_length = TEST_TEXT_DATA.bytesize
+
+			poller = CZTop::Poller.new
+			poller.add_reader( @subsock )
+
 			res = @handler.handle( req )
+			event = poller.wait( 500 )
 
-			handles = ZMQ.select( [@subsock], nil, nil, 0 )
-			expect( handles ).to be_an( Array )
-			expect( handles[0].size ).to eq( 1 )
-			expect( handles[0].first ).to be( @subsock )
+			expect( event ).to_not be_nil
 
-			event = @subsock.recv
-			expect( @subsock.rcvmore? ).to be_truthy
-			expect( event ).to eq( 'created' )
+			message = event.socket.receive
+			expect( message.frames.count ).to be( 2 )
 
-			resource = @subsock.recv
-			expect( @subsock.rcvmore? ).to be_falsey
-			expect( resource ).to match( /^\{"uuid":"#{UUID_PATTERN}"\}$/ )
+			expect( message.frames.first.to_s ).to eq( 'created' )
+			expect( message.frames.last.to_s ).to match( /^\{"uuid":"#{UUID_PATTERN}"\}$/ )
 		end
 	end
 

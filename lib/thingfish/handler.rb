@@ -74,22 +74,6 @@ class Thingfish::Handler < Strelka::App
 	singleton_attr_accessor :processors
 
 
-	### Configurability API -- install the configuration
-	def self::configure( config=nil )
-		config = self.defaults.merge( config || {} )
-
-		self.datastore        = config[:datastore]
-		self.metastore        = config[:metastore]
-		self.event_socket_uri = config[:event_socket_uri]
-
-		self.processors = self.load_processors( config[:processors] )
-		self.processors.each do |processor|
-			self.filter( :request, &processor.method(:process_request) )
-			self.filter( :response, &processor.method(:process_response) )
-		end
-	end
-
-
 	### Load the Thingfish::Processors in the given +processor_list+ and return an instance
 	### of each one.
 	def self::load_processors( processor_list )
@@ -107,6 +91,24 @@ class Thingfish::Handler < Strelka::App
 		end
 
 		return processors
+	end
+
+
+	### Configurability API -- install the configuration
+	def self::configure( config=nil )
+		config = self.defaults.merge( config || {} )
+
+		self.datastore        = config[:datastore]
+		self.metastore        = config[:metastore]
+		self.event_socket_uri = config[:event_socket_uri]
+
+		self.plugin( :filters ) # pre-load the filters plugin for deferred config
+
+		self.processors = self.load_processors( config[:processors] )
+		self.processors.each do |processor|
+			self.filter( :request, &processor.method(:process_request) )
+			self.filter( :response, &processor.method(:process_response) )
+		end
 	end
 
 
@@ -145,8 +147,8 @@ class Thingfish::Handler < Strelka::App
 	### Set up the event socket.
 	def setup_event_socket
 		if self.class.event_socket_uri && ! @event_socket
-			@event_socket = Mongrel2.zmq_context.socket( :PUB )
-			@event_socket.linger = 0
+			@event_socket = CZTop::Socket::PUB.new
+			@event_socket.options.linger = 0
 			@event_socket.bind( self.class.event_socket_uri )
 		end
 	end
@@ -781,8 +783,7 @@ class Thingfish::Handler < Strelka::App
 	def send_event( type, msg )
 		esock = self.event_socket or return
 		self.log.debug "Publishing %p event: %p" % [ type, msg ]
-		esock.sendm( type.to_s )
-		esock.send( Yajl.dump(msg) )
+		esock << CZTop::Message.new([ type.to_s, Yajl.dump(msg) ])
 	end
 
 

@@ -1,6 +1,6 @@
 = Thingfish
 
-* https://thing.fish/
+* https://thing.fish
 
 == Description
 

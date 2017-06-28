@@ -26,7 +26,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.developer 'Mahlon E. Smith', 'mahlon@martini.nu'
 	self.license "BSD"
 
-	self.dependency 'strelka',      '~> 0.13'
+	self.dependency 'strelka',      '~> 0.14'
 
 	self.dependency 'hoe-deveiate', '~> 0.3',  :development
 	self.dependency 'simplecov',    '~> 0.7',  :development
@@ -36,7 +36,7 @@ hoespec = Hoe.spec 'thingfish' do
 	self.hg_sign_tags = true if self.respond_to?( :hg_sign_tags= )
 	spec.check_history_on_release = true if spec.respond_to?( :check_history_on_release= )
 
-	self.rdoc_locations << "deveiate:/usr/local/www/public/code/#{remote_rdoc_dir}"
+	self.rdoc_locations << "deveiate:/usr/local/thingfish/api"
 end
 
 ENV['VERSION'] ||= hoespec.spec.version.to_s
@@ -67,7 +67,7 @@ if File.directory?( '.hg' )
 	    rdoc.main = "README.rdoc"
 		rdoc.markup = 'markdown'
 	    rdoc.rdoc_files.include( "*.rdoc", "ChangeLog", "lib/**/*.rb" )
-	    rdoc.generator = :fivefish
+	    rdoc.generator = :sixfish
 		rdoc.title = 'Thingfish'
 	    rdoc.rdoc_dir = 'doc'
 	end
@@ -79,8 +79,8 @@ task GEMSPEC do |task|
 	spec = $hoespec.spec
 	spec.files.delete( '.gemtest' )
 	spec.signing_key = nil
-	spec.cert_chain = ['certs/ged.pem']
-	spec.version = "#{spec.version}.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
+	spec.cert_chain = Dir.glob( 'certs/*.pem' )
+	spec.version = "#{spec.version.bump}.0.pre#{Time.now.strftime("%Y%m%d%H%M%S")}"
 	File.open( task.name, 'w' ) do |fh|
 		fh.write( spec.to_ruby )
 	end

@@ -338,6 +338,7 @@ class Thingfish::Handler < Strelka::App
 
 		res.body = object
 		res.content_type = metadata['format']
+		res.status = HTTP::OK
 
 		return res
 	end
@@ -369,6 +370,7 @@ class Thingfish::Handler < Strelka::App
 			res.body = object
 		end
 
+		res.status = HTTP::OK
 		return res
 	end
 

@@ -12,7 +12,7 @@ module Thingfish
 
 
 	# Package version
-	VERSION = '0.6.0'
+	VERSION = '0.7.0'
 
 	# Version control revision
 	REVISION = %q$Revision$

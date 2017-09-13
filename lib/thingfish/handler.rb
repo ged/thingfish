@@ -333,7 +333,7 @@ class Thingfish::Handler < Strelka::App
 		metadata = self.metastore.fetch( uuid )
 
 		res = req.response
-		self.add_etag_headers( req, metadata )
+		self.add_cache_headers( req, metadata )
 		self.add_content_disposition( res, metadata )
 
 		res.body = object
@@ -356,7 +356,7 @@ class Thingfish::Handler < Strelka::App
 		res = req.response
 		res.content_type = metadata['format']
 
-		self.add_etag_headers( req, metadata )
+		self.add_cache_headers( req, metadata )
 		self.add_content_disposition( res, metadata )
 
 		if object.respond_to?( :path )
@@ -716,9 +716,9 @@ class Thingfish::Handler < Strelka::App
 	### Return a Hash of default metadata extracted from the given +request+.
 	def extract_default_metadata( request )
 		return self.extract_connection_metadata( request ).merge(
-			'extent'        => request.headers.content_length,
-			'format'        => request.content_type,
-			'created'       => Time.now.getgm
+			'extent'  => request.headers.content_length,
+			'format'  => request.content_type,
+			'created' => Time.now.getgm
 		)
 	end
 
@@ -787,19 +787,30 @@ class Thingfish::Handler < Strelka::App
 	end
 
 
-	### Add browser cache headers for resources.  This requires the sha256
+	### Add browser cache headers for resources.
+	### Last-Modified is always added.  ETag support requires the sha256
 	### processor plugin to be enabled for stored resources.
-	def add_etag_headers( request, metadata )
+	###
+	def add_cache_headers( request, metadata )
 		response = request.response
-		checksum = metadata[ 'checksum' ]
-		return unless checksum
 
-		if (( match = request.headers[ :if_none_match ] ))
-			match = match.gsub( '"', '' ).split( /,\s*/ )
-			finish_with( HTTP::NOT_MODIFIED ) if match.include?( checksum )
+		# ETag takes precedence if available.
+		#
+		if (( checksum = metadata['checksum'] ))
+			if (( match = request.headers[ :if_none_match ] ))
+				match = match.gsub( '"', '' ).split( /,\s*/ )
+				finish_with( HTTP::NOT_MODIFIED ) if match.include?( checksum )
+			end
+			response.headers[ :etag ] = checksum
 		end
 
-		response.headers[ :etag ] = checksum
+		return unless metadata[ 'created' ]
+
+		if (( modified = request.headers[ :if_modified_since ] ))
+			finish_with( HTTP::NOT_MODIFIED ) if Time.parse( modified ) <= metadata['created'].round
+		end
+		response.headers[ :last_modified ] = metadata[ 'created' ].httpdate
+
 		return
 	end
 

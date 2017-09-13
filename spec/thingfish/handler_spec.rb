@@ -359,7 +359,20 @@ describe Thingfish::Handler do
 		end
 
 
-		it "adds browser cache headers to resources with a checksum attribute" do
+		it "adds date cache headers to resources" do
+			created = Time.now
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
+
+			req = factory.get( "/#{uuid}" )
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /200 ok/i )
+			expect( result.headers.last_modified ).to eq( created.httpdate )
+		end
+
+
+		it "adds content cache headers to resources with a checksum attribute" do
 			uuid = @handler.datastore.save( @png_io )
 			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
 
@@ -385,7 +398,21 @@ describe Thingfish::Handler do
 		end
 
 
-		it "returns a 304 not modified for unchanged client cache requests" do
+		it "returns a 304 not modified for unchanged date cache requests" do
+			created = Time.now
+			uuid = @handler.datastore.save( @png_io )
+			@handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
+
+			req = factory.get( "/#{uuid}" )
+			req.headers[ :if_modified_since ] = ( Time.now - 300 ).httpdate
+			result = @handler.handle( req )
+
+			expect( result.status_line ).to match( /304 not modified/i )
+			expect( result.body.read ).to be_empty
+		end
+
+
+		it "returns a 304 not modified for unchanged content cache requests" do
 			uuid = @handler.datastore.save( @png_io )
 			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
 
@@ -396,7 +423,6 @@ describe Thingfish::Handler do
 			expect( result.status_line ).to match( /304 not modified/i )
 			expect( result.body.read ).to be_empty
 		end
-
 
 
 		it "can remove everything associated with an object id" do

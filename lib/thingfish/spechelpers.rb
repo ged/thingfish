@@ -1,5 +1,5 @@
 # -*- ruby -*-
-#encoding: utf-8
+# frozen_string_literal: true
 # vim: set nosta noet ts=4 sw=4 ft=ruby:
 
 require 'time'

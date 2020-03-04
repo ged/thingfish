@@ -1,6 +1,6 @@
 # -*- ruby -*-
 # vim: set nosta noet ts=4 sw=4:
-# encoding: utf-8
+# frozen_string_literal: true
 
 require 'strelka/constants'
 require 'strelka/httprequest' unless defined?( Strelka::HTTPRequest )

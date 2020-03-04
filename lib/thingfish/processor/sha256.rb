@@ -1,5 +1,5 @@
 # -*- ruby -*-
-#encoding: utf-8
+# frozen_string_literal: true
 
 require 'digest/sha2'
 
@@ -37,7 +37,7 @@ class Thingfish::Processor::SHA256 < Thingfish::Processor
 	### Given an +io+, return a sha256 checksum of it's contents.
 	def checksum( io )
 		digest = Digest::SHA256.new
-		buf = ''
+		buf = String.new
 
 		while io.read( CHUNK_SIZE, buf )
 			digest.update( buf )

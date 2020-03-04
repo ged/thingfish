@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- frozen_string_literal: true -*-
 # stub: thingfish 0.8.0.pre.20200304144036 ruby lib
 
 Gem::Specification.new do |s|

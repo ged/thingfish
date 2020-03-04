@@ -7,7 +7,7 @@ require 'thingfish/datastore'
 require 'thingfish/behaviors'
 
 
-describe Thingfish::Datastore, "memory" do
+RSpec.describe Thingfish::Datastore, "memory" do
 
 	let( :store ) { Thingfish::Datastore.create(:memory) }
 

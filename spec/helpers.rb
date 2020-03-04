@@ -42,26 +42,32 @@ Loggability.format_with( :color ) if $stdout.tty?
 
 
 ### Mock with RSpec
-RSpec.configure do |c|
+RSpec.configure do |config|
 	include Strelka::Constants
 	include Thingfish::SpecHelpers
 	include Thingfish::SpecHelpers::Constants
 
-	c.run_all_when_everything_filtered = true
-	c.filter_run :focus
-	c.order = 'random'
-    # c.warnings = true
-	c.mock_with( :rspec ) do |mock|
+	config.mock_with( :rspec ) do |mock|
 		mock.syntax = :expect
 	end
 
-	c.include( Loggability::SpecHelpers )
-	c.include( Mongrel2::SpecHelpers )
-	c.include( Mongrel2::Constants )
-	c.include( Mongrel2::Config::DSL )
-	c.include( Strelka::Constants )
-	c.include( Strelka::Testing )
-	c.include( Thingfish::SpecHelpers )
+	config.disable_monkey_patching!
+	config.example_status_persistence_file_path = "spec/.status"
+	config.filter_run :focus
+	config.filter_run_when_matching :focus
+	config.order = :random
+	config.profile_examples = 5
+	config.run_all_when_everything_filtered = true
+	config.shared_context_metadata_behavior = :apply_to_host_groups
+	# config.warnings = true
+
+	config.include( Loggability::SpecHelpers )
+	config.include( Mongrel2::SpecHelpers )
+	config.include( Mongrel2::Constants )
+	config.include( Mongrel2::Config::DSL )
+	config.include( Strelka::Constants )
+	config.include( Strelka::Testing )
+	config.include( Thingfish::SpecHelpers )
 end
 
 # vim: set nosta noet ts=4 sw=4:

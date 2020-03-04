@@ -1,8 +1,16 @@
-= Thingfish
+# Thingfish
 
-* https://thing.fish
+home
+: https://thing.fish
 
-== Description
+code
+: https://hg.sr.ht/~ged/thingfish
+
+docs
+: https://thing.fish/docs/
+
+
+## Description
 
 Thingfish is a extensible, web-based digital asset manager. It can be used to
 store chunks of data on the network in an application-independent way, link the
@@ -10,42 +18,31 @@ chunks together with metadata, and then search for the chunk you need later and
 fetch it, all through a REST API.
 
 
-== Authors
+## Requirements
 
-* Michael Granger <ged@FaerieMUD.org>
-* Mahlon E. Smith <mahlon@martini.nu>
-
-== Contributors
-
-* Jeremiah Jordan <phaedrus@perlreason.com>
-* Ben Bleything <ben@bleything.net>
-* Jeff Davis <jeff-thingfish@j-davis.com>
-
-
-== Installation
-
-=== Requirements
-
-Thingfish is written in ruby, and is tested using {version 2.3}[http://www.ruby-lang.org/en/downloads/]. Other versions may work,
+Thingfish is written in ruby, and is tested using [version 2.7](http://www.ruby-lang.org/en/downloads/). Other versions may work,
 but are not tested.
 
-=== Ruby Modules
 
-You can install Thingfish via the Rubygems package manager:
+## Installation
 
-  $ gem install thingfish
+You can install Thingfish via Rubygems:
+
+    $ gem install thingfish
 
 This will install the basic server and its dependencies. Additional functionality is available via separate gems in the following namespaces:
 
-[thingfish-metastore-*]
-  Storage backends for resource metadata
-[thingfish-filestore-*]
-  Storage backends for resources themselves
-[thingfish-processor-*]
-  Filters and extractors for resources
+`thingfish-metastore-*`
+: Storage backends for resource metadata
+
+`thingfish-filestore-*`
+: Storage backends for resources themselves
+
+`thingfish-processor-*`
+: Filters and extractors for resources
 
 
-== Contributing
+## Contributing
 
 You can check out the current development source
 {with Mercurial}[http://bitbucket.org/ged/thingfish], or
@@ -63,9 +60,22 @@ You can submit bug reports, suggestions, and read more about future plans at
 {the project page}[http://bitbucket.org/ged/thingfish].
 
 
-== License
+## Authors
 
-Copyright (c) 2007-2016, Michael Granger and Mahlon E. Smith
+* Michael Granger <ged@FaerieMUD.org>
+* Mahlon E. Smith <mahlon@martini.nu>
+
+
+## Contributors
+
+* Jeremiah Jordan <phaedrus@perlreason.com>
+* Ben Bleything <ben@bleything.net>
+* Jeff Davis <jeff-thingfish@j-davis.com>
+
+
+## License
+
+Copyright (c) 2007-2020, Michael Granger and Mahlon E. Smith
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -9,7 +9,7 @@ class TestingDatastore < Thingfish::Datastore
 end
 
 
-describe Thingfish::Datastore do
+RSpec.describe Thingfish::Datastore do
 
 	it "is abstract" do
 		expect { described_class.new }.to raise_error( NoMethodError, /private/i )

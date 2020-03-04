@@ -6,7 +6,7 @@ require 'rspec'
 require 'thingfish'
 
 
-describe Thingfish do
+RSpec.describe Thingfish do
 
 	it "returns a version string if asked" do
 		expect( described_class.version_string ).to match( /\w+ [\d.]+/ )

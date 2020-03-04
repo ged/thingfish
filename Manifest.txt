@@ -1,15 +1,6 @@
 .simplecov
-ChangeLog
-Gemfile
-History.rdoc
-LICENSE
-Manifest.txt
-Procfile
-README.rdoc
-Rakefile
 bin/thingfish
-etc/mongrel2-config.rb
-etc/thingfish.conf.example
+History.md
 lib/strelka/app/metadata.rb
 lib/strelka/apps.rb
 lib/strelka/httprequest/metadata.rb
@@ -24,6 +15,9 @@ lib/thingfish/mixins.rb
 lib/thingfish/processor.rb
 lib/thingfish/processor/sha256.rb
 lib/thingfish/spechelpers.rb
+LICENSE
+Rakefile
+README.md
 spec/data/APIC-1-image.mp3
 spec/data/APIC-2-images.mp3
 spec/data/PIC-1-image.mp3

@@ -8,7 +8,7 @@ require 'rspec'
 require 'thingfish/mixins'
 
 
-describe Thingfish, 'mixins' do
+RSpec.describe Thingfish, 'mixins' do
 
 	# A collection of functions for dealing with object IDs.
 	describe 'Normalization' do

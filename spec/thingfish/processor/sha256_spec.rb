@@ -8,7 +8,7 @@ require 'thingfish/processor'
 require 'strelka/httprequest/metadata'
 
 
-describe Thingfish::Processor, "SHA256" do
+RSpec.describe Thingfish::Processor, "SHA256" do
 
 	before( :all ) do
 		Strelka::HTTPRequest.class_eval { include Strelka::HTTPRequest::Metadata }

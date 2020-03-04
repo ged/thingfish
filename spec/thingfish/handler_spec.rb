@@ -7,7 +7,7 @@ require 'thingfish/handler'
 require 'thingfish/processor'
 
 
-describe Thingfish::Handler do
+RSpec.describe Thingfish::Handler do
 
 	EVENT_SOCKET_URI = 'tcp://127.0.0.1:*'
 

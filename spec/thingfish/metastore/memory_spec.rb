@@ -8,7 +8,7 @@ require 'thingfish/metastore/memory'
 require 'thingfish/behaviors'
 
 
-describe Thingfish::Metastore::Memory do
+RSpec.describe Thingfish::Metastore::Memory do
 
 	it_behaves_like "a Thingfish metastore"
 

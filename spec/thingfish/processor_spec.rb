@@ -6,7 +6,7 @@ require 'rspec'
 require 'thingfish/processor'
 
 
-describe Thingfish::Processor do
+RSpec.describe Thingfish::Processor do
 
 	before( :all ) do
 		setup_logging()

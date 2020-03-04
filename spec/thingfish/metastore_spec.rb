@@ -9,7 +9,7 @@ class TestingMetastore < Thingfish::Metastore
 end
 
 
-describe Thingfish::Metastore do
+RSpec.describe Thingfish::Metastore do
 
 	before( :all ) do
 		setup_logging()

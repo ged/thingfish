@@ -50,6 +50,7 @@ RSpec.configure do |c|
 	c.run_all_when_everything_filtered = true
 	c.filter_run :focus
 	c.order = 'random'
+    # c.warnings = true
 	c.mock_with( :rspec ) do |mock|
 		mock.syntax = :expect
 	end

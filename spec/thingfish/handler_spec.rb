@@ -16,18 +16,9 @@ describe Thingfish::Handler do
 		Thingfish::Handler.install_plugins
 	end
 
-	before( :each ) do
-		@png_io  = StringIO.new( TEST_PNG_DATA.dup )
-		@text_io = StringIO.new( TEST_TEXT_DATA.dup )
-		@handler = described_class.new( TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC )
-	end
-
-
-	after( :each ) do
-		@handler.shutdown
-	end
-
-	# let( :handler ) { described_class.new(TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC) }
+    let( :png_io  ) { StringIO.new( TEST_PNG_DATA.dup ) }
+    let( :text_io ) { StringIO.new( TEST_TEXT_DATA.dup ) }
+	let( :handler ) { described_class.new(TEST_APPID, TEST_SEND_SPEC, TEST_RECV_SPEC) }
 
 
 	#
@@ -51,7 +42,7 @@ describe Thingfish::Handler do
 
 		it 'returns interesting configuration info' do
 			req = factory.get( '/serverinfo',  content_type: 'text/plain' )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /200 ok/i )
 			expect( res.headers ).to include( 'x-thingfish' )
@@ -73,7 +64,7 @@ describe Thingfish::Handler do
 			req = factory.post( '/', TEST_TEXT_DATA )
 			req.content_type = 'text/plain'
 			req.headers.content_length = TEST_TEXT_DATA.bytesize
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /201 created/i )
 			expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
@@ -100,18 +91,18 @@ describe Thingfish::Handler do
 				with( spool_path, 'r', encoding: Encoding::ASCII_8BIT ).
 				and_return( fh )
 
-			start_req = factory.post( '/', nil,
+			start_req = factory.post( '/', '',
 				x_mongrel2_upload_start: spool_path,
 				content_length: upload_size,
 				content_type: 'text/plain' )
-			upload_req = factory.post( '/', nil,
+			upload_req = factory.post( '/', '',
 				x_mongrel2_upload_start: spool_path,
 				x_mongrel2_upload_done: spool_path,
 				content_length: upload_size,
 				content_type: 'text/plain' )
 
-			start_res = @handler.dispatch_request( start_req )
-			upload_res = @handler.dispatch_request( upload_req )
+			start_res = handler.dispatch_request( start_req )
+			upload_res = handler.dispatch_request( upload_req )
 
 			expect( start_res ).to be_nil
 
@@ -151,7 +142,7 @@ describe Thingfish::Handler do
 			req = factory.post( '/', TEST_TEXT_DATA )
 			req.content_type = 'text/plain'
 
-			res = @handler.handle( req )
+			res = handler.handle( req )
 			res.body.rewind
 			expect( res.status ).to be( HTTP::BAD_REQUEST )
 			expect( res.body.read ).to match( /missing operational attribute/i )
@@ -166,60 +157,60 @@ describe Thingfish::Handler do
 			}
 			req = factory.post( '/', TEST_TEXT_DATA, headers )
 			req.headers.content_length = TEST_TEXT_DATA.bytesize
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /201 created/i )
 			expect( res.headers.location.to_s ).to match( %r:/#{UUID_PATTERN}$: )
 
 			uuid = res.headers.x_thingfish_uuid
-			expect( @handler.metastore.fetch_value(uuid, 'title') ).
+			expect( handler.metastore.fetch_value(uuid, 'title') ).
 				to eq( 'Muffin the Panda Goes To School' )
-			expect( @handler.metastore.fetch_value(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
+			expect( handler.metastore.fetch_value(uuid, 'tags') ).to eq( 'rapper,ukraine,potap' )
 		end
 
 
 		it 'replaces content via PUT' do
-			uuid = @handler.datastore.save( @text_io )
-			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+			uuid = handler.datastore.save( text_io )
+			handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
-			req = factory.put( "/#{uuid}", @png_io, content_type: 'image/png' )
-			req.headers.content_length = @png_io.read.bytesize
-			res = @handler.handle( req )
+			req = factory.put( "/#{uuid}", png_io, content_type: 'image/png' )
+			req.headers.content_length = png_io.read.bytesize
+			res = handler.handle( req )
 
 			expect( res.status ).to eq( HTTP::NO_CONTENT )
-			expect( @handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
-			expect( @handler.metastore.fetch(uuid) ).to include( 'format' => 'image/png' )
+			expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
+			expect( handler.metastore.fetch(uuid) ).to include( 'format' => 'image/png' )
 		end
 
 
 		it "doesn't care about the case of the UUID when replacing content via PUT" do
-			uuid = @handler.datastore.save( @text_io )
-			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+			uuid = handler.datastore.save( text_io )
+			handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
-			req = factory.put( "/#{uuid.upcase}", @png_io, content_type: 'image/png' )
-			req.headers.content_length = @png_io.read.bytesize
-			res = @handler.handle( req )
+			req = factory.put( "/#{uuid.upcase}", png_io, content_type: 'image/png' )
+			req.headers.content_length = png_io.read.bytesize
+			res = handler.handle( req )
 
 			expect( res.status ).to eq( HTTP::NO_CONTENT )
-			expect( @handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
-			expect( @handler.metastore.fetch(uuid) ).to include( 'format' => 'image/png' )
+			expect( handler.datastore.fetch(uuid).read ).to eq( TEST_PNG_DATA )
+			expect( handler.metastore.fetch(uuid) ).to include( 'format' => 'image/png' )
 		end
 
 
 		it 'can fetch all uploaded data' do
-			text_uuid = @handler.datastore.save( @text_io )
-			@handler.metastore.save( text_uuid, {
+			text_uuid = handler.datastore.save( text_io )
+			handler.metastore.save( text_uuid, {
 				'format' => 'text/plain',
-				'extent' => @text_io.string.bytesize
+				'extent' => text_io.string.bytesize
 			})
-			png_uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( png_uuid, {
+			png_uuid = handler.datastore.save( png_io )
+			handler.metastore.save( png_uuid, {
 				'format' => 'image/png',
-				'extent' => @png_io.string.bytesize
+				'extent' => png_io.string.bytesize
 			})
 
 			req = factory.get( '/' )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 			content = Yajl::Parser.parse( res.body.read )
 
 			expect( res.status_line ).to match( /200 ok/i )
@@ -228,30 +219,30 @@ describe Thingfish::Handler do
 			expect( content[0] ).to be_a( Hash )
 			expect( content[0]['uri'] ).to eq( "#{req.base_uri}#{text_uuid}" )
 			expect( content[0]['format'] ).to eq( "text/plain" )
-			expect( content[0]['extent'] ).to eq( @text_io.string.bytesize )
+			expect( content[0]['extent'] ).to eq( text_io.string.bytesize )
 			expect( content[1] ).to be_a( Hash )
 			expect( content[1]['uri'] ).to eq( "#{req.base_uri}#{png_uuid}" )
 			expect( content[1]['format'] ).to eq( 'image/png' )
-			expect( content[1]['extent'] ).to eq( @png_io.string.bytesize )
+			expect( content[1]['extent'] ).to eq( png_io.string.bytesize )
 		end
 
 
 		it 'can fetch all related data for a single resource' do
-			main_uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( main_uuid, {
+			main_uuid = handler.datastore.save( png_io )
+			handler.metastore.save( main_uuid, {
 				'format' => 'image/png',
-				'extent' => @png_io.string.bytesize
+				'extent' => png_io.string.bytesize
 			})
-			related_uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( related_uuid, {
+			related_uuid = handler.datastore.save( png_io )
+			handler.metastore.save( related_uuid, {
 				'format'       => 'image/png',
-				'extent'       => @png_io.string.bytesize,
+				'extent'       => png_io.string.bytesize,
 				'relation'     => main_uuid,
 				'relationship' => "twinsies"
 			})
 
 			req = factory.get( "/#{main_uuid}/related" )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 			content = Yajl::Parser.parse( res.body.read )
 
 			expect( res.status_line ).to match( /200 ok/i )
@@ -260,22 +251,22 @@ describe Thingfish::Handler do
 			expect( content[0] ).to be_a( Hash )
 			expect( content[0]['uri'] ).to eq( "#{req.base_uri}#{related_uuid}" )
 			expect( content[0]['format'] ).to eq( "image/png" )
-			expect( content[0]['extent'] ).to eq( @png_io.string.bytesize )
+			expect( content[0]['extent'] ).to eq( png_io.string.bytesize )
 			expect( content[0]['uuid'] ).to eq( related_uuid )
 			expect( content[0]['relation'] ).to eq( main_uuid )
 		end
 
 
 		it 'can fetch a related resource by name' do
-			main_uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( main_uuid, {
+			main_uuid = handler.datastore.save( png_io )
+			handler.metastore.save( main_uuid, {
 				'format' => 'image/png',
-				'extent' => @png_io.string.bytesize
+				'extent' => png_io.string.bytesize
 			})
-			related_uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( related_uuid, {
+			related_uuid = handler.datastore.save( png_io )
+			handler.metastore.save( related_uuid, {
 				'format'       => 'image/png',
-				'extent'       => @png_io.string.bytesize,
+				'extent'       => png_io.string.bytesize,
 				'relation'     => main_uuid,
 				'relationship' => "twinsies",
 				'title'        => 'Make America Smart Again.png',
@@ -283,7 +274,7 @@ describe Thingfish::Handler do
 			})
 
 			req = factory.get( "/#{main_uuid}/related/twinsies" )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /200 ok/i )
 			expect( res.headers.content_type ).to eq( 'image/png' )
@@ -295,77 +286,77 @@ describe Thingfish::Handler do
 
 		it "404s when attempting to fetch a resource related to a non-existant resource" do
 			req = factory.get( "/#{TEST_UUID}/related/twinsies" )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "404s when attempting to fetch a related resource that doesn't exist" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
-				'extent' => @png_io.string.bytesize
+				'extent' => png_io.string.bytesize
 			})
 
 			req = factory.get( "/#{uuid}/related/twinsies" )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			expect( res.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "can fetch an uploaded chunk of data" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {'format' => 'image/png'} )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {'format' => 'image/png'} )
 
 			req = factory.get( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
-			expect( result.body.read ).to eq( @png_io.string )
+			expect( result.body.read ).to eq( png_io.string )
 			expect( result.headers.content_type ).to eq( 'image/png' )
 		end
 
 
 		it "returns a 404 Not Found when asked to fetch an object that doesn't exist" do
 			req = factory.get( "/#{TEST_UUID}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "returns a 404 Not Found when asked to fetch an object that doesn't exist in the metastore" do
-			uuid = @handler.datastore.save( @png_io )
+			uuid = handler.datastore.save( png_io )
 
 			req = factory.get( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "doesn't care about the case of the UUID when fetching uploaded data" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {'format' => 'image/png'} )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {'format' => 'image/png'} )
 
 			req = factory.get( "/#{uuid.upcase}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
-			expect( result.body.read ).to eq( @png_io.string )
+			expect( result.body.read ).to eq( png_io.string )
 			expect( result.headers.content_type ).to eq( 'image/png' )
 		end
 
 
 		it "adds date cache headers to resources" do
 			created = Time.now
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
 
 			req = factory.get( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
 			expect( result.headers.last_modified ).to eq( created.httpdate )
@@ -373,11 +364,11 @@ describe Thingfish::Handler do
 
 
 		it "adds content cache headers to resources with a checksum attribute" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
 
 			req = factory.get( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
 			expect( result.headers.etag ).to eq( '123456' )
@@ -385,14 +376,14 @@ describe Thingfish::Handler do
 
 
 		it "adds content disposition filename, if the resource has a title" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {'format' => 'image/png', 'title' => 'spょler"py.txt'} )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {'format' => 'image/png', 'title' => 'spょler"py.txt'} )
 
 			req = factory.get( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
-			expect( result.body.read ).to eq( @png_io.string )
+			expect( result.body.read ).to eq( png_io.string )
 			expect( result.headers.content_type ).to eq( 'image/png' )
 			expect( result.headers.content_disposition ).to eq( 'filename="sp?ler\"py.txt"' )
 		end
@@ -400,12 +391,12 @@ describe Thingfish::Handler do
 
 		it "returns a 304 not modified for unchanged date cache requests" do
 			created = Time.now
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, 'format' => 'image/png', 'created' => created )
 
 			req = factory.get( "/#{uuid}" )
 			req.headers[ :if_modified_since ] = ( Time.now - 300 ).httpdate
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /304 not modified/i )
 			expect( result.body.read ).to be_empty
@@ -413,12 +404,12 @@ describe Thingfish::Handler do
 
 
 		it "returns a 304 not modified for unchanged content cache requests" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, 'format' => 'image/png', 'checksum' => '123456' )
 
 			req = factory.get( "/#{uuid}" )
 			req.headers[ :if_none_match ] = '123456'
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /304 not modified/i )
 			expect( result.body.read ).to be_empty
@@ -426,24 +417,24 @@ describe Thingfish::Handler do
 
 
 		it "can remove everything associated with an object id" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			req = factory.delete( "/#{uuid}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /200 ok/i )
-			expect( @handler.metastore.include?(uuid) ).to be_falsey
-			expect( @handler.datastore.include?(uuid) ).to be_falsey
+			expect( handler.metastore.include?(uuid) ).to be_falsey
+			expect( handler.datastore.include?(uuid) ).to be_falsey
 		end
 
 
 		it "returns a 404 Not Found when asked to remove an object that doesn't exist" do
 			req = factory.delete( "/#{TEST_UUID}" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
@@ -461,15 +452,15 @@ describe Thingfish::Handler do
 		end
 
 		it "can fetch the metadata associated with uploaded data" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
 				'extent'  => 288,
 				'created' => Time.at(1378313840),
 			})
 
 			req = factory.get( "/#{uuid}/metadata" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 			content = result.body.read
 
 			content_hash = Yajl::Parser.parse( content )
@@ -485,21 +476,21 @@ describe Thingfish::Handler do
 
 		it "returns a 404 Not Found when fetching metadata for an object that doesn't exist" do
 			req = factory.get( "/#{TEST_UUID}/metadata" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "can fetch a value for a single metadata key" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			req     = factory.get( "/#{uuid}/metadata/extent" )
-			result  = @handler.handle( req )
+			result  = handler.handle( req )
 			result.body.rewind
 			content = result.body.read
 
@@ -511,21 +502,21 @@ describe Thingfish::Handler do
 
 		it "returns a 404 Not Found when fetching a single metadata value for a uuid that doesn't exist" do
 			req = factory.get( "/#{TEST_UUID}/metadata/extent" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status_line ).to match( /404 not found/i )
 		end
 
 
 		it "doesn't error when fetching a non-existent metadata value" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			req = factory.get( "/#{uuid}/metadata/hururrgghh" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			content = Yajl::Parser.parse( result.body.read )
 
@@ -537,58 +528,58 @@ describe Thingfish::Handler do
 
 
 		it "can merge in new metadata for an existing resource with a POST" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288
 			})
 
 			body_json = Yajl.dump({ 'comment' => 'Ignore me!', 'uuid' => 123 })
 			req = factory.post( "/#{uuid}/metadata", body_json, 'Content-type' => 'application/json' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::OK )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Ignore me!' )
-			expect( @handler.metastore.fetch_value(uuid, 'uuid') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Ignore me!' )
+			expect( handler.metastore.fetch_value(uuid, 'uuid') ).to be_nil
 		end
 
 
 		it "ignores attempts to alter operational metadata when merging" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			body_json = Yajl.dump({ 'format' => 'text/plain', 'comment' => 'Ignore me!' })
 			req = factory.post( "/#{uuid}/metadata", body_json, 'Content-type' => 'application/json' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::OK )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Ignore me!' )
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Ignore me!' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 
 
 		it "can create single metadata values with a POST" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			req = factory.post( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::CREATED )
 			expect( result.headers.location ).to match( %r|#{uuid}/metadata/comment$| )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
 		it "returns NOT_FOUND when attempting to create metadata for a non-existent object" do
 			req = factory.post( "/#{TEST_UUID}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NOT_FOUND )
 			expect( result.body.string ).to match( /no such object/i )
@@ -596,73 +587,73 @@ describe Thingfish::Handler do
 
 
 		it "returns CONFLICT when attempting to create a single metadata value if it already exists" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
 				'extent'  => 288,
 				'comment' => 'nill bill'
 			})
 
 			req = factory.post( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::CONFLICT )
 			expect( result.body.string ).to match( /already exists/i )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'nill bill' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'nill bill' )
 		end
 
 
 		it "can create single metadata values with a PUT" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format' => 'image/png',
 				'extent' => 288,
 			})
 
 			req = factory.put( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
 		it "can replace a single metadata value with a PUT" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
 				'extent'  => 288,
 				'comment' => 'nill bill'
 			})
 
 			req = factory.put( "/#{uuid}/metadata/comment", "urrrg", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'urrrg' )
 		end
 
 
 		it "returns FORBIDDEN when attempting to replace a operational metadata value with a PUT" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
 				'extent'  => 288,
 				'comment' => 'nill bill'
 			})
 
 			req = factory.put( "/#{uuid}/metadata/format", "image/gif", 'Content-type' => 'text/plain' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::FORBIDDEN )
 			expect( result.body.string ).to match( /protected metadata/i )
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 
 
 		it "can replace all metadata with a PUT" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'    => 'image/png',
 				'extent'    => 288,
 				'comment'   => 'nill bill',
@@ -671,19 +662,19 @@ describe Thingfish::Handler do
 
 			req = factory.put( "/#{uuid}/metadata", %[{"comment":"Yeah."}],
 			                   'Content-type' => 'application/json' )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::OK )
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Yeah.' )
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
-			expect( @handler.metastore ).to_not include( 'ephemeral' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to eq( 'Yeah.' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore ).to_not include( 'ephemeral' )
 		end
 
 
 		it "can remove all non-default metadata with a DELETE" do
 			timestamp = Time.now.getgm
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'        => 'image/png',
 				'extent'        => 288,
 				'comment'       => 'nill bill',
@@ -693,49 +684,49 @@ describe Thingfish::Handler do
 			})
 
 			req = factory.delete( "/#{uuid}/metadata" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::OK )
 			expect( result.body.string ).to_not be_empty
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
-			expect( @handler.metastore.fetch_value(uuid, 'extent') ).to eq( 288 )
-			expect( @handler.metastore.fetch_value(uuid, 'uploadaddress') ).to eq( '127.0.0.1' )
-			expect( @handler.metastore.fetch_value(uuid, 'created') ).to eq( timestamp )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'extent') ).to eq( 288 )
+			expect( handler.metastore.fetch_value(uuid, 'uploadaddress') ).to eq( '127.0.0.1' )
+			expect( handler.metastore.fetch_value(uuid, 'created') ).to eq( timestamp )
 
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
-			expect( @handler.metastore.fetch_value(uuid, 'useragent') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'useragent') ).to be_nil
 		end
 
 
 		it "can remove a single metadata value with DELETE" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png',
 				'comment' => 'nill bill'
 			})
 
 			req = factory.delete( "/#{uuid}/metadata/comment" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::NO_CONTENT )
 			expect( result.body.string ).to be_empty
-			expect( @handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'comment') ).to be_nil
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 
 
 		it "returns FORBIDDEN when attempting to remove a operational metadata value with a DELETE" do
-			uuid = @handler.datastore.save( @png_io )
-			@handler.metastore.save( uuid, {
+			uuid = handler.datastore.save( png_io )
+			handler.metastore.save( uuid, {
 				'format'  => 'image/png'
 			})
 
 			req = factory.delete( "/#{uuid}/metadata/format" )
-			result = @handler.handle( req )
+			result = handler.handle( req )
 
 			expect( result.status ).to eq( HTTP::FORBIDDEN )
 			expect( result.body.string ).to match( /protected metadata/i )
-			expect( @handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
+			expect( handler.metastore.fetch_value(uuid, 'format') ).to eq( 'image/png' )
 		end
 	end
 
@@ -820,23 +811,23 @@ describe Thingfish::Handler do
 
 			req = factory.post( '/', TEST_TEXT_DATA, content_type: 'text/plain' )
 			req.headers.content_length = TEST_TEXT_DATA.bytesize
-			res = @handler.handle( req )
+			res = handler.handle( req )
 			uuid = res.headers.x_thingfish_uuid
 
-			Thingfish.logger.debug "Metastore contains: %p" % [ @handler.metastore.storage ]
+			Thingfish.logger.debug "Metastore contains: %p" % [ handler.metastore.storage ]
 
-			expect( @handler.metastore.fetch(uuid) ).
+			expect( handler.metastore.fetch(uuid) ).
 				to include( 'test:comment' => 'Yo, it totally worked.')
-			related_uuids = @handler.metastore.fetch_related_oids( uuid )
+			related_uuids = handler.metastore.fetch_related_oids( uuid )
 			expect( related_uuids.size ).to eq( 1 )
 
 			r_uuid = related_uuids.first.downcase
-			expect( @handler.metastore.fetch_value(r_uuid, 'relation') ).to eq( uuid )
-			expect( @handler.metastore.fetch_value(r_uuid, 'format') ).to eq( 'text/plain' )
-			expect( @handler.metastore.fetch_value(r_uuid, 'extent') ).to eq( 9 )
-			expect( @handler.metastore.fetch_value(r_uuid, 'relationship') ).to eq( 'comment' )
+			expect( handler.metastore.fetch_value(r_uuid, 'relation') ).to eq( uuid )
+			expect( handler.metastore.fetch_value(r_uuid, 'format') ).to eq( 'text/plain' )
+			expect( handler.metastore.fetch_value(r_uuid, 'extent') ).to eq( 9 )
+			expect( handler.metastore.fetch_value(r_uuid, 'relationship') ).to eq( 'comment' )
 
-			expect( @handler.datastore.fetch(r_uuid).read ).to eq( 'Chunkers!' )
+			expect( handler.datastore.fetch(r_uuid).read ).to eq( 'Chunkers!' )
 		end
 
 
@@ -845,7 +836,7 @@ describe Thingfish::Handler do
 			processor = described_class.processors.first
 
 			req = factory.post( "/#{TEST_UUID}/metadata", TEST_TEXT_DATA, content_type: 'text/plain' )
-			@handler.handle( req )
+			handler.handle( req )
 
 			expect( processor.was_called ).to be_falsey
 		end
@@ -854,11 +845,11 @@ describe Thingfish::Handler do
 		it "processes responses" do
 			described_class.configure( :processors => %w[test] )
 
-			uuid = @handler.datastore.save( @text_io )
-			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+			uuid = handler.datastore.save( text_io )
+			handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
 			req = factory.get( "/#{uuid}" )
-			res = @handler.handle( req )
+			res = handler.handle( req )
 
 			res.body.rewind
 			expect( res.body.read ).to eq( TEST_TEXT_DATA.reverse )
@@ -869,11 +860,11 @@ describe Thingfish::Handler do
 			described_class.configure( :processors => %w[test] )
 			processor = described_class.processors.first
 
-			uuid = @handler.datastore.save( @text_io )
-			@handler.metastore.save( uuid, {'format' => 'text/plain'} )
+			uuid = handler.datastore.save( text_io )
+			handler.metastore.save( uuid, {'format' => 'text/plain'} )
 
 			req = factory.get( "/#{uuid}/metadata" )
-			@handler.handle( req )
+			handler.handle( req )
 
 			expect( processor.was_called ).to be_falsey
 		end
@@ -889,12 +880,12 @@ describe Thingfish::Handler do
 		end
 
 		before( :each ) do
-			@handler.setup_event_socket
+			handler.setup_event_socket
 
 			@subsock = CZTop::Socket::SUB.new
 			@subsock.options.linger = 0
 			@subsock.subscribe( '' )
-			@subsock.connect( @handler.event_socket.last_endpoint )
+			@subsock.connect( handler.event_socket.last_endpoint )
 		end
 
 		after( :each ) do
@@ -908,7 +899,7 @@ describe Thingfish::Handler do
 			poller = CZTop::Poller.new
 			poller.add_reader( @subsock )
 
-			res = @handler.handle( req )
+			handler.handle( req )
 			event = poller.wait( 500 )
 
 			expect( event ).to_not be_nil

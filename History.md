@@ -2,6 +2,14 @@
 
 ---
 
+## v0.8.0 [2021-01-02] Michael Granger <ged@FaerieMUD.org>
+
+Improvements:
+
+- Several bugfixes
+- Support for newer Rubies
+
+
 ## v0.7.0 [2017-09-13] Michael Granger <ged@FaerieMUD.org>
 
 Improvements:

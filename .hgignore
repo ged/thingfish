@@ -12,3 +12,4 @@ coverage/
 \.paw$
 doc/
 ^spec/\.status$
+^gem\.deps\.rb\.lock$
